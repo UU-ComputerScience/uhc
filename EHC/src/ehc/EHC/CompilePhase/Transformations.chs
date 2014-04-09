@@ -29,6 +29,10 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
 
+-- Transformation utils
+%%[(8 codegen) import({%{EH}CodeGen.TrfUtils})
+%%]
+
 -- Core transformations
 %%[(8 codegen) import({%{EH}Core.Trf})
 %%]
@@ -68,20 +72,22 @@ cpTransformCore optimScope modNm
        ; let  mbCore     = ecuMbCore ecu
               coreInh    = crsiCoreInh crsi
               trfcoreIn  = emptyTrfCore
-                             { trfcoreCore          = panicJust "cpTransformCore" mbCore
-                             , trfcoreUniq          = crsiNextUID crsi
+                             { trfstMod             = panicJust "cpTransformCore" mbCore
+                             , trfstUniq            = crsiNextUID crsi
 %%[[50
-                             , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
-                             , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+                             , trfstExtra = emptyTrfCoreExtra
+                                 { trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
+								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+                                 }
 %%]]
                              }
               trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsiCoreInh crsi) modNm trfcoreIn
        
          -- put back result: Core
-       ; cpUpdCU modNm $! ecuStoreCore (trfcoreCore trfcoreOut)
+       ; cpUpdCU modNm $! ecuStoreCore (trfstMod trfcoreOut)
 
          -- put back result: unique counter
-       ; cpSetUID (trfcoreUniq trfcoreOut)
+       ; cpSetUID (trfstUniq trfcoreOut)
 
 %%[[50
          -- put back result: call info map (lambda arity, ...)
@@ -89,17 +95,17 @@ cpTransformCore optimScope modNm
              lamMp = HI.hiiLamMp hii
        ; cpUpdCU modNm
            ( ecuStoreHIInfo
-               (hii { HI.hiiLamMp = trfcoreGathLamMp trfcoreOut `Map.union` lamMp
+               (hii { HI.hiiLamMp = (trfcoreGathLamMp $ trfstExtra trfcoreOut) `Map.union` lamMp
                     })
            )
 %%]]   
 %%[[99
          -- put back result: additional hidden exports, it should be in a cpFlowXX variant
-       ; cpUpdHiddenExports modNm $ zip (Set.toList $ trfcoreExtraExports trfcoreOut) (repeat IdOcc_Val)
+       ; cpUpdHiddenExports modNm $ zip (Set.toList $ trfcoreExtraExports $ trfstExtra trfcoreOut) (repeat IdOcc_Val)
 %%]]
 
          -- dump intermediate stages, print errors, if any
-       ; let (nms,mcs,errs) = unzip3 $ trfcoreCoreStages trfcoreOut
+       ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcoreOut
        ; cpOutputCoreModules False (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) "core" modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
@@ -165,19 +171,19 @@ cpTransformJavaScript optimScope modNm
          -- transform
        ; let  mbJavaScript     = ecuMbJavaScript ecu
               trfjsIn  = emptyTrfJavaScript
-                             { trfjsJavaScript          = panicJust "cpTransformJavaScript" mbJavaScript
-                             , trfjsUniq          = crsiNextUID crsi
+                             { trfstMod           = panicJust "cpTransformJavaScript" mbJavaScript
+                             , trfstUniq          = crsiNextUID crsi
                              }
               trfjsOut = trfJavaScript opts optimScope modNm trfjsIn
        
          -- put back result: JavaScript
-       ; cpUpdCU modNm $! ecuStoreJavaScript (trfjsJavaScript trfjsOut)
+       ; cpUpdCU modNm $! ecuStoreJavaScript (trfstMod trfjsOut)
 
          -- put back result: unique counter
-       ; cpSetUID (trfjsUniq trfjsOut)
+       ; cpSetUID (trfstUniq trfjsOut)
 
          -- dump intermediate stages, print errors, if any
-       ; let (nms,mcs,errs) = unzip3 $ trfjsJavaScriptStages trfjsOut
+       ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfjsOut
        ; cpOutputJavaScriptModules False (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("JavaScript errors: " ++ nm) err) nms errs
        }

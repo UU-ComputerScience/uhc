@@ -79,13 +79,13 @@ SEM Body
   | Body				lhs			.	c		=	ppCurlysBlock @decls.lc
 
 SEM Formal
-  | Formal				lhs			.	c		=	gencFunDefArg @ty.c @nm
+  -- | Formal				lhs			.	c		=	gencFunDefArg @ty.c @nm			-- TBD: cvar sort out
 
 SEM Import
-  | Imp					lhs			.	c		=	gencInclude' "h" @nm
+  -- | Imp					lhs			.	c		=	gencInclude' "h" @nm			-- TBD: cvar sort out
 
 SEM Export
-  | Exp	ExpAs			lhs			.	c		=	gencEndsemic $ gencExtern $ @ty.c >#< @nm
+  -- | Exp	ExpAs			lhs			.	c		=	gencEndsemic $ gencExtern $ @ty.c >#< @nm			-- TBD: cvar sort out
 %%]
 
 Top level global data

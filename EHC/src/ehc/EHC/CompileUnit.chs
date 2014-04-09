@@ -501,7 +501,7 @@ ecuStoreCmm :: EcuUpdater Cmm.Module
 ecuStoreCmm x ecu = ecu { ecuMbCmm = Just x }
 %%]
 
-%%[50 export(ecuStoreHSDeclImpS,ecuSetNeedsCompile,ecuStoreHIUsedImpS,ecuStoreHIInfoTime,ecuStoreHSTime,ecuStoreHSSemMod,ecuStoreHIDeclImpS,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
+%%[50 export(ecuStoreHSDeclImpS,ecuSetNeedsCompile,ecuStoreHIUsedImpS,ecuStoreHIInfoTime,ecuStoreHSTime,ecuStoreHSSemMod,ecuStoreIntrodModS,ecuStoreHIDeclImpS,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
 ecuStoreHSTime :: EcuUpdater ClockTime
 ecuStoreHSTime x ecu = ecu { ecuMbHSTime = Just x }
 
@@ -524,6 +524,10 @@ ecuStoreHIDeclImpS x ecu = ecu { ecuImportUsedModules = ium {iumHIDeclModules = 
 
 ecuStoreHIUsedImpS :: EcuUpdater (Set.Set HsName)
 ecuStoreHIUsedImpS x ecu = ecu { ecuImportUsedModules = ium {iumHIUsedModules = x} }
+  where ium = ecuImportUsedModules ecu
+
+ecuStoreIntrodModS :: EcuUpdater (Set.Set HsName)
+ecuStoreIntrodModS x ecu = ecu { ecuImportUsedModules = ium {iumIntrodModules = x} }
   where ium = ecuImportUsedModules ecu
 
 ecuStoreMod :: EcuUpdater Mod

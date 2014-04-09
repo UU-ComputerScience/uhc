@@ -14,7 +14,7 @@
 
 %%[(8 codegen grin) hs import({%{EH}Base.GenC})
 %%]
-%%[(8 codegen grin cmm) hs import(qualified {%{EH}Cmm} as C)
+%%[(8 codegen grin cmm cmmbc) hs import(qualified {%{EH}Cmm} as C)
 %%]
 
 %%[(8 codegen grin) hs import(Data.Maybe,Data.Char,Data.Bits,qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils,qualified Data.Map as Map)
@@ -28,7 +28,7 @@ gbmod2C
   :: EHCOpts
      -> Module
      -> ( GenC
-%%[[(8 cmm)
+%%[[(8 cmm cmmbc)
         , C.TopLevelL
 %%]]
         )
@@ -37,7 +37,7 @@ gbmod2C opts m
                        (Inh_AGItf {opts_Inh_AGItf = opts}
                        )
     in  ( pp_Syn_AGItf t
-%%[[(8 cmm)
+%%[[(8 cmm cmmbc)
         , cmmDeclL_Syn_AGItf t
 %%]]
         )
@@ -50,7 +50,7 @@ gbmod2C
     -> Module
     -> ( GenC
        , GenC
-%%[[(8 cmm)
+%%[[(8 cmm cmmbc)
        , C.TopLevelL
        , C.TopLevelL
 %%]]
@@ -65,7 +65,7 @@ gbmod2C opts lkupGrinByteCodeLamInfo m
                        )
     in  ( pp_Syn_AGItf t
         , ppMain_Syn_AGItf t
-%%[[(8 cmm)
+%%[[(8 cmm cmmbc)
         , cmmDeclL_Syn_AGItf t
         , cmmMainDeclL_Syn_AGItf t
 %%]]
@@ -1164,7 +1164,7 @@ ATTR AllNT AGItf [ | | pp USE {>-<} {empty}: GenC ]
 ATTR AllInstr [ ppNm: {String -> GenC} | | ]
 %%]
 
-%%[(8 codegen grin cmm)
+%%[(8 codegen grin cmm cmmbc)
 ATTR Module AGItf [ | | cmmDeclL: {C.TopLevelL} ]
 %%]
 
@@ -1172,11 +1172,11 @@ ATTR Module AGItf [ | | cmmDeclL: {C.TopLevelL} ]
 ATTR Module AGItf [ | | ppMain: GenC ]
 %%]
 
-%%[(50 codegen grin cmm)
+%%[(50 codegen grin cmm cmmbc)
 ATTR Module AGItf [ | | cmmMainDeclL: {C.TopLevelL} ]
 %%]
 
-%%[(8 codegen grin cmm)
+%%[(8 codegen grin cmm cmmbc)
 SEM Module
   | Mod                     -- 201101220: under construction, rewrite of PP gen to Cmm gen
                 loc         .   cmmTop                  =   [ C.cmt $ "bytecode in C encoding for module " ++ @moduleNm 

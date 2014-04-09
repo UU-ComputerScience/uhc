@@ -244,9 +244,10 @@ jvRef
   = cvarToRef
       ( \n        -> panic $ "ToJazy.jvRef.mkErrorRef: cannot deal with erroneous reference: " ++ show n
       , \t        -> j $ J.Instr_Load t 0
-      , \t o      -> j $ J.Instr_Load t o
+      , mkLoc
+      , mkLoc
       , \t cl f   -> j $ J.Instr_Get True (J.Const_Field cl (show f) t)
-      , \t cl f   -> panic "ToJazy.jvRef.mkGlobalInt not used" -- j $ J.Instr_Get True (J.Const_Field cl (show f) t)		-- 
+      , \_ _  _   -> panic "ToJazy.jvRef.mkGlobalInt not used" -- j $ J.Instr_Get True (J.Const_Field cl (show f) t)		-- 
       , \t e cl f -> e ## J.Instr_Get False (J.Const_Field cl f t)
       , \t e      -> panic "ToJazy.jvRef.mkDataTag not used" -- e ## J.Instr_Get False (J.Const_Field t nmTag J.Type_Int)
       , \  e o    -> e ## o ## J.Instr_ALoad jtyObj
@@ -254,6 +255,7 @@ jvRef
       , \cfg ct -> hsnJavaLikeDataCon cfg (ctagNm ct)
       , \cfg _ n -> hsnJazyVar cfg n
       )
+  where mkLoc = \t o -> j $ J.Instr_Load t o
 %%]
 
 %%[(8 jazy)
@@ -754,7 +756,7 @@ SEM CModule
                             .   methMainNm      =   if ehcOptGenTrace @lhs.opts then "runVisuallyTraced" else "runTimed"
                             .   methMain        =   let d f = jiNew (hsnJavaLikeDataCon @cvarNmModCfg $ ehcOptBuiltin @lhs.opts f) []
 %%[[99
-                                                        v f = jvRef @cvarNmModCfg @lhs.cvarMp (cvarGlob tyDefault @cvarNmModCfg n n)
+                                                        v f = jvRef @cvarNmModCfg @lhs.cvarMp (cvarGlob @cvarNmModCfg tyDefault n n)
                                                             where n = ehcOptBuiltin @lhs.opts f
 %%]]
                                                     in  J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing

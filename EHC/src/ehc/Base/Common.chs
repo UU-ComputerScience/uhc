@@ -405,6 +405,9 @@ data TagDataInfo = TagDataInfo
 
 instance Eq TagDataInfo where
   i1 == i2 = tagDataInfoConstrNm i1 == tagDataInfoConstrNm i2
+
+instance Ord TagDataInfo where
+  i1 `compare` i2 = tagDataInfoConstrNm i1 `compare` tagDataInfoConstrNm i2
 %%]
 
 %%[8 hs export(mkTyIsConTagInfo, mkConTagInfo, emptyTagDataInfo)

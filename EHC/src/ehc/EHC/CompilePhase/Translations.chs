@@ -362,28 +362,28 @@ cpTranslateByteCode modNm
                mbBytecode = ecuMbBytecode ecu
 %%[[8
                ( grinbcPP
-%%[[(8 cmm)
+%%[[(8 cmm cmmbc)
                 ,cmmMod
 %%]]
                 ) = gbmod2C opts $ panicJust "cpTranslateByteCode1" mbBytecode
-%%[[(8 cmm)
+%%[[(8 cmm cmmbc)
                grinbcCmm = Cmm.Module_Mod modNm cmmMod Nothing Const.emptyConstSt
 %%]]
 %%][50
                coreInh  = crsiCoreInh crsi
                ( grinbcPP
-%%[[(50 cmm)
+%%[[(50 cmm cmmbc)
                  ,grinbcCmm
 %%]]
                  ,functionInfoExportMp)
                         = ( vlist ([ppMod] ++ (if ecuIsMainMod ecu then [ppMain] else []))
-%%[[(50 cmm)
+%%[[(50 cmm cmmbc)
                           , Cmm.Module_Mod modNm (cmmMod  ++ (if ecuIsMainMod ecu then cmmMain else [])) Nothing emptyConstSt
 %%]]
                           , functionInfoExportMp
                           )
                         where ( ppMod,ppMain
-%%[[(50 cmm)
+%%[[(50 cmm cmmbc)
                                ,cmmMod,cmmMain
 %%]]
                                ,functionInfoExportMp)
@@ -397,7 +397,7 @@ cpTranslateByteCode modNm
         ; when (ehcOptEmitBytecode opts && isJust mbBytecode)
                (do { cpUpdCU modNm
                       ( ecuStoreBytecodeSem grinbcPP
-%%[[(8 cmm)
+%%[[(8 cmm cmmbc)
                       . ecuStoreCmm grinbcCmm
 %%]]
 %%[[50

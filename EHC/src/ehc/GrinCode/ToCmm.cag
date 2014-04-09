@@ -219,11 +219,14 @@ SEM GrVal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin cmm) hs
+patNmL2CVarMp'' :: (Fld -> Cmm.CVarInfo) -> AssocL HsName Fld -> AssocL HsName Cmm.CVarInfo
+patNmL2CVarMp'' mkva nmDepL = [ (n, mkva f) | (n,f) <- nmDepL ]
+
 patNmL2CVarMp' :: (Fld -> Cmm.CVarInfo) -> AssocL HsName Fld -> Cmm.CVarMp
-patNmL2CVarMp' mkva nmDepL = Map.fromList [ (n, mkva f) | (n,f) <- nmDepL ]
+patNmL2CVarMp' mkva nmDepL = Map.fromList $ patNmL2CVarMp'' mkva nmDepL
 
 patNmL2CVarMp :: [HsName] -> Cmm.CVarMp
-patNmL2CVarMp = patNmL2CVarMp' (\f -> CVar_Local Cmm.tyNd f) . VA.patNmL2DepL id id
+patNmL2CVarMp = patNmL2CVarMp' (\f -> cvarLoc Cmm.tyNd f) . VA.patNmL2DepL id id
 %%]
 
 %%[(8 codegen grin cmm)
@@ -257,7 +260,8 @@ SEM GrExpr
 
 %%[(8 codegen grin cmm)
 SEM GrBind
-  | Bind        loc         .   newCVarMp       =   patNmL2CVarMp @argNmL
+  | Bind        loc         .	argNmCVarL		=	patNmL2CVarMp'' (cvarArg Cmm.tyNd) (VA.patNmL2DepL id id @argNmL)
+  							.   newCVarMp       =   Map.fromList @argNmCVarL
   				lhs			.	newCVarMp		=	Map.fromList [(@nm, @cvar)]
 
 SEM GrAlt
@@ -273,6 +277,23 @@ lkupCvi n ne = fromMaybe (CVar_Error n) $ nmEnvLookup n ne
 SEM GrVal GrVar
   | Var         loc         .   cvi             =   lkupCvi @nm @nmEnv
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% All (external) references
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin cmm)
+ATTR AllNTNm [ | | allReferredCVarS USE {`Set.union`} {Set.empty} : {Set.Set Cmm.CVarInfo} ]
+
+SEM GrExpr
+  | * - UpdateUnit FetchNode FetchUpdate FetchField Throw Catch
+        Case Seq
+  				loc			.	allReferredCVarS=	glstUsedCVarS @gviLoadSt
+  | Case		loc			.	allReferredCVarS=	Set.unions [glstUsedCVarS @gviLoadStScrutinee, glstUsedCVarS @gviLoadStSwitch, @altL.allReferredCVarS]
+  | Seq			loc			.	allReferredCVarS=	Set.unions [glstUsedCVarS @gviLoadSt, @expr.allReferredCVarS, @body.allReferredCVarS]
+%%]
+SEM GrVal GrVar
+  | Var         loc         .   allReferredCVarS=   Set.singleton @cvi
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Entry point info
@@ -553,9 +574,9 @@ nmEnvLookup nm env
               case Map.lookup q $ neImpNmMp env of
                 Just (mo,entryMp) -> do
                     eo <- Map.lookup nm entryMp
-                    return $ CVar_GlobalExtern Cmm.tyNd (refOfFld mo) (refOfFld eo)
+                    return $ CVar_GlobalExtern Cmm.tyNd (refOfFld mo) (hsnQualified $ refOfFld eo)
                 _ -> do
-                    return $ CVar_GlobalIntern Cmm.tyNd q nm
+                    return $ CVar_GlobalIntern Cmm.tyNd (Just q) nm
 %%]]
       v -> v
 %%]
@@ -838,9 +859,12 @@ SEM GrExpr
 
 %%[(8 codegen grin cmm) hs
 data GviLoadSt = GviLoadSt
-  { glstDecls	:: !CmmBodyDecls
-  , glstCVarMp  :: Cmm.CVarMp
+  { glstDecls		:: !CmmBodyDecls
+  , glstCVarMp  	:: Cmm.CVarMp
+  , glstUsedCVarS  	:: Set.Set Cmm.CVarInfo
   }
+
+emptyGviLoadSt = GviLoadSt Seq.empty Map.empty Set.empty
 
 -- environment info
 data GviLoadRd = GviLoadRd
@@ -850,9 +874,12 @@ data GviLoadRd = GviLoadRd
 
 type GviLoadM = ReaderT GviLoadRd (StateT GviLoadSt FreshUid)
 
+runGviLoad' :: UID -> DataGam -> NmEnvCmm -> GviLoadM a -> (a, GviLoadSt)
+runGviLoad' uniq dataGam nmEnv gs = evalFreshUid (runStateT (runReaderT gs (GviLoadRd dataGam nmEnv)) emptyGviLoadSt) uniq
+
 runGviLoad :: UID -> DataGam -> NmEnvCmm -> GviLoadM a -> (a, CmmBodyDecls, Cmm.CVarMp)
 runGviLoad uniq dataGam nmEnv gs = (x, glstDecls s, glstCVarMp s)
-  where (x,s) = evalFreshUid (runStateT (runReaderT gs (GviLoadRd dataGam nmEnv)) (GviLoadSt Seq.empty Map.empty)) uniq
+  where (x,s) = runGviLoad' uniq dataGam nmEnv gs
 
 gviAppendDeclsM :: CmmBodyDecls -> GviLoadM ()
 gviAppendDeclsM ds = modify $ \st -> st { glstDecls = glstDecls st & ds }
@@ -919,8 +946,11 @@ nm2CValInfoM nm = do
     env <- asks glrdNmEnv
     cvarmp <- gets glstCVarMp
     case cvarMpLookup nm cvarmp <|> nmEnvLookup nm env of
-      Just cv -> return cv
-      _       -> return (CVar_Error nm)
+      Just cv -> do
+        modify $ \s -> s {glstUsedCVarS = Set.insert cv $ glstUsedCVarS s}
+        return cv
+      _       ->
+        return (CVar_Error nm)
 
 grtag2cmmtagM :: GrTag -> GviLoadM Cmm.Tag
 grtag2cmmtagM gt = case gt of
@@ -968,42 +998,42 @@ cmmBindFreshInM mk = cmmBindFreshInM' (\n c -> return $ mk n c)
 
 %%[(8 codegen grin cmm)
 SEM GrExpr
-  | Unit		loc			.	(grvalIntro, valDecls, valCVarMp)
-  												=	(@val.grvalIntro, Seq.empty, Map.empty)
+  | Unit		loc			.	(grvalIntro, gviLoadSt)
+  												=	(@val.grvalIntro, emptyGviLoadSt)
 
-  | Eval        loc         .   (grvalIntro, valDecls, valCVarMp)
+  | Eval        loc         .   (grvalIntro, gviLoadSt)
                                                 =   case @lhs.returnCtxt of
                                                         ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
-                                                          -> (GrValIntro_Nm @nm, Seq.empty, Map.empty)
-                                                        _ -> runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+                                                          -> (GrValIntro_Nm @nm, emptyGviLoadSt)
+                                                        _ -> runGviLoad' @lUniq @lhs.dataGam @nmEnv $ do
                                                                cv <- nm2CValInfoM @nm
                                                                cmmBindFreshInM $ \newn _  -> Cmm.call Nothing (Just newn) Cmm.CallExpr_Eval [Cmm.cvar cv]
-  | Call        loc         .   (grvalIntro, valDecls, valCVarMp)
-                                                =   runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+  | Call        loc         .   (grvalIntro, gviLoadSt)
+                                                =   runGviLoad' @lUniq @lhs.dataGam @nmEnv $ do
                                                       	argExprL <- gviLLoadExprM @argL.grvalIntroL
                                                       	cv <- nm2CValInfoM @nm
                                                       	cmmBindFreshInM $ \newn _  -> Cmm.call Nothing (Just newn) (Cmm.CallExpr_Expr $ Cmm.cvar cv) argExprL
-  | FFI         loc         .   (grvalIntro, valDecls, valCVarMp)
+  | FFI         loc         .   (grvalIntro, gviLoadSt)
 %%[[8
-                                                =   runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+                                                =   runGviLoad' @lUniq @lhs.dataGam @nmEnv $ do
                                                       	argExprL <- gviLLoadExprM @argL.grvalIntroL
                                                       	cmmBindFreshInM $ \newn _  -> Cmm.call (Just Cmm.Conv_Platform) (Just newn) (Cmm.CallExpr_Expr $ Cmm.ffivar @nm) argExprL
 %%][90
-                                                =   (GrValIntro_None, Seq.empty, Map.empty)
+                                                =   (GrValIntro_None, emptyGviLoadSt)
 %%]]
-  | Store       loc         .   (grvalIntro, valDecls, valCVarMp)
-                                                =   runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+  | Store       loc         .   (grvalIntro, gviLoadSt)
+                                                =   runGviLoad' @lUniq @lhs.dataGam @nmEnv $ do
                                                         gviLoadM' id @val.grvalIntro
 
-  | Case        loc         .   ((scrutineeCVar,grvalIntro,switchResCVar), scrutineeDecls, valCVarMp)
-                                                =   runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+  | Case        loc         .   ((scrutineeCVar,grvalIntro,switchResCVar), gviLoadStScrutinee)
+                                                =   runGviLoad' @lUniq @lhs.dataGam @nmEnv $ do
                                                         scrut <- gviLoadM'' gvi2CValInfoM @val.grvalIntro
                                                         (nmres, cvres) <- gviFreshLocalNmM
                                                         gviAppendDeclsM $ Cmm.declLocalRegVar Cmm.tyNd cvres Nothing
                                                         return (scrut, GrValIntro_CVar cvres, cvres)
                             .   scrutineeCVarTag=   CVar_DataTag Cmm.tyInt @scrutineeCVar
-                            .   (_, switchDecls, _)
-                                                =   runGviLoad @lUniq2 @lhs.dataGam @nmEnv $ do
+                            .   (_, gviLoadStSwitch)
+                                                =   runGviLoad' @lUniq2 @lhs.dataGam @nmEnv $ do
                                                         gviAppendDeclsM $
                                                           Cmm.switch (Cmm.cvar @scrutineeCVarTag)
                                                               [ Cmm.Arm_Case [] $ Cmm.Body_Body $ Seq.toList d | d <- @altL.cmmBodyDeclsL ]
@@ -1014,8 +1044,8 @@ SEM GrExpr
                                                         scrutinee <- gviLoadExprM @val.grvalIntro
 -}
 
-  | Seq			loc			.	(grvalIntro, seqDecls, valCVarMp)
-  												=	runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+  | Seq			loc			.	(grvalIntro, gviLoadSt)
+  												=	runGviLoad' @lUniq @lhs.dataGam @nmEnv $ do
   														e <- gviLoadExprM @expr.grvalIntro
   														case @pat.nmIntro of
   														  NmIntro_Single nmp annot -> do
@@ -1029,14 +1059,30 @@ SEM GrExpr
   														    return $ GrValIntro_CVar cvi
   														    -- return $ GrValIntro_Nm nmp
 
-  | App			loc			.	(grvalIntro, valDecls, valCVarMp)
+  | App			loc			.	(grvalIntro, gviLoadSt)
                                                 =   case @lhs.returnCtxt of
                                                         -- ReturnCtxt_Returns | ehcOptGenTrampoline @lhs.opts
                                                         --   -> (GrValIntro_Nm @nm, Seq.empty)
-                                                        _ -> runGviLoad @lUniq @lhs.dataGam @nmEnv $ do
+                                                        _ -> runGviLoad' @lUniq @lhs.dataGam @nmEnv $ do
                                                                argExprL <- gviLLoadExprM @argL.grvalIntroL
                                                                cv <- nm2CValInfoM @nm
                                                                cmmBindFreshInM $ \newn _  -> Cmm.call Nothing (Just newn) Cmm.CallExpr_Apply (Cmm.cvar cv : argExprL)
+%%]
+
+%%[(8 codegen grin cmm)
+SEM GrExpr
+  | Unit Eval Call FFI Store App
+  				loc			.	valDecls		=	glstDecls @gviLoadSt
+  | Seq
+  				loc			.	seqDecls		=	glstDecls @gviLoadSt
+  | Case
+  				loc			.	scrutineeDecls	=	glstDecls @gviLoadStScrutinee
+  							.	switchDecls		=	glstDecls @gviLoadStSwitch
+
+  | Unit Eval Call FFI Store App Seq
+  				loc			.	valCVarMp		=	glstCVarMp @gviLoadSt
+  | Case
+  				loc			.	valCVarMp		=	glstCVarMp @gviLoadStScrutinee
 %%]
 
 %%[(88 codegen grin cmm) hs
@@ -1145,7 +1191,8 @@ SEM GrModule
                                                       ]
 %%]]
                                                       (Seq.toList
-                                                       $ (let mk f (Const_String {constString=s}) = Cmm.declGlobalConst Cmm.Const_CompileTime Cmm.tyStr8 (CVar_GlobalIntern Cmm.tyStr8 @moduleNm (refOfFld f)) (Cmm.str8 s)
+                                                       $ (Seq.fromList $ Cmm.impcvars $ Set.toList @bindL.allReferredCVarS)
+                                                       & (let mk f (Const_String {constString=s}) = Cmm.declGlobalConst Cmm.Const_CompileTime Cmm.tyStr8 (CVar_GlobalIntern Cmm.tyStr8 (Just @moduleNm) (refOfFld f)) (Cmm.str8 s)
                                                               mk f  _                             = Seq.empty
                                                           in  Seq.unions [ mk f c | (c,f) <- Map.toList $ conststMp @bindL.constSt ]
                                                          )
@@ -1171,9 +1218,9 @@ infixr 1 &
 ATTR AllBind [ | | cmmTopDecls USE {&} {Seq.empty}: CmmTopDecls ]
 
 SEM GrBind
-  | Bind        loc         .   cvar            =   CVar_GlobalIntern Cmm.tyFn hsnUnknown @nm
+  | Bind        loc         .   cvar            =   CVar_GlobalIntern Cmm.tyFn Nothing @nm
                 lhs         .   cmmTopDecls     =   Seq.singleton $ Cmm.TopLevel_Proc $
-                                                        Cmm.Proc_Proc Nothing @cvar [ Cmm.Formal_Formal Nothing False Cmm.tyNd a | a <- @argNmL ] $
+                                                        Cmm.Proc_Proc Nothing @cvar [ Cmm.Formal_Formal Nothing False (cvarType a) a | (_,a) <- @argNmCVarL ] $
                                                             Cmm.Body_Body (Seq.toList @expr.cmmBodyDecls)
 %%]
 

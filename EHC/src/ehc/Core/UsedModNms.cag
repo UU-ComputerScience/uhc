@@ -22,10 +22,16 @@ WRAPPER CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 codegen) hs export(cmodUsedModNms)
-cmodUsedModNms :: CModule -> HsNameS
+cmodUsedModNms
+  :: CModule
+     -> ( HsNameS		-- usedModNmS
+        , HsNameS		-- introducedModNmS
+        )
 cmodUsedModNms m
-  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf m)) Inh_CodeAGItf
-     in   usedModNmS_Syn_CodeAGItf t
+  = ( usedModNmS_Syn_CodeAGItf t
+    , introducedModNmS_Syn_CodeAGItf t
+    )
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf m)) Inh_CodeAGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,3 +50,16 @@ ATTR AllNT CodeAGItf [ | | usedModNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 SEM CExpr
   | Var         lhs         .   usedModNmS  =   Set.fromList $ maybeToList $ hsnQualifier @nm 
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extract all module names of globally introduced identifers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 codegen)
+ATTR CodeAGItf CModule CExpr AllBind [ | | introducedModNmS USE {`Set.union`} {Set.empty} : {HsNameS} ]
+
+SEM CBound
+  | *           lhs         .   introducedModNmS      =   maybe Set.empty Set.singleton $ hsnQualifier @lhs.nm
+
+%%]
+

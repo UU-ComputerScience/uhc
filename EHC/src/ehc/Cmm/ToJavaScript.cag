@@ -114,9 +114,10 @@ jdefNm :: CVarNmModuleCfg -> {- CVarMp -> -} CVarInfo -> HsName
       -> cvarToRef
           ( \n       -> JS.var $ mkErrNm n
           , \_       -> JS.Expr_This
-          , \_ o     -> JS.var $ fldNm o
-          , \_ _ f   -> JS.var f
-          , \_ _ f   -> JS.var f
+          , mkLoc
+          , mkLoc
+          , mkGlEx
+          , mkGlIn
           , \_ e _ f -> JS.Expr_ObjFld e f -- (fldNm f)
           , \_ e     -> JS.Expr_ObjFld e JS.nmTag
           , \  e o   -> JS.Expr_ArrInx e o
@@ -128,7 +129,7 @@ jdefNm :: CVarNmModuleCfg -> {- CVarMp -> -} CVarInfo -> HsName
     , \cfg cvi
       -> cvarToDefHsName
           ( mkErrNm . mkHNm
-          , mkHNm
+          , unq . mkHNm
           , mkHNm
           , mkHNm
           , mkTag
@@ -138,6 +139,11 @@ jdefNm :: CVarNmModuleCfg -> {- CVarMp -> -} CVarInfo -> HsName
     )
   where mkErrNm = hsnPrefix "#ERRREF#"
         mkTag   = \_ _ -> panic "JavaScript.cvarToXXX.mkTag should not be used"
+        mkLoc   = \_ o -> JS.var $ unq $ fldNm o
+        mkGlEx	= \_ m f -> JS.var $ q m f
+        mkGlIn	= \_ m f -> JS.var $ maybe f (flip q f) m
+        unq = hsnQualified
+        q   = hsnSetQual
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,7 +196,7 @@ SEM RegNmInit
   | NmInit	        	loc         .   jsnm	=   jdefNm @lhs.cvarNmModCfg @cvar -- JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM Formal
-  | Formal        		loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
+  | Formal        		loc         .   jsnm	=   jdefNm @lhs.cvarNmModCfg @cvar -- JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
 
 SEM KindName
   | KindName        	loc         .   jsnm	=   JS.hsnJavaScriptVar @lhs.cvarNmModCfg False @nm
@@ -224,7 +230,7 @@ SEM Module
                                                                 mkd n e | isJust q  = JS.assign n e
                                                                         | otherwise = JS.vardecl n (Just e)
                                                                   where q = hsnQualifier n
-                                                            in  L.map (\n -> mkd n $ mk n) $ concat $ reverse $ takeWhile (not . L.null) $ iterate prefixes $ Set.toList $ iumHIUsedModules @lhs.importUsedModules
+                                                            in  L.map (\n -> mkd n $ mk n) $ concat $ reverse $ takeWhile (not . L.null) $ iterate prefixes $ Set.toList $ iumIntrodModules @lhs.importUsedModules
 %%]]
 %%[[8
                         loc         .   jsModTraceStats =   if ehcOptGenTrace @lhs.opts then [JS.assign (mkHNm "traceOn") JS.Expr_True] else []

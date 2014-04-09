@@ -33,13 +33,14 @@
 %%% Monadic interface to Unique id
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(FreshUidT, FreshUid, freshUID, runFreshUidT, runFreshUid, evalFreshUid)
+%%[1 export(FreshUidT, FreshUid, runFreshUidT, runFreshUid, evalFreshUid)
 type FreshUidT m   = StateT UID m
 type FreshUid      = FreshUidT Identity
 
+{-
 freshUID :: MonadState UID m => m UID
 freshUID = state $ \x -> (x, uidNext x)
-{-# INLINE freshUID #-}
+-}
 
 runFreshUidT :: Monad m => FreshUidT m a -> UID -> m (a,UID)
 runFreshUidT f u = runStateT f u
@@ -53,6 +54,26 @@ evalFreshUid :: FreshUid a -> UID -> a
 evalFreshUid f u = fst $ runIdentity $ runFreshUidT f u
 {-# INLINE evalFreshUid #-}
 %%]
+
+%%[1 export(MonadFreshUID(..))
+class Monad m => MonadFreshUID m where
+  -- | Fresh single UID
+  freshUID :: m UID
+  freshUID = freshInfUID
+
+  -- | Fresh infinite range of UID 
+  freshInfUID :: m UID
+  freshInfUID = freshUID
+
+-- TBD: flip results of mkNewLevUID (etc) to be in agreement with behavior of state
+instance Monad m => MonadFreshUID (FreshUidT m) where
+  freshUID = state $ \x -> (x, uidNext x)
+  {-# INLINE freshUID #-}
+
+  freshInfUID = state $ \x -> (uidChild x, uidNext x)
+  {-# INLINE freshInfUID #-}
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unique id's

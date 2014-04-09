@@ -45,7 +45,8 @@ TYPE SectionL		= [Section]
 
 %%[(8 cmm)
 DATA Decl
-  | Import			imports			: ImportL
+  | Import			mbFromNm		: {Maybe Nm}
+  					imports			: ImportL
   | Export			exports			: ExportL
   | Const			ckind			: ConstKind
   					mbTy			: MbTy
@@ -76,15 +77,16 @@ DATA Target
 TYPE TargetL		= [Target]
 
 DATA Import
-  | Imp 			mbOrigNm		: {Maybe String}
+  | Imp 			mbTy			: MbTy
+  					mbOrigNm		: {Maybe String}
   					nm				: Nm
 
 TYPE ImportL		= [Import]
 
 DATA Export
-  | Exp				nm				: Nm
+  | Exp				cvar			: CVarInfo
   					ty				: Ty
-  | ExpAs			nm				: Nm
+  | ExpAs			cvar			: CVarInfo
   					ty				: Ty
   					snmAs			: String
 
@@ -183,7 +185,7 @@ DATA Formal
   | Formal			mbKind			: {Maybe String}
   					isInvariant		: Bool
   					ty				: Ty
-  					nm				: Nm
+  					cvar			: CVarInfo
 
 TYPE FormalL		= [Formal]
 

@@ -284,6 +284,15 @@ data HsName
   deriving (Eq,Ord)
 %%]
 
+%%[1111 export(hsnIsEmpty)
+hsnIsEmpty (HsName_Base s) = null s
+%%[[7
+hsnIsEmpty (HsName_Modf {hsnBase=b})
+                           = hsnIsEmpty b
+%%]]
+hsnIsEmpty _               = False
+%%]
+
 %%[1
 -- | Smart constructor for HsName_Modf
 hsnMkModf :: [String] -> HsName -> HsNameUniqifierMp -> HsName

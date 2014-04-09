@@ -72,6 +72,11 @@ DERIVING *
   : Eq, Ord
 %%]
 
+%%[(8 codegen cmm) ag
+DERIVING AllTy Tag
+  : Eq, Ord
+%%]
+
 -- debug only
 %%[(8888 codegen cmm) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
@@ -149,10 +154,16 @@ instance TagLike Tag where
 %%% Constructing: module, toplevel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(imp)
+%%[(8 codegen cmm) hs export(imp,impcvars)
 -- | Import
-imp :: NmL -> Decl
-imp ns = Decl_Import (map (Import_Imp Nothing) ns)
+imp :: Maybe Nm -> AssocL Nm Ty -> Decl
+imp mod ns = Decl_Import mod [ Import_Imp (Just t) Nothing n | (n,t) <- ns ]
+
+-- | Import external CVar_GlobalExtern, rest is ignored
+impcvars :: [CVarInfo] -> TopLevelL
+impcvars ns
+  = [ TopLevel_Decl $ imp (Just mod) [(cvarFldNm i, cvarType i) | i <- is] | (is@(CVar_GlobalExtern {cvarModNm=mod} :_)) <- exts ]
+  where exts = groupOn cvarModNm $ filter cvarIsGlobExt ns
 %%]
 
 %%[(8 codegen cmm) hs export(arr)

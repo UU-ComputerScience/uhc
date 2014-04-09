@@ -75,7 +75,8 @@ hsnJavaScriptVar :: CVarNmModuleCfg -> Bool -> HsName -> HsName
 %%[[8
 hsnJavaScriptVar = hsnJavaLikeVar (\_ -> id, id, id)
 %%][50
-hsnJavaScriptVar = hsnJavaLikeVar (\isglob -> if isglob then id else hsnQualified, hsnPrefix "$", ('$':))
+-- hsnJavaScriptVar = hsnJavaLikeVar (\isglob -> if isglob then id else hsnQualified, hsnPrefix "$", ('$':))
+hsnJavaScriptVar = hsnJavaLikeVar (\isglob -> if isglob then id else hsnQualified, hsnPrefix "$", id)
 %%]]
 %%]
 
@@ -98,9 +99,10 @@ ref
   = cvarToRef
       ( \n       -> var $ hsnPrefix "#ERRREF#" n
       , \_       -> Expr_This
-      , \_ o     -> var o
-      , \_ _ f   -> var f
-      , \_ _ f   -> var f
+      , mkLoc
+      , mkLoc
+      , mkGlob
+      , mkGlob
       , \_ e _ f -> Expr_ObjFld e (fldNm f)
       , \_ e     -> Expr_ObjFld e nmTag
       , \  e o   -> Expr_ArrInx e o
@@ -108,6 +110,8 @@ ref
       , \_ _ -> panic "JavaScript.cvarToRef.mkTag should not be used"
       , hsnJavaScriptVar
       )
+  where mkLoc = \_ o -> var o
+        mkGlob = \_ _ f -> var $ {- hsnSetQual m -} f
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -69,11 +69,16 @@ SEM Section
 
 %%[(8 cmm)
 SEM Decl
-  | Import		lhs		.	pp		=	semic $ "import" >#< ppCommas' @imports.ppL
-  | Export		lhs		.	pp		=	semic $ "export" >#< ppCommas' @exports.ppL
-  | Const		lhs		.	pp		=	semic $ show @ckind >#< @mbTy.pp >#< cvar @cvar >#< "=" >#< @expr.pp
-  | ConstArray	lhs		.	pp		=	semic $ "const" >#< @mbTy.pp >#< @nm >|< "[]" >#< "=" >#< ppCurlysCommasBlock @exprs.ppL
-  | Typedef		lhs		.	pp		=	semic $ "typedef" >#< @ty.pp >#< ppCommas' @nms
+  | Import      lhs     .   pp      =   semic $ "import" >#< 
+                                            (let ns = ppCommas' @imports.ppL
+                                             in  case @mbFromNm of
+                                                    Nothing -> ns
+                                                    Just fr -> "module" >#< fr >|< ppParens ns
+                                            )
+  | Export      lhs     .   pp      =   semic $ "export" >#< ppCommas' @exports.ppL
+  | Const       lhs     .   pp      =   semic $ show @ckind >#< @mbTy.pp >#< cvar @cvar >#< "=" >#< @expr.pp
+  | ConstArray  lhs     .   pp      =   semic $ "const" >#< @mbTy.pp >#< @nm >|< "[]" >#< "=" >#< ppCurlysCommasBlock @exprs.ppL
+  | Typedef     lhs		.	pp		=	semic $ "typedef" >#< @ty.pp >#< ppCommas' @nms
   | Regs		lhs		.	pp		=	semic $ (if @isInvariant then "invariant " else "")	>|< @regs.pp
   -- | Pragma			nm				: Nm
   -- 					pragma			: PragmaL
@@ -91,7 +96,7 @@ SEM Target
 
 %%[(8 cmm)
 SEM Import
-  | Imp			lhs		.	pp		=	ppMbPre (\s -> show s >#< "as") @mbOrigNm @nm
+  | Imp			lhs		.	pp		=	ppMbPre id @mbTy.ppMb $ ppMbPre (\s -> s >#< "as") @mbOrigNm @nm
 %%]
 
 Export
@@ -147,7 +152,7 @@ SEM Conv
 
 %%[(8 cmm)
 SEM Formal
-  | Formal		lhs		.	pp		=	ppMbPre show @mbKind $ (if @isInvariant then "invariant " else "") >|< @ty.pp >#< @nm
+  | Formal		lhs		.	pp		=	ppMbPre show @mbKind $ (if @isInvariant then "invariant " else "") >|< @ty.pp >#< cvar @cvar
 %%]
 
 %%[(8 cmm)

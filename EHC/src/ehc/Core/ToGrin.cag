@@ -260,7 +260,6 @@ simplAppendM f = modify (f .)
 
 simplWrapM :: HsName -> GrExpr -> SimplStateM GrVal
 simplWrapM modNm x = do
-  -- n <- fmap (uidQualHNm modNm) $ lift freshUID
   n <- fmap (hsnUniqify HsNameUniqifier_GRINTmpVar . mkHNm) $ lift freshUID
   simplAppendM $ mkSq x n
   return $ GrVal_Var n

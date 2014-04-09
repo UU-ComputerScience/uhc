@@ -1046,11 +1046,14 @@ cpProcessCoreBasic modNm
 -- (called on merged core, and on core directly generated from cached grin)
 cpProcessCoreFold :: HsName -> EHCompilePhase ()
 cpProcessCoreFold modNm
-  = cpSeq [ cpFoldCore modNm
+  = cpSeq $
 %%[[50
-          , cpFlowCoreSem modNm
+	  [ cpFlowCoreSemBeforeFold modNm ] ++
 %%]]
-          ]
+      [ cpFoldCore modNm ]
+%%[[50
+	  ++ [ cpFlowCoreSemAfterFold modNm ]
+%%]]
 %%]
 
 %%[(8 codegen)

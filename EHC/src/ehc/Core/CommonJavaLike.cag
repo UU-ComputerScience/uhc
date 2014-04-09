@@ -135,7 +135,7 @@ SEM CAlt
 
 %%[(8 jazy || javascript)
 SEM CExpr
-  | Var         loc         .   cvi             =   Map.findWithDefault (cvarGlob tyDefault @lhs.cvarNmModCfg @nm @nm) @nm @lhs.cvarMp
+  | Var         loc         .   cvi             =   Map.findWithDefault (cvarGlob @lhs.cvarNmModCfg tyDefault @nm @nm) @nm @lhs.cvarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

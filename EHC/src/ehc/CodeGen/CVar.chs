@@ -33,39 +33,44 @@ data CVarInfo' tag ty varref datafldref tupfldref
   = CVar_This                           -- this object
       { cvarType            :: ty
       }
-  | CVar_Local                          -- a local on the stack
+  | CVar_Local                          -- a local (on the stack)
       { cvarType            :: ty
-      , cvarOffset          :: varref
+      , cvarOffset          :: !varref
+      }
+  | CVar_Arg                            -- an argument (on the stack), usually the same as Local
+      { cvarType            :: ty
+      , cvarOffset          :: !varref
       }
   | CVar_DataFld                        -- a field of a datatype alternative
       { cvarType            :: ty
-      , cvarData            :: CVarInfo' tag ty varref datafldref tupfldref
-      , cvarTag      		:: tag
-      , cvarFld             :: datafldref
+      , cvarData            :: !(CVarInfo' tag ty varref datafldref tupfldref)
+      , cvarTag      		:: !tag
+      , cvarFld             :: !datafldref
       }
   | CVar_DataTag                        -- the tag of a datatype alternative
       { cvarType            :: ty
-      , cvarData            :: CVarInfo' tag ty varref datafldref tupfldref
+      , cvarData            :: !(CVarInfo' tag ty varref datafldref tupfldref)
       }
   | CVar_TupFld                         -- a field of a tuple
       { cvarType            :: ty
-      , cvarTuple           :: CVarInfo' tag ty varref datafldref tupfldref
-      , cvarInx             :: Either tupfldref HsName
+      , cvarTuple           :: !(CVarInfo' tag ty varref datafldref tupfldref)
+      , cvarInx             :: !(Either tupfldref HsName)
       }
   | CVar_GlobalExtern                         -- a global, external
       { cvarType            :: ty
-      , cvarModNm      		:: HsName
-      , cvarFldNm           :: HsName
+      , cvarModNm      		:: !HsName
+      , cvarFldNm           :: !HsName
       }
   | CVar_GlobalIntern                         -- a global, internal to current module
       { cvarType            :: ty
-      , cvarModNm      		:: HsName
-      , cvarFldNm           :: HsName
+      , cvarMbModNm      	:: !(Maybe HsName)
+      , cvarFldNm           :: !HsName
       }
   | CVar_None
   | CVar_Error
       { cvarNm      		:: HsName
       }
+  deriving (Eq,Ord)
 %%]
 
 %%[(8 codegen) hs export(cvarShowKind)
@@ -73,6 +78,7 @@ cvarShowKind :: CVarInfo' tag ty varref datafldref tupfldref -> String
 cvarShowKind cvi = case cvi of
   CVar_This {} 			-> "Th"
   CVar_Local {} 		-> "Lc"
+  CVar_Arg {} 			-> "Ar"
   CVar_DataFld {} 		-> "DtFl"
   CVar_DataTag {} 		-> "DtTg"
   CVar_TupFld {} 		-> "TpFl"
@@ -94,11 +100,12 @@ cvarMpLookup = Map.lookup
 instance (Show datafldref, Show tupfldref, Show varref) => Show (CVarInfo' tag ty varref datafldref tupfldref) where
   show (CVar_This 			{									})	= "this"
   show (CVar_Local 			{					  cvarOffset=n	})	= show n
+  show (CVar_Arg 			{					  cvarOffset=n	})	= show n
   show (CVar_DataFld 		{cvarData=d			, cvarFld=n		}) 	= show d ++ "." ++ show n
   show (CVar_DataTag 		{cvarData=d							}) 	= show d ++ ".tag"
   show (CVar_TupFld 		{cvarTuple=d		, cvarInx=n		}) 	= show d ++ "." ++ either show show n
-  show (CVar_GlobalExtern	{cvarModNm=d		, cvarFldNm=n	}) 	= show d ++ "." ++ show n
-  show (CVar_GlobalIntern 	{					  cvarFldNm=n	}) 	= show n
+  show (CVar_GlobalExtern	{cvarModNm=m		, cvarFldNm=n	}) 	= show m ++ "." ++ show n
+  show (CVar_GlobalIntern 	{cvarMbModNm=mbm	, cvarFldNm=n	}) 	= maybe "" (\m -> show m ++ ".") mbm ++ show n
   show (CVar_Error	 		{					  cvarNm=n		}) 	= "#ERRREF#" ++ show n
   show _													 		= "?CVar?"
 
@@ -106,24 +113,33 @@ instance (Show datafldref, Show tupfldref, Show varref) => PP (CVarInfo' tag ty 
   pp = pp . show
 %%]
 
-%%[(8 codegen) hs export(cvarLoc)
+%%[(8 codegen) hs export(cvarLoc,cvarArg)
 -- | local reference
 cvarLoc :: ty -> varref -> CVarInfo' tag ty varref datafldref tupfldref
 cvarLoc = CVar_Local
+
+-- | argument reference
+cvarArg :: ty -> varref -> CVarInfo' tag ty varref datafldref tupfldref
+cvarArg = CVar_Arg
+%%]
+
+%%[(8 codegen) hs export(cvarIsGlobExt)
+-- | Is a CVar_GlobalExtern?
+cvarIsGlobExt (CVar_GlobalExtern {}) = True
+cvarIsGlobExt _                      = False
 %%]
 
 %%[(8 codegen) hs export(cvarGlob)
 -- | global reference
-cvarGlob :: ty -> CVarNmModuleCfg -> HsName -> HsName -> CVarInfo' tag ty varref datafldref tupfldref
-cvarGlob ty cfg nm varNm
+cvarGlob :: CVarNmModuleCfg -> ty -> HsName -> HsName -> CVarInfo' tag ty varref datafldref tupfldref
+cvarGlob cfg ty mbModNm varNm
   = CVar_GlobalExtern ty clNm' varNm
 %%[[8
   where clNm' = cvnmcfgModInTop cfg
 %%][50
-  where clNm' = maybe (cvnmcfgModInTop cfg) (\m -> hsnSetQual m $ hsnQualified m) $ hsnQualifier nm
+  where clNm' = maybe (cvnmcfgModInTop cfg) (\m -> hsnSetQual m $ hsnQualified m) $ hsnQualifier mbModNm
 %%]]
 %%]
-
 
 %%[(8 codegen) hs export(CVarNmModuleCfg(..), emptyCVarNmModuleCfg)
 -- | Per module name configuration used by name generation to take into account differences between local, global, etc 
@@ -142,8 +158,9 @@ cvarToRef
   :: ( HsName -> e                  	-- erroneous reference,
      , ty -> e                  		-- make for 'this',
      , ty -> varref -> e        		-- local,
+     , ty -> varref -> e        		-- arg,
      , ty -> HsName -> HsName -> e		-- global external, additionally getting a safe name variant
-     , ty -> HsName -> HsName -> e		-- global internal, additionally getting a safe name variant
+     , ty -> Maybe HsName -> HsName -> e	-- global internal, additionally getting a safe name variant
      , ty -> e -> taginfo -> datafldref -> e	-- data field,
      , ty -> e -> e						-- data constr tag,
      ,       e -> e -> e				-- tuple field
@@ -160,7 +177,8 @@ cvarToRef
 cvarToDef
   :: ( HsName -> e                  	-- erroneous reference,
      , ty -> varref -> e        		-- local,
-     , ty -> HsName -> HsName -> e		-- global internal, additionally getting a safe name variant
+     , ty -> varref -> e        		-- arg,
+     , ty -> Maybe HsName -> HsName -> e		-- global internal, additionally getting a safe name variant
      , ty -> e -> taginfo -> datafldref -> e	-- data field,
      , ty -> e -> e						-- data constr tag,
      ,       e -> e -> e				-- tuple field
@@ -174,11 +192,12 @@ cvarToDef
      -> e
 
 (cvarToDef, cvarToRef)
-  = ( \(mkErrorRef,mkLocal,mkGlobalInt,mkDataFld,mkDataTag,mkTupFld,mkOffset,mkTag,mkSafeName)
+  = ( \(mkErrorRef,mkLocal,mkArg,mkGlobalInt,mkDataFld,mkDataTag,mkTupFld,mkOffset,mkTag,mkSafeName)
         cfg cvarMp vi -> let ref vi
                                = case vi of
                                    CVar_This   t			-> panic "CVar.cvarToDef.CVar_This"
                                    CVar_Local   t o			-> mkLocal t o
+                                   CVar_Arg   	t o			-> mkArg t o
                                    CVar_GlobalExtern  t m f	-> panic "CVar.cvarToDef.CVar_GlobalExtern"
                                    CVar_GlobalIntern  t m f	-> mkGlIn mkGlobalInt cfg mkSafeName t m f
                                    CVar_DataFld t cvid cl f	-> mkDtFl ref cfg mkDataFld mkTag t cvid cl f
@@ -187,12 +206,13 @@ cvarToDef
                                    CVar_None				-> panic "CVar.cvarToDef.CVar_None"
                                    CVar_Error n				-> mkErrorRef n
                          in ref vi
-    , \(mkErrorRef,mkThis,mkLocal,mkGlobalExt,mkGlobalInt,mkDataFld,mkDataTag,mkTupFld,mkOffset,mkTag,mkSafeName)
+    , \(mkErrorRef,mkThis,mkLocal,mkArg,mkGlobalExt,mkGlobalInt,mkDataFld,mkDataTag,mkTupFld,mkOffset,mkTag,mkSafeName)
         cfg cvarMp vi -> let ref vi
                                = case vi of
                                    CVar_This   t			-> mkThis t
                                    CVar_Local   t o			-> mkLocal t o
-                                   CVar_GlobalExtern  t m f	-> mkGlEx mkGlobalInt cfg mkSafeName t m f
+                                   CVar_Arg   	t o			-> mkArg t o
+                                   CVar_GlobalExtern  t m f	-> mkGlEx mkGlobalExt cfg mkSafeName t m f
                                    CVar_GlobalIntern  t m f	-> mkGlIn mkGlobalInt cfg mkSafeName t m f
                                    CVar_DataFld t cvid cl f	-> mkDtFl ref cfg mkDataFld mkTag t cvid cl f
                                    CVar_DataTag t cvid		-> mkDtTg ref mkDataTag t cvid
@@ -201,7 +221,7 @@ cvarToDef
                                    CVar_Error n				-> mkErrorRef n
                          in ref vi
     )
-  where mkGlIn mkGlobalInt cfg mkSafeName t m f = mkGlobalInt t m (mkSafeName cfg True f)
+  where mkGlIn mkGlobal cfg mkSafeName t m f = mkGlobal t m (mkSafeName cfg True f)
         mkGlEx = mkGlIn
         mkDtFl ref cfg mkDataFld mkTag t cvid cl f = mkDataFld t (ref cvid) (mkTag cfg cl) f
         mkDtTg ref mkDataTag t cvid = mkDataTag t (ref cvid)
@@ -228,7 +248,8 @@ cvarToDefHsName
   (mkError,mkLocal,mkDataFld,mkTupFld,mkTag,mkSafeName)
   = cvarToDef
       ( \r -> mkError $ "cvarToDefHsName.mkErrorRef: " ++ show r
-      , \_ r -> mkLocal r
+      , mkLocArg
+      , mkLocArg
       , \_ _ r -> r
       , \_ _ _ r -> mkDataFld r
       , \_ _ -> mkError "cannot cvarToDefHsName.mkDataTag"
@@ -237,6 +258,7 @@ cvarToDefHsName
       , mkTag
       , mkSafeName
       )
+  where mkLocArg = \_ r -> mkLocal r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

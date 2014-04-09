@@ -68,7 +68,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addsuffix /Trf,Core TyCore JavaScript) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
-													$(addprefix CodeGen/,CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules) \
+													$(addprefix CodeGen/,CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
 													$(addprefix Foreign/,Boxing) \
 													$(addprefix Core/,Utils FFI Coercion) \
 													$(addprefix Core/SysF/,AsTy) \

@@ -286,16 +286,14 @@ cpFlowHISem modNm
          }
 %%]
 
-%%[(50 codegen) export(cpFlowCoreSem)
-cpFlowCoreSem :: HsName -> EHCompilePhase ()
-cpFlowCoreSem modNm
+The following flow functions probably can be merged with the semantics itself, TBD & sorted out, 20140407
+
+%%[(50 codegen) export(cpFlowCoreSemAfterFold, cpFlowCoreSemBeforeFold)
+cpFlowCoreSemAfterFold :: HsName -> EHCompilePhase ()
+cpFlowCoreSemAfterFold modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 coreSem  = panicJust "cpFlowCoreSem.coreSem" $ ecuMbCoreSem ecu
-                 core     = panicJust "cpFlowCoreSem.core"    $ ecuMbCore    ecu
-                 
-                 -- 20100717 AD: required here because of inlining etc, TBD
-                 usedImpS = cmodUsedModNms core
+                 coreSem  = panicJust "cpFlowCoreSemAfterFold.coreSem" $ ecuMbCoreSem ecu
                  
                  coreInh  = crsiCoreInh crsi
                  hii      = ecuHIInfo ecu
@@ -304,20 +302,35 @@ cpFlowCoreSem modNm
                               { Core2GrSem.lamMp_Inh_CodeAGItf   = am `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh	-- assumption: old info can be overridden, otherwise merge should be done here
                               }
                  hii'     = hii
-%%[[(50 codegen grin)
-                              { -- 20100717 AD: required here because of inlining etc, TBD
-                                {- -} HI.hiiHIUsedImpModS = usedImpS
-                              , {- -} HI.hiiLamMp         = am
+                              { HI.hiiLamMp         = am
                               }
-%%]]
          ;  when (isJust (ecuMbCoreSem ecu))
                  (do { cpUpdSI (\crsi -> crsi {crsiCoreInh = coreInh'})
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
-                                     -- 
-                                     -- 20100717 AD: required here because of inlining etc, TBD
-                                     . ecuStoreHIUsedImpS usedImpS
                                      )
                      })
+         }
+
+cpFlowCoreSemBeforeFold :: HsName -> EHCompilePhase ()
+cpFlowCoreSemBeforeFold modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
+                 core     = panicJust "cpFlowCoreSemBeforeFold.core" $ ecuMbCore ecu
+                 
+                 -- 20100717 AD: required here because of inlining etc, TBD
+                 (usedImpS, introdModS) = cmodUsedModNms core
+                 
+                 hii      = ecuHIInfo ecu
+                 hii'     = hii
+                              { -- 20100717 AD: required here because of inlining etc, TBD
+                                HI.hiiHIUsedImpModS = usedImpS
+                              }
+         ;  cpUpdCU modNm ( ecuStoreHIInfo hii'
+                          -- 
+                          -- 20100717 AD: required here because of inlining etc, TBD
+                          . ecuStoreHIUsedImpS usedImpS
+                          . ecuStoreIntrodModS introdModS
+                          )
          }
 %%]
 
