@@ -7,24 +7,24 @@
 %%% Attempt to make a more compact representation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript) hs module {%{EH}JavaScript.Trf.CompactAndSimplify}
+%%[(8 codegen cmm) hs module {%{EH}Cmm.Trf.SimplifyLocalNames}
 %%]
 
-%%[(8 javascript) hs import(Data.Maybe,{%{EH}Base.Common},{%{EH}JavaScript})
+%%[(8 codegen cmm) hs import(Data.Maybe,{%{EH}Base.Common} hiding (Range),{%{EH}Cmm})
 %%]
 
-%%[(8 javascript) hs import(UHC.Util.Utils)
+%%[(8 codegen cmm) hs import(UHC.Util.Utils)
 %%]
 
-%%[(8 javascript) hs import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen cmm) hs import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
-%%[(8 javascript).WRAPPER ag import({JavaScript/AbsSyn})
+%%[(8 codegen cmm).WRAPPER ag import({Cmm/AbsSyn})
 WRAPPER AGItf
 %%]
 
 
-%%[(8 javascript)
+%%[(8 codegen cmm)
 %%]
 PRAGMA nocycle
 
@@ -32,10 +32,10 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript) hs export(jsmodTrfCompactAndSimplify)
-jsmodTrfCompactAndSimplify :: JavaScriptModule -> JavaScriptModule
-jsmodTrfCompactAndSimplify cmod
-  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
+%%[(8 codegen cmm) hs export(cmmModTrfSimplifyLocalNames)
+cmmModTrfSimplifyLocalNames :: Module -> Module
+cmmModTrfSimplifyLocalNames cmmmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmmmod)) Inh_AGItf
      in   trf_Syn_AGItf t
 %%]
 
@@ -43,8 +43,8 @@ jsmodTrfCompactAndSimplify cmod
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 javascript)
+%%[(8 codegen cmm)
 ATTR AllNT [ | | trf: SELF ]
-ATTR AGItf [ | | trf: JavaScriptModule ]
+ATTR AGItf [ | | trf: Module ]
 %%]
 

@@ -45,6 +45,10 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[(8 javascript) import({%{EH}JavaScript.Trf})
 %%]
 
+-- Cmm transformations
+%%[(8 codegen cmm) import({%{EH}Cmm.Trf})
+%%]
+
 -- Output
 %%[8 import({%{EH}EHC.CompilePhase.Output})
 %%]
@@ -189,4 +193,32 @@ cpTransformJavaScript optimScope modNm
        }
 %%]
 
+
+%%[(8 codegen cmm) export(cpTransformCmm)
+cpTransformCmm :: OptimizationScope -> HsName -> EHCompilePhase ()
+cpTransformCmm optimScope modNm
+  = do { cr <- get
+       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+       ; cpMsg' modNm VerboseALot "Transforming Cmm ..." Nothing fp
+       
+         -- transform
+       ; let  mbCmm     = ecuMbCmm ecu
+              trfcmmIn  = emptyTrfCmm
+                             { trfstMod           = panicJust "cpTransformCmm" mbCmm
+                             , trfstUniq          = crsiNextUID crsi
+                             }
+              trfcmmOut = trfCmm opts optimScope modNm trfcmmIn
+       
+         -- put back result: Cmm
+       ; cpUpdCU modNm $! ecuStoreCmm (trfstMod trfcmmOut)
+
+         -- put back result: unique counter
+       ; cpSetUID (trfstUniq trfcmmOut)
+
+         -- dump intermediate stages, print errors, if any
+       ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcmmOut
+       ; cpOutputCmmModules False (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Cmm errors: " ++ nm) err) nms errs
+       }
+%%]
 

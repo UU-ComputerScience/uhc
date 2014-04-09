@@ -21,7 +21,7 @@ C subset, modelled after C--
 %%]
 %%[(8 codegen cmm) hs import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[(8 codegen cmm) hs import({%{EH}CodeGen.Const}(ConstSt)) export(ConstSt)
+%%[(8 codegen cmm) hs import({%{EH}CodeGen.Const}(ConstSt, emptyConstSt)) export(ConstSt)
 %%]
 %%[(8 codegen cmm) hs import({%{EH}Gam.DataGam})
 %%]
@@ -184,6 +184,11 @@ topDecl = top TopLevel_Decl
 -- | lift procedures to top level
 topProc :: [Proc] -> TopLevelL
 topProc = top TopLevel_Proc
+%%]
+
+%%[(8 codegen cmm) hs export(emptyModule)
+emptyModule :: Module
+emptyModule = Module_Mod hsnUnknown [] Nothing emptyConstSt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

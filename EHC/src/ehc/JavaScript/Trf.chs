@@ -8,7 +8,7 @@
 -- general imports
 %%[(8 codegen javascript) import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[(8 codegen javascript) import(Control.Monad, Control.Monad.State.Strict)
+%%[(8 codegen javascript) import(Control.Monad)
 %%]
 
 %%[(8 codegen javascript) import({%{EH}Base.Target},{%{EH}Base.Optimize})
@@ -36,14 +36,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen javascript) export(TrfJavaScript,emptyTrfJavaScript)
-{-
-data TrfJavaScript
-  = TrfJavaScript
-      { trfjsJavaScript    		:: !JavaScriptModule
-      , trfjsJavaScriptStages	:: [(String,Maybe JavaScriptModule,ErrL)]
-      , trfjsUniq             	:: !UID
-      }
--}
 type TrfJavaScript = TrfState JavaScriptModule ()
 
 emptyTrfJavaScript :: TrfJavaScript
@@ -76,7 +68,7 @@ trfJavaScript opts optimScope modNm trfjs
         -- actual transformations
         t_initial       = liftTrfModPlain  osm "initial"            $ id
         t_inl_names     = liftTrfModPlain  osm "inl-names"          $ cmodTrfInlineSingleUseNames
-        t_comp_simpl    = liftTrfModPlain  osm "comp-simpl"         $ cmodTrfCompactAndSimplify
+        t_comp_simpl    = liftTrfModPlain  osm "comp-simpl"         $ jsmodTrfCompactAndSimplify
 
         -- abbreviations for optimatisation scope
         osm  = [OptimizationScope_PerModule]

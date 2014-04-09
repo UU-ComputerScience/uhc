@@ -21,22 +21,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(TrfState(..),mkEmptyTrfState)
+-- | Environmental info for transformations. TBD 20140409: sort out what is really necessary
 data TrfReader
   = TrfReader
-      { trfrdMustDump			:: EHCOpts -> Bool
-      , trfrdCanDoOptScope		:: [OptimizationScope] -> Bool
-      , trfrdOpts				:: EHCOpts
-      , trfrdModNm				:: HsName
+      { trfrdMustDump			:: EHCOpts -> Bool				-- ^ must dump?
+      , trfrdCanDoOptScope		:: [OptimizationScope] -> Bool	-- ^ trf must be done for this optimization scope?
+      , trfrdOpts				:: EHCOpts						-- ^ global options
+      , trfrdModNm				:: HsName						-- ^ module name
       }
 
+-- | State info for transformations
 data TrfState
 		mod		-- module structure
 		extra	-- extra state info, extension
   = TrfState
-      { trfstMod    			:: !mod
-      , trfstModStages			:: [(String,Maybe mod,ErrL)]
-      , trfstUniq           	:: !UID
-      , trfstExtra				:: extra
+      { trfstMod    			:: !mod							-- ^ most recent transformed module
+      , trfstModStages			:: [(String,Maybe mod,ErrL)]	-- ^ intermediate stages with errors, if dumping also with module
+      , trfstUniq           	:: !UID							-- ^ unique counter, threaded in/out
+      , trfstExtra				:: extra						-- ^ optional extension of state info
       }
 
 mkEmptyTrfState :: mod -> extra -> TrfState mod extra
@@ -89,15 +91,15 @@ liftTrfModPlain os nm t
   = liftTrfWithExtraInfo os nm (flip const) (\_ c -> (Just $ t c,(),[]))
 %%]
 
-%%[(8 codegen) export(liftTrfCheck)
+%%[(8 codegen) export(liftCheckMod)
 -- | Only check
-liftTrfCheck
+liftCheckMod
   :: (MonadState (TrfState mod extra) m, MonadReader TrfReader m) =>
      [OptimizationScope]								-- ^ only when in this optimization scope
      -> String											-- ^ name of trf
      -> (TrfState mod extra -> mod -> ErrL)				-- ^ check
      -> m ()
-liftTrfCheck os nm t
+liftCheckMod os nm t
   = liftTrfWithExtraInfo os nm (flip const) (\s c -> let e = t s c in (Nothing,(),e))
 %%]
 
@@ -154,6 +156,7 @@ liftTrfWithExtraInfo os nm update2 t = do
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(modifyGets)
+-- | Combi of modify and get: modify and also return newly set value. TBD 20140409: get rid of this...?
 modifyGets :: MonadState s m => (s -> (a,s)) -> m a
 modifyGets update
   = do { s <- get

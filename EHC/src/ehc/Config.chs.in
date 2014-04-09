@@ -308,3 +308,7 @@ suffixJavaScriptLib :: String
 suffixJavaScriptLib = filter (/= '.') "@SUFFIX_LIBJS@"
 %%]
 
+%%[(8 codegen cmm) export(suffixCmmLib)
+suffixCmmLib :: String
+suffixCmmLib = filter (/= '.') ".cmm"
+%%]

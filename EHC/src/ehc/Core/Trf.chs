@@ -70,32 +70,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(TrfCore(..),emptyTrfCore)
-{-
-data TrfCore
-  = TrfCore
-      { trfcoreCore             :: !CModule
-      , trfcoreCoreStages       :: [(String,Maybe CModule,ErrL)]
-      , trfcoreUniq             :: !UID
-      , trfcoreInhLamMp         :: LamMp        -- from context, possibly overridden from gathered one
-      , trfcoreGathLamMp        :: !LamMp       -- gathered anew
-%%[[50
-      , trfcoreExpNmOffMp       :: !HsName2FldMp
-%%]]
-%%[[99
-      , trfcoreExtraExports     :: !FvS             -- extra exported names, introduced by transformations
-%%]]
-      }
-
-emptyTrfCore :: TrfCore
-emptyTrfCore = TrfCore emptyCModule [] uidStart
-                       Map.empty Map.empty
-%%[[50
-                       Map.empty
-%%]]
-%%[[99
-                       Set.empty
-%%]]
--}
 type TrfCore = TrfState CModule TrfCoreExtra
 
 emptyTrfCore :: TrfCore
@@ -237,7 +211,7 @@ trfCore opts optimScope dataGam modNm trfcore
         -- actual transformations
         t_initial       = liftTrfModPlain  osmw "initial"            $ id
 %%[[(8 coresysf)
-        t_sysf_check    = liftTrfCheck  osm "sysf-type-check"  $ \s -> cmodSysfCheck opts (emptyCheckEnv {cenvLamMp = trfcoreInhLamMp $ trfstExtra s})
+        t_sysf_check    = liftCheckMod  osm "sysf-type-check"  $ \s -> cmodSysfCheck opts (emptyCheckEnv {cenvLamMp = trfcoreInhLamMp $ trfstExtra s})
 %%]]
         t_eta_red       = liftTrfModPlain  osm "eta-red"            $ cmodTrfEtaRed
         t_erase_ty      = liftTrfModWithStateExtra osm "erase-ty" lamMpPropagate
