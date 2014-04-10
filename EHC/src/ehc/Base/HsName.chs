@@ -284,6 +284,11 @@ data HsName
   deriving (Eq,Ord)
 %%]
 
+%%[1 export(hsnEmpty)
+hsnEmpty :: HsName
+hsnEmpty = mkHNm ""
+%%]
+
 %%[1111 export(hsnIsEmpty)
 hsnIsEmpty (HsName_Base s) = null s
 %%[[7
@@ -595,24 +600,38 @@ hsnMapQualified f qn
 -}
 %%]
 
-%%[50 export(hsnQualifier,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
+%%[8 export(hsnQualifier,hsnSetQual,hsnIsQual)
 -- qualifier (i.e. module name) of name
 hsnQualifier :: HsName -> Maybe HsName
+%%[[8
+hsnQualifier = \_ -> Nothing
+%%][50
 hsnQualifier = fst . hsnSplitQualify
+%%]]
 
 -- replace/set qualifier
 hsnSetQual :: HsName -> HsName -> HsName
+%%[[8
+hsnSetQual _ = id
+%%][50
 hsnSetQual m = hsnPrefixQual m . hsnQualified
+%%]]
 
+-- is qualified?
+hsnIsQual :: HsName -> Bool
+%%[[8
+hsnIsQual = \_ -> False
+%%][50
+hsnIsQual = isJust . hsnQualifier
+%%]]
+%%]
+
+%%[50 export(hsnMapQual,hsnSetLevQual)
 hsnMapQual :: (HsName -> HsName) -> HsName -> HsName
 hsnMapQual f qn
   = case hsnSplitQualify qn of
       (Nothing,n) -> qn
       (Just q ,n) -> hsnSetQual (f q) n
-
--- is qualified?
-hsnIsQual :: HsName -> Bool
-hsnIsQual = isJust . hsnQualifier
 
 hsnSetLevQual :: Int -> HsName -> HsName -> HsName
 hsnSetLevQual 0 m n = hsnSetQual m n

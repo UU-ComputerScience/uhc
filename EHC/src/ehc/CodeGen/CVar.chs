@@ -114,11 +114,11 @@ instance (Show datafldref, Show tupfldref, Show varref) => PP (CVarInfo' tag ty 
 %%]
 
 %%[(8 codegen) hs export(cvarLoc,cvarArg)
--- | local reference
+-- | basic construction: local reference
 cvarLoc :: ty -> varref -> CVarInfo' tag ty varref datafldref tupfldref
 cvarLoc = CVar_Local
 
--- | argument reference
+-- | basic construction: argument reference
 cvarArg :: ty -> varref -> CVarInfo' tag ty varref datafldref tupfldref
 cvarArg = CVar_Arg
 %%]
@@ -178,6 +178,7 @@ cvarToDef
   :: ( HsName -> e                  	-- erroneous reference,
      , ty -> varref -> e        		-- local,
      , ty -> varref -> e        		-- arg,
+     , ty ->       HsName -> HsName -> e		-- global external, additionally getting a safe name variant
      , ty -> Maybe HsName -> HsName -> e		-- global internal, additionally getting a safe name variant
      , ty -> e -> taginfo -> datafldref -> e	-- data field,
      , ty -> e -> e						-- data constr tag,
@@ -192,13 +193,13 @@ cvarToDef
      -> e
 
 (cvarToDef, cvarToRef)
-  = ( \(mkErrorRef,mkLocal,mkArg,mkGlobalInt,mkDataFld,mkDataTag,mkTupFld,mkOffset,mkTag,mkSafeName)
+  = ( \(mkErrorRef,mkLocal,mkArg,mkGlobalExt,mkGlobalInt,mkDataFld,mkDataTag,mkTupFld,mkOffset,mkTag,mkSafeName)
         cfg cvarMp vi -> let ref vi
                                = case vi of
                                    CVar_This   t			-> panic "CVar.cvarToDef.CVar_This"
                                    CVar_Local   t o			-> mkLocal t o
                                    CVar_Arg   	t o			-> mkArg t o
-                                   CVar_GlobalExtern  t m f	-> panic "CVar.cvarToDef.CVar_GlobalExtern"
+                                   CVar_GlobalExtern  t m f	-> mkGlEx mkGlobalExt cfg mkSafeName t m f
                                    CVar_GlobalIntern  t m f	-> mkGlIn mkGlobalInt cfg mkSafeName t m f
                                    CVar_DataFld t cvid cl f	-> mkDtFl ref cfg mkDataFld mkTag t cvid cl f
                                    CVar_DataTag t cvid		-> mkDtTg ref mkDataTag t cvid
@@ -250,6 +251,7 @@ cvarToDefHsName
       ( \r -> mkError $ "cvarToDefHsName.mkErrorRef: " ++ show r
       , mkLocArg
       , mkLocArg
+      , \_ _ r -> r
       , \_ _ r -> r
       , \_ _ _ r -> mkDataFld r
       , \_ _ -> mkError "cannot cvarToDefHsName.mkDataTag"

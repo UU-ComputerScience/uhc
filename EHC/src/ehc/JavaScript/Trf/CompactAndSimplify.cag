@@ -35,8 +35,8 @@ PRAGMA nocycle
 %%[(8 javascript) hs export(jsmodTrfCompactAndSimplify)
 jsmodTrfCompactAndSimplify :: JavaScriptModule -> JavaScriptModule
 jsmodTrfCompactAndSimplify cmod
-  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
-     in   trf_Syn_AGItf t
+  = trf_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

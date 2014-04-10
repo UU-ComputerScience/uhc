@@ -23,6 +23,8 @@
 WRAPPER AGItf
 %%]
 
+%%[(8 codegen cmm) ag import({Cmm/CommonNm})
+%%]
 
 %%[(8 codegen cmm)
 %%]
@@ -35,15 +37,51 @@ PRAGMA nocycle
 %%[(8 codegen cmm) hs export(cmmModTrfSimplifyLocalNames)
 cmmModTrfSimplifyLocalNames :: Module -> Module
 cmmModTrfSimplifyLocalNames cmmmod
-  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmmmod)) Inh_AGItf
-     in   trf_Syn_AGItf t
+  = trf_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmmmod)) Inh_AGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hooks provided to Cmm/CommonNm
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm) hs
+-- | Type of info bound to a name
+type NmInfo = CVarInfo
+%%]
+
+%%[(8 cmm) hs import({%{EH}Gam},{%{EH}Base.Common} hiding (Range),{%{EH}CodeGen.CVar})
+%%]
+
+%%[(8 cmm) ag
+SEM Import
+  | Imp			loc		.	nmInfo		=	@cvar
+
+SEM Decl
+  | Const		loc		.	nmInfo		=	@cvar
+
+SEM RegNmInit
+  | NmInit		loc		.	nmInfo		=	@cvar
+
+SEM Proc
+  | Proc		loc		.	nmInfo		=	@cvar
+
+SEM Formal
+  | Formal		loc		.	nmInfo		=	@cvar
+
+SEM Stmt
+  | Alloc Box UnBox
+  				loc		.	nmInfo		=	@cvar
+
+SEM Datum
+  | Nm			loc		.	nmInfo		=	@cvar
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm)
+%%[(8 codegen cmm) ag
 ATTR AllNT [ | | trf: SELF ]
 ATTR AGItf [ | | trf: Module ]
 %%]

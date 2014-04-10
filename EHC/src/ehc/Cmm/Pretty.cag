@@ -70,7 +70,7 @@ SEM Section
 %%[(8 cmm)
 SEM Decl
   | Import      lhs     .   pp      =   semic $ "import" >#< 
-                                            (let ns = ppCommas' @imports.ppL
+                                            (let ns = ppCommas' @imported.ppL
                                              in  case @mbFromNm of
                                                     Nothing -> ns
                                                     Just fr -> "module" >#< fr >|< ppParens ns
@@ -308,6 +308,9 @@ SEM Ty
   -- C types
   -- | Struct			flds			: StructFldL
   -- | Ptr				ty				: Ty
+  
+  -- unknown
+  | None		lhs		.	pp		=	pp "?ty?"
 %%]
 
 StructFld

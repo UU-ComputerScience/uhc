@@ -17,7 +17,7 @@ C subset, modelled after C--
 %%[(8 codegen cmm) hs import(UHC.Util.Utils)
 %%]
 
-%%[(8 codegen cmm) hs import(qualified Data.Map as Map, qualified UHC.Util.FastSeq as Seq)
+%%[(8 codegen cmm) hs import(qualified Data.Map as Map, Data.Maybe, qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[(8 codegen cmm) hs import(qualified {%{EH}Config} as Cfg)
 %%]
@@ -103,21 +103,46 @@ instance Show ConstKind where
   show Const_SSA			= "ssa"
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CVar instantiation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(8 codegen cmm) hs export(CVarInfo, CVarMp)
 type CVarInfo = CVarInfo' Tag Ty Fld Nm Int
 type CVarMp   = CVarMp'   Tag Ty Fld Nm Int
+%%]
+
+%%[(8 codegen cmm) hs export(cvarToHsName)
+cvarToHsName :: CVarInfo -> HsName
+cvarToHsName 
+  = cvarToDef
+      ( \r -> mkHNm $ "cvarToDefHsName.mkErrorRef: " ++ show r
+      , \_ -> mkHNm
+      , \_ -> mkHNm
+      , \_ -> hsnSetQual
+      , \_ -> maybe id hsnSetQual
+      , \_ d _ f -> hsnSetQual d f -- mkHNm "cvarToHsName.mkDataFld"
+      , \_ _ -> mkHNm "cvarToHsName.mkDataTag"
+      , \_ _ -> mkHNm "cvarToHsName.mkTupFld"
+      , \_ -> mkHNm "cvarToHsName.mkOffset"
+      , \_ _ -> panic "cvarToHsName.mkTag"
+      , \_ _ r -> r
+      ) emptyCVarNmModuleCfg Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Cmm types (only temporary place holders)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(tyNd, tyFn, tyStr8, tyInt)
+%%[(8 codegen cmm) hs export(tyNd, tyFn, tyStr8, tyInt, tyNone)
 mkTy :: String -> Ty
 mkTy = Ty_Nm . mkHNm
 
 tyNd :: Ty
 tyNd = mkTy "Nd"
+
+tyNone :: Ty
+tyNone = Ty_None
 
 tyFn :: Ty
 tyFn = mkTy "Fn"
@@ -127,6 +152,21 @@ tyStr8 = mkTy "Str8"
 
 tyInt :: Ty
 tyInt = Ty_Bits Bits_Word
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: CVar
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) hs export(cvargext,cvarloc)
+-- | basic construction: global external reference
+cvargext :: Ty -> Nm -> CVarInfo
+cvargext ty nm = CVar_GlobalExtern ty (fromMaybe hsnEmpty $ hsnQualifier nm) (hsnQualified nm)
+
+-- | basic construction: local reference
+cvarloc :: Ty -> Nm -> CVarInfo
+cvarloc ty nm = cvarLoc ty (mkFldNm nm)
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

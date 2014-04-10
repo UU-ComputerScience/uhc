@@ -41,12 +41,14 @@ DATA Section
   -- 					sections		: SectionL
 
 TYPE SectionL		= [Section]
+
+SET AllSection		= Section SectionL
 %%]
 
 %%[(8 cmm)
 DATA Decl
   | Import			mbFromNm		: {Maybe Nm}
-  					imports			: ImportL
+  					imported		: ImportL
   | Export			exports			: ExportL
   | Const			ckind			: ConstKind
   					mbTy			: MbTy
@@ -65,6 +67,8 @@ DATA Decl
   | Comment			str				: String
 
 TYPE DeclL			= [Decl]
+
+SET AllDecl			= Decl DeclL
 %%]
 
 %%[(8 cmm)
@@ -82,6 +86,8 @@ DATA Import
   					nm				: Nm
 
 TYPE ImportL		= [Import]
+
+SET AllImport		= Import ImportL
 
 DATA Export
   | Exp				cvar			: CVarInfo
@@ -135,10 +141,10 @@ SET AllRegs			= Regs AllRegNmInit
 
 %%[(8 cmm)
 SET AllTopNoMod		= AllTopLevel
-					  Section SectionL
-					  Decl DeclL
+					  AllSection
+					  AllDecl
 					  Target TargetL
-					  Import ImportL
+					  AllImport
 					  Export ExportL
 					  AllDatum
 					  AllInit
@@ -161,7 +167,8 @@ DATA Body
 
 TYPE MbBody			= MAYBE Body
 
-SET AllBody			= BodyDecl BodyDeclL
+SET AllBodyL		= BodyDecl BodyDeclL
+SET AllBody			= AllBodyL
 					  Body MbBody
 					  AllDatum
 %%]
@@ -199,6 +206,10 @@ DATA Actual
 
 TYPE ActualL		= [Actual]
 
+SET AllActual		= Actual ActualL
+%%]
+
+%%[(8 cmm)
 DATA Stmt
   | If				condExpr		: Expr
   					thenBody		: Body
@@ -243,7 +254,6 @@ DATA Stmt
   | UnBox			cvar			: CVarInfo
   					boxing			: Boxing
   					expr			: Expr
-
 %%]
 
 %%[(8 cmm)
@@ -334,7 +344,7 @@ SET	AllStmt			= AllBody
  					  Proc
 					  Conv MbConv
 					  AllFormal
-					  Actual ActualL
+					  AllActual
 					  RetCont MbRetCont
 					  AllKindName
 					  AllArm
@@ -593,6 +603,9 @@ DATA Ty
   -- C types
   | Struct			flds			: StructFldL
   -- | Ptr				ty				: Ty
+  
+  -- unknown
+  | None
 
 TYPE MbTy			= MAYBE Ty
 

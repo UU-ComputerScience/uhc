@@ -1,0 +1,161 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common attribution for names being introduced/used
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hooks to be provided by the user of this file, copy and adapt to your needs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm) hs
+{-
+-- | Type of info bound to a name
+type NmInfo = ...
+-}
+%%]
+
+%%[(8 cmm) hs import({%{EH}Gam},{%{EH}Base.Common} hiding (Range),{%{EH}CodeGen.CVar})
+%%]
+
+%%[(8 cmm) ag
+{-
+SEM Import
+  | Imp			loc		.	nmInfo		=	...
+
+SEM Decl
+  | Const		loc		.	nmInfo		=	...
+
+SEM RegNmInit
+  | NmInit		loc		.	nmInfo		=	...
+
+SEM Proc
+  | Proc		loc		.	nmInfo		=	...
+
+SEM Formal
+  | Formal		loc		.	nmInfo		=	...
+
+SEM Stmt
+  | Alloc Box UnBox
+  				loc		.	nmInfo		=	...
+
+SEM Datum
+  | Nm			loc		.	nmInfo		=	...
+
+-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name gathering: introductions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm) hs
+type NmEnv = Gam Nm NmInfo
+%%]
+
+%%[(8 cmm) ag
+ATTR
+  AllTopLevel AllDecl AllSection Proc AllImport AllRegs AllFormal AllDatum
+    [ | | nmEnvGath USE {`gamUnion`} {emptyGam} : NmEnv ]
+%%]
+
+%%[(8 cmm) ag
+SEM Import
+  | Imp         loc     .	envnm		=	maybe id hsnSetQual @lhs.mbFromNm @nm
+  						.	cvar		=	cvargext (maybe tyNone id @mbTy.self) @envnm
+
+SEM Decl
+  | Const		loc		.	envnm		=	cvarToHsName @cvar
+
+SEM RegNmInit
+  | NmInit		loc		.	envnm		=	cvarToHsName @cvar
+
+SEM Proc
+  | Proc		loc		.	envnm		=	cvarToHsName @cvar
+
+SEM Formal
+  | Formal		loc		.	envnm		=	cvarToHsName @cvar
+
+SEM Stmt
+  | Alloc Box UnBox
+  				loc		.	envnm		=	cvarToHsName @cvar
+
+SEM Datum
+  | Nm			loc		.	envnm		=	@nm
+  						.	cvar		=	cvarloc tyNone @envnm		-- TBD: sort type out
+
+%%]
+
+%%[(8 cmm) ag
+SEM Import
+  | Imp         loc     .   nmEnvGath   =   gamSingleton @envnm @nmInfo
+
+SEM Decl
+  | Const		loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+
+SEM RegNmInit
+  | NmInit		loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+
+SEM Proc
+  | Proc		loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+
+SEM Formal
+  | Formal		loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+
+SEM Stmt
+  | Alloc Box UnBox
+  				loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+
+SEM Datum
+  | Nm			loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+%%]
+
+%%[(8 cmm) ag
+ATTR AllImport [ mbFromNm: {Maybe Nm} | | ]
+
+SEM Decl
+  | Import      imported.   mbFromNm    =   @mbFromNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name distribution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm) ag
+ATTR
+  AllNTNoMod
+  - AllBodyL AllStmtTop
+    [ nmEnv: NmEnv | | ]
+ATTR
+  AllBodyL AllStmtTop
+    [ | nmEnv: NmEnv | ]
+%%]
+
+%%[(8 cmm) ag
+SEM Module
+  | Mod         loc     .   nmEnv       =   @decls.nmEnvGath
+
+SEM Proc
+  | Proc        body    .   nmEnv       =   gamPushGam @formals.nmEnvGath @lhs.nmEnv
+
+SEM BodyDecl
+  | Decl        lhs     .   nmEnv       =   gamPushGam @decl.nmEnvGath @lhs.nmEnv
+  | StackDecl	lhs     .   nmEnv       =   gamPushGam @datums.nmEnvGath @lhs.nmEnv
+
+SEM Stmt
+  | Alloc Box UnBox
+  				lhs     .   nmEnv       =   gamPushGam @nmEnvGath @lhs.nmEnv
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name reference
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm) ag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Self replica
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 cmm) ag
+ATTR AllTy [ | | self: SELF ]
+%%]
