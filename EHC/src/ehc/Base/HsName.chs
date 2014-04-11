@@ -217,6 +217,12 @@ hsnUniqifyEval :: HsName -> HsName
 hsnUniqifyEval = hsnUniqify HsNameUniqifier_Evaluated
 %%]
 
+%%[8 export(hsnStripUniqify)
+-- | Remove uniqification
+hsnStripUniqify :: HsName -> HsName
+hsnStripUniqify n = n {hsnUniqifiers = Map.empty}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell names: hashing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
