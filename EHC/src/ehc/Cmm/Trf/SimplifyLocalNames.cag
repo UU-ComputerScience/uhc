@@ -46,8 +46,16 @@ cmmModTrfSimplifyLocalNames cmmmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 cmm) hs
-cvarSimplify (CVar_Local {cvarOffset=n}) = hsnStripUniqify n
 %%]
+-- | Simplify a cvar, only if not yet defined elsewhere
+cvarSimplify :: NmEnv -> HsName -> CVarInfo -> (CVarInfo, NmEnv)
+cvarSimplify env nm cvar
+  = case gamLookup nm env of
+      Just _ -> (cvar,env)
+      _      -> case simp cvar of
+        Just sv -> (sv, gamAdd (cvarOffset sv) sv env)
+  where simp cv@(CVar_Local {cvarOffset=n}) = Just $ cv {cvarOffset = hsnStripUniqify n}
+        simp cv                             = Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Hooks provided to Cmm/CommonNm
