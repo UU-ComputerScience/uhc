@@ -123,7 +123,12 @@ cvarArg :: ty -> varref -> CVarInfo' tag ty varref datafldref tupfldref
 cvarArg = CVar_Arg
 %%]
 
-%%[(8 codegen) hs export(cvarIsGlobExt)
+%%[(8 codegen) hs export(cvarIsLocOrArg, cvarIsGlobExt)
+-- | Is a CVar_Local or Arg?
+cvarIsLocOrArg (CVar_Local {}) = True
+cvarIsLocOrArg (CVar_Arg   {}) = True
+cvarIsLocOrArg _               = False
+
 -- | Is a CVar_GlobalExtern?
 cvarIsGlobExt (CVar_GlobalExtern {}) = True
 cvarIsGlobExt _                      = False

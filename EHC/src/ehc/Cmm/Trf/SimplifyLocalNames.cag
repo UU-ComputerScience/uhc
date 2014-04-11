@@ -16,7 +16,7 @@
 %%[(8 codegen cmm) hs import(UHC.Util.Utils)
 %%]
 
-%%[(8 codegen cmm) hs import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen cmm) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Control.Monad.State)
 %%]
 
 %%[(8 codegen cmm).WRAPPER ag import({Cmm/AbsSyn})
@@ -46,16 +46,24 @@ cmmModTrfSimplifyLocalNames cmmmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 cmm) hs
+-- | Simplify a cvar, only if not yet defined elsewhere
+cvarSimplifyM :: HsName -> CVarInfo -> State NmEnv CVarInfo
+cvarSimplifyM nm cvar = do
+    env <- get
+    let simpnm = hsnStripUniqify $ hsnQualified nm
+    case envLookup simpnm env of
+      Nothing | cvarIsLocOrArg cvar -> do
+           let simpcvar = cvar {cvarOffset = fldMapNm (const simpnm) $ cvarOffset cvar}
+           put $ envAdd simpnm simpcvar $ envAlter (const $ Just simpcvar) nm env
+           return simpcvar
+      _ -> return cvar
 %%]
+
+%%[(8 cmm) hs
 -- | Simplify a cvar, only if not yet defined elsewhere
 cvarSimplify :: NmEnv -> HsName -> CVarInfo -> (CVarInfo, NmEnv)
-cvarSimplify env nm cvar
-  = case gamLookup nm env of
-      Just _ -> (cvar,env)
-      _      -> case simp cvar of
-        Just sv -> (sv, gamAdd (cvarOffset sv) sv env)
-  where simp cv@(CVar_Local {cvarOffset=n}) = Just $ cv {cvarOffset = hsnStripUniqify n}
-        simp cv                             = Nothing
+cvarSimplify env nm cvar = runState (cvarSimplifyM nm cvar) env
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Hooks provided to Cmm/CommonNm
@@ -66,7 +74,28 @@ cvarSimplify env nm cvar
 type NmInfo = CVarInfo
 %%]
 
-%%[(8 cmm) hs import({%{EH}Gam},{%{EH}Base.Common} hiding (Range),{%{EH}CodeGen.CVar})
+%%[(8 cmm) hs
+-- | Type synonym and functions for env
+type Env k v = Map.Map k v
+
+-- required, following Data.Map
+emptyEnv				= Map.empty
+envSingleton 	k v   	= Map.singleton k v
+envAdd 			k v e 	= Map.insert k v e
+envUnion 		e1 e2 	= Map.union e1 e2
+envAddEnv 		e1 e2 	= envUnion e1 e2
+envLookup 		k e   	= Map.lookup k e
+envToList		e		= Map.toList e
+envFromList		l		= Map.fromList l
+-- required, additional functionality not existing in Data.Map
+envPushEnv 		e1 e2 	= envUnion e1 e2
+envPush    		k v e 	= envAdd k v e
+
+-- optional
+envAlter		f k e	= Map.alter f k e
+%%]
+
+%%[(8 cmm) hs import({%{EH}Base.Common} hiding (Range),{%{EH}CodeGen.CVar})
 %%]
 
 %%[(8 cmm) ag
@@ -83,7 +112,8 @@ SEM Proc
   | Proc		loc		.	nmInfo		=	@cvar
 
 SEM Formal
-  | Formal		loc		.	nmInfo		=	@cvar
+  -- | Formal		loc		.	nmInfo		=	@cvar
+  | Formal		(loc.nmInfo,lhs.nmEnv)	:=	cvarSimplify @lhs.nmEnv @envnm @cvar
 
 SEM Stmt
   | Alloc Box UnBox
@@ -94,11 +124,30 @@ SEM Datum
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering, overriding defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen cmm) ag
+SEM Proc
+  | Proc        loc     .   nmEnvGathNew:=  emptyEnv
+                body    .   nmEnv       :=  @formals.nmEnv
+%%]
+SEM Proc
+  | Proc        loc     .   nmEnvNew    :=  flip execState @nmEnvOld $ forM (envToList @nmEnvGathNew) $ uncurry cvarSimplifyM
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen cmm) ag
 ATTR AllNT [ | | trf: SELF ]
 ATTR AGItf [ | | trf: Module ]
+
+SEM Formal
+  | Formal		lhs		.	trf			=	@trf {cvar_Formal_Formal = @nmInfo}
+
+SEM Expr
+  | CVar		lhs		.	trf			=	maybe @trf (\i -> @trf {cvar_Expr_CVar = i}) @mbNmInfo
+  | Nm  		lhs		.	trf			=	maybe @trf (\i -> @trf {nm_Expr_Nm = cvarToHsName i}) @mbNmInfo
 %%]
 

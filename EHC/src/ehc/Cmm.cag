@@ -158,7 +158,7 @@ tyInt = Ty_Bits Bits_Word
 %%% Constructing: CVar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs export(cvargext,cvarloc)
+%%[(8 codegen cmm) hs export(cvargext,cvarloc, cvararg', cvararg)
 -- | basic construction: global external reference
 cvargext :: Ty -> Nm -> CVarInfo
 cvargext ty nm = CVar_GlobalExtern ty (fromMaybe hsnEmpty $ hsnQualifier nm) (hsnQualified nm)
@@ -166,6 +166,15 @@ cvargext ty nm = CVar_GlobalExtern ty (fromMaybe hsnEmpty $ hsnQualifier nm) (hs
 -- | basic construction: local reference
 cvarloc :: Ty -> Nm -> CVarInfo
 cvarloc ty nm = cvarLoc ty (mkFldNm nm)
+
+-- | basic construction: arg reference
+cvararg' :: Ty -> Fld -> CVarInfo
+cvararg' ty nm = cvarArg ty nm
+{-# INLINE cvararg' #-}
+
+-- | basic construction: arg reference
+cvararg :: Ty -> Nm -> CVarInfo
+cvararg ty nm = cvararg' ty (mkFldNm nm)
 
 %%]
 

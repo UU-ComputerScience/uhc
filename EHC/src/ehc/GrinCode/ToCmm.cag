@@ -260,7 +260,7 @@ SEM GrExpr
 
 %%[(8 codegen grin cmm)
 SEM GrBind
-  | Bind        loc         .	argNmCVarL		=	patNmL2CVarMp'' (cvarArg Cmm.tyNd) (VA.patNmL2DepL id id @argNmL)
+  | Bind        loc         .	argNmCVarL		=	patNmL2CVarMp'' (Cmm.cvararg' Cmm.tyNd) (VA.patNmL2DepL id id @argNmL)
   							.   newCVarMp       =   Map.fromList @argNmCVarL
   				lhs			.	newCVarMp		=	Map.fromList [(@nm, @cvar)]
 

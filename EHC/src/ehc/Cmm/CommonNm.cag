@@ -13,32 +13,55 @@ type NmInfo = ...
 -}
 %%]
 
-%%[(8 cmm) hs import({%{EH}Gam},{%{EH}Base.Common} hiding (Range),{%{EH}CodeGen.CVar})
+%%[(8 cmm) hs
+{-
+-- | Type synonym and functions for env, following interface of Data.Map
+type Env k v = ...
+
+-- required, following Data.Map
+emptyEnv                = ...
+envSingleton    k v     = ...
+envAdd          k v e   = ...
+envUnion        e1 e2   = ...
+envAddEnv       e1 e2   = ...
+envLookup       k e     = ...
+envToList		e		= ...
+envFromList		l		= ...
+-- required, additional functionality not existing in Data.Map
+envPushEnv      e1 e2   = ...
+envPush    		k v e 	= ...
+
+-- optional (not used here)
+envAlter        f k e   = ...
+-}
+%%]
+
+%%[(8 cmm) hs import({%{EH}Base.Common} hiding (Range),{%{EH}CodeGen.CVar})
 %%]
 
 %%[(8 cmm) ag
 {-
 SEM Import
-  | Imp			loc		.	nmInfo		=	...
+  | Imp         loc     .   nmInfo      =   ...
 
 SEM Decl
-  | Const		loc		.	nmInfo		=	...
+  | Const       loc     .   nmInfo      =   ...
 
 SEM RegNmInit
-  | NmInit		loc		.	nmInfo		=	...
+  | NmInit      loc     .   nmInfo      =   ...
 
 SEM Proc
-  | Proc		loc		.	nmInfo		=	...
+  | Proc        loc     .   nmInfo      =   ...
 
 SEM Formal
-  | Formal		loc		.	nmInfo		=	...
+  | Formal      loc     .   nmInfo      =   ...
 
 SEM Stmt
   | Alloc Box UnBox
-  				loc		.	nmInfo		=	...
+                loc     .   nmInfo      =   ...
 
 SEM Datum
-  | Nm			loc		.	nmInfo		=	...
+  | Nm          loc     .   nmInfo      =   ...
 
 -}
 %%]
@@ -48,64 +71,64 @@ SEM Datum
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 cmm) hs
-type NmEnv = Gam Nm NmInfo
+type NmEnv = Env Nm NmInfo
 %%]
 
 %%[(8 cmm) ag
 ATTR
   AllTopLevel AllDecl AllSection Proc AllImport AllRegs AllFormal AllDatum
-    [ | | nmEnvGath USE {`gamUnion`} {emptyGam} : NmEnv ]
+    [ | | nmEnvGath USE {`envUnion`} {emptyEnv} : NmEnv ]
 %%]
 
 %%[(8 cmm) ag
 SEM Import
-  | Imp         loc     .	envnm		=	maybe id hsnSetQual @lhs.mbFromNm @nm
-  						.	cvar		=	cvargext (maybe tyNone id @mbTy.self) @envnm
+  | Imp         loc     .   envnm       =   maybe id hsnSetQual @lhs.mbFromNm @nm
+                        .   cvar        =   cvargext (maybe tyNone id @mbTy.self) @envnm
 
 SEM Decl
-  | Const		loc		.	envnm		=	cvarToHsName @cvar
+  | Const       loc     .   envnm       =   cvarToHsName @cvar
 
 SEM RegNmInit
-  | NmInit		loc		.	envnm		=	cvarToHsName @cvar
+  | NmInit      loc     .   envnm       =   cvarToHsName @cvar
 
 SEM Proc
-  | Proc		loc		.	envnm		=	cvarToHsName @cvar
+  | Proc        loc     .   envnm       =   cvarToHsName @cvar
 
 SEM Formal
-  | Formal		loc		.	envnm		=	cvarToHsName @cvar
+  | Formal      loc     .   envnm       =   cvarToHsName @cvar
 
 SEM Stmt
   | Alloc Box UnBox
-  				loc		.	envnm		=	cvarToHsName @cvar
+                loc     .   envnm       =   cvarToHsName @cvar
 
 SEM Datum
-  | Nm			loc		.	envnm		=	@nm
-  						.	cvar		=	cvarloc tyNone @envnm		-- TBD: sort type out
+  | Nm          loc     .   envnm       =   @nm
+                        .   cvar        =   cvarloc tyNone @envnm       -- TBD: sort type out
 
 %%]
 
 %%[(8 cmm) ag
 SEM Import
-  | Imp         loc     .   nmEnvGath   =   gamSingleton @envnm @nmInfo
+  | Imp         loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
 
 SEM Decl
-  | Const		loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+  | Const       loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
 
 SEM RegNmInit
-  | NmInit		loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+  | NmInit      loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
 
 SEM Proc
-  | Proc		loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+  | Proc        loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
 
 SEM Formal
-  | Formal		loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+  | Formal      loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
 
 SEM Stmt
   | Alloc Box UnBox
-  				loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+                loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
 
 SEM Datum
-  | Nm			loc		.	nmEnvGath   =   gamSingleton @envnm @nmInfo
+  | Nm          loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
 %%]
 
 %%[(8 cmm) ag
@@ -122,27 +145,47 @@ SEM Decl
 %%[(8 cmm) ag
 ATTR
   AllNTNoMod
-  - AllBodyL AllStmtTop
+  - AllBodyL AllStmtTop AllFormal
     [ nmEnv: NmEnv | | ]
 ATTR
-  AllBodyL AllStmtTop
+  AllBodyL AllStmtTop AllFormal
     [ | nmEnv: NmEnv | ]
 %%]
 
 %%[(8 cmm) ag
 SEM Module
-  | Mod         loc     .   nmEnv       =   @decls.nmEnvGath
+  | Mod         loc     .   nmEnvOld    =   @decls.nmEnvGath
+                        .   nmEnvNew    =   @nmEnvOld
+                        .   nmEnv       =   @nmEnvNew
+
+SEM Formal
+  | Formal      loc     .   nmEnvOld    =   @lhs.nmEnv
+                        .   nmEnvGathNew=   @nmEnvGath
+                        .   nmEnvNew    =   envPushEnv @nmEnvGathNew @nmEnvOld
+                lhs     .   nmEnv       =   @nmEnvNew
 
 SEM Proc
-  | Proc        body    .   nmEnv       =   gamPushGam @formals.nmEnvGath @lhs.nmEnv
+  | Proc        loc     .   nmEnvOld    =   @lhs.nmEnv
+                        .   nmEnvGathNew=   @formals.nmEnvGath
+                        .   nmEnvNew    =   envPushEnv @nmEnvGathNew @nmEnvOld
+                body    .   nmEnv       =   @nmEnvNew
 
 SEM BodyDecl
-  | Decl        lhs     .   nmEnv       =   gamAddGam @decl.nmEnvGath @lhs.nmEnv
-  | StackDecl	lhs     .   nmEnv       =   gamAddGam @datums.nmEnvGath @lhs.nmEnv
+  | Decl        loc     .   nmEnvOld    =   @lhs.nmEnv
+                        .   nmEnvGathNew=   @decl.nmEnvGath
+                        .   nmEnvNew    =   envAddEnv @nmEnvGathNew @nmEnvOld
+                lhs     .   nmEnv       =   @nmEnvNew
+  | StackDecl   loc     .   nmEnvOld    =   @lhs.nmEnv
+                        .   nmEnvGathNew=   @datums.nmEnvGath
+                        .   nmEnvNew    =   envAddEnv @nmEnvGathNew @nmEnvOld
+                lhs     .   nmEnv       =   @nmEnvNew
 
 SEM Stmt
   | Alloc Box UnBox
-  				lhs     .   nmEnv       =   gamAddGam @nmEnvGath @lhs.nmEnv
+                loc     .   nmEnvOld    =   @lhs.nmEnv
+                        .   nmEnvGathNew=   @nmEnvGath
+                        .   nmEnvNew    =   envAddEnv @nmEnvGathNew @nmEnvOld
+                lhs     .   nmEnv       =   @nmEnvNew
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -150,6 +193,11 @@ SEM Stmt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 cmm) ag
+SEM Expr
+  | CVar        loc     .   envnm       =   cvarToHsName @cvar
+                        .   mbNmInfo    =   envLookup @envnm @lhs.nmEnv
+  | Nm          loc     .   envnm       =   @nm
+                        .   mbNmInfo    =   envLookup @envnm @lhs.nmEnv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
