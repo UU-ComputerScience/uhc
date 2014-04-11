@@ -47,18 +47,18 @@ hsnProd                             =   hsnFromString . strProd
 hsnIsArrow, hsnIsProd               ::  HsName -> Bool
 hsnIsArrow      hsn                 =   hsn == hsnArrow
 
-hsnIsProd       n | isJust ms       = case fromJust ms of
+hsnIsProd       n | isJust ms       = case m of
                                         (',':_) -> True
                                         _       -> False
-                                    where ms = mbHNm n
+                                    where ms@(~(Just m)) = hsnMbBaseString n
 %%[[7
 hsnIsProd       _                   =   False
 %%]]
 
-hsnProdArity    n | isJust ms       = case fromJust ms of
+hsnProdArity    n | isJust ms       = case m of
                                         (_:ar) -> read ar
                                         _      -> 0
-                                    where ms = mbHNm n
+                                    where ms@(~(Just m)) = hsnMbBaseString n
 %%]
 
 %%[1 export(hsnIsWild)
@@ -114,29 +114,27 @@ hsnUn           nm                  =   strUn `hsnPrefix` nm
 %%[3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
 hsnIsUn                             =   maybe False (isPrefixOf strUn) . hsnMbBaseString
--- hsnIsUn         (HsName_Base s)     =   isPrefixOf strUn $ hsnHNmFldToString s
 %%]
 
 %%[5020 -3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
 hsnIsUn         hsn
   = case hsnInitLast hsn of
-      (_,n) | isJust ms -> isPrefixOf strUn $ fromJust ms
-                        where ms = mbHNm n
+      (_,n) | isJust ms -> isPrefixOf strUn m
+                        where ms@(~(Just m)) = hsnMbBaseString n
 %%]
 
 %%[3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         n                   =   maybe n (\(s,mk) -> mk $ drop (length strUn) s) $ hsnBaseUnpack n
--- hsnUnUn         (HsName_Base s)     =   hsnFromString $ drop (length strUn) $ hsnHNmFldToString s
 %%]
 
 %%[5020 -3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         hsn
   = case hsnInitLast hsn of
-      (ns,n) | isJust ms -> mkHNm (ns,hsnFromString $ drop (length strUn) $ fromJust ms)
-                         where ms = mbHNm n
+      (ns,n) | isJust ms -> mkHNm (ns,hsnFromString $ drop (length strUn) m)
+                         where ms@(~(Just m)) = hsnMbBaseString n
 %%]
 
 %%[7.hsnFldUpd export(hsnFldUpd)
@@ -192,10 +190,9 @@ constructorInitial '(' = True
 constructorInitial c   = isUpper c
 
 hsnIsConstructorName :: HsName -> Bool
-hsnIsConstructorName n | isJust ms = case fromJust ms of
-                                       (x:xs) -> constructorInitial x
-                                   where ms = mbHNm n
-hsnIsConstructorName (HsName_Pos n)= False
+hsnIsConstructorName n | isJust ms  = constructorInitial x
+                       | hsnIsPos n = False
+                                    where ms@(~(Just (~(x:xs)))) = hsnMbBaseString n
 %%]
 %%[50
 hsnIsConstructorName n             = hsnIsConstructorName (snd $ hsnInitLast n)

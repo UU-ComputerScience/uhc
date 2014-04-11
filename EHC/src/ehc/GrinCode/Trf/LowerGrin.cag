@@ -107,7 +107,7 @@ vsetLookup hptMap vset
      in if Set.null vset then AbsBottom else mconcat zs
 
 newNames :: HptMap -> Int -> HsName -> (Int, [HsName], HptItems)
-newNames hptMap uniq (HNmNr v _) 
+newNames hptMap uniq (HsName_Nr{-use: hsnMbNr-} v _) 
   = if v==0
     then (uniq, [], [])
     else let absval = getEnvVar hptMap v
@@ -121,11 +121,11 @@ newNames hptMap uniq (HNmNr v _)
              count   = 1 + maxlen
              uniq2   = uniq+count
              newNrs = [uniq .. uniq2-1]                                     
-         in  (uniq2, map (\n->HNmNr n OrigNone) newNrs, zip newNrs avs)    
+         in  (uniq2, map (\n->hsnMkNr n OrigNone) newNrs, zip newNrs avs)    
     
 
 isSingleVar :: HptMap -> HsName -> Bool
-isSingleVar hptMap (HNmNr nr _) 
+isSingleVar hptMap (HsName_Nr{-use: hsnMbNr-} nr _) 
   = case getEnvVar hptMap nr of
       AbsPtr  _     -> True
       AbsPtr0 _ _   -> True

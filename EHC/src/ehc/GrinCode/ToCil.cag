@@ -457,7 +457,7 @@ SEM GrVar
                        then Map.singleton @loc.varName (absPrimitiveType @nm @lhs.hptMap)
                        else Map.empty
       loc.varName    = hsnShowAlphanumeric @nm
-      loc.isReal     = case @nm of (HNmNr 0 _) -> False; _ -> True;
+      loc.isReal     = case @nm of (HsName_Nr{-use: hsnMbNr-} 0 _) -> False; _ -> True;
   | KnownTag
       lhs.cilLoad    = [pop]
       lhs.tyTag      = lookupTag @tag.self @lhs.grTagsMap
@@ -516,7 +516,7 @@ SEM GrPatLam
       lhs.cilCode    = [no @self]
   | * - VarNode Empty
       loc.varName    = hsnShowAlphanumeric @nm
-      loc.isReal     = case @nm of (HNmNr 0 _) -> False; _ -> True;
+      loc.isReal     = case @nm of (HsName_Nr{-use: hsnMbNr-} 0 _) -> False; _ -> True;
 
 
 SEM GrTag
@@ -616,10 +616,10 @@ loadVar :: DottedName -> Set HsName -> HsName -> Code
 loadVar className params nm = case Set.member nm params of
     True          -> [ldargN varName]
     False         -> case nm of
-      HNmNr _ (OrigGlobal _) -> [lglobal]
-      HNmNr _ (OrigFunc   _) -> error "Cannot load function"
-      HNmNr _ _              -> [ldlocN varName]
-      _                      -> error "Loading non-HNmNr variable"
+      HsName_Nr{-use: hsnMbNr-} _ (OrigGlobal _) -> [lglobal]
+      HsName_Nr{-use: hsnMbNr-} _ (OrigFunc   _) -> error "Cannot load function"
+      HsName_Nr{-use: hsnMbNr-} _ _              -> [ldlocN varName]
+      _                      -> error "Loading non-HsName_Nr{-use: hsnMbNr-} variable"
   where varName = hsnShowAlphanumeric nm
         lglobal = ldsfld Object "" className varName
 

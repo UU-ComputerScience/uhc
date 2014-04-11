@@ -2,29 +2,31 @@
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
-%%[(8 codegen grin) module {%{EH}GrinCode.Common}
+%%[(8 codegen grin wholeprogAnal) module {%{EH}GrinCode.Common}
 %%]
-%%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Data.Char(isDigit) )
+%%[(8 codegen grin wholeprogAnal) import( qualified Data.Map as Map, Data.Maybe, qualified Data.Set as Set, Data.Array, Data.Monoid, Data.Char(isDigit) )
 %%]
-%%[(8 codegen grin) import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
+%%[(8 codegen grin wholeprogAnal) import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
 %%]
-%%[(8 codegen grin) import( {%{EH}GrinCode} )
+%%[(8 codegen grin wholeprogAnal) import( {%{EH}GrinCode} )
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName, evaluateNr, evaluateArgNr)
+%%[(8 codegen grin wholeprogAnal) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName, evaluateNr, evaluateArgNr)
 
 wildcardNm = hsnFromString "_"
-wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
+wildcardNr = hsnMkNr 0 (OrigLocal wildcardNm)
 
 getNr :: HsName -> Int
-getNr (HNmNr i _)      = i
-getNr (HsName_Pos i)   = error $ "getNr tried on HNPos " ++ show i
+getNr n | isJust mi    = i
+        | isJust mp    = error $ "getNr tried on HNPos " ++ show p
+                       where mp@(~(Just p    )) = hsnMbPos n
+                             mi@(~(Just (i,_))) = hsnMbNr  n
 getNr a                = error $ "getNr tried on " ++ show a
 
 throwTag      =  GrTag_Fun (hsnFromString "rethrow")
@@ -35,15 +37,15 @@ hsnMainFullProg = hsnPrefix "fun0~" hsnMain
 hsnMainFullProg = hsnSuffix hsnMain "FullProg" -- should be: hsnUniqifyStr HsNameUniqifier_New "FullProg" hsnMain
 %%]]
 
-mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)
+mainNr     = hsnMkNr 1 (OrigFunc hsnMainFullProg)
 
-evaluateNr    = HNmNr 3 (OrigFunc (hsnFromString "evaluate"))
-evaluateArgNr = HNmNr 5 (OrigNone)
+evaluateNr    = hsnMkNr 3 (OrigFunc (hsnFromString "evaluate"))
+evaluateArgNr = hsnMkNr 5 (OrigNone)
 
 %%]
 
 
-%%[(8 codegen grin) export(tagArity)
+%%[(8 codegen grin wholeprogAnal) export(tagArity)
 
 tagArity :: GrTag -> Map.Map Int Int -> Int
 tagArity (GrTag_Fun       nm) arityMap = maybe (error ("Fun " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
@@ -61,10 +63,10 @@ tagArity t                    _        = error ("tagArity " ++ show t)
 %% Abstract interpretation domain %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(Variable, AbstractNodes(..), AbstractValue(..), AbstractCall, AbstractCallList)
+%%[(8 codegen grin wholeprogAnal) export(Variable, AbstractNodes(..), AbstractValue(..), AbstractCall, AbstractCallList)
 %%]
 
-%%[(8 codegen grin).AbstractValue
+%%[(8 codegen grin wholeprogAnal).AbstractValue
 
 type Variable = Int
 
@@ -194,7 +196,7 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(Equation(..), Equations, Limitation, Limitations, limitIntersect)
+%%[(8 codegen grin wholeprogAnal) export(Equation(..), Equations, Limitation, Limitations, limitIntersect)
 
 data Equation
   = IsBasic               Variable
@@ -223,7 +225,7 @@ type Limitations   = [Limitation]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[(8 codegen grin wholeprogAnal) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
 type HptMap  = Array Int AbstractValue
 
@@ -261,7 +263,7 @@ absFetchDirect a i  = case getEnvVar a i of
 
 
 absFetch :: HptMap -> HsName -> AbstractValue
-absFetch a (HNmNr i _) = case getEnvVar a i of
+absFetch a n | isJust mi = case getEnvVar a i of
                              AbsPtr  an       -> AbsNodes an
                              AbsPtr0 an vs    -> AbsNodes an
                              AbsPtr1 an vs    -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs))
@@ -270,6 +272,7 @@ absFetch a (HNmNr i _) = case getEnvVar a i of
                              AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
                              AbsNodes _     -> error $ "variable " ++ show i ++ " is a node variable"
+  where mi@(~(Just (i,_))) = hsnMbNr  n
 absFetch a x = error ("absFetch tried on " ++ show x)
 
 getTags av = case av of

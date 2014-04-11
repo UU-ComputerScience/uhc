@@ -1,8 +1,8 @@
 %%[doesWhat doclatex
 
 Each HsName in the program is numbered.
-This is done by replacing them with a HsName with constructor HNmNr.
-In a HNmNr, also the original name is retained, which can be useful later for prettyprinting.
+This is done by replacing them with a HsName with constructor HsName_Nr{-use: hsnMbNr-}.
+In a HsName_Nr{-use: hsnMbNr-}, also the original name is retained, which can be useful later for prettyprinting.
 
 After numbering a toplevel function binding, the unique number is incremented by 2,
 to reserve a variable number which can be used for analysing the type of an Exception
@@ -60,7 +60,7 @@ addList :: Int -> [HsName] -> (NameMapping, [HsName], Int)
 addList u xs = foldl addName (Map.empty, [], u) xs
     where
     addName (mapping, names, u) e | e == wildcardNm  = (mapping, names++[wildcardNr] , u  )
-                                  | otherwise        = let newname = HNmNr u (OrigLocal e)
+                                  | otherwise        = let newname = hsnMkNr u (OrigLocal e)
                                                        in (Map.insert e newname mapping, names++[newname], u+1)
                                               
 %%]
@@ -116,7 +116,7 @@ SEM GrVar
 
 SEM GrGlobal
   | Global     loc   .  newName  : HsName
-               loc   .  newName  = HNmNr @lhs.unique (OrigGlobal @nm)
+               loc   .  newName  = hsnMkNr @lhs.unique (OrigGlobal @nm)
                lhs   .  genVarMap  = Map.singleton @nm @newName
                lhs   .  unique   = @lhs.unique + 1
 
@@ -140,14 +140,14 @@ SEM GrPatLam
     PtrAnnot   lhs.genVarMap    = Map.singleton @nm @newName
                lhs.unique       = @lhs.unique + 1
                loc  .  newName  : HsName
-               loc  .  newName  = HNmNr @lhs.unique (OrigLocal @nm)
+               loc  .  newName  = hsnMkNr @lhs.unique (OrigLocal @nm)
                
 
 SEM GrExpr
   | Catch      handler  .  varMap   = Map.insert @arg @newName @lhs.varMap
                handler  .  unique   = @body.unique + 1
                loc      .  newName  : HsName
-               loc      .  newName  = HNmNr @body.unique (OrigLocal @arg)
+               loc      .  newName  = hsnMkNr @body.unique (OrigLocal @arg)
 
   | Seq        body     .  varMap   = @lhs.varMap `Map.union` @pat.genVarMap
 
@@ -158,7 +158,7 @@ SEM GrAlt
 
 
 SEM GrBind
-  | Bind  lhs.genBindMap =  Map.singleton @nm (HNmNr @lhs.unique (OrigFunc @nm))
+  | Bind  lhs.genBindMap =  Map.singleton @nm (hsnMkNr @lhs.unique (OrigFunc @nm))
                               
           ( loc.parameterMap
           , loc.newNames

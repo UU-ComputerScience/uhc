@@ -110,18 +110,18 @@ pTrack          =    (\x -> TrackVarApply x [])  <$> pDollNm     -- TODO: this i
 pMbDollNm :: CParser (Maybe HsName)
 pMbDollNm
   =  f <$> pDollNm
-    where f n | isJust ms && fromJust ms == "_"
+    where f n | isJust ms && m == "_"
                       = Nothing
-                      where ms = mbHNm n
+                      where ms@(~(Just m)) = hsnMbBaseString n
           f x         = Just x
 
 pManyDollNm :: CParser [HsName]
 pManyDollNm
   =  f <$> pList pDollNm
     where -- for backward compatibility with libraries created before 20090917
-          f [n] | isJust ms && fromJust ms == "_"
+          f [n] | isJust ms && m == "_"
                       = []
-                      where ms = mbHNm n
+                      where ms@(~(Just m)) = hsnMbBaseString n
           f ns        = ns
 
 

@@ -18,7 +18,9 @@ apply the Flatten transformation to re-establish the invariant.
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified UHC.Util.FastSeq as FastSeq)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common})
 %%]
 %%[(8 codegen grin).wrapper
 WRAPPER GrAGItf

@@ -137,12 +137,12 @@ SEM Proc
   | Proc        body    .   nmEnv       =   gamPushGam @formals.nmEnvGath @lhs.nmEnv
 
 SEM BodyDecl
-  | Decl        lhs     .   nmEnv       =   gamPushGam @decl.nmEnvGath @lhs.nmEnv
-  | StackDecl	lhs     .   nmEnv       =   gamPushGam @datums.nmEnvGath @lhs.nmEnv
+  | Decl        lhs     .   nmEnv       =   gamAddGam @decl.nmEnvGath @lhs.nmEnv
+  | StackDecl	lhs     .   nmEnv       =   gamAddGam @datums.nmEnvGath @lhs.nmEnv
 
 SEM Stmt
   | Alloc Box UnBox
-  				lhs     .   nmEnv       =   gamPushGam @nmEnvGath @lhs.nmEnv
+  				lhs     .   nmEnv       =   gamAddGam @nmEnvGath @lhs.nmEnv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -103,7 +103,7 @@ vsetLookup hptMap vset
 
 newName :: Int -> AbstractValue -> (Int,HptItems,HsName)
 newName unique av
-  =  let name = HNmNr unique OrigNone
+  =  let name = hsnMkNr unique OrigNone
          unique2 = unique+1
          entries = [(unique,av)]
      in (unique2, entries, name)
@@ -118,7 +118,7 @@ newName2 hptMap unique v
 newNames :: Int -> [AbstractValue] -> (Int,HptItems,[HsName])
 newNames unique avs
   =  let entries = zip [unique..] avs
-         names   = map (\e -> HNmNr (fst e) OrigNone) entries
+         names   = map (\e -> hsnMkNr (fst e) OrigNone) entries
          unique2 = unique + length avs
      in (unique2, entries, names)
 
@@ -262,7 +262,7 @@ buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
                         else -- handling exceptions below (currently not used)
                              let -- create some more new names
                                  (unique4, newItems4, [throwVar,catchVar]) = newNames unique3 [exceptAbsVal, resultAbsVal]
-                                 noVar      = HNmNr 0 OrigNone
+                                 noVar      = hsnMkNr 0 OrigNone
                                  noPat      = GrPatLam_Var noVar
                                  -- and wrap them for use in Grin
                                  throwVal   = GrVal_Var throwVar

@@ -295,7 +295,7 @@ SEM GrExpr
                                            fetches     =  take size $ map (\i -> GrExpr_FetchField newname i mbKnownTag) [start..]
                                            newuniq     =  @lhs.uniq + size
                                            numbers     =  [@lhs.uniq .. newuniq  - 1]
-                                           names       =  map (\n->HNmNr n OrigNone) numbers
+                                           names       =  map (\n->hsnMkNr n OrigNone) numbers
                                        in  ( newuniq
                                            , zip numbers (map (absFetchField @lhs.hptMap @nm) [start..])
                                            , buildSeqs (GrExpr_Unit node GrType_None) (zip names fetches) 
@@ -343,7 +343,7 @@ checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p) $
     
 
 isPtr hptMap p = case p of 
-                    (HNmNr i _) -> case getEnvVar hptMap i of
+                    (HsName_Nr{-use: hsnMbNr-} i _) -> case getEnvVar hptMap i of
                                      (AbsPtr  _    ) -> True
                                      (AbsPtr0 _ _  ) -> True
                                      (AbsPtr1 _ _  ) -> True
@@ -360,7 +360,7 @@ singleton _   = False
 
 specializeFetch :: GrTag -> (HsName, GrExpr) -> (Int, RenList, [(HsName, GrExpr)]) -> (Int, RenList, [(HsName, GrExpr)])
 specializeFetch tag (var, GrExpr_FetchField nm offset _) (u, renL, fetchesL)
-  = let newVar = HNmNr u OrigNone
+  = let newVar = hsnMkNr u OrigNone
     in ( u+1
        , (getNr var, newVar) : renL
        , (newVar, GrExpr_FetchField nm offset (Just tag)) : fetchesL

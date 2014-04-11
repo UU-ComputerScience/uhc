@@ -280,7 +280,7 @@ SEM Statement
   | Assignment
     Assignment2 loc . embedMap : EmbedMap
                 loc . embedMap = maybe @lhs.embedMap
-                                       (\name@(HNmNr nr _) -> if    Map.member nr @lhs.embedMap
+                                       (\name@(HsName_Nr{-use: hsnMbNr-} nr _) -> if    Map.member nr @lhs.embedMap
                                                               then  @lhs.embedMap
                                                               else  let -- newint = 1 + maxNeededLocal undefined @lhs.embedMap
                                                                         newint = 1 + maxNeededLocal @lhs.usedLater @lhs.embedMap
@@ -341,7 +341,7 @@ SEM Alternatives
 
 SEM Variable
   | Unembedded      lhs . localsSet = case @name of
-                                       HNmNr _ (OrigGlobal _) -> Set.empty
+                                       HsName_Nr{-use: hsnMbNr-} _ (OrigGlobal _) -> Set.empty
                                        _                      -> Set.singleton @name
   | *-Unembedded    lhs . localsSet = Set.empty
 
@@ -368,7 +368,7 @@ type EmbedFunction = HsName->Variable
 type EmbedStrategy = Variable -> Variable
 
 makeEmbedTupel :: (Int->HsName->Variable) -> Int -> HsName -> (Int,Variable)
-makeEmbedTupel constr k x@(HNmNr n _) = (n, constr k x)
+makeEmbedTupel constr k x@(HsName_Nr{-use: hsnMbNr-} n _) = (n, constr k x)
 
 strategyId :: EmbedStrategy
 strategyId v = v
@@ -378,7 +378,7 @@ strategyOnStack d (Variable_Local n _) = Variable_Subs Variable_SP (d-n)
 strategyOnStack d (Variable_Param n _) = Variable_Subs Variable_SP (d+n-1)
 
 embedUsing :: EmbedStrategy -> EmbedMap -> EmbedFunction
-embedUsing strat m x@(HNmNr n _) = if n==0
+embedUsing strat m x@(HsName_Nr{-use: hsnMbNr-} n _) = if n==0
                                    then Variable_None
                                    else maybe (Variable_Global x)
                                               strat

@@ -227,7 +227,7 @@ hsnHashWithSalt salt (HsName_Base s      ) = hashWithSalt salt s
 hsnHashWithSalt salt (HsName_UID  i      ) = hashWithSalt salt i
 hsnHashWithSalt salt (HsName_Pos  p      ) = hashWithSalt salt p
 hsnHashWithSalt salt (HsName_Modf _ q b u) = hashWithSalt salt q `hashWithSalt` hashWithSalt salt b `hashWithSalt` hashWithSalt salt (Map.toList u)
-hsnHashWithSalt salt (HNmNr i n          ) = i `hashWithSalt` hashWithSalt salt n
+hsnHashWithSalt salt (HsName_Nr i n      ) = i `hashWithSalt` hashWithSalt salt n
 
 instance Hashable HsName where
   hashWithSalt salt n@(HsName_Modf h _ _ _) | h /= 0 = h
@@ -263,7 +263,7 @@ hsnFixateHash n                       = n
 %%% Haskell names, datatype
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.HsName.type export(HsName(..))
+%%[1.HsName.type export(HsName)
 data HsName
   =   HsName_Base                   !String
   |   HsName_UID                    !UID
@@ -279,7 +279,7 @@ data HsName
   |   HsName_Pos                    !Int
 %%]]
 %%[[8
-  |   HNmNr                         !Int !OrigName
+  |   HsName_Nr                     !Int !OrigName
 %%]]
   deriving (Eq,Ord)
 %%]
@@ -298,6 +298,28 @@ hsnIsEmpty (HsName_Modf {hsnBase=b})
 hsnIsEmpty _               = False
 %%]
 
+%%[7 export(hsnMbPos, hsnIsPos)
+-- | Is HsName a HsName_Pos?
+hsnMbPos :: HsName -> Maybe Int
+hsnMbPos (HsName_Pos p) = Just p
+hsnMbPos _              = Nothing
+
+hsnIsPos :: HsName -> Bool
+hsnIsPos = isJust . hsnMbPos
+{-# INLINE hsnIsPos #-}
+%%]
+
+%%[8 export(hsnMbNr, hsnIsNr)
+-- | Is HsName a HsName_Pos?
+hsnMbNr :: HsName -> Maybe (Int,OrigName)
+hsnMbNr (HsName_Nr i o) = Just (i,o)
+hsnMbNr _               = Nothing
+
+hsnIsNr :: HsName -> Bool
+hsnIsNr = isJust . hsnMbNr
+{-# INLINE hsnIsNr #-}
+%%]
+
 %%[1
 -- | Smart constructor for HsName_Modf
 hsnMkModf :: [String] -> HsName -> HsNameUniqifierMp -> HsName
@@ -307,6 +329,13 @@ hsnMkModf = HsName_Modf 0
 hsnMkModf q b u = hsnFixateHash $ HsName_Modf 0 q b u
 %%]]
 {-# INLINE hsnMkModf #-}
+%%]
+
+%%[8 export(hsnMkNr)
+-- | Smart constructor for HsName_Nr
+hsnMkNr :: Int -> OrigName -> HsName
+hsnMkNr = HsName_Nr
+{-# INLINE hsnMkNr #-}
 %%]
 
 instance Eq HsName where
@@ -355,10 +384,16 @@ hsnBaseUnpack _                     = Nothing
 %%]]
 %%]
 
-%%[1 export(hsnMbBaseString,hsnBaseString)
+%%[1 export(hsnMbBaseString,hsnIsBaseString,hsnBaseString)
 -- | If name is a HsName_Base after some unpacking, return the base string, without qualifiers, without uniqifiers
 hsnMbBaseString :: HsName -> Maybe String
 hsnMbBaseString = fmap fst . hsnBaseUnpack
+{-# INLINE hsnMbBaseString #-}
+
+-- | Is name is a HsName_Base after some unpacking?
+hsnIsBaseString :: HsName -> Bool
+hsnIsBaseString = isJust . hsnMbBaseString
+{-# INLINE hsnIsBaseString #-}
 
 hsnBaseString :: HsName -> String
 hsnBaseString = maybe "??" id . hsnMbBaseString
@@ -384,7 +419,7 @@ cmpHsNameOnNm (HsName_Modf _ q1 b1 u1) (HsName_Modf _ q2 b2 u2) = compare (HsNam
 cmpHsNameOnNm n1                       n2                       = compare n1                        n2
 %%]
 
-%%[1 export(mbHNm)
+%%[1111 export(mbHNm)
 mbHNm :: HsName -> Maybe String
 mbHNm = hsnMbBaseString
 {-# INLINE mbHNm #-}
@@ -423,10 +458,10 @@ hsnShow _ _    _    (HsName_UID    i           )  = 'u' : show i
 hsnShow l qsep usep (HsName_Modf _ qs b us     )  = concat $ (intersperse qsep $ qs ++ [hsnShow l qsep usep b]) ++ showHsNameUniqifierMp' l usep us
 hsnShow _ _    _    (HsName_Pos    p           )  = show p
 %%[[8
-hsnShow _ _    _    (HNmNr n OrigNone        )  = "x_"        ++ show n
-hsnShow l _    usep (HNmNr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow l "." usep hsn
-hsnShow l _    usep (HNmNr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow l "." usep hsn
-hsnShow l _    usep (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow l "." usep hsn
+hsnShow _ _    _    (HsName_Nr n OrigNone        )  = "x_"        ++ show n
+hsnShow l _    usep (HsName_Nr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow l "." usep hsn
+hsnShow l _    usep (HsName_Nr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow l "." usep hsn
+hsnShow l _    usep (HsName_Nr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow l "." usep hsn
 %%]]
 %%]
 
@@ -525,17 +560,17 @@ dontStartWithDigit xs@(a:_) | isDigit a || a=='_' = "y"++xs
                             | otherwise           = xs
 
 hsnShowAlphanumericShort :: HsName -> String
-hsnShowAlphanumericShort (HNmNr n (OrigFunc   orig)) = hsnShowAlphanumeric orig
+hsnShowAlphanumericShort (HsName_Nr n (OrigFunc   orig)) = hsnShowAlphanumeric orig
 hsnShowAlphanumericShort x = hsnShowAlphanumeric x
 
 hsnShowAlphanumeric :: HsName -> String
 hsnShowAlphanumeric (HsName_Base s  )           = dontStartWithDigit(stringAlphanumeric s)
 hsnShowAlphanumeric (HsName_UID  i  )           = "u" ++ show i
 hsnShowAlphanumeric (HsName_Pos p)              = "y" ++ show p
-hsnShowAlphanumeric (HNmNr n OrigNone)          = "x" ++ show n
-hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = "x" ++ show n   -- hsnShowAlphanumeric orig
-hsnShowAlphanumeric (HNmNr n (OrigGlobal orig)) = "global_" ++ hsnShowAlphanumeric orig
-hsnShowAlphanumeric (HNmNr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumeric orig
+hsnShowAlphanumeric (HsName_Nr n OrigNone)          = "x" ++ show n
+hsnShowAlphanumeric (HsName_Nr n (OrigLocal orig))  = "x" ++ show n   -- hsnShowAlphanumeric orig
+hsnShowAlphanumeric (HsName_Nr n (OrigGlobal orig)) = "global_" ++ hsnShowAlphanumeric orig
+hsnShowAlphanumeric (HsName_Nr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HsName_Modf _ q b u)         = concat $ intersperse "_" $ q ++ [hsnShowAlphanumeric b] ++ map stringAlphanumeric (showHsNameUniqifierMp "_" u)
 -- hsnShowAlphanumeric n                           = concat $ intersperse "_" $ map hsnShowAlphanumeric $ hsnToList n
 %%]
@@ -788,14 +823,14 @@ instance Binary HsName where
   put (HsName_Base  a    ) = putWord8 0 >> put a
   put (HsName_UID   a    ) = putWord8 1 >> put a
   put (HsName_Pos   a    ) = putWord8 2 >> put a
-  put (HNmNr        a b  ) = putWord8 3 >> put a >> put b
+  put (HsName_Nr        a b  ) = putWord8 3 >> put a >> put b
   put (HsName_Modf  a b c d) = putWord8 4 >> put a >> put b >> put c >> put d
   get = do t <- getWord8
            case t of
              0 -> liftM  HsName_Base    get
-             1 -> liftM  HsName_UID    get
+             1 -> liftM  HsName_UID     get
              2 -> liftM  HsName_Pos     get
-             3 -> liftM2 HNmNr          get get
+             3 -> liftM2 HsName_Nr      get get
              4 -> liftM4 HsName_Modf    get get get get
 
 instance Serialize HsName where

@@ -241,7 +241,7 @@ SEM Variable
   | Global
     Local
     Param       lhs.prettyC   = case @name of 
-                                  HNmNr n OrigNone -> text ("x" ++ show n)
+                                  HsName_Nr{-use: hsnMbNr-} n OrigNone -> text ("x" ++ show n)
                                   -- _             -> text (hsnShowAlphanumeric @name)
                                   _                -> text ("StackAreaHigh[-" ++ hsnShowAlphanumeric @name ++ "]")
                 -- lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"

@@ -154,7 +154,7 @@ SEM GrBind
 
           expr . numberParameters = length @argNmL
           loc  . locals  = map (\nm -> (nm, getSilTp @lhs.hptMap nm))
-                               ( filter (\(HNmNr n _)->n/=0) (Set.toList @expr.localsSet) )
+                               ( filter (\(HsName_Nr{-use: hsnMbNr-} n _)->n/=0) (Set.toList @expr.localsSet) )
 
 SEM GrExpr
  | Seq     lhs.stats  = @expr.stats
@@ -185,7 +185,7 @@ SEM GrExpr
                                , Statement_Return [@loc.callres]
                                ]
                          else case @lhs.targets
-                              of  [ HNmNr 0 _ ] -> [Statement_Comment ["FFI void"], Statement_Voiden  @loc.callres]
+                              of  [ HsName_Nr{-use: hsnMbNr-} 0 _ ] -> [Statement_Comment ["FFI void"], Statement_Voiden  @loc.callres]
                                   _             -> assignments "FFI" [] (map mkVar @lhs.targets) [@loc.callres]
            lhs.localsSet = Set.fromList @lhs.targets
            loc.callres   = Value_Call @impEntNm @argL.values   -- TODO: check that argL contains Var's or singleton Node's only
@@ -509,7 +509,7 @@ isRealVal _                = True
 
 
 isRealVar Variable_None = False
-isRealVar (Variable_Unembedded (HNmNr 0 _)) = False
+isRealVar (Variable_Unembedded (HsName_Nr{-use: hsnMbNr-} 0 _)) = False
 isRealVar _             = True
 
 maximum0 [] = 0
@@ -694,7 +694,7 @@ builtinNm = ehcOptBuiltin
 
 
 
-getSilTp hptMap (HNmNr n _)
+getSilTp hptMap (HsName_Nr{-use: hsnMbNr-} n _)
   =  case getEnvVar hptMap n
      of   (AbsBasic)       -> SilTpWord
           (AbsTags _ )     -> SilTpTag

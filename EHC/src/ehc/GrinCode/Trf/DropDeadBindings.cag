@@ -48,7 +48,7 @@ ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 ATTR GrBind [ | | functionName : HsName ]
 SEM GrBind
   | Bind  lhs.functionName = @nm
-  | Rec   lhs.functionName = HNmNr 0 OrigNone
+  | Rec   lhs.functionName = hsnMkNr 0 OrigNone
 
 ATTR AllBind [ | | isDead USE {&&} {True}: Bool ]
 
