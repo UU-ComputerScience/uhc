@@ -147,25 +147,14 @@ tycoreOptMp
 %%]
 
 %%[(8 codegen cmm)
-{-
 instance Show CmmOpt where
-  show CmmOpt_Sugar      = "sugar"       -- first letters of alternatives must be unique
-  show CmmOpt_Unicode    = "unicode"
--}
+  show CmmOpt_Check        = "check"
 
 cmmOpts :: [CmmOpt]
-cmmOpts = [] -- [CmmOpt_Sugar, CmmOpt_Unicode]
+cmmOpts = [CmmOpt_Check]
 
 cmmOptMp :: Map.Map String CmmOpt
-cmmOptMp
-  = Map.empty
-{-
-  = Map.fromList $ concat
-    $ [ [ (s, o), ([head s], o) ]
-      | o <- cmmOpts
-      , let s = show o
-      ]
--}
+cmmOptMp = optMp
 %%]
 
 %%[(8 codegen javascript)
@@ -454,6 +443,7 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen cmm)
      ,  Option ""   ["cmm"]                 (OptArg oUseCmm "opt[,...]")            ("temporary/development: use (specific) cmm. opts: " ++ (concat $ intersperse " " $ Map.keys cmmOptMp))
+     ,  Option ""   ["cmmopt"]              (ReqArg oOptCmm "opt[,...]")            ("opts (specific) for cmm: " ++ (concat $ intersperse " " $ Map.keys cmmOptMp))
 %%]]
 %%[[(8 codegen javascript)
      ,  Option ""   ["js"]                  (ReqArg oOptJavaScript "opt[,...]")     ("opts (specific) for javascript: " ++ (concat $ intersperse " " $ Map.keys javaScriptOptMp))
@@ -509,6 +499,9 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
          oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s }
+%%]]
+%%[[(8 codegen cmm)
+         oOptCmm     s   o =  o { ehcOptCmmOpts = optOpts cmmOptMp s }
 %%]]
 %%[[(8 codegen javascript)
          oOptJavaScript s o = o { ehcOptJavaScriptOpts = optOpts javaScriptOptMp s }

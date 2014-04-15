@@ -230,10 +230,10 @@ hsnStripUniqify _ = Nothing
 -- | Simplify name into list of simplifications of increasing complexity, all strictly simpler than the one given. [] therefore means no simplifications exist
 hsnSimplifications :: HsName -> [HsName]
 hsnSimplifications n@(HsName_Modf {}) = case hsnStripUniqify n of
-    Just n' -> [n']
+    Just n' -> hsnSimplifications n' ++ [n']
     _       -> hsnSimplifications $ hsnBase n
 hsnSimplifications   (HsName_UID  {hsnUID = u}) = map mkHNm $ uidSimplifications u
-hsnSimplifications n@(HsName_Base {}          ) = [] -- [n]
+-- hsnSimplifications n@(HsName_Base {}          ) = [] -- [n]
 hsnSimplifications _                            = []
 %%]
 

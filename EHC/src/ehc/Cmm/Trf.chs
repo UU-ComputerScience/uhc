@@ -25,6 +25,10 @@
 %%[(8 codegen cmm) import({%{EH}Cmm.Trf.SimplifyLocalNames})
 %%]
 
+-- Cmm checks
+%%[(8 codegen cmm) import({%{EH}Cmm.Check})
+%%]
+
 -- Transformation utils
 %%[(8 codegen cmm) import({%{EH}CodeGen.TrfUtils})
 %%]
@@ -57,11 +61,15 @@ trfCmm opts optimScope modNm trfcmm
                  -- simplify local names, trivial stuff like making names shorter
                ; t_simpl_loc_nm
 
+               ; when (ehcOptCmmCheck opts) t_cmm_check
                }
         
         -- actual transformations
         t_initial       = liftTrfModPlain  osm "initial"            $ id
         t_simpl_loc_nm  = liftTrfModPlain  osm "simpl-loc-nm"       $ cmmModTrfSimplifyLocalNames
+
+        -- checks
+        t_cmm_check     = liftCheckMod     osm "check"              $ \s -> cmmModCheck
 
         -- abbreviations for optimatisation scope
         osm  = [OptimizationScope_PerModule]

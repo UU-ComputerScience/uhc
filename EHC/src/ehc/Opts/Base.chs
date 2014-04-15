@@ -138,11 +138,8 @@ data TyCoreOpt
 %%[(8 codegen cmm) export(CmmOpt(..))
 -- | Cmm options
 data CmmOpt
-  {-
-  = TyCoreOpt_Sugar         -- produce/accept sugared version
-  | TyCoreOpt_Unicode       -- produce/accept unicode, implies sugar
-  deriving Eq
-  -}
+  = CmmOpt_Check			-- name (and other, later perhaps) check code
+  deriving (Eq,Ord,Enum,Bounded)
 
 %%]
 
@@ -221,6 +218,7 @@ data EHCOpts
 %%]]
 %%[[(8 codegen cmm)
       ,  ehcOptUseCmm		  ::  Maybe [CmmOpt]	-- use cmm? + options
+      ,  ehcOptCmmOpts        ::  [CmmOpt]  	    -- Cmm options
 %%]]
 %%[[(8 codegen javascript)
       ,  ehcOptJavaScriptOpts ::  [JavaScriptOpt]	-- javascript options
@@ -385,6 +383,7 @@ emptyEHCOpts
 %%]]
 %%[[(8 codegen cmm)
       ,  ehcOptUseCmm           =	Nothing
+      ,  ehcOptCmmOpts          =   []
 %%]]
 %%[[(8 codegen javascript)
       ,  ehcOptJavaScriptOpts   =   []
@@ -586,6 +585,16 @@ ehcOptCmm :: EHCOpts -> Bool
 ehcOptCmm opts = isJust (ehcOptUseCmm opts)
 %%][8
 ehcOptCmm opts = isJust (ehcOptUseCmm opts)
+%%]]
+%%]
+
+%%[(8 codegen) export(ehcOptCmmCheck)
+-- | Check Cmm
+ehcOptCmmCheck :: EHCOpts -> Bool
+%%[[(8 cmm)
+ehcOptCmmCheck opts = CmmOpt_Check `elem` ehcOptCmmOpts opts
+%%][8
+ehcOptCmmCheck _    = False
 %%]]
 %%]
 
