@@ -21,9 +21,6 @@ Propagate constants.
 %%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common})
 %%]
 
-%%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
-%%]
-
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})
 %%]
 

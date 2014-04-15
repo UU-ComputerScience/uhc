@@ -97,9 +97,6 @@ Note: when HPT analysis is done, in apply the name f is used instead of f'.
 %%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common})
 %%]
 
-%%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
-%%]
-
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonFreeVar},{GrinCode/Trf/CommonWillEval})
 %%]
 

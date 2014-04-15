@@ -16,6 +16,8 @@
 %%]
 %%[1 import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%]
 %%[1 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.Environment})
@@ -185,7 +187,10 @@ handleImmQuitOption immq opts
               }
         where
       ImmediateQuitOption_Version
-        -> putStrLn (Cfg.verInfo Cfg.version)
+        -> putStrLn $ Cfg.verInfo Cfg.version
+%%[[50
+                      ++ ", timestamp " ++ Sig.timestamp
+%%]]
       ImmediateQuitOption_Meta_Variant
         -> putStrLn Cfg.ehcDefaultVariant
 %%[[1

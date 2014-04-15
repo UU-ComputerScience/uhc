@@ -48,7 +48,7 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 
 -- HI Syntax and semantics, HS module semantics
-%%[50 import(qualified {%{EH}HI} as HI)
+%%[5050 import(qualified {%{EH}HI} as HI)
 %%]
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]

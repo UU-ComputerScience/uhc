@@ -22,7 +22,7 @@ Cleanup between phases
 %%]
 
 -- HI syntax and semantics
-%%[99 import(qualified {%{EH}HI} as HI)
+%%[9999 import(qualified {%{EH}HI} as HI)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

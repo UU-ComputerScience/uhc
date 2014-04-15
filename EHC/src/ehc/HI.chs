@@ -53,6 +53,8 @@
 
 %%[50 hs import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%]
 
 %%[(9999 codegen grin) hs import({%{EH}GrinCode.Trf.ForceEval})
 %%]
@@ -401,8 +403,8 @@ sgetHIInfo opts = do
             ; hi_tv    <- sget
             ; hi_fl    <- sget
             ; hi_comp  <- sget
-            ; if (    hi_sig == verSig version
-                   && hi_ts  == verTimestamp version
+            ; if (    hi_sig == Sig.sig
+                   && hi_ts  == Sig.timestamp
                    && hi_t   == ehcOptTarget       opts
                    && hi_tv  == ehcOptTargetFlavor opts
                  )

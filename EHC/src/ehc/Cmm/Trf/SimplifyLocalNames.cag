@@ -50,9 +50,8 @@ cmmModTrfSimplifyLocalNames cmmmod
 cvarSimplifyM :: HsName -> CVarInfo -> State NmEnv CVarInfo
 cvarSimplifyM nm cvar = do
     env <- get
-    let simpnm = hsnStripUniqify $ hsnQualified nm
-    case envLookup simpnm env of
-      Nothing | cvarIsLocOrArg cvar -> do
+    case concat $ map (\s -> maybe [s] (const []) $ envLookup s env) $ hsnSimplifications $ hsnQualified nm of
+      (simpnm:_) | cvarIsLocOrArg cvar -> do
            let simpcvar = cvar {cvarOffset = fldMapNm (const simpnm) $ cvarOffset cvar}
            put $ envAdd simpnm simpcvar $ envAlter (const $ Just simpcvar) nm env
            return simpcvar
@@ -87,9 +86,9 @@ envAddEnv 		e1 e2 	= envUnion e1 e2
 envLookup 		k e   	= Map.lookup k e
 envToList		e		= Map.toList e
 envFromList		l		= Map.fromList l
--- required, additional functionality not existing in Data.Map
-envPushEnv 		e1 e2 	= envUnion e1 e2
-envPush    		k v e 	= envAdd k v e
+-- stacklike behavior, additional functionality not existing in Data.Map
+envLeave		e		= (emptyEnv,e)
+envEnter		e		= e
 
 -- optional
 envAlter		f k e	= Map.alter f k e
@@ -100,40 +99,23 @@ envAlter		f k e	= Map.alter f k e
 
 %%[(8 cmm) ag
 SEM Import
-  | Imp			loc		.	nmInfo		=	@cvar
+  | Imp			loc		.	nmInfo			=	@cvar
 
 SEM Decl
-  | Const		loc		.	nmInfo		=	@cvar
+  | Const		(loc.nmInfo,lhs.nmEnvGath)	:=	cvarSimplify @lhs.nmEnvGath @envnm @cvar
 
 SEM RegNmInit
-  | NmInit		loc		.	nmInfo		=	@cvar
+  | NmInit		(loc.nmInfo,lhs.nmEnvGath)	:=	cvarSimplify @lhs.nmEnvGath @envnm @cvar
 
 SEM Proc
-  | Proc		loc		.	nmInfo		=	@cvar
+  | Proc		loc		.	nmInfo			=	@cvar
 
 SEM Formal
-  -- | Formal		loc		.	nmInfo		=	@cvar
-  | Formal		(loc.nmInfo,lhs.nmEnv)	:=	cvarSimplify @lhs.nmEnv @envnm @cvar
-
-SEM Stmt
-  | Alloc Box UnBox
-  				loc		.	nmInfo		=	@cvar
+  | Formal		(loc.nmInfo,lhs.nmEnvGath)	:=	cvarSimplify @lhs.nmEnvGath @envnm @cvar
 
 SEM Datum
-  | Nm			loc		.	nmInfo		=	@cvar
+  | Nm			loc		.	nmInfo			=	@cvar
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gathering, overriding defs
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen cmm) ag
-SEM Proc
-  | Proc        loc     .   nmEnvGathNew:=  emptyEnv
-                body    .   nmEnv       :=  @formals.nmEnv
-%%]
-SEM Proc
-  | Proc        loc     .   nmEnvNew    :=  flip execState @nmEnvOld $ forM (envToList @nmEnvGathNew) $ uncurry cvarSimplifyM
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
@@ -143,8 +125,22 @@ SEM Proc
 ATTR AllNT [ | | trf: SELF ]
 ATTR AGItf [ | | trf: Module ]
 
+SEM Decl
+  | Const		lhs		.	trf			=	@trf {cvar_Decl_Const = @nmInfo}
+
 SEM Formal
   | Formal		lhs		.	trf			=	@trf {cvar_Formal_Formal = @nmInfo}
+
+SEM RegNmInit
+  | NmInit		lhs		.	trf			=	@trf {cvar_RegNmInit_NmInit = @nmInfo}
+
+SEM LValue
+  | Nm			lhs		.	trf			=	maybe @trf (\i -> @trf {cvar_LValue_Nm = i}) @mbNmInfo
+
+SEM Stmt
+  | Alloc		lhs		.	trf			=	maybe @trf (\i -> @trf {cvar_Stmt_Alloc = i}) @mbNmInfo
+  | Box			lhs		.	trf			=	maybe @trf (\i -> @trf {cvar_Stmt_Box = i}) @mbNmInfo
+  | UnBox		lhs		.	trf			=	maybe @trf (\i -> @trf {cvar_Stmt_UnBox = i}) @mbNmInfo
 
 SEM Expr
   | CVar		lhs		.	trf			=	maybe @trf (\i -> @trf {cvar_Expr_CVar = i}) @mbNmInfo

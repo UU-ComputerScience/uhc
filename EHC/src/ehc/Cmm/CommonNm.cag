@@ -28,8 +28,8 @@ envLookup       k e     = ...
 envToList		e		= ...
 envFromList		l		= ...
 -- required, additional functionality not existing in Data.Map
-envPushEnv      e1 e2   = ...
-envPush    		k v e 	= ...
+envLeave		e		= ...
+envEnter		e		= ...
 
 -- optional (not used here)
 envAlter        f k e   = ...
@@ -56,10 +56,6 @@ SEM Proc
 SEM Formal
   | Formal      loc     .   nmInfo      =   ...
 
-SEM Stmt
-  | Alloc Box UnBox
-                loc     .   nmInfo      =   ...
-
 SEM Datum
   | Nm          loc     .   nmInfo      =   ...
 
@@ -75,9 +71,7 @@ type NmEnv = Env Nm NmInfo
 %%]
 
 %%[(8 cmm) ag
-ATTR
-  AllTopLevel AllDecl AllSection Proc AllImport AllRegs AllFormal AllDatum
-    [ | | nmEnvGath USE {`envUnion`} {emptyEnv} : NmEnv ]
+ATTR AllNTNoMod [ | nmEnvGath : NmEnv | ]
 %%]
 
 %%[(8 cmm) ag
@@ -97,10 +91,6 @@ SEM Proc
 SEM Formal
   | Formal      loc     .   envnm       =   cvarToHsName @cvar
 
-SEM Stmt
-  | Alloc Box UnBox
-                loc     .   envnm       =   cvarToHsName @cvar
-
 SEM Datum
   | Nm          loc     .   envnm       =   @nm
                         .   cvar        =   cvarloc tyNone @envnm       -- TBD: sort type out
@@ -109,26 +99,22 @@ SEM Datum
 
 %%[(8 cmm) ag
 SEM Import
-  | Imp         loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
+  | Imp         lhs     .   nmEnvGath   =   envAdd @envnm @nmInfo @lhs.nmEnvGath
 
 SEM Decl
-  | Const       loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
+  | Const       lhs     .   nmEnvGath   =   envAdd @envnm @nmInfo @lhs.nmEnvGath
 
 SEM RegNmInit
-  | NmInit      loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
+  | NmInit      lhs     .   nmEnvGath   =   envAdd @envnm @nmInfo @lhs.nmEnvGath
 
 SEM Proc
-  | Proc        loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
+  | Proc        lhs     .   nmEnvGath   =   envAdd @envnm @nmInfo @lhs.nmEnvGath
 
 SEM Formal
-  | Formal      loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
-
-SEM Stmt
-  | Alloc Box UnBox
-                loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
+  | Formal      lhs     .   nmEnvGath   =   envAdd @envnm @nmInfo @lhs.nmEnvGath
 
 SEM Datum
-  | Nm          loc     .   nmEnvGath   =   envSingleton @envnm @nmInfo
+  | Nm          lhs     .   nmEnvGath   =   envAdd @envnm @nmInfo @lhs.nmEnvGath
 %%]
 
 %%[(8 cmm) ag
@@ -143,49 +129,17 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 cmm) ag
-ATTR
-  AllNTNoMod
-  - AllBodyL AllStmtTop AllFormal
-    [ nmEnv: NmEnv | | ]
-ATTR
-  AllBodyL AllStmtTop AllFormal
-    [ | nmEnv: NmEnv | ]
+ATTR AllNTNoMod [ nmEnv: NmEnv | | ]
 %%]
 
 %%[(8 cmm) ag
 SEM Module
-  | Mod         loc     .   nmEnvOld    =   @decls.nmEnvGath
-                        .   nmEnvNew    =   @nmEnvOld
-                        .   nmEnv       =   @nmEnvNew
-
-SEM Formal
-  | Formal      loc     .   nmEnvOld    =   @lhs.nmEnv
-                        .   nmEnvGathNew=   @nmEnvGath
-                        .   nmEnvNew    =   envPushEnv @nmEnvGathNew @nmEnvOld
-                lhs     .   nmEnv       =   @nmEnvNew
-
-SEM Proc
-  | Proc        loc     .   nmEnvOld    =   @lhs.nmEnv
-                        .   nmEnvGathNew=   @formals.nmEnvGath
-                        .   nmEnvNew    =   envPushEnv @nmEnvGathNew @nmEnvOld
-                body    .   nmEnv       =   @nmEnvNew
-
-SEM BodyDecl
-  | Decl        loc     .   nmEnvOld    =   @lhs.nmEnv
-                        .   nmEnvGathNew=   @decl.nmEnvGath
-                        .   nmEnvNew    =   envAddEnv @nmEnvGathNew @nmEnvOld
-                lhs     .   nmEnv       =   @nmEnvNew
-  | StackDecl   loc     .   nmEnvOld    =   @lhs.nmEnv
-                        .   nmEnvGathNew=   @datums.nmEnvGath
-                        .   nmEnvNew    =   envAddEnv @nmEnvGathNew @nmEnvOld
-                lhs     .   nmEnv       =   @nmEnvNew
-
-SEM Stmt
-  | Alloc Box UnBox
-                loc     .   nmEnvOld    =   @lhs.nmEnv
-                        .   nmEnvGathNew=   @nmEnvGath
-                        .   nmEnvNew    =   envAddEnv @nmEnvGathNew @nmEnvOld
-                lhs     .   nmEnv       =   @nmEnvNew
+  | Mod         decls   .   nmEnvGath		=	emptyEnv
+  						.	nmEnv    		=   @decls.nmEnvGath
+	
+SEM Proc	
+  | Proc        formals	.	nmEnvGath		=	envEnter @lhs.nmEnv
+                body    .   nmEnv       	=   @body.nmEnvGath			-- Note/TBD: allow mutual recursiveness in body, is that what is ok? or too lax?
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -197,6 +151,15 @@ SEM Expr
   | CVar        loc     .   envnm       =   cvarToHsName @cvar
                         .   mbNmInfo    =   envLookup @envnm @lhs.nmEnv
   | Nm          loc     .   envnm       =   @nm
+                        .   mbNmInfo    =   envLookup @envnm @lhs.nmEnv
+
+SEM LValue
+  | Nm          loc     .   envnm       =   cvarToHsName @cvar
+                        .   mbNmInfo    =   envLookup @envnm @lhs.nmEnv
+
+SEM Stmt
+  | Alloc Box UnBox
+                loc     .   envnm       =   cvarToHsName @cvar
                         .   mbNmInfo    =   envLookup @envnm @lhs.nmEnv
 %%]
 

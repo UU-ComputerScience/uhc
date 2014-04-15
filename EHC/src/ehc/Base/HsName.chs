@@ -218,9 +218,23 @@ hsnUniqifyEval = hsnUniqify HsNameUniqifier_Evaluated
 %%]
 
 %%[8 export(hsnStripUniqify)
--- | Remove uniqification
-hsnStripUniqify :: HsName -> HsName
-hsnStripUniqify n = n {hsnUniqifiers = Map.empty}
+-- | Remove uniqification, if present
+hsnStripUniqify :: HsName -> Maybe HsName
+hsnStripUniqify n@(HsName_Modf {hsnUniqifiers=us})
+  | Map.null us   = Nothing
+  | otherwise     = Just $ n {hsnUniqifiers = Map.empty}
+hsnStripUniqify _ = Nothing
+%%]
+
+%%[8 export(hsnSimplifications)
+-- | Simplify name into list of simplifications of increasing complexity, all strictly simpler than the one given. [] therefore means no simplifications exist
+hsnSimplifications :: HsName -> [HsName]
+hsnSimplifications n@(HsName_Modf {}) = case hsnStripUniqify n of
+    Just n' -> [n']
+    _       -> hsnSimplifications $ hsnBase n
+hsnSimplifications   (HsName_UID  {hsnUID = u}) = map mkHNm $ uidSimplifications u
+hsnSimplifications n@(HsName_Base {}          ) = [] -- [n]
+hsnSimplifications _                            = []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -271,8 +285,12 @@ hsnFixateHash n                       = n
 
 %%[1.HsName.type export(HsName)
 data HsName
-  =   HsName_Base                   !String
-  |   HsName_UID                    !UID
+  =   HsName_Base
+        { hsnBaseStr            ::  !String
+        }
+  |   HsName_UID
+        { hsnUID                ::  !UID
+        }
 %%[[7
   |   HsName_Modf
         { 
@@ -485,7 +503,6 @@ instance Show HsName where
 -- | A HsName is either a complex/aggregrate name or a base case
 hsnCanonicSplit :: HsName -> Either ([String],HsName) HsName
 %%[[7
--- hsnCanonicSplit   (HNmQ        ns    ) = Left $ maybe ([],mkHNmBase "??") (\(i,l) -> (catMaybes $ map hsnMbBaseString i,l) ) (initlast ns)
 hsnCanonicSplit n@(HsName_Modf _ qs _ _) = Left $ (qs, hsnFixateHash (n {hsnQualifiers = []}))
 %%]]
 hsnCanonicSplit n                        = Right n

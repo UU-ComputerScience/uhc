@@ -30,9 +30,6 @@
 %%[(8 codegen grin cmm) hs import(qualified {%{EH}Cmm} as Cmm,{%{EH}Core},{%{EH}GrinCode},{%{EH}LamInfo})
 %%]
 
-%%[(5050 codegen grin cmm) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
-%%]
-
 %%[(8 codegen grin cmm) hs import({%{EH}Foreign.Extract})
 %%]
 

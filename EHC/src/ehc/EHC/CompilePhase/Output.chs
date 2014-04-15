@@ -28,6 +28,9 @@ Output generation, on stdout or file
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
 
+%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%]
+
 -- EH semantics
 %%[99 import(qualified {%{EH}EH.MainAG} as EHSem)
 %%]
@@ -298,8 +301,8 @@ cpOutputHI suff modNm
                                , HI.hiiHasMain              = ecuHasMain ecu
                                , HI.hiiTarget               = ehcOptTarget opts
                                , HI.hiiTargetFlavor         = ehcOptTargetFlavor opts
-                               , HI.hiiSrcTimeStamp         = Cfg.verTimestamp Cfg.version
-                               , HI.hiiSrcSig               = Cfg.verSig Cfg.version
+                               , HI.hiiSrcTimeStamp         = Sig.timestamp
+                               , HI.hiiSrcSig               = Sig.sig
                                , HI.hiiSrcVersionMajor      = Cfg.verMajor Cfg.version
                                , HI.hiiSrcVersionMinor      = Cfg.verMinor Cfg.version
                                , HI.hiiSrcVersionMinorMinor = Cfg.verMinorMinor Cfg.version

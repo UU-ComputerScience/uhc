@@ -23,9 +23,6 @@
 %%[(8 codegen grin) hs import({%{EH}CodeGen.Const} as Const)
 %%]
 
-%%[(5050 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
-%%]
-
 %%[(8 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 

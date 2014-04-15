@@ -11,9 +11,6 @@
 %%[(8 codegen) hs import({%{EH}CodeGen.RefGenerator})
 %%]
 
-%%[(8888 codegen) hs import(qualified {%{EH}Config} as Cfg)
-%%]
-
 %%[(8 codegen) hs import(UHC.Util.Utils,UHC.Util.Pretty as Pretty,Data.Bits,Data.Maybe,qualified UHC.Util.FastSeq as Seq,qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 

@@ -50,6 +50,8 @@ CompilePhase building blocks: parsers
 -- config
 %%[50 import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: parsing
@@ -242,7 +244,7 @@ cpDecodeHIInfo modNm
                   [rngLift emptyRange Err_InconsistentHI
                      (show modNm)
                      (fpathToStr fpH)
-                     [Cfg.verTimestamp Cfg.version, Cfg.installVariant opts, show $ ehcOptTarget opts  , show $ ehcOptTargetFlavor opts  ]
+                     [Sig.timestamp, Cfg.installVariant opts, show $ ehcOptTarget opts, show $ ehcOptTargetFlavor opts]
                      [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  , show $ HI.hiiTarget hiinfo, show $ HI.hiiTargetFlavor hiinfo]
                   ]
 %%]]
