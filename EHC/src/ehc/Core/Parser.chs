@@ -7,25 +7,25 @@
 %%% Core parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Core.Parser} import(UU.Parsing as P, UHC.Util.ParseUtils, UHC.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty.Parser(pTy)}, {%{EH}Core})
+%%[(8 corein) module {%{EH}Core.Parser} import(UU.Parsing as P, UHC.Util.ParseUtils, UHC.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty.Parser(pTy)}, {%{EH}Core})
 %%]
-%%[(8 codegen) import(Data.Maybe)
-%%]
-
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 corein) import(Data.Maybe)
 %%]
 
-%%[(50 codegen) export(pCModule,pCExpr)
+%%[(8 corein) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(90 codegen) import({%{EH}Foreign.Parser})
+%%[(50 corein) export(pCModule,pCExpr)
+%%]
+
+%%[(90 corein) import({%{EH}Foreign.Parser})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen)
+%%[(50 corein)
 type CParser       hp     =    PlainParser Token hp
 
 pCModule :: CParser CModule

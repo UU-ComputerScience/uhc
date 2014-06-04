@@ -100,7 +100,11 @@ data PkgOption
 %%[(8 codegen) export(CoreOpt(..))
 -- | Core options
 data CoreOpt
-  = CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
+  = CoreOpt_NONE				-- no-op option
+%%[[(8 coreout)
+  | CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
+  | CoreOpt_Dump 				-- dump textual core output
+%%]]
 %%[[(8 coresysf)
   | CoreOpt_SysF				-- 20120419, work in startup/progress: generate System F
   | CoreOpt_SysFCheck			-- 20120419, work in startup/progress: typecheck generated System F

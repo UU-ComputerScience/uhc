@@ -22,7 +22,9 @@
 %%[(7_2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
 %%]
 
-%%[(8 hmtyinfer || hmtyast) hs import({%{EH}Scanner.Common(hiScanOpts)},{%{EH}Base.CfgPP})
+%%[(8888 hmtyinfer || hmtyast) hs import({%{EH}Scanner.Common(hiScanOpts)})
+%%]
+%%[(8 hmtyinfer || hmtyast) hs import({%{EH}Base.CfgPP})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(ppTyPr)

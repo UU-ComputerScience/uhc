@@ -104,29 +104,31 @@ mkFileLocPath = map mkDirFileLoc . mkStringPath
 %%% Option specific options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(optOptsIsYes)
+%%[1 export(optOptsIsYes, showStr2stMp)
 optOpts :: Map.Map String opt -> String -> [opt]
 optOpts m s = catMaybes $ map (\os -> Map.lookup os m) $ wordsBy (==',') s
 
 optOptsIsYes :: Eq opt => Maybe [opt] -> opt -> Bool
 optOptsIsYes mos o = maybe False (o `elem`) mos
 
-optMp :: (Show opt, Enum opt, Bounded opt) => Map.Map String opt
-optMp = Map.fromList [ (show o, o) | o <- [minBound .. maxBound] ]
 %%]
 
 %%[(8 codegen)
 instance Show CoreOpt where
+%%[[(8 coreout)
   show CoreOpt_PPParseable      = "pp-parseable"
+  show CoreOpt_Dump             = "dump"
+%%]]
 %%[[(8 coresysf)
   show CoreOpt_SysF             = "sysf"
   show CoreOpt_SysFCheck        = "check"
   show CoreOpt_SysFCheckOnlyVal = "checkonlyval"
   show CoreOpt_SysFOnlyHi       = "onlyhi"
 %%]]
+  show _      					= "-"
 
 coreOptMp :: Map.Map String CoreOpt
-coreOptMp = optMp
+coreOptMp = str2stMpWithOmit [CoreOpt_NONE]
 %%]
 
 %%[(8 codegen tycore)
@@ -154,12 +156,12 @@ cmmOpts :: [CmmOpt]
 cmmOpts = [CmmOpt_Check]
 
 cmmOptMp :: Map.Map String CmmOpt
-cmmOptMp = optMp
+cmmOptMp = str2stMp
 %%]
 
 %%[(8 codegen javascript)
 javaScriptOptMp :: Map.Map String JavaScriptOpt
-javaScriptOptMp = optMp
+javaScriptOptMp = str2stMp
 %%]
 
 %%[99
@@ -169,7 +171,7 @@ instance Show PgmExec where
   show PgmExec_Linker	= "l"
 
 pgmExecMp :: Map.Map String PgmExec
-pgmExecMp = optMp
+pgmExecMp = str2stMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -339,7 +341,11 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
      ,  Option "O"  ["optimise"]            (OptArg oOptimization ("0|1|2|3|<opt>[=" ++ boolArgStr ++ "]"))
-                                                                                    "optimise with level or specific by name, default=1"
+                                                                                    ("optimise with level or specific <opt> by optim name: "
+                                                                                     ++ showStr2stMp allOptimizeMp
+                                                                                     ++ ", or by scope name: "
+                                                                                     ++ showStr2stMp allOptimScopeMp
+                                                                                     ++ ", default=1")
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["code"]                (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")
@@ -436,17 +442,17 @@ ehcCmdLineOpts
                                                                                     "pgm: alternate executable used by compiler, currently only P (preprocessing)"
 %%]]
 %%[[(8 codegen)
-     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("opts (specific) for core: " ++ (concat $ intersperse " " $ Map.keys coreOptMp))
+     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("opts (specific) for core: " ++ showStr2stMp coreOptMp)
 %%]]
 %%[[(8 codegen tycore)
-     ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")         ("temporary/development: use (specific) typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
+     ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")         ("temporary/development: use (specific) typed core. opts: " ++ showStr2stMp tycoreOptMp)
 %%]]
 %%[[(8 codegen cmm)
-     ,  Option ""   ["cmm"]                 (OptArg oUseCmm "opt[,...]")            ("temporary/development: use (specific) cmm. opts: " ++ (concat $ intersperse " " $ Map.keys cmmOptMp))
-     ,  Option ""   ["cmmopt"]              (ReqArg oOptCmm "opt[,...]")            ("opts (specific) for cmm: " ++ (concat $ intersperse " " $ Map.keys cmmOptMp))
+     ,  Option ""   ["cmm"]                 (OptArg oUseCmm "opt[,...]")            ("temporary/development: use (specific) cmm. opts: " ++ showStr2stMp cmmOptMp)
+     ,  Option ""   ["cmmopt"]              (ReqArg oOptCmm "opt[,...]")            ("opts (specific) for cmm: " ++ showStr2stMp cmmOptMp)
 %%]]
 %%[[(8 codegen javascript)
-     ,  Option ""   ["js"]                  (ReqArg oOptJavaScript "opt[,...]")     ("opts (specific) for javascript: " ++ (concat $ intersperse " " $ Map.keys javaScriptOptMp))
+     ,  Option ""   ["js"]                  (ReqArg oOptJavaScript "opt[,...]")     ("opts (specific) for javascript: " ++ showStr2stMp javaScriptOptMp)
 %%]]
      ]
 %%]
@@ -546,7 +552,7 @@ ehcCmdLineOpts
                                 Just "eh"    -> o { ehcOptEmitEH           = True   }
 %%[[(8 codegen)
                                 Just "-"     -> o -- { ehcOptEmitCore         = False  }
-                                Just "core"  -> o { ehcOptMbTarget         = JustOk Target_None_Core_None
+                                Just "core"  -> o { ehcOptMbTarget         = JustOk Target_None_Core_AsIs
                                                   }
                                 Just "tycore"-> o { ehcOptMbTarget         = JustOk Target_None_TyCore_None
                                                   }
@@ -641,6 +647,12 @@ ehcCmdLineOpts
                                                )
                                           where l = read olevel :: Int
                                                 (sc,lev) = quotRem l maxlev
+                                        Just scpname@(_:_)
+                                          | isJust mbScp
+                                            -> ( o { ehcOptOptimizationScope = sc }
+                                               , True
+                                               )
+                                          where mbScp@(~(Just sc)) = Map.lookup scpname allOptimScopeMp
                                         Just optname@(_:_)
                                           -> case break (== '=') optname of
                                                (nm, yesno)

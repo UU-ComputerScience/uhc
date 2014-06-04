@@ -5,6 +5,9 @@
 %%[8 module {%{EH}Base.Optimize}
 %%]
 
+%%[8 import({%{EH}Base.Common})
+%%]
+
 %%[8 import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List)
 %%]
 %%[8 import(UHC.Util.AssocL)
@@ -178,7 +181,7 @@ data OptimizationLevel
   deriving (Eq,Ord,Show,Enum,Bounded)
 %%]
 
-%%[8 export(OptimizationScope(..))
+%%[8 export(OptimizationScope(..), allOptimScopeMp)
 -- | Scope of optimizations, increasingly more global
 data OptimizationScope
   = OptimizationScope_PerModule			-- per module
@@ -198,6 +201,9 @@ instance Show OptimizationScope where
 %%[[(50 codegen)
   show OptimizationScope_WholeCore = "perwholecore"
 %%]]
+
+allOptimScopeMp :: Map.Map String OptimizationScope
+allOptimScopeMp = str2stMp 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

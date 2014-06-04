@@ -18,7 +18,9 @@
 %%[8 hs import (UHC.Util.FPath)
 %%]
 
-%%[(9 codegen) hs import({%{EH}Core},{%{EH}Core.Pretty})
+%%[(9 codegen) hs import({%{EH}Core})
+%%]
+%%[(9 codegen coreout) hs import({%{EH}Core.Pretty})
 %%]
 
 %%[1 ag import({Error/AbsSyn})

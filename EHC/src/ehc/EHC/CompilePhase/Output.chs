@@ -45,7 +45,7 @@ Output generation, on stdout or file
 %%]
 
 -- Core output
-%%[(8 codegen) import({%{EH}Core} as Core,{%{EH}Core.Pretty})
+%%[(8 codegen coreout) import({%{EH}Core} as Core,{%{EH}Core.Pretty})
 %%]
 -- TyCore output
 %%[(8 codegen tycore) import({%{EH}TyCore},{%{EH}TyCore.Pretty})

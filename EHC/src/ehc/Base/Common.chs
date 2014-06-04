@@ -1419,6 +1419,21 @@ allKnownPrimMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping from String to something, provided enough meta info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(str2stMp, str2stMpWithOmit, showStr2stMp)
+str2stMpWithOmit :: (Show opt, Enum opt, Bounded opt, Eq opt) => [opt] -> Map.Map String opt
+str2stMpWithOmit omits = Map.fromList [ (show o, o) | o <- [minBound .. maxBound] \\ omits ]
+
+str2stMp :: (Show opt, Enum opt, Bounded opt, Eq opt) => Map.Map String opt
+str2stMp = str2stMpWithOmit []
+
+showStr2stMp :: Map.Map String opt -> String
+showStr2stMp = concat . intersperse " " . Map.keys
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Field access, holding both name and offset, for delayed decision about this
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -261,6 +261,9 @@ mkFileSuffMpHs opts
     -- currently not supported
     , ( Just "grin", ECUSGrin )
 %%]]
+%%[[(8 corein)
+    , ( Just Cfg.suffixDotlessInputTextualCore, ECUSCore CRStart )
+%%]]
     ]
 %%[[(90 codegen)
     ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts) then [ ( Just "c"   , ECUSC CStart ) ] else [])

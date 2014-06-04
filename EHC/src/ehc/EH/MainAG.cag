@@ -61,7 +61,9 @@
 
 %%[(8 codegen) hs import({%{EH}AbstractCore}, {%{EH}AbstractCore.Utils})
 %%]
-%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.FFI},{%{EH}Core.Utils},{%{EH}Core.Pretty})
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.FFI},{%{EH}Core.Utils})
+%%]
+%%[(8 codegen coreout) hs import({%{EH}Core.Pretty})
 %%]
 %%[(8 codegen tycore) hs import(qualified {%{EH}TyCore.Full2} as C)
 %%]

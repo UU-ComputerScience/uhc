@@ -356,7 +356,7 @@ grinScanOpts
         }
 %%]
 
-%%[8
+%%[8888
 hiScanOpts :: EHCOpts -> ScanOpts
 hiScanOpts opts
   =  hsScanOpts'
@@ -465,6 +465,7 @@ splitTokensOnModuleTrigger scanOpts ts
 %%]
 
 %%[1.offsideScanHandle
+offsideScanHandle :: ScanOpts -> FilePath -> Handle -> IO (OffsideInput [Token] Token (Maybe Token))
 offsideScanHandle scanOpts fn fh
   = do  {  tokens <- scanHandle scanOpts fn fh
         -- ;  putStrLn (" tokens: " ++ show tokens)

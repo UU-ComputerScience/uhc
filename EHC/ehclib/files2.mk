@@ -260,6 +260,8 @@ ehclib-codegentargetspecific-cmmjs: $(if $(ENABLE_JS),$(INSTALL_LIB_JS) $(JSCRIP
 
 ehclib-codegentargetspecific-core:
 
+ehclib-codegentargetspecific-cr:
+
 ehclib-codegentargetspecific-clr:
 
 ehclib-codegentargetspecific-llvm: $(if $(EHC_CFG_USE_GRIN),$(if $(ENABLE_LLVM),$(INSTALL_LIB_RTS),),)

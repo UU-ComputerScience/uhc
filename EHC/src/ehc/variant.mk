@@ -7,7 +7,7 @@
 ###########################################################################################
 
 EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
-											,base hmtyinfer codegen grin  \
+											,base hmtyinfer codegen grin coreout \
 											 $(if $(EHC_CFG_USE_RULER),,noHmTyRuler) \
 											 $(if $(ENABLE_JAVA),java jazy,) \
 											 $(if $(ENABLE_LLVM),llvm,) \
@@ -18,6 +18,8 @@ EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_CLR),clr,) \
 											 $(if $(ENABLE_TYCORE),tycore,) \
 											 $(if $(ENABLE_CORESYSF),coresysf,) \
+											 $(if $(ENABLE_CORE_ASINPOUTP),corein,) \
+											 $(if $(ENABLE_CORE_ASINPOUTP),corebackend,) \
 											 $(if $(ENABLE_TAUPHI),tauphi,) \
 											))
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)
@@ -49,8 +51,8 @@ FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC		= $(call FUN_INSTALL_VARIANT_BIN_PREFIX,$(
 FUN_EHC_INSTALLABS_VARIANT_ASPECTS_EXEC		= $(call FUN_INSTALLABS_VARIANT_BIN_PREFIX,$(1))$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
 
 #EHC_INSTALL_VARIANT_ASPECTS_EXEC			:= $(EHC_BIN_VARIANT_ASPECTS_PREFIX)$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
-EHC_ALL_PUB_EXECS						:= $(patsubst %,$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,%),$(EHC_PUB_VARIANTS))
-EHC_ALL_EXECS							:= $(patsubst %,$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,%),$(EHC_VARIANTS))
+EHC_ALL_PUB_EXECS							:= $(patsubst %,$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,%),$(EHC_PUB_VARIANTS))
+EHC_ALL_EXECS								:= $(patsubst %,$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,%),$(EHC_VARIANTS))
 EHC_INSTALL_VARIANT_ASPECTS_EXEC			:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_VARIANT_ASPECTS))
 EHC_INSTALLABS_VARIANT_ASPECTS_EXEC			:= $(call FUN_EHC_INSTALLABS_VARIANT_ASPECTS_EXEC,$(EHC_VARIANT_ASPECTS))
 

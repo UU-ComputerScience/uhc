@@ -512,6 +512,14 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    ; return defaultResult
                    }
+%%[[(8 corein)
+           (ECUSCore CRStart,_)
+             -> do { cpMsg modNm VerboseMinimal "Compiling Core"
+                   ; cpEhcCoreParse modNm
+                   ; cpUpdCU modNm (ecuStoreState (ECUSCore CRAllSem))
+                   ; return defaultResult
+                   }
+%%]]
 %%[[(90 codegen)
            (ECUSC CStart,_)
              | targetIsOnUnixAndOrC (ehcOptTarget opts)
@@ -775,6 +783,14 @@ cpEhcHaskellParse
 cpEhcEhParse :: HsName -> EHCompilePhase ()
 cpEhcEhParse modNm
   = cpSeq [ cpParseEH modNm
+          , cpStopAt CompilePoint_Parse
+          ]
+%%]
+
+%%[(8 corein)
+cpEhcCoreParse :: HsName -> EHCompilePhase ()
+cpEhcCoreParse modNm
+  = cpSeq [ cpParseCoreWithFPath Nothing modNm
           , cpStopAt CompilePoint_Parse
           ]
 %%]
@@ -1072,6 +1088,9 @@ cpProcessCoreRest modNm
 %%]]
 %%[[(8 javascript)
                 ++ (if ehcOptIsViaCoreJavaScript opts then [ cpTranslateCore2JavaScript modNm ] else [])
+%%]]
+%%[[(8 coreout)
+                ++ (if CoreOpt_Dump `elem` ehcOptCoreOpts opts then [void $ cpOutputCore False "" Cfg.suffixDotlessOutputTextualCore modNm] else [])
 %%]]
 %%[[99
                 ++ [ cpCleanupCore [modNm] ]

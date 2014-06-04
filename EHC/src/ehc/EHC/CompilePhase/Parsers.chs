@@ -35,7 +35,7 @@ CompilePhase building blocks: parsers
 %%[50 import(qualified {%{EH}HI} as HI)
 %%]
 -- Core parser
-%%[(50 codegen) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
+%%[(8 corein) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
 %%]
 -- TyCore parser
 %%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
@@ -57,9 +57,38 @@ CompilePhase building blocks: parsers
 %%% Compile actions: parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(cpParseOffside)
-cpParseOffsideWithFPath :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> Maybe FPath -> HsName -> EHCompilePhase ()
+%%[8
+-- | Generalization of parser invocation
+cpParseWithFPath
+  :: PP msg
+     => (ScanUtils.ScanOpts -> FilePath -> Handle -> IO inp)			-- tokenize/scan file
+     -> (parser -> inp -> (a,[msg]))									-- parse tokens
+     -> ([Err] -> EHCompilePhase out)									-- monadic output from errors
+     -> parser															-- the parser
+     -> ScanUtils.ScanOpts												-- options to the tokenizer/scanner
+     -> EcuUpdater a													-- updater of state
+     -> Maybe FPath														-- possibly overriding FilePath instead of default derived from state for this module name
+     -> HsName															-- module name
+     -> EHCompilePhase out
+cpParseWithFPath
+      scan parse seterrs
+      parser scanOpts store mbFp modNm
+ = do { cr <- get
+      ; (fn,fh) <- lift $ openFPath (maybe (ecuFilePath (crCU modNm cr)) id mbFp) ReadMode False
+      ; tokens  <- lift $ scan scanOpts fn fh
+      -- ; lift $ putStrLn $ show tokens -- does not work, no Show instance
+      ; let (res,msgs) = parse parser tokens
+            errs       = map (rngLift emptyRange mkPPErr) msgs
+      ; cpUpdCU modNm (store res)
+      ; seterrs errs
+      }
+
+-- cpParseOffsideWithFPath :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> Maybe FPath -> HsName -> EHCompilePhase ()
+-- `HSPrs.HSParser a' is a type synonym for `OffsideParser [Token] Pair Token (Maybe Token) a' but is not expanded as such...
+cpParseOffsideWithFPath :: OffsideParser [Token] Pair Token (Maybe Token) a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> Maybe FPath -> HsName -> EHCompilePhase ()
 cpParseOffsideWithFPath parser scanOpts store description mbFp modNm
+  = cpParseWithFPath offsideScanHandle parseOffsideToResMsgs (cpSetLimitErrsWhen 5 description) parser scanOpts store mbFp modNm
+{-
  = do { cr <- get
       ; (fn,fh) <- lift $ openFPath (maybe (ecuFilePath (crCU modNm cr)) id mbFp) ReadMode False
       ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
@@ -69,13 +98,16 @@ cpParseOffsideWithFPath parser scanOpts store description mbFp modNm
       ; cpUpdCU modNm (store res)
       ; cpSetLimitErrsWhen 5 description errs
       }
+-}
+%%]
       
+%%[8 export(cpParseOffside)
 cpParseOffside :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> HsName -> EHCompilePhase ()
 cpParseOffside parser scanOpts store description modNm
  = cpParseOffsideWithFPath parser scanOpts store description Nothing modNm
 %%]
 
-%%[8 export(cpParsePlain)
+%%[8888 export(cpParsePlain)
 cpParsePlainWithHandleToErrs :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> (String, Handle) -> HsName -> EHCompilePhase [Err]
 cpParsePlainWithHandleToErrs parser scanOpts store (fn,fh) modNm
  = do { cr <- get
@@ -168,7 +200,13 @@ cpParseHsImport litmode modNm
        }
 %%]
 
-%%[(50 codegen) export(cpParseCore)
+%%[(8 corein) export(cpParseCoreWithFPath)
+cpParseCoreWithFPath :: Maybe FPath -> HsName -> EHCompilePhase ()
+cpParseCoreWithFPath mbFp modNm
+  = do (_,opts) <- gets crBaseInfo'
+       cpParseWithFPath scanHandle parseToResMsgs (cpSetLimitErrsWhen 5 "Parse Core") CorePrs.pCModule (coreScanOpts opts) ecuStoreCore mbFp modNm
+
+{-
 cpParseCore :: HsName -> EHCompilePhase ()
 cpParseCore modNm
   = do { cr <- get
@@ -180,6 +218,7 @@ cpParseCore modNm
               (cpSetLimitErrsWhen 5 "Parse Core (of previous compile) of module" errs)
        ; return ()
        }
+-}
 %%]
 
 %%[5020 export(cpParseHI)

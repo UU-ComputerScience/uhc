@@ -123,6 +123,11 @@ ifeq (@ENABLE_WHOLEPROGANAL@,yes)
 ENABLE_WHOLEPROGANAL		:= yes
 endif
 
+# include use of Core as both backend & source
+ifeq (@ENABLE_CORE_ASINPOUTP@,yes)
+ENABLE_CORE_ASINPOUTP		:= yes
+endif
+
 # include System F Ty generation for Core
 ifeq (@ENABLE_CORESYSF@,yes)
 ENABLE_CORESYSF				:= yes

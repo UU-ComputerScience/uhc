@@ -8,7 +8,9 @@
 %%[(8 codegen) hs import(qualified {%{EH}Core} as C, qualified {%{EH}Ty} as T)
 %%]
 
-%%[(8 codegen coresysf) hs import(UHC.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Error.Pretty})
+%%[(8 codegen coresysf) hs import(UHC.Util.Pretty,{%{EH}Error.Pretty})
+%%]
+%%[(8 codegen coresysf coreout) hs import({%{EH}Core.Pretty})
 %%]
 
 %%[(8 codegen coresysf) hs import({%{EH}AbstractCore})

@@ -158,7 +158,7 @@ AC_ARG_ENABLE(wholeprogC, AS_HELP_STRING([--enable-wholeprogC],[include C whole 
 AC_SUBST(ENABLE_WHOLEPROGC,$enableWholeprogC)
 
 ### enable options: wholeprogAnal, whole program analysis, default is no, temporary until development restarts
-AC_ARG_ENABLE(wholeprogAnal, AS_HELP_STRING([--enable-wholeprogAnal],[include C whole program code generation]), [enableWholeprogAnal=yes], [enableWholeprogAnal=no])
+AC_ARG_ENABLE(wholeprogAnal, AS_HELP_STRING([--enable-wholeprogAnal],[include C whole program code analysis]), [enableWholeprogAnal=yes], [enableWholeprogAnal=no])
 AC_SUBST(ENABLE_WHOLEPROGANAL,$enableWholeprogAnal)
 
 ### enable options: llvm, default is no
@@ -172,6 +172,10 @@ AC_SUBST(ENABLE_CLR,$enableClr)
 ### enable options: tycore (Typed Core), default is no
 AC_ARG_ENABLE(tycore, AS_HELP_STRING([--enable-tycore],[include TyCore typed intermediate language]), [enableTyCore=yes], [enableTyCore=no])
 AC_SUBST(ENABLE_TYCORE,$enableTyCore)
+
+### enable options: core-asinpoutp (Untyped Core), default is no
+AC_ARG_ENABLE(core-asinpoutp, AS_HELP_STRING([--enable-core-asinpoutp],[allow use of Core untyped intermediate language as a backend and source language]), [enableCoreAsInpOutp=yes], [enableCoreAsInpOutp=no])
+AC_SUBST(ENABLE_CORE_ASINPOUTP,$enableCoreAsInpOutp)
 
 ### enable options: core + system F (Core variation of Typed Core, picking from Typed Core), default is no
 AC_ARG_ENABLE(coresysf, AS_HELP_STRING([--enable-coresysf],[include System F type generation for Core]), [enableCoreSysF=yes], [enableCoreSysF=no])

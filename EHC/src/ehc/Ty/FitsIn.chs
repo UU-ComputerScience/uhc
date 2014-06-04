@@ -53,7 +53,9 @@
 %%]
 %%[(9 hmtyinfer) import({%{EH}Gam.ClGam},{%{EH}Pred})
 %%]
-%%[(9 codegen hmtyinfer) import({%{EH}Core.Pretty},{%{EH}Core},{%{EH}Core.Subst},{%{EH}Core.Coercion})
+%%[(9 codegen hmtyinfer) import({%{EH}Core},{%{EH}Core.Subst},{%{EH}Core.Coercion})
+%%]
+%%[(9 codegen coreout hmtyinfer) import({%{EH}Core.Pretty})
 %%]
 %%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR})
 %%]

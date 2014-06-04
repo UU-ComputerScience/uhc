@@ -728,6 +728,7 @@ ranlibCmd
 cppCmd
 ENABLE_TAUPHI
 ENABLE_CORESYSF
+ENABLE_CORE_ASINPOUTP
 ENABLE_TYCORE
 ENABLE_CLR
 ENABLE_LLVM
@@ -813,6 +814,7 @@ enable_wholeprogAnal
 enable_llvm
 enable_clr
 enable_tycore
+enable_core_asinpoutp
 enable_coresysf
 enable_tauphi
 with_cpp
@@ -1464,10 +1466,12 @@ Optional Features:
   --enable-java           include java code generation
   --enable-cmm            include cmm code generation
   --enable-wholeprogC     include C whole program code generation
-  --enable-wholeprogAnal  include C whole program code generation
+  --enable-wholeprogAnal  include C whole program code analysis
   --enable-llvm           include llvm code generation
   --enable-clr            include clr code generation
   --enable-tycore         include TyCore typed intermediate language
+  --enable-core-asinpoutp allow use of Core untyped intermediate language as a
+                          backend and source language
   --enable-coresysf       include System F type generation for Core
   --enable-tauphi         include TauPhi language extension and analyses
 
@@ -3133,6 +3137,17 @@ else
 fi
 
 ENABLE_TYCORE=$enableTyCore
+
+
+### enable options: core-asinpoutp (Untyped Core), default is no
+# Check whether --enable-core-asinpoutp was given.
+if test "${enable_core_asinpoutp+set}" = set; then :
+  enableval=$enable_core_asinpoutp; enableCoreAsInpOutp=yes
+else
+  enableCoreAsInpOutp=no
+fi
+
+ENABLE_CORE_ASINPOUTP=$enableCoreAsInpOutp
 
 
 ### enable options: core + system F (Core variation of Typed Core, picking from Typed Core), default is no

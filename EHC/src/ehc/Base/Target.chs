@@ -79,7 +79,7 @@ Currently there are target flavors for:
 data Target
   = Target_None								-- no codegen
 %%[[(8 codegen)
-  | Target_None_Core_None					-- only Core
+  | Target_None_Core_AsIs					-- only Core
   | Target_None_TyCore_None					-- only TyCore
 
   -- jazy
@@ -118,7 +118,7 @@ Is derived from the abstract, attempting to keep each part of similar size (most
 instance Show Target where
   show Target_None							= "NONE"
 %%[[(8 codegen)
-  show Target_None_Core_None				= "core"
+  show Target_None_Core_AsIs				= "cr"
   show Target_None_TyCore_None				= "tycore"
   show Target_Interpreter_Core_Jazy			= "jazy"
   show Target_Interpreter_Core_JavaScript	= "js"
@@ -155,7 +155,9 @@ supportedTargetMp :: Map.Map String Target
           [ ((show t, t),(t,i))
           | (t,i)
               <- []
-                 -- ++ [ mk Target_None_Core_None [] ]
+%%[[(8 corebackend)
+                 ++ [ mk Target_None_Core_AsIs [] ]
+%%]]
 %%[[(8 jazy)
                  ++ [ mk Target_Interpreter_Core_Jazy [FFIWay_Jazy] ]
 %%]]
@@ -348,7 +350,7 @@ targetAllowsJarLinking t
 targetIsCore :: Target -> Bool
 targetIsCore t
   = case t of
-      Target_None_Core_None				-> True
+      Target_None_Core_AsIs				-> True
       _ 								-> False
 {-# INLINE targetIsCore #-}
 %%]

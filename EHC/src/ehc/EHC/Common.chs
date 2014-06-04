@@ -111,6 +111,15 @@ data CState
   deriving (Show,Eq)
 %%]
 
+The state Core compilation can be in
+
+%%[(8 corein) export(CRState(..))
+data CRState
+  = CRStart
+  | CRAllSem
+  deriving (Show,Eq)
+%%]
+
 The state any compilation can be in
 
 %%[8 export(EHCompileUnitState(..))
@@ -120,6 +129,9 @@ data EHCompileUnitState
   | ECUSEh      !EHState
 %%[[(90 codegen)
   | ECUSC       !CState
+%%]]
+%%[[(8 corein)
+  | ECUSCore    !CRState
 %%]]
   | ECUSGrin
   | ECUSFail

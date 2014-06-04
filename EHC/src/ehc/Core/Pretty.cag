@@ -11,23 +11,23 @@ Note (20120525): lamMp use removed because of cyclic module import
 %%% Core Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)})
+%%[(8 coreout) hs module {%{EH}Core.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)})
 %%]
-%%[(8 codegen) hs import({%{EH}Ty.Pretty})
-%%]
-
-%%[(8 codegen) hs import({%{EH}AnaDomain.Pretty})
-%%]
-%%[(8888 codegen) hs import({%{EH}LamInfo})
+%%[(8 coreout) hs import({%{EH}Ty.Pretty})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%[(8 coreout) hs import({%{EH}AnaDomain.Pretty})
+%%]
+%%[(8888 coreout) hs import({%{EH}LamInfo})
 %%]
 
-%%[(90 codegen) hs import({%{EH}Foreign.Pretty})
+%%[(8 coreout) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonMetaLev})
+%%[(90 coreout) hs import({%{EH}Foreign.Pretty})
+%%]
+
+%%[(8 coreout).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonMetaLev})
 WRAPPER
   CodeAGItf CExpr CBound
 %%[[(8 coresysf)
@@ -38,7 +38,7 @@ WRAPPER
 %%]]
 %%]
 
-%%[(8 codegen) hs export(ppCModule)
+%%[(8 coreout) hs export(ppCModule)
 ppCModule :: EHCOpts -> {- LamMp -> -} CModule -> PP_Doc
 ppCModule opts {- lamMp -} cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -103,7 +103,7 @@ instance PP CTy where
   pp = cty pp pp
 %%]
 
-%%[(8 codegen) hs
+%%[(8 coreout) hs
 ppCNm :: EHCOpts -> HsName -> PP_Doc
 ppCNm o n | CoreOpt_PPParseable `elem` ehcOptCoreOpts o = ppHsnNonAlpha coreScanOpts' n
           | otherwise                                   = pp n
@@ -116,7 +116,7 @@ ppManyCNm :: EHCOpts -> [HsName] -> PP_Doc
 ppManyCNm o =  ppListSep "" "" " " . map (ppCNm o)
 
 
-%%[(9 codegen) hs
+%%[(9 coreout) hs
 ppTrack :: Track -> PP_Doc
 ppTrack t = text (show t)
 
@@ -124,7 +124,7 @@ ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]
 
-%%[(9 codegen) hs
+%%[(9 coreout) hs
 ppOptCMetas :: CMetas -> PP_Doc
 ppOptCMetas x
   =  let  t = wrap_CMetas (sem_CMetas x)
@@ -140,7 +140,7 @@ ppOptCMetas x
 %%% Debugging only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs export(ppCBindL)
+%%[(9 coreout) hs export(ppCBindL)
 ppCBindL :: CBindL -> PP_Doc
 ppCBindL
   = ppAssocL
@@ -154,7 +154,7 @@ ppCBindL
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 coreout) hs
 
 ppSignedInt :: Int -> PP_Doc
 ppSignedInt n = " " >#< show n
@@ -189,7 +189,7 @@ ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
 %%% Context: options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 coreout)
 ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
 %%]
 
@@ -197,7 +197,7 @@ ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
 %%% Context: how to pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 coreout) hs
 type CmbPP = PP_Doc -> PP_Doc -> PP_Doc
 
 data HowPP
@@ -212,7 +212,7 @@ howVert = HowPP  ppDef  (>-<)  vlist     ppBlock
 howHor  = HowPP  (>#<)  (>#<)  ppSpaces  ppListSep
 %%]
 
-%%[(8 codegen)
+%%[(8 coreout)
 ATTR AllExpr CModule - AllMeta [ ppHow: HowPP | | ]
 
 SEM CodeAGItf
@@ -250,7 +250,7 @@ SEM ValBind
 %%% Context: Lam info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen)
+%%[(8888 coreout)
 ATTR CodeAGItf AllCodeNT [ lamMp: LamMp | | ]
 %%]
 
@@ -258,7 +258,7 @@ ATTR CodeAGItf AllCodeNT [ lamMp: LamMp | | ]
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 coreout) hs
 -- | pp a CBound, for internal use here
 ppBound :: Bool -> Maybe String -> String -> PP_Doc -> PP_Doc
 ppBound isSingleNoNm mbLev s pv
@@ -268,7 +268,7 @@ ppBound isSingleNoNm mbLev s pv
         lev = maybe id (>#<) mbLev
 %%]
 
-%%[(8 codegen)
+%%[(8 coreout)
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 ATTR CPatFldL CBindL CAltL CBoundL CBindAnnL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
@@ -391,7 +391,7 @@ SEM CPatRest
   | TupSplit    lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
                                                 >|< ppParens (@pat.pp >#< "|">#< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
 
-%%[(8 codegen)
+%%[(8 coreout)
 ATTR CMetaVal [ | | optPP : PP_Doc ]
 
 SEM CMetas
@@ -418,7 +418,7 @@ SEM CMetaVal
 
 %%]
 
-%%[(8 codegen)
+%%[(8 coreout)
 SEM CExpr
   | Ann         loc         .   pp          =   ppParens (@expr.pp >#< @ann.pp)
 
@@ -431,7 +431,7 @@ SEM CBindAnn
   | Coe         loc         .   pp          =   "~" >#< ppRelevCoe @lhs.varPPMp @coe
 %%]
 
-%%[(9 codegen)
+%%[(9 coreout)
 SEM CExpr
   | Hole        loc         .   pp          =   ppHole @uid
   | HoleLet     loc         .   pp          =   "let --" >#< ppHole @bindsUid >-< howDef @lhs.ppHow (pp "in") @body.pp
@@ -445,7 +445,7 @@ SEM CExpr
 %%% PP + separator for optional use in CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 coreout) hs
 type PPBindInfo
   = ( String                -- separator
     , Bool                  -- outside parenthesization required
@@ -453,7 +453,7 @@ type PPBindInfo
     )
 %%]
 
-%%[(8 codegen)
+%%[(8 coreout)
 ATTR AllBound [ | | ppBindInfoL USE {++} {[]}: {[PPBindInfo]} ]
 
 SEM CBound
@@ -477,14 +477,14 @@ SEM CBound
 %%% UID mapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 coreout)
 ATTR AllExprBase [ varPPMp: VarPPMp | | ]
 
 SEM CModule
   | Mod         expr        .   varPPMp     =   Map.empty
 %%]
 
-%%[(8 codegen)
+%%[(8 coreout)
 ATTR AllBound [ | | gathVarPPMp USE {`Map.union`} {Map.empty}: VarPPMp ]
 
 SEM CBound
@@ -501,7 +501,7 @@ SEM CBind
 %%% AG type signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 coreout)
 SEM *
   | *           loc         .   tyPP        :   PP_Doc
 %%]
