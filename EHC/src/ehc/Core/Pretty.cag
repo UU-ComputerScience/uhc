@@ -105,10 +105,13 @@ instance PP CTy where
 
 %%[(8 coreout) hs
 ppCNm :: EHCOpts -> HsName -> PP_Doc
+ppCNm _ n = fst $ ppHsnEscapeWith '$' (hsnEscapeeChars '$' $ coreScanOpts emptyEHCOpts) n
+%%]
+ppCNm :: EHCOpts -> HsName -> PP_Doc
 ppCNm o n | CoreOpt_PPParseable `elem` ehcOptCoreOpts o = ppHsnNonAlpha coreScanOpts' n
           | otherwise                                   = pp n
           where coreScanOpts' = coreScanOpts emptyEHCOpts
-%%]
+
 ppMbCNm :: EHCOpts -> Maybe HsName -> PP_Doc
 ppMbCNm o = maybe (ppCNm o (hsnFromString "_")) (ppCNm o)
 

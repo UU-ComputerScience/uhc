@@ -116,7 +116,7 @@ optOptsIsYes mos o = maybe False (o `elem`) mos
 %%[(8 codegen)
 instance Show CoreOpt where
 %%[[(8 coreout)
-  show CoreOpt_PPParseable      = "pp-parseable"
+  -- show CoreOpt_PPParseable      = "pp-parseable"
   show CoreOpt_Dump             = "dump"
 %%]]
 %%[[(8 coresysf)

@@ -85,7 +85,9 @@
 %%[(8 codegen || hmtyinfer || hmtyast) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
 %%]
 
-%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[8 import(Control.Monad, qualified Control.Monad.State as ST)
+%%]
+%%[50 import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%[9999 import({%{EH}Base.Hashable})
@@ -97,7 +99,15 @@
 %%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars)
+%%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars,ppHsnEscapeWith)
+ppHsnEscapeWith :: Char -> Set.Set Char -> HsName -> (PP_Doc,Bool)
+ppHsnEscapeWith escChar escapeeChars n = flip ST.runState False $ do
+    cs <- fmap concat $ forM (show n) esc
+    isEscaped <- ST.get
+    return $ pp $ if isEscaped then escChar:cs else cs
+  where esc c | Set.member c escapeeChars = ST.put True >> return [escChar,c]
+              | otherwise                 = return [c]
+
 ppHsnEscaped :: Either Char (Set.Set Char) -> Char -> Set.Set Char -> HsName -> PP_Doc
 ppHsnEscaped first escChar escapeeChars
   = \n -> let (nh:nt) = show n

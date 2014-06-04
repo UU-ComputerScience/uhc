@@ -102,7 +102,7 @@ data PkgOption
 data CoreOpt
   = CoreOpt_NONE				-- no-op option
 %%[[(8 coreout)
-  | CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
+--  | CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
   | CoreOpt_Dump 				-- dump textual core output
 %%]]
 %%[[(8 coresysf)
