@@ -395,7 +395,7 @@ ehcCmdLineOpts
 %%]]
 %%[[(50 codegen)
      ,  Option ""   ["debug-stopat-core-error"]
-                                            (boolArg oStopAtCoreError)              "debug: stop at .core parse error (default=off)"
+                                            (boolArg oStopAtCoreError)              "debug: stop at .cr parse error (default=off)"
 %%][100
 %%]]
 %%[[99

@@ -27,6 +27,8 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[8 import(Control.Monad.State)
 %%]
+%%[8 import(qualified {%{EH}Config} as Cfg)
+%%]
 
 -- trace, debug
 %%[8 import(System.IO.Unsafe, Debug.Trace)
@@ -1032,7 +1034,7 @@ cpProcessCoreBasic modNm
                , cpFlowHILamMp modNm
 %%]]
                -- , when (ehcOptEmitCore opts) (void $ cpOutputCore True "" "core" modNm)
-               , void $ cpOutputCore True "" "core" modNm
+               , void $ cpOutputCore True "" Cfg.suffixDotlessBinaryCore modNm
 %%[[(8888 codegen java)
                , when (ehcOptEmitJava opts) (cpOutputJava         "java" modNm)
 %%]]

@@ -28,6 +28,8 @@ Module analysis
 
 %%[50 import({%{EH}Module})
 %%]
+%%[50 import(qualified {%{EH}Config} as Cfg)
+%%]
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
@@ -148,7 +150,7 @@ cpGetMetaInfo gm modNm
 %%]]
 %%[[(50 codegen)
          ;  when (GetMeta_Core `elem` gm)
-                 (tm opts ecu ecuStoreCoreTime      (fpathSetSuff "core"      fp     ))
+                 (tm opts ecu ecuStoreCoreTime      (fpathSetSuff Cfg.suffixDotlessBinaryCore fp))
 %%]]
 %%[[50
          ;  when (GetMeta_Dir `elem` gm)

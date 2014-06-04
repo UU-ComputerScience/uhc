@@ -303,6 +303,21 @@ linkerSymbolPrefix = "@LINKER_SYMBOL_PREFIX@"
 
 %%]
 
+%%[8 export(suffixDotlessBinaryCore, suffixDotlessOutputTextualCore, suffixDotlessInputTextualCore)
+-- | Suffix (dotless) for binary core files
+suffixDotlessBinaryCore :: String
+suffixDotlessBinaryCore = "bcr"
+
+-- | Suffix (dotless) for textually dumped/output core files
+suffixDotlessOutputTextualCore :: String
+suffixDotlessOutputTextualCore = "tcr"
+
+-- | Suffix (dotless) for textually read core files
+suffixDotlessInputTextualCore :: String
+suffixDotlessInputTextualCore = suffixDotlessOutputTextualCore
+
+%%]
+
 %%[(8 javascript) export(suffixJavaScriptLib)
 suffixJavaScriptLib :: String
 suffixJavaScriptLib = filter (/= '.') "@SUFFIX_LIBJS@"
