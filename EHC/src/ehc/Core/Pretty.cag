@@ -105,7 +105,7 @@ instance PP CTy where
 
 %%[(8 coreout) hs
 ppCNm :: EHCOpts -> HsName -> PP_Doc
-ppCNm _ n = fst $ ppHsnEscapeWith '$' (hsnEscapeeChars '$' $ coreScanOpts emptyEHCOpts) n
+ppCNm _ n = fst $ ppHsnEscapeWith '$' (hsnOkChars '$' $ coreScanOpts emptyEHCOpts) n
 %%]
 ppCNm :: EHCOpts -> HsName -> PP_Doc
 ppCNm o n | CoreOpt_PPParseable `elem` ehcOptCoreOpts o = ppHsnNonAlpha coreScanOpts' n
@@ -200,7 +200,9 @@ ppLit :: String -> String -> PP_Doc
 ppLit kind val = "#" >|< kind >|< pp (show val)
 
 ppTag :: CTag -> PP_Doc
-ppTag t = ppCTag' CfgPP_Plain t -- CfgPP_Core t
+ppTag t
+  -- = ppCTag' CfgPP_Plain t
+  = ppCTag' CfgPP_Core t
 
 ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
 ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs

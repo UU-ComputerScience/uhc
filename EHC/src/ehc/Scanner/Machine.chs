@@ -74,7 +74,7 @@ scan opts pos input
    -- locatein :: Ord a => [a] -> a -> Bool
    -- locatein es = isJust . btLocateIn compare (tab2tree (sort es))
    iskw     = (`Set.member` scoKeywordsTxt opts)
-   iskwextra= (`Set.member` scoKeywExtraChars opts)
+   iskwextra= scanpredIsKeywExtra opts
    isop     = (`Set.member` scoKeywordsOps opts)
    isSymbol = (`Set.member` scoSpecChars opts)
    isOpsym  = (`Set.member` scoOpChars opts)
@@ -85,7 +85,7 @@ scan opts pos input
 %%]]
 
    isIdStart c = isLower    c || c == '_' || iskwextra c
-   isIdChar  c = isAlphaNum c || c == '\'' || c == '_' || iskwextra c
+   isIdChar  c = scanpredIsIdChar c || iskwextra c
    -- isQIdChar c = isIdChar   c || c == '.'
 
    allowQual   = scoAllowQualified opts
@@ -298,6 +298,20 @@ scan opts pos input
 %%[5
      | otherwise = errToken ("Unexpected character " ++ show c) p
                  : doScan scSt (adv p c) s
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scanner predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5 export(scanpredIsIdChar, scanpredIsKeywExtra)
+-- | Is base char for identifiers (and keywords)
+scanpredIsIdChar :: Char -> Bool
+scanpredIsIdChar  c = isAlphaNum c || c == '\'' || c == '_' -- || iskwextra c
+
+-- | Is extra char for identifiers (and keywords)
+scanpredIsKeywExtra :: ScanOpts -> Char -> Bool
+scanpredIsKeywExtra opts = (`Set.member` scoKeywExtraChars opts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

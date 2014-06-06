@@ -284,10 +284,11 @@ coreScanOpts opts
                                         ])
                                     `Set.union` scoKeywordsTxt tyScanOpts
                                     `Set.union` scoKeywordsTxt hsScanOpts'
+        ,	scoKeywExtraChars	=	Set.fromList "._@"
         ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts `Set.union` scoKeywordsOps hsScanOpts'
         ,   scoDollarIdent      =   True
-        ,   scoOpChars          =   scoOpChars grinScanOpts `Set.union` scoOpChars hsScanOpts'
-        ,   scoSpecChars        =   Set.fromList "!=" `Set.union` scoSpecChars grinScanOpts `Set.union` scoSpecChars hsScanOpts'
+        ,   scoOpChars          =   scoOpChars grinScanOpts -- `Set.union` scoOpChars hsScanOpts'
+        ,   scoSpecChars        =   Set.fromList "!=" `Set.union` scoSpecChars grinScanOpts -- `Set.union` scoSpecChars hsScanOpts'
         ,   scoSpecPairs        =   scoSpecPairs hsScanOpts'
         }
   where hsScanOpts' = hsScanOpts opts

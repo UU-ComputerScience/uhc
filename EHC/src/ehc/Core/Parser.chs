@@ -28,6 +28,11 @@
 %%[(50 corein)
 type CParser       hp     =    PlainParser Token hp
 
+pS :: CParser String
+pS = tokMkStr <$> pStringTk
+%%]
+
+%%[(50 corein)
 pCModule :: CParser CModule
 pCModule
   = (\m e tm -> CModule_Mod m e tm) <$ pMODULE <*> pDollNm <* pEQUAL <*> pCExpr <*> pA (pA pCTag)
@@ -44,7 +49,7 @@ pCNumber
               <|> (CExpr_String        ) <$ pKeyTk "String"
 %%[[97
               <|> (CExpr_Integer . read) <$ pKeyTk "Integer"
-%%]
+%%]]
               )
               <*> (tokMkStr <$> pStringTk)
           <|> CExpr_Tup <$ pKeyTk "Tag" <*> pCTag
@@ -92,6 +97,8 @@ pCExpr
                      <$> pCExprSel <*> pList pCExprSelMeta
   <|> acoreLam       <$  pLAM <*> pList1 (pDollNm) <* pRARROW <*> pCExpr
   <|> CExpr_Let      <$  pLET <*> pMaybe CBindCateg_Plain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
+  <|> (\(c,_) s i t -> CExpr_FFI c s (mkImpEnt c i) t)
+                     <$  pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
       <* pOCURLY <*> pListSep pSEMI pCAlt <* pCCURLY
       <* pOCURLY <*  pDEFAULT <*> {- pMb -} pCExpr <* pCCURLY
@@ -102,6 +109,12 @@ pCExpr
           <|> CBindCateg_FFE    <$ pKeyTk "foreignexport"
 %%]]
           <|> CBindCateg_Strict <$ pBANG
+%%[[8
+        mkImpEnt c e = e
+%%][90
+        mkEnt d c e = fst $ parseForeignEnt d c Nothing e
+        mkImpEnt c e = mkEnt ForeignDirection_Import c e
+%%]]
 
 
 pTrack          ::   CParser Track
@@ -152,6 +165,15 @@ pCMetaValOpt :: CParser CMetaVal
 pCMetaValOpt
   =   pMaybe CMetaVal_Val id (pCOLON *> pCMetaVal)
 
+pCBound :: CParser CBound
+pCBound
+  = CBound_Bind cmetasDefault <$> pCExpr
+
+pCBind :: CParser CBind
+pCBind
+  = (\n b -> CBind_Bind n [b]) <$> pDollNm <* pEQUAL <*> pCBound
+
+{-
 -- 20100806 AD: due to intro of CBound not consistent with pretty printing anymore, just patched it to have it compiled
 pCBind :: CParser CBind
 pCBind
@@ -171,6 +193,7 @@ pCBind
         mkEnt d c e = fst $ parseForeignEnt d c Nothing e
         mkImpEnt c e = mkEnt ForeignDirection_Import c e
 %%]]
+-}
 
 pCAlt :: CParser CAlt
 pCAlt
@@ -193,5 +216,6 @@ pCPat
 
 pCPatFld :: CParser CPatFld
 pCPatFld
-  = (\l o n -> CPatFld_Fld l o n []) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pCBind -- pCPat
+  -- = (\l o n -> CPatFld_Fld l o n []) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pCBind -- pCPat
+  = (\l o n -> acorePatFldTy (acoreTyErr "pCPatFld") (l, o) n) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pDollNm -- pCPat
 %%]

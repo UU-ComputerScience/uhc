@@ -46,7 +46,7 @@
 %%[1 import(qualified Data.Set as Set)
 %%]
 
-%%[5 -1.Token hs import({%{EH}Scanner.Token})
+%%[5 -1.Token hs import({%{EH}Scanner.Token}, {%{EH}Scanner.Machine(scanpredIsIdChar, scanpredIsKeywExtra)})
 %%]
 
 %%[2 export(unions)
@@ -99,14 +99,14 @@
 %%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars,ppHsnEscapeWith)
-ppHsnEscapeWith :: Char -> Set.Set Char -> HsName -> (PP_Doc,Bool)
-ppHsnEscapeWith escChar escapeeChars n = flip ST.runState False $ do
+%%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars,ppHsnEscapeWith,hsnOkChars)
+ppHsnEscapeWith :: Char -> (Char -> Bool) -> HsName -> (PP_Doc,Bool)
+ppHsnEscapeWith escChar okChars n = flip ST.runState False $ do
     cs <- fmap concat $ forM (show n) esc
     isEscaped <- ST.get
     return $ pp $ if isEscaped then escChar:cs else cs
-  where esc c | Set.member c escapeeChars = ST.put True >> return [escChar,c]
-              | otherwise                 = return [c]
+  where esc c | okChars c = return [c]
+              | otherwise = ST.put True >> return [escChar,c]
 
 ppHsnEscaped :: Either Char (Set.Set Char) -> Char -> Set.Set Char -> HsName -> PP_Doc
 ppHsnEscaped first escChar escapeeChars
@@ -123,6 +123,20 @@ ppHsnEscaped first escChar escapeeChars
 hsnEscapeeChars :: Char -> ScanOpts -> Set.Set Char
 hsnEscapeeChars escChar scanOpts
   = Set.fromList [escChar] `Set.union` scoSpecChars scanOpts `Set.union` scoOpChars scanOpts
+
+hsnOkChars :: Char -> ScanOpts -> Char -> Bool
+hsnOkChars escChar scanOpts c
+  = c /= escChar && (scanpredIsIdChar c || scanpredIsKeywExtra scanOpts c)
+  
+  {-
+  scanpredIsIdChar :: Char -> Bool
+scanpredIsIdChar  c = isAlphaNum c || c == '\'' || c == '_' -- || iskwextra c
+
+-- | Is extra char for identifiers (and keywords)
+scanpredIsKeywExtra :: ScanOpts -> Char -> Bool
+scanpredIsKeywExtra opts = (`Set.member` scoKeywExtraChars opts)
+-}
+
 
 ppHsnNonAlpha :: ScanOpts -> HsName -> PP_Doc
 ppHsnNonAlpha scanOpts
