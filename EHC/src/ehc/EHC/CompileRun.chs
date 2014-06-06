@@ -441,7 +441,7 @@ crModNeedsCompile modNm cr
 %%[50 export(crModCanCompile)
 crModCanCompile :: HsName -> EHCompileRun -> Bool
 crModCanCompile modNm cr
-  = isJust (ecuMbHSTime ecu) && ecuDirIsWritable ecu
+  = isJust (ecuMbSrcTime ecu) && ecuDirIsWritable ecu
   where ecu = crCU modNm cr
 %%]
 

@@ -33,6 +33,9 @@ Module analysis
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
+%%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
+%%]
+
 %%[(50 codegen grin) hs import({%{EH}CodeGen.RefGenerator})
 %%]
 
@@ -78,24 +81,42 @@ cpCheckMods modNmL
 
 %%[50 export(GetMeta(..),allGetMeta)
 data GetMeta
-  = GetMeta_HS
+  = GetMeta_Src
   | GetMeta_HI
   | GetMeta_Core
   | GetMeta_Grin
   | GetMeta_Dir
   deriving (Eq,Ord)
 
-allGetMeta = [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir]
+allGetMeta = [GetMeta_Src, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir]
 
 %%]
 
-%%[50 export(cpGetHsImports,cpGetHsMod,cpGetMetaInfo)
-cpGetHsImports :: HsName -> EHCompilePhase HsName
-cpGetHsImports modNm
+%%[(50 corein) export(cpGetCoreModnameAndImports)
+cpGetCoreModnameAndImports :: HsName -> EHCompilePhase HsName
+cpGetCoreModnameAndImports modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
+                 mbCrSemMod = ecuMbCoreSemMod ecu
+                 crSemMod   = panicJust "cpGetCoreModnameAndImports" mbCrSemMod
+                 modNm'     = Core2ChkSem.realModuleNm_Syn_CodeAGItf crSemMod
+         ;  case mbCrSemMod of
+              {-
+              Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
+                     | otherwise       -> do { cpUpdCU modNm upd ; return modNm }
+              -}
+              Just _ -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', cuUpdKey modNm' ecu))
+              _      -> return modNm
+         }
+%%]
+
+%%[50 export(cpGetHsModnameAndImports,cpGetHsMod,cpGetMetaInfo)
+cpGetHsModnameAndImports :: HsName -> EHCompilePhase HsName
+cpGetHsModnameAndImports modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  mbHsSemMod = ecuMbHSSemMod ecu
-                 hsSemMod   = panicJust "cpGetHsImports" mbHsSemMod
+                 hsSemMod   = panicJust "cpGetHsModnameAndImports" mbHsSemMod
                  modNm'     = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
                  upd        = ecuStoreHSDeclImpS ( -- (\v -> tr "XX" (pp $ Set.toList v) v) $ 
                                                   HSSemMod.modImpNmS_Syn_AGItf hsSemMod)
@@ -124,8 +145,8 @@ cpGetMetaInfo :: [GetMeta] -> HsName -> EHCompilePhase ()
 cpGetMetaInfo gm modNm
   =  do  {  cr <- get
          ;  let (ecu,_,opts,fp) = crBaseInfo modNm cr
-         ;  when (GetMeta_HS `elem` gm)
-                 (tm opts ecu ecuStoreHSTime        (ecuSrcFilePath ecu))
+         ;  when (GetMeta_Src `elem` gm)
+                 (tm opts ecu ecuStoreSrcTime        (ecuSrcFilePath ecu))
          {-
          ;  when (GetMeta_HI `elem` gm)
                  (tm opts ecu ecuStoreHITime
@@ -185,9 +206,9 @@ cpGetMetaInfo gm modNm
 %%% Create dummy module info for .eh's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 export(cpGetDummyCheckEhMod)
-cpGetDummyCheckEhMod :: HsName -> EHCompilePhase ()
-cpGetDummyCheckEhMod modNm
+%%[50 export(cpGetDummyCheckSrcMod)
+cpGetDummyCheckSrcMod :: HsName -> EHCompilePhase ()
+cpGetDummyCheckSrcMod modNm
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              mm     = crsiModMp crsi

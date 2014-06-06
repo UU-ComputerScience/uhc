@@ -7,7 +7,7 @@
 ###########################################################################################
 
 EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
-											,base hmtyinfer codegen grin coreout \
+											,base hmtyinfer codegen grin corein coreout \
 											 $(if $(EHC_CFG_USE_RULER),,noHmTyRuler) \
 											 $(if $(ENABLE_JAVA),java jazy,) \
 											 $(if $(ENABLE_LLVM),llvm,) \
@@ -18,7 +18,6 @@ EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_CLR),clr,) \
 											 $(if $(ENABLE_TYCORE),tycore,) \
 											 $(if $(ENABLE_CORESYSF),coresysf,) \
-											 $(if $(ENABLE_CORE_ASINPOUTP),corein,) \
 											 $(if $(ENABLE_CORE_ASINPOUTP),corebackend,) \
 											 $(if $(ENABLE_TAUPHI),tauphi,) \
 											))

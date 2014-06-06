@@ -35,6 +35,8 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 -- Language semantics: Core
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(8 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
+%%]
 
 -- HI Syntax and semantics, HS module semantics
 %%[50 import(qualified {%{EH}HI} as HI)
@@ -149,6 +151,9 @@ data EHCompileUnit
       , ecuMbCore            :: !(Maybe Core.CModule)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
 %%]]
+%%[[(8 codegen corein)
+      , ecuMbCoreSemMod      :: !(Maybe Core2ChkSem.Syn_CodeAGItf)
+%%]]
 %%[[(8 codegen tycore)
       , ecuMbTyCore          :: !(Maybe C.Module)
 %%]]
@@ -172,7 +177,7 @@ data EHCompileUnit
       , ecuIsTopMod          :: !Bool                               -- module has been specified for compilation on commandline
       , ecuHasMain           :: !Bool                               -- has a def for 'main'?
       , ecuNeedsCompile      :: !Bool                               -- (re)compilation from .hs needed?
-      , ecuMbHSTime          :: !(Maybe ClockTime)                  -- timestamp of possibly absent hs file
+      , ecuMbSrcTime         :: !(Maybe ClockTime)                  -- timestamp of possibly absent source (hs, or other type) file
       , ecuMbHIInfoTime      :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated hi file
 %%[[(8 codegen)
       , ecuMbCoreTime        :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated core file
@@ -253,6 +258,9 @@ emptyECU
       , ecuMbCore            = Nothing
       , ecuMbCoreSem         = Nothing
 %%]]
+%%[[(8 codegen corein)
+      , ecuMbCoreSemMod      = Nothing
+%%]]
 %%[[(8 codegen tycore)
       , ecuMbTyCore          = Nothing
 %%]]
@@ -276,7 +284,7 @@ emptyECU
       , ecuIsTopMod          = False
       , ecuHasMain           = False
       , ecuNeedsCompile      = True
-      , ecuMbHSTime          = Nothing
+      , ecuMbSrcTime          = Nothing
       , ecuMbHIInfoTime      = Nothing
 %%[[(50 codegen)
       , ecuMbCoreTime        = Nothing
@@ -441,6 +449,11 @@ ecuStoreEHSem :: EcuUpdater EHSem.Syn_AGItf
 ecuStoreEHSem x ecu = ecu { ecuMbEHSem = Just x }
 %%]
 
+%%[(8 codegen corein) export(ecuStoreCoreSemMod)
+ecuStoreCoreSemMod :: EcuUpdater Core2ChkSem.Syn_CodeAGItf
+ecuStoreCoreSemMod x ecu = ecu { ecuMbCoreSemMod = Just x }
+%%]
+
 %%[(8 codegen) export(ecuStoreCoreSem,ecuStoreCore)
 ecuStoreCoreSem :: EcuUpdater Core2GrSem.Syn_CodeAGItf
 ecuStoreCoreSem x ecu = ecu { ecuMbCoreSem = Just x }
@@ -501,9 +514,9 @@ ecuStoreCmm :: EcuUpdater Cmm.Module
 ecuStoreCmm x ecu = ecu { ecuMbCmm = Just x }
 %%]
 
-%%[50 export(ecuStoreHSDeclImpS,ecuSetNeedsCompile,ecuStoreHIUsedImpS,ecuStoreHIInfoTime,ecuStoreHSTime,ecuStoreHSSemMod,ecuStoreIntrodModS,ecuStoreHIDeclImpS,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
-ecuStoreHSTime :: EcuUpdater ClockTime
-ecuStoreHSTime x ecu = ecu { ecuMbHSTime = Just x }
+%%[50 export(ecuStoreHSDeclImpS,ecuSetNeedsCompile,ecuStoreHIUsedImpS,ecuStoreHIInfoTime,ecuStoreSrcTime,ecuStoreHSSemMod,ecuStoreIntrodModS,ecuStoreHIDeclImpS,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
+ecuStoreSrcTime :: EcuUpdater ClockTime
+ecuStoreSrcTime x ecu = ecu { ecuMbSrcTime = Just x }
 
 -- ecuStoreHITime :: EcuUpdater ClockTime
 -- ecuStoreHITime x ecu = ecu { ecuMbHITime = Just x }
@@ -610,15 +623,12 @@ ecuStoreCppFilePath x ecu = ecu { ecuMbCppFilePath = Just x }
 %%% Predicates on EHCompileUnit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 haddock
-Is HS newer?
-If no HS exists False is returned.
-%%]
-
 %%[50 export(ecuIsHSNewerThanHI)
+-- | Is HS newer?
+--   If no HS exists False is returned.
 ecuIsHSNewerThanHI :: EHCompileUnit -> Bool
 ecuIsHSNewerThanHI ecu
-  = case (ecuMbHSTime ecu,ecuMbHIInfoTime ecu) of
+  = case (ecuMbSrcTime ecu,ecuMbHIInfoTime ecu) of
       (Just ths,Just thi) -> ths `diffClockTimes` thi > noTimeDiff 
       (Nothing ,Just thi) -> False
       _                   -> True
@@ -640,13 +650,10 @@ ecuIsValidHIInfo ecu
       _      -> False
 %%]
 
-%%[50 haddock
-Can HI be used instead of HS?
-This is purely based on HI being of the right version and HS not newer.
-The need for recompilation considers dependencies on imports as well.
-%%]
-
 %%[50 export(ecuCanUseHIInsteadOfHS)
+-- | Can HI be used instead of HS?
+--   This is purely based on HI being of the right version and HS not newer.
+--   The need for recompilation considers dependencies on imports as well.
 ecuCanUseHIInsteadOfHS :: EHCompileUnit -> Bool
 ecuCanUseHIInsteadOfHS ecu
   = ecuIsValidHIInfo ecu && not (ecuIsHSNewerThanHI ecu)

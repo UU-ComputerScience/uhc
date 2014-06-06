@@ -117,15 +117,16 @@ optOptsIsYes mos o = maybe False (o `elem`) mos
 instance Show CoreOpt where
 %%[[(8 coreout)
   -- show CoreOpt_PPParseable      = "pp-parseable"
-  show CoreOpt_Dump             = "dump"
+  show CoreOpt_Dump             	= "dump"
+  show CoreOpt_DumpAlsoNonParseable	= "dump-alsononparseable"
 %%]]
 %%[[(8 coresysf)
-  show CoreOpt_SysF             = "sysf"
-  show CoreOpt_SysFCheck        = "check"
-  show CoreOpt_SysFCheckOnlyVal = "checkonlyval"
-  show CoreOpt_SysFOnlyHi       = "onlyhi"
+  show CoreOpt_SysF             	= "sysf"
+  show CoreOpt_SysFCheck        	= "check"
+  show CoreOpt_SysFCheckOnlyVal 	= "checkonlyval"
+  show CoreOpt_SysFOnlyHi       	= "onlyhi"
 %%]]
-  show _      					= "-"
+  show _      						= "-"
 
 coreOptMp :: Map.Map String CoreOpt
 coreOptMp = str2stMpWithOmit [CoreOpt_NONE]
@@ -504,7 +505,7 @@ ehcCmdLineOpts
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
 %%]]
 %%[[(8 codegen)
-         oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s }
+         oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s ++ ehcOptCoreOpts o}
 %%]]
 %%[[(8 codegen cmm)
          oOptCmm     s   o =  o { ehcOptCmmOpts = optOpts cmmOptMp s }

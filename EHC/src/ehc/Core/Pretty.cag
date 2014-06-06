@@ -140,6 +140,25 @@ ppOptCMetas x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Config
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 coreout) hs
+ehcOptDumpMore :: EHCOpts -> Bool
+ehcOptDumpMore opts = CoreOpt_DumpAlsoNonParseable `elem` ehcOptCoreOpts opts
+
+alsoMore :: EHCOpts -> (PP_Doc -> PP_Doc) -> PP_Doc -> PP_Doc
+alsoMore opts mk
+  | ehcOptDumpMore opts = mk
+  | otherwise           = id
+
+whenMore :: EHCOpts -> PP_Doc -> PP_Doc
+whenMore opts
+  | ehcOptDumpMore opts = id
+  | otherwise           = const empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Debugging only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -263,12 +282,13 @@ ATTR CodeAGItf AllCodeNT [ lamMp: LamMp | | ]
 
 %%[(8 coreout) hs
 -- | pp a CBound, for internal use here
-ppBound :: Bool -> Maybe String -> String -> PP_Doc -> PP_Doc
-ppBound isSingleNoNm mbLev s pv
+ppBound :: EHCOpts -> Bool -> Maybe String -> String -> PP_Doc -> PP_Doc
+ppBound opts isSingleNoNm mbLev s pv
   = lev $ sep (pp s) pv
   where sep | isSingleNoNm = flip const
             | otherwise    = (>#<)
-        lev = maybe id (>#<) mbLev
+        lev | ehcOptDumpMore opts = maybe id (>#<) mbLev
+            | otherwise           = id
 %%]
 
 %%[(8 coreout)
@@ -341,11 +361,11 @@ SEM CBind
                                                     isSingleNoNm = hsnIsWild @nm && length @bindAspects.ppBindInfoL == 1
                                                     def | isSingleNoNm = par                                           val
                                                         | otherwise    = par $ howDef @lhs.ppHow (ppCNm @lhs.opts @nm) val
-                                                        where val = p $ [ ppBound isSingleNoNm Nothing s pv | (s,_,pv) <- @bindAspects.ppBindInfoL ] -- ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp)
+                                                        where val = p $ [ ppBound @lhs.opts isSingleNoNm Nothing s pv | (s,_,pv) <- @bindAspects.ppBindInfoL ] -- ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp)
                                                 in  def
 
 SEM CBound
-  | Bind        loc         .   ppBound     =   @bindMeta.pp >-< @expr.pp
+  | Bind        loc         .   ppBound     =   whenMore @lhs.opts @bindMeta.pp >-< @expr.pp
   | Ty          loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | RelevTy     loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
   | Meta        loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
@@ -364,7 +384,7 @@ SEM CBound
 %%]]
 
 SEM CBound
-  | Val         loc         .   pp          =   ppBound True (Just @lev) @sep @ppBound
+  | Val         loc         .   pp          =   ppBound @lhs.opts True (Just @lev) @sep @ppBound
   | * - Val     loc         .   pp          =   @ppBound
 
 SEM CBoundL CBindL CPatFldL CAltL CBindAnnL
@@ -423,7 +443,7 @@ SEM CMetaVal
 
 %%[(8 coreout)
 SEM CExpr
-  | Ann         loc         .   pp          =   ppParens (@expr.pp >#< @ann.pp)
+  | Ann         loc         .   pp          =   alsoMore @lhs.opts (\x -> ppParens (x >#< @ann.pp)) @expr.pp
 
 SEM CExprAnn
   | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_Plain @ty

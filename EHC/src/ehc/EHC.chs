@@ -261,7 +261,7 @@ mkFileSuffMpHs opts
     -- currently not supported
     , ( Just "grin", ECUSGrin )
 %%]]
-%%[[(8 corein)
+%%[[(50 corein)
     , ( Just Cfg.suffixDotlessInputTextualCore, ECUSCore CRStart )
 %%]]
     ]
@@ -591,7 +591,6 @@ doCompileRun fnL@(fn:_) opts
                           })
                ; when isTopModule
                       (cpUpdCU nm (ecuSetIsTopMod True))
-               -- ; cpUpdCU nm (ecuSetIsTopMod isTopModule)      -- ???? not equivalent to above
 %%[[99
                ; cpUpdCU nm (ecuSetTarget (ehcOptTarget opts))
 %%]]

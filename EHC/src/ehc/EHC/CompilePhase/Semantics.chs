@@ -31,6 +31,8 @@ Folding over AST to compute semantics
 -- Core syntax and semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
+%%]
 -- TyCore syntax and semantics
 %%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
@@ -71,6 +73,20 @@ cpFoldCore modNm
                                        })
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem
+                                ))
+         }
+%%]
+
+%%[(50 codegen corein) export(cpFoldCoreMod)
+cpFoldCoreMod :: HsName -> EHCompilePhase ()
+cpFoldCoreMod modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
+                 mbCore   = ecuMbCore ecu
+                 core     = panicJust "cpFoldCoreMod" mbCore
+                 coreSem  = Core2ChkSem.cmodCheck' opts Core2ChkSem.emptyCheckEnv core
+         ;  when (isJust mbCore)
+                 (cpUpdCU modNm ( ecuStoreCoreSemMod coreSem
                                 ))
          }
 %%]

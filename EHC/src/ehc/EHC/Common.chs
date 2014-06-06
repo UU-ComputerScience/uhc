@@ -113,9 +113,10 @@ data CState
 
 The state Core compilation can be in
 
-%%[(8 corein) export(CRState(..))
+%%[(50 corein) export(CRState(..))
 data CRState
   = CRStart
+  | CROnlyImports
   | CRAllSem
   deriving (Show,Eq)
 %%]
@@ -130,7 +131,7 @@ data EHCompileUnitState
 %%[[(90 codegen)
   | ECUSC       !CState
 %%]]
-%%[[(8 corein)
+%%[[(50 corein)
   | ECUSCore    !CRState
 %%]]
   | ECUSGrin

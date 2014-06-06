@@ -70,6 +70,9 @@ cpCleanupCore modNmL
                            , ecuMbTyCore          = Nothing
 %%]]
                            , ecuMbCoreSem         = Nothing
+%%[[(99 corein)
+                           , ecuMbCoreSemMod      = Nothing
+%%]]
                            }
                   )
 %%]

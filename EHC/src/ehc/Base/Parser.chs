@@ -26,7 +26,13 @@
 %%[8 export(pDollNm,pUID,pInt)
 
 pDollNm :: P HsName
-pDollNm = tokMkQName <$> pVaridTk
+pDollNm
+  = tokMkQName
+    <$> (   pVaridTk  <|> pConidTk
+%%[[50
+        <|> pQVaridTk <|> pQConidTk
+%%]]
+        )
 
 -- counterpart of ppUID'
 pUID :: P UID
@@ -42,10 +48,17 @@ pUIDHI :: P UID
 pUIDHI = pKeyTk "uid" *> pUID
 %%]
 
--- counterpart of ppCTag'
-%%[8 export(pCTag)
+%%[8 export(pCTag, pCTagExtensive)
+-- | counterpart of ppCTag'
 pCTag :: P CTag
 pCTag
+  = pCurly (   (\conNm tg -> CTag hsnUnknown conNm tg (-1) (-1))
+               <$> pDollNm <* pCOMMA <*> pInt
+           <|> CTagRec <$ pKeyTk "Rec"
+           )
+-- | counterpart of pCTagExtensive'
+pCTagExtensive :: P CTag
+pCTagExtensive
   = pCurly (   CTag <$> pDollNm <* pCOMMA <*> pDollNm <* pCOMMA <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt
            <|> CTagRec <$ pKeyTk "Rec"
            )

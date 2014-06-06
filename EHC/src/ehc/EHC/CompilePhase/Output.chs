@@ -43,6 +43,8 @@ Output generation, on stdout or file
 -- TBD: this depends on grin gen, but should also be available for Core, so in a CoreXXXSem
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
+%%]
 
 -- Core output
 %%[(8 codegen coreout) import({%{EH}Core} as Core,{%{EH}Core.Pretty})
@@ -143,31 +145,36 @@ cpOutputTyCore suff modNm
 
 %%[(8 codegen) export(cpOutputCoreModules)
 cpOutputCoreModules
-  :: Bool
+  :: Bool -> [CoreOpt]
      -> (Int -> String -> String)
      -> String -> HsName
      -> [(String,CModule)]
      -> EHCompilePhase [FPath]
-cpOutputCoreModules binary mknmsuff suff modNm cMods
-  = cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm cMods
+cpOutputCoreModules binary coreOpts mknmsuff suff modNm cMods
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm cMods
+       }
   where write opts _ fpC fnC cMod = do
 %%[[50
           if binary
             then putSerializeFile fnC cMod
             else
 %%]]
-                 putPPFPath fpC (ppCModule opts cMod) 100
+                 do { let cMod' = cmodTrfEraseTyCore opts cMod
+                    ; putPPFPath fpC (ppCModule (opts {ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts}) cMod') 100
+                    }
 %%]
 
 %%[(8 codegen) export(cpOutputCore)
-cpOutputCore :: Bool -> String -> String -> HsName -> EHCompilePhase FPath
-cpOutputCore binary nmsuff suff modNm
+cpOutputCore :: Bool -> [CoreOpt] -> String -> String -> HsName -> EHCompilePhase FPath
+cpOutputCore binary coreOpts nmsuff suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputCore" mbCore
          ;  cpMsg modNm VerboseALot "Emit Core"
-         ;  fmap head $ cpOutputCoreModules binary (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
+         ;  fmap head $ cpOutputCoreModules binary coreOpts (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
          }
 %%]
 

@@ -270,8 +270,10 @@ coreScanOpts opts
                                         , "module", "default"
                                         , "BINDPLAIN", "BINDFUNCTION0", "BINDFUNCTION1", "BINDAPPLY0"
                                         , "VAL"
+                                        , "FAIL"
+                                        , "foreign"
 %%[[9
-                                        , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
+                                        , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED", "TRACK"
 %%]]
 %%[[50
                                         , "Integer"
@@ -354,57 +356,6 @@ grinScanOpts
         ,   scoOpChars          =   Set.fromList "<->:=+*"
         ,   scoDollarIdent      =   True
         }
-%%]
-
-%%[8888
-hiScanOpts :: EHCOpts -> ScanOpts
-hiScanOpts opts
-  =  hsScanOpts'
-        {   scoKeywordsTxt      =   (Set.fromList $
-                                        [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity", "grInline"
-                                        , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
-                                        , "True", "False"
-                                        , "tykind", "tykinm", "tykivar"
-                                        , "settings"
-%%[[9
-                                        , "chr", "chrstore"
-                                        , "Assume", "Prove", "Reduction"
-                                        , "scope"
-                                        , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "EqualScope", "NotEqualScope"
-                                        , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhoweqsym", "redhoweqtrans", "redhoweqcongr"
-                                        , "varuidnmname", "varuidnmuid", "varuidnmvar"
-                                        , "cxtscope1"
-%%]]
-%%[[10
-                                        , "label", "offset"
-                                        , "NonEmptyRowLacksLabel"
-                                        , "redhowlabel"
-%%]]
-%%[[17
-                                        , "typolarity"
-%%]]
-%%[[13
-                                        , "redhowlambda"
-%%]]
-%%[[50
-                                        , "visibleno", "visibleyes"
-                                        , "importmodules"
-%%]]
-                                        ]
-%%[[50
-                                        ++ tokKeywStrsHI6
-%%]]
-                                    )
-                                    `Set.union` scoKeywordsTxt hsScanOpts'
-                                    `Set.union` scoKeywordsTxt tyScanOpts
-                                    `Set.union` scoKeywordsTxt grinScanOpts
-        ,   scoOpChars          =   scoOpChars coreScanOpts'
-        ,   scoDollarIdent      =   True
-        ,   scoSpecChars        =   scoSpecChars coreScanOpts'
-        ,   scoKeywordsOps      =   Set.fromList [ "??" ] `Set.union` scoKeywordsOps coreScanOpts'
-        }
-  where hsScanOpts' = hsScanOpts opts
-        coreScanOpts' = coreScanOpts opts
 %%]
 
 %%[8

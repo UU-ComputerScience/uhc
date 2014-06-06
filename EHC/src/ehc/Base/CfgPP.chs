@@ -98,13 +98,21 @@ tnUniqRepr
 %%% pp's which should not be here...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.ppCTag export(ppCTag')
+%%[8.ppCTag export(ppCTag', ppCTagExtensive')
 -- intended for parsing
 ppCTag' :: CfgPP x => x -> CTag -> PP_Doc
 ppCTag' x t
   = case t of
       CTagRec                      -> ppCurly "Rec"
       CTag ty nm tag arity mxarity -> ppCurlysCommas' [{- ppNm ty, -} ppNm nm, pp tag {- , pp arity, pp mxarity -}]
+  where ppNm n = cfgppHsName x n
+
+-- intended for parsing
+ppCTagExtensive' :: CfgPP x => x -> CTag -> PP_Doc
+ppCTagExtensive' x t
+  = case t of
+      CTagRec                      -> ppCurly "Rec"
+      CTag ty nm tag arity mxarity -> ppCurlysCommas' [ppNm ty, ppNm nm, pp tag, pp arity, pp mxarity]
   where ppNm n = cfgppHsName x n
 %%]
 

@@ -104,6 +104,7 @@ data CoreOpt
 %%[[(8 coreout)
 --  | CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
   | CoreOpt_Dump 				-- dump textual core output
+  | CoreOpt_DumpAlsoNonParseable-- dump also the parts which are not parseable
 %%]]
 %%[[(8 coresysf)
   | CoreOpt_SysF				-- 20120419, work in startup/progress: generate System F
