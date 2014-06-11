@@ -287,11 +287,12 @@ coreScanOpts opts
         ,	scoKeywExtraChars	=	Set.fromList "._@"
         ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts `Set.union` scoKeywordsOps hsScanOpts'
         ,   scoDollarIdent      =   True
-        ,   scoOpChars          =   scoOpChars grinScanOpts -- `Set.union` scoOpChars hsScanOpts'
-        ,   scoSpecChars        =   Set.fromList "!=" `Set.union` scoSpecChars grinScanOpts -- `Set.union` scoSpecChars hsScanOpts'
-        ,   scoSpecPairs        =   scoSpecPairs hsScanOpts'
+        ,   scoOpChars          =   Set.fromList "<->:=+*"
+        ,   scoSpecChars        =   Set.fromList "!=[]();{}#/\\|,%"
+        ,   scoSpecPairs        =   scoSpecPairs ehScanOpts'
         }
   where hsScanOpts' = hsScanOpts opts
+        ehScanOpts' = ehScanOpts opts
 %%]
 
 Todo:
@@ -477,6 +478,12 @@ pKeyw k                 =   pKeyTk (show k)
 %%]
 
 %%[1
+pKeywHsNname            ::  (IsParser p Token,Show k) => k -> p HsName
+pKeywHsNname k          =   tokMkQName <$> pKeyw k
+
+%%]
+
+%%[1
 pStringTk, pCharTk,
   pInteger8Tk, pInteger10Tk, pInteger16Tk, pFractionTk,
 %%]
@@ -641,7 +648,7 @@ pMINUS           = pKeyTk "-"
 pSTAR            = pKeyTk "*"
 pBANG            = pKeyTk "!"
 pEQUAL           = pKeyTk "="
-pRARROW          = pKeyTk (show hsnArrow)
+pRARROW          = pKeyw hsnArrow
 pBACKQUOTE       = pKeyTk "`"
 pLET             = pKeyTk "let"
 pLAM             = pKeyTk "\\"
@@ -857,8 +864,7 @@ tokOpStrsHS11   = [  ]
 pQUALIFIED      ,
     pQUESTQUEST ,
     pAS         ,
-    pHIDING     ,
-    pNUMBER
+    pHIDING
   :: IsParser p Token => p Token
 %%]
 
@@ -866,7 +872,6 @@ pQUALIFIED      ,
 pQUALIFIED       = pKeyTk "qualified"
 pAS              = pKeyTk "as"
 pHIDING          = pKeyTk "hiding"
-pNUMBER          = pKeyTk "#"
 pQUESTQUEST      = pKeyTk "??"
 
 tokKeywStrsEH12 = [  ]

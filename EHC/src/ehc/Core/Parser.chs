@@ -7,18 +7,20 @@
 %%% Core parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corein) module {%{EH}Core.Parser} import(UU.Parsing as P, UHC.Util.ParseUtils, UHC.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty.Parser(pTy)}, {%{EH}Core})
+%%[(8 corein) module {%{EH}Core.Parser} import({%{EH}Base.Common}, {%{EH}Base.Builtin})
 %%]
+
+%%[(8 corein) import(UHC.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
+%%]
+%%[(8 corein) import(UU.Parsing as P, UHC.Util.ParseUtils, {%{EH}Base.Parser}, {%{EH}Ty.Parser})
+%%]
+%%[(90 corein) import({%{EH}Foreign.Parser})
+%%]
+
 %%[(8 corein) import(Data.Maybe)
 %%]
 
-%%[(8 corein) hs import({%{EH}AbstractCore})
-%%]
-
-%%[(50 corein) export(pCModule,pCExpr)
-%%]
-
-%%[(90 corein) import({%{EH}Foreign.Parser})
+%%[(8 corein) hs import({%{EH}AbstractCore}, {%{EH}Core}, {%{EH}Ty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,19 +35,30 @@ pS = tokMkStr <$> pStringTk
 %%]
 
 %%[(50 corein)
+pINT		,
+  pCHAR
+    :: CParser HsName
+pINT = tokMkQName <$> pKeyTk "Int" -- pKeywHsNname hsnInt
+pCHAR = tokMkQName <$> pKeyTk "Char" -- pKeywHsNname hsnChar
+
+pCTy :: CParser Ty
+pCTy = pTy' (pDollNm <|> pINT <|> pCHAR)
+%%]
+
+%%[(50 corein) export(pCModule,pCExpr)
 pCModule :: CParser CModule
 pCModule
   = (\m e tm -> CModule_Mod m e tm) <$ pMODULE <*> pDollNm <* pEQUAL <*> pCExpr <*> pA (pA pCTag)
   where pA pE = pOCURLY *> pListSep pSEMI ((,) <$> pDollNm <* pEQUAL <*> pE) <* pCCURLY
 
 pCTagOnly :: CParser CTag
-pCTagOnly = pNUMBER *> pKeyTk "Tag" *> pCTag
+pCTagOnly = pHASH *> pKeyTk "Tag" *> pCTag
 
 pCNumber :: CParser CExpr
 pCNumber
-  =    pNUMBER
-       *> (   (   (CExpr_Int     . read) <$ pKeyTk "Int"
-              <|> (CExpr_Char    . head) <$ pKeyTk "Char"
+  =    pHASH
+       *> (   (   (CExpr_Int     . read) <$ pINT
+              <|> (CExpr_Char    . head) <$ pCHAR
               <|> (CExpr_String        ) <$ pKeyTk "String"
 %%[[97
               <|> (CExpr_Integer . read) <$ pKeyTk "Integer"
@@ -201,21 +214,24 @@ pCAlt
 
 pCPat :: CParser CPat
 pCPat
-  =   pNUMBER
-       *> (   (   (CPat_Int  . read) <$ pKeyTk "Int"
-              <|> (CPat_Char . head) <$ pKeyTk "Char"
+  =   pHASH
+       *> (   (   (CPat_Int  . read) <$ pINT
+              <|> (CPat_Char . head) <$ pCHAR
               )
               <*> (tokMkStr <$> pStringTk)
-          <|> CPat_Con
+          <|> (\t r fs -> CPat_Con t r $ zipWith (\o (mf,n) -> acorePatFldTy (acoreTyErr "pCPatFld") (maybe (n, CExpr_Int o) id mf) n) [0..] fs)		-- TODO, use refGen instead of baked in 0.. ...
               <$  pKeyTk "Tag" <*> pCTag
-              <*  pOCURLY <*> pCPatRest <* pVBAR <*> pListSep pCOMMA pCPatFld <* pCCURLY
+              <*  pOCURLY <*> pCPatRest <*> pListSep pCOMMA pCPatFld <* pCCURLY
           )
   <|> CPat_Var <$> pDollNm
   where -- pRPatNm = RPatNmOrig <$> pDollNm <|> RPatNmUniq <$ pKeyTk "uniq" <*> pDollNm
-        pCPatRest = pMaybe CPatRest_Empty CPatRest_Var pDollNm
+        pCPatRest = pMaybe CPatRest_Empty CPatRest_Var (pDollNm <* pVBAR)
 
-pCPatFld :: CParser CPatFld
+-- pCPatFld :: CParser CPatFld
+pCPatFld :: CParser (Maybe (HsName,CExpr),HsName)
 pCPatFld
   -- = (\l o n -> CPatFld_Fld l o n []) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pCBind -- pCPat
-  = (\l o n -> acorePatFldTy (acoreTyErr "pCPatFld") (l, o) n) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pDollNm -- pCPat
+  -- = (\l o n -> acorePatFldTy (acoreTyErr "pCPatFld") (l, o) n) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pDollNm -- pCPat
+  = pLblOff <+> pDollNm -- pCPat
+  where pLblOff = pMb $ (,) <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL
 %%]

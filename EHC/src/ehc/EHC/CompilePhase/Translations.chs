@@ -40,6 +40,8 @@ Translation to another AST
 -- Core semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(8 codegen) import({%{EH}Core.Trf.ElimNonCodegenConstructs})
+%%]
 
 -- TyCore semantics
 %%[(8 codegen tycore grin) import(qualified {%{EH}TyCore.ToCore} as TyCore2Core)
@@ -158,7 +160,7 @@ cpTranslateEH2Core modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbEHSem= ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
-                 core   = EHSem.cmodule_Syn_AGItf  ehSem
+                 core   = cmodTrfElimNonCodegenConstructs opts $ EHSem.cmodule_Syn_AGItf  ehSem
          ;  when (isJust mbEHSem)
                  (cpUpdCU modNm ( ecuStoreCore core
                                 ))

@@ -183,9 +183,10 @@ instance PP UID where
   pp = text . show
 %%]
 
-%%[8 export(ppUID')
-ppUID' :: UID -> PP_Doc
-ppUID' uid = ppCurlysCommas $ uidInts uid
+%%[8 export(ppUIDParseable)
+ppUIDParseable :: UID -> PP_Doc
+-- ppUIDParseable uid = ppCurlysCommas $ uidInts uid
+ppUIDParseable uid = "%" >|< (ppCommas $ uidInts uid) >|< "%"
 %%]
 
 %%[7

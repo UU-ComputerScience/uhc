@@ -34,9 +34,10 @@ pDollNm
 %%]]
         )
 
--- counterpart of ppUID'
+-- counterpart of ppUIDParseable
 pUID :: P UID
-pUID = mkUID <$ pOCURLY <*> pList1Sep pCOMMA pInt <* pCCURLY
+-- pUID = mkUID <$ pOCURLY <*> pList1Sep pCOMMA pInt <* pCCURLY
+pUID = mkUID <$ pPERCENT <*> pList1Sep pCOMMA pInt <* pPERCENT
 
 pInt :: P Int
 pInt = tokMkInt <$> pInteger10Tk
@@ -52,8 +53,8 @@ pUIDHI = pKeyTk "uid" *> pUID
 -- | counterpart of ppCTag'
 pCTag :: P CTag
 pCTag
-  = pCurly (   (\conNm tg -> CTag hsnUnknown conNm tg (-1) (-1))
-               <$> pDollNm <* pCOMMA <*> pInt
+  = pCurly (   (\tyNm conNm tg -> CTag tyNm conNm tg (-1) (-1))
+               <$> pDollNm <* pCOMMA <*> pDollNm <* pCOMMA <*> pInt
            <|> CTagRec <$ pKeyTk "Rec"
            )
 -- | counterpart of pCTagExtensive'

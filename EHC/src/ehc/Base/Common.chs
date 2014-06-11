@@ -99,12 +99,15 @@
 %%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars,ppHsnEscapeWith,hsnOkChars)
-ppHsnEscapeWith :: Char -> (Char -> Bool) -> HsName -> (PP_Doc,Bool)
-ppHsnEscapeWith escChar okChars n = flip ST.runState False $ do
-    cs <- fmap concat $ forM (show n) esc
-    isEscaped <- ST.get
-    return $ pp $ if isEscaped then escChar:cs else cs
+%%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars,ppHsnEscapeWith,hsnOkChars, hsnNotOkStrs)
+ppHsnEscapeWith :: Char -> (Char -> Bool) -> (String -> Bool) -> (HsName -> Bool) -> HsName -> (PP_Doc,Bool)
+ppHsnEscapeWith escChar okChars notOkStr leaveAsIs n = flip ST.runState False $ do
+    let shown = show n
+    if leaveAsIs n
+      then return $ pp n
+      else do cs <- fmap concat $ forM shown esc
+              isEscaped <- ST.get
+              return $ pp $ if isEscaped || notOkStr shown then escChar:cs else cs
   where esc c | okChars c = return [c]
               | otherwise = ST.put True >> return [escChar,c]
 
@@ -127,16 +130,9 @@ hsnEscapeeChars escChar scanOpts
 hsnOkChars :: Char -> ScanOpts -> Char -> Bool
 hsnOkChars escChar scanOpts c
   = c /= escChar && (scanpredIsIdChar c || scanpredIsKeywExtra scanOpts c)
-  
-  {-
-  scanpredIsIdChar :: Char -> Bool
-scanpredIsIdChar  c = isAlphaNum c || c == '\'' || c == '_' -- || iskwextra c
 
--- | Is extra char for identifiers (and keywords)
-scanpredIsKeywExtra :: ScanOpts -> Char -> Bool
-scanpredIsKeywExtra opts = (`Set.member` scoKeywExtraChars opts)
--}
-
+hsnNotOkStrs :: ScanOpts -> String -> Bool
+hsnNotOkStrs scanOpts s = s `Set.member` scoKeywordsTxt scanOpts
 
 ppHsnNonAlpha :: ScanOpts -> HsName -> PP_Doc
 ppHsnNonAlpha scanOpts

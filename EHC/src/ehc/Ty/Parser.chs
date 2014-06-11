@@ -10,7 +10,7 @@
 %%[(50 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, UHC.Util.ParseUtils, {%{EH}Base.Parser}, UHC.Util.ScanUtils, {%{EH}Base.Common},{%{EH}Base.TermLike}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
-%%[(50 hmtyinfer || hmtyast) export(pTy,pPred)
+%%[(50 hmtyinfer || hmtyast)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,46 +21,62 @@
 -- type P p = PlainParser Token p
 %%]
 
-%%[(50 hmtyinfer || hmtyast)
-pPred :: P Pred
-pPred
-  = pOIMPL
-     *> (pTy
-         <**> (   (flip Pred_Lacks) <$ pLAM <*> (Label_Lab <$> pDollNm <|> Label_Var <$> pUIDHI)
-              <|> pSucceed Pred_Class
-        )     )
-    <*  pCIMPL
-
-pTyBase :: P Ty
-pTyBase
-  =   mkTyVar <$> pUIDHI
-  <|> Ty_Any  <$  pQUESTQUEST
-  <|> appCon  <$> pDollNm
-  <|> pParens pTy
-  <|> mkTyPr  <$> pPred
-  <|> pRow
-  where pRow :: P Ty
-        pRow
-          = pOROWROW
-             *> (   foldl (\r (l,e) -> Ty_Ext r l e)
-                    <$> pRow <* pVBAR
-                    <*> pList1Sep pCOMMA ((,) <$> (pDollNm <|> mkHNmPos <$> pInt) <* pDCOLON <*> pTy)
-                <|> pSucceed (appCon hsnRowEmpty)
-                )
-            <*  pCROWROW
-
-pTyApp :: P Ty
-pTyApp
-  =   foldl1 Ty_App <$> pList1 pTyBase
-
+%%[(50 hmtyinfer || hmtyast) export(pTy', pTy)
 pTy :: P Ty
-pTy
-  =   pTyApp
-  <|> Ty_TBind
-      <$> ((TyQu_Forall <$ pFORALL <|> TyQu_Exists <$ pEXISTS) <*> pMaybe 0 id (pSTAR *> pMaybe 1 id pInt))
-      <*> pUIDHI
-      <*> pMaybe kiStar id (pParens pTy)
-      <*  pDOT
-      <*> pTy
-  <|> Ty_Lam <$ pLAM <*> pUIDHI <* pRARROW <*> pTy
+pTy = pTy' pDollNm
+
+pTy' :: P HsName -> P Ty
+pTy' pNm = pT
+  where 
+{-
+    pPred :: P Pred
+    pPred
+      = pOIMPL
+         *> (pT
+             <**> (   (flip Pred_Lacks) <$ pLAM <*> (Label_Lab <$> pNm <|> Label_Var <$> pUIDHI)
+                  <|> pSucceed Pred_Class
+            )     )
+        <*  pCIMPL
+-}
+
+    pTyBase :: P Ty
+    pTyBase
+      =   appCon  <$> pNm
+      <|> pParens pT
+      <|> pBracks pT
+      <|> pRow
+      <|> mkTyVar <$> pUID
+{-
+      <|> Ty_Any  <$  pQUESTQUEST
+      <|> mkTyPr  <$> pPred
+-}
+      where pRow :: P Ty
+            pRow
+              = pOROWROW
+                 *> (   foldl (\r (l,e) -> Ty_Ext r l e)
+                        <$> pRow <* pVBAR
+                        <*> pList1Sep pCOMMA ((,) <$> (pNm <|> mkHNmPos <$> pInt) <* pDCOLON <*> pT)
+                    <|> pSucceed (appCon hsnRowEmpty)
+                    )
+                <*  pCROWROW
+
+    pTyApp :: P Ty
+    pTyApp
+      =   appTopApp <$> pList1 pTyBase
+
+    pT :: P Ty
+    pT
+      =   pTyApp <**>
+            (   flip app1Arr <$ pRARROW <*> pT
+            <|> pSucceed id
+            )
+{-
+      <|> Ty_TBind
+          <$> ((TyQu_Forall <$ pFORALL <|> TyQu_Exists <$ pEXISTS) <*> pMaybe 0 id (pSTAR *> pMaybe 1 id pInt))
+          <*> pUIDHI
+          <*> pMaybe kiStar id (pParens pT)
+          <*  pDOT
+          <*> pT
+      <|> Ty_Lam <$ pLAM <*> pUIDHI <* pRARROW <*> pT
+-}
 %%]

@@ -38,16 +38,22 @@ class CfgPP x where
   cfgppHsName 		:: x -> HsName -> PP_Doc
   cfgppConHsName 	:: x -> HsName -> PP_Doc
   cfgppUID    		:: x -> UID    -> PP_Doc
-  cfgppVarHsName 	:: x -> Maybe HsName -> Maybe UID -> Maybe Int -> PP_Doc
+  cfgppVarHsName 	:: x -> Maybe HsName -> Maybe UID -> Maybe Int -> Maybe PP_Doc -> PP_Doc
+  cfgppVarHsNameFallback
+  					:: x -> Maybe HsName -> Maybe UID -> Maybe Int -> Maybe PP_Doc -> PP_Doc
   cfgppFollowAST    :: x -> Bool
+  cfgppTyPPVarDflt 	:: x -> String -> UID -> Maybe PP_Doc -> PP_Doc
 
-  cfgppHsName    _              = pp
-  cfgppConHsName _              = ppCon
-  cfgppUID       _              = pp
-  cfgppVarHsName x _ _ (Just i) = cfgppHsName x $ mkHNm $ tnUniqRepr i
-  cfgppVarHsName x (Just n) _ _ = cfgppHsName x n
-  cfgppVarHsName x _ (Just u) _ = cfgppUID x u
-  cfgppFollowAST _              = False
+  cfgppHsName    _              			= pp
+  cfgppConHsName _              			= ppCon
+  cfgppUID       _              			= pp
+  cfgppVarHsName x mn mu mi mp				= cfgppVarHsNameFallback x mn mu mi mp
+  cfgppVarHsNameFallback x _ _ _ (Just p)  	= p
+  cfgppVarHsNameFallback x _ _ (Just i) _ 	= cfgppHsName x $ mkHNm $ tnUniqRepr i
+  cfgppVarHsNameFallback x (Just n) _ _ _ 	= cfgppHsName x n
+  cfgppVarHsNameFallback x _ (Just u) _ _ 	= cfgppUID x u
+  cfgppFollowAST _              			= False
+  cfgppTyPPVarDflt							= \x pre tv mbpp -> cfgppVarHsName x (Just $ mkHNm $ pre ++ "_" ++ show tv) (Just tv) Nothing mbpp
 %%]
 
 %%[8 export(CfgPP_Plain(..),CfgPP_Core(..),CfgPP_Grin(..),CfgPP_TyCore(..))
@@ -63,8 +69,14 @@ instance CfgPP CfgPP_Plain
 
 %%[8
 instance CfgPP CfgPP_Core where
-  cfgppHsName    _ = ppHsnNonAlpha coreScanOpts'
-    where coreScanOpts' = coreScanOpts emptyEHCOpts
+  cfgppHsName    _ n 				= fst $ ppHsnEscapeWith '$' (hsnOkChars '$' $ copts) (hsnNotOkStrs copts) (`Set.member` leaveAsIs) n
+    where copts = coreScanOpts emptyEHCOpts
+          leaveAsIs = Set.fromList [hsnRowEmpty]
+  cfgppConHsName     				= cfgppHsName
+  cfgppFollowAST     				= const True
+  cfgppUID _       u 				= ppUIDParseable u
+  cfgppVarHsName x _ (Just u) _ _ 	= cfgppUID x u
+  cfgppVarHsName x mn mu mi mp      = cfgppVarHsNameFallback x mn mu mi mp
 %%]
 
 %%[8
@@ -104,7 +116,7 @@ ppCTag' :: CfgPP x => x -> CTag -> PP_Doc
 ppCTag' x t
   = case t of
       CTagRec                      -> ppCurly "Rec"
-      CTag ty nm tag arity mxarity -> ppCurlysCommas' [{- ppNm ty, -} ppNm nm, pp tag {- , pp arity, pp mxarity -}]
+      CTag ty nm tag arity mxarity -> ppCurlysCommas' [ppNm ty, ppNm nm, pp tag {- , pp arity, pp mxarity -}]
   where ppNm n = cfgppHsName x n
 
 -- intended for parsing

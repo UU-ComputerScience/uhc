@@ -1,0 +1,65 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate constructs used during Core gen, defaulting to some known Core gen semantics,
+%%% but have no semantics during further codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.ElimNonCodegenConstructs} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(cmodTrfElimNonCodegenConstructs)
+cmodTrfElimNonCodegenConstructs
+  :: EHCOpts
+     -> CModule
+     -> CModule
+cmodTrfElimNonCodegenConstructs opts cmod
+  = ( cTrf_Syn_CodeAGItf t
+    )
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                           (Inh_CodeAGItf
+                             { opts_Inh_CodeAGItf = opts
+                             })
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  -- Non substituted failure continutations default to their error expression
+  | CaseAltFail lhs         .   cTrf            =   @errorExpr.cTrf
+%%]

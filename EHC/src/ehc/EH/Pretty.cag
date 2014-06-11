@@ -195,7 +195,9 @@ SEM Expr
 %%[[5
                         .   extraPP =   empty
 %%][8
-                        .   extraPP =   maybe empty (ppCmt . ppCommas' . Set.toList) @mbCaseIds
+                        .   extraPP =   let pps e s = ppCmt $ e >#< (ppCommas' $ Set.toList s)
+                                        in  maybe empty (\s -> pps "mbCaseIds" s) @mbCaseIds
+                                            >|< (if Set.null @caseFailS then empty else pps "caseFailS" @caseFailS)
 %%]]
 
 SEM PatExpr
