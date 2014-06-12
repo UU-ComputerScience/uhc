@@ -325,6 +325,8 @@ cpFlowCoreSemBeforeFold modNm
                               { -- 20100717 AD: required here because of inlining etc, TBD
                                 HI.hiiHIUsedImpModS = usedImpS
                               }
+         -- ;  lift $ putStrLn $ "cpFlowCoreSemBeforeFold usedImpS " ++ show usedImpS
+         -- ;  lift $ putStrLn $ "cpFlowCoreSemBeforeFold introdModS " ++ show introdModS
          ;  cpUpdCU modNm ( ecuStoreHIInfo hii'
                           -- 
                           -- 20100717 AD: required here because of inlining etc, TBD

@@ -87,6 +87,7 @@ data TrfCoreExtra
 %%[[99
       , trfcoreExtraExports     :: !FvS             -- extra exported names, introduced by transformations
 %%]]
+      , trfcoreECUState			:: EHCompileUnitState
       }
 
 emptyTrfCoreExtra :: TrfCoreExtra
@@ -98,6 +99,7 @@ emptyTrfCoreExtra = TrfCoreExtra
 %%[[99
                        Set.empty
 %%]]
+                       ECUSUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,7 +113,8 @@ trfCore :: EHCOpts -> OptimizationScope -> DataGam -> HsName -> TrfCore -> TrfCo
 trfCore opts optimScope dataGam modNm trfcore
   -- = execState trf trfcore
   = runTrf opts modNm ehcOptDumpCoreStages (optimScope `elem`) trfcore trf
-  where trf
+  where isFromCoreSrc = ecuStateIsCore $ trfcoreECUState $ trfstExtra trfcore
+        trf
           = do { -- initial is just to obtain Core for dumping stages
                  t_initial
                  
@@ -124,15 +127,18 @@ trfCore opts optimScope dataGam modNm trfcore
                           })
 %%]]
                  
-                 -- removal of unnecessary constructs: simplifications based on annotations (experimential, temporary)
-               ; t_ann_simpl
+               ; unless isFromCoreSrc $ do 
+                   { -- removal of unnecessary constructs: simplifications based on annotations (experimential, temporary)
+                     t_ann_simpl
 
-                 -- removal of unnecessary constructs: eta expansions
-               ; t_eta_red
+                     -- removal of unnecessary constructs: eta expansions
+                   ; t_eta_red
 
-                 -- erase type signatures, extract the core + ty combi at this stage
-               ; unless (ehcOptCoreSysF opts)
-                        t_erase_ty
+                     -- erase type signatures, extract the core + ty combi at this stage
+                   ; unless (ehcOptCoreSysF opts)
+                            t_erase_ty
+                   }
+
 
                  -- make names unique
                ; t_ren_uniq emptyRenUniqOpts
@@ -141,6 +147,13 @@ trfCore opts optimScope dataGam modNm trfcore
 
                  -- removal of unnecessary constructs: mutual recursiveness
                ; t_let_unrec
+
+               ; when isFromCoreSrc $ do
+                   { -- ensure def before use ordering
+                     t_let_defbefuse
+
+                   }
+
                  -- flattening of nested strictness
                ; t_let_flatstr
 
@@ -171,7 +184,7 @@ trfCore opts optimScope dataGam modNm trfcore
                ; t_anormal u1
 
 %%[[(9 wholeprogAnal)
-               ; when (targetDoesHPTAnalysis (ehcOptTarget opts))
+               ; when (not isFromCoreSrc && targetDoesHPTAnalysis (ehcOptTarget opts))
                       t_fix_dictfld
 %%]]
                

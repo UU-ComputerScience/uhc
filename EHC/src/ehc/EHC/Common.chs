@@ -139,6 +139,16 @@ data EHCompileUnitState
   deriving (Show,Eq)
 %%]
 
+%%[50 export(ecuStateIsCore)
+-- | Is compilation from Core source
+ecuStateIsCore :: EHCompileUnitState -> Bool
+ecuStateIsCore st = case st of
+%%[[(50 corein)
+  ECUSCore _ -> True
+%%]]
+  _          -> False
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind of compilation unit, as known from source as starting point for compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

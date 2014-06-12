@@ -35,20 +35,44 @@ cmodUsedModNms m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Util
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 codegen) hs
+collapseToModNm :: HsNameS -> HsNameS
+collapseToModNm = Set.unions . Set.toList . Set.map (Set.fromList . maybeToList . hsnQualifier)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Used module names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 It is necessary to gather used modules because of re-exporting there may be references to modules which are not imported explicitly.
 
 %%[(50 codegen)
-ATTR AllNT CodeAGItf [ | | usedModNmS USE {`Set.union`} {Set.empty}: HsNameS ]
+ATTR AllNT [ | | usedNmS USE {`Set.union`} {Set.empty}: HsNameS ]
+ATTR CodeAGItf [ | | usedModNmS: HsNameS ]
 %%]
 
 20090127: The gathering is not yet complete...
 
 %%[(50 codegen)
 SEM CExpr
-  | Var         lhs         .   usedModNmS  =   Set.fromList $ maybeToList $ hsnQualifier @nm 
+  | Var         lhs         .   usedNmS                 =   Set.singleton @nm 
+  | Lam         lhs         .   usedNmS                 =   Set.delete @argNm @body.usedNmS
+  | Let         loc         .   usedNmSInBinds          =   case @categ of
+                                                                CBindCateg_Rec  -> @binds.usedNmS `Set.difference` @binds.introducedNmS
+                                                                _               -> @binds.usedNmS
+                            .   usedNmSInBody           =   @body.usedNmS `Set.difference` @binds.introducedNmS
+                lhs         .   usedNmS                 =   @usedNmSInBinds `Set.union` @usedNmSInBody
+{-
+-}
+
+SEM CAlt
+  | Alt         lhs			.	usedNmS     			=   @expr.usedNmS `Set.difference` Set.fromList @pat.fldNmL
+
+SEM CodeAGItf
+  | AGItf       lhs         .   usedModNmS  			=   collapseToModNm $ @module.usedNmS `Set.difference` @module.introducedNmS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,10 +80,14 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 codegen)
-ATTR CodeAGItf CModule CExpr AllBind [ | | introducedModNmS USE {`Set.union`} {Set.empty} : {HsNameS} ]
+ATTR CModule CExpr AllBindOnly [ | | introducedNmS USE {`Set.union`} {Set.empty} : {HsNameS} ]
+ATTR CodeAGItf [ | | introducedModNmS: {HsNameS} ]
 
-SEM CBound
-  | *           lhs         .   introducedModNmS      =   maybe Set.empty Set.singleton $ hsnQualifier @lhs.nm
+SEM CBind
+  | Bind        lhs         .   introducedNmS      		=   Set.singleton @nm
+
+SEM CodeAGItf
+  | AGItf       lhs         .   introducedModNmS  		=   collapseToModNm @module.introducedNmS
 
 %%]
 

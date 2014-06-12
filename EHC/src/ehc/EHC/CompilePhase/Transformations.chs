@@ -76,14 +76,15 @@ cpTransformCore optimScope modNm
        ; let  mbCore     = ecuMbCore ecu
               coreInh    = crsiCoreInh crsi
               trfcoreIn  = emptyTrfCore
-                             { trfstMod             = panicJust "cpTransformCore" mbCore
-                             , trfstUniq            = crsiNextUID crsi
-%%[[50
+                             { trfstMod             	= panicJust "cpTransformCore" mbCore
+                             , trfstUniq            	= crsiNextUID crsi
                              , trfstExtra = emptyTrfCoreExtra
-                                 { trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
+                                 { trfcoreECUState		= ecuState ecu
+%%[[50
+                                 , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
-                                 }
 %%]]
+                                 }
                              }
               trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsiCoreInh crsi) modNm trfcoreIn
        

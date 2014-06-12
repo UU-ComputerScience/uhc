@@ -54,7 +54,7 @@ emptyCheckEnv
 
 %%]
 
-%%[(50 codegen corein) hs export(cmodCheck, cmodCheck')
+%%[(50 codegen corein) hs export(cmodCheck')
 cmodCheck'
   :: EHCOpts
      -> CheckEnv -> CModule
@@ -117,111 +117,15 @@ SEM CModule
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type checking: environment
+%%% Module has 'main'?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen corein) hs
-type CheckLookup = MetaLev -> ACoreBindRef -> Maybe CExpr
-
-chkLkup' :: err -> (MetaLev -> ACoreBindRef -> err) -> MetaLev -> ACoreBindRef -> CheckLookup -> (CExpr,err)
-chkLkup' emperr mkerr mlev r lk
-  = maybe ( acoreExprErr ("chkLkup: " ++ show r)
-          , mkerr mlev r
-          )
-          (\e -> (e,emperr))
-          (lk mlev r)
-
-chkLkup :: MetaLev -> ACoreBindRef -> CheckLookup -> (CExpr,ErrSq)
-chkLkup = chkLkup' Seq.empty (\mlev r -> Seq.singleton $ rngLift emptyRange mkErr_NamesNotIntrod ("SysF@" ++ show mlev) [mkHNm r])
-%%]
-
-%%[(8888 codegen corein)
-ATTR 
-  AllCodeNT
-    [ chkLkup: CheckLookup
-    | | ]
-
-SEM CodeAGItf
-  | AGItf       loc         .   chkLkup             =   \_ _ -> Nothing
-%%]
-
-Gather:
-
-%%[(8888 codegen corein)
-ATTR AllBind AllPat [ | | gathGam USE {`gamUnion`} {emptyGam} : {SysF.SysfGam} ]
-
-SEM CBound
-  | Val         lhs         .   gathGam             =   gamMetaLevSingleton @mlevHere (acoreMkRef @lhs.nm) @expr.self -- (acoreMkAspRef @aspectKeyS @lhs.nm) @expr.self
-%%]
-
-Distribute & Bind:
-
-%%[(8888 codegen corein)
-ATTR AllCodeNT [ gam: {SysF.SysfGam} | | ]
-
-SEM CodeAGItf
-  | AGItf       loc         .   gam                 =   emptyGam
-
-SEM CExpr
-  | Let         loc         .   gam                 =   @binds.gathGam `gamUnion` @lhs.gam
-  | Lam Arr     body        .   gam                 =   @bind.gathGam  `gamUnion` @lhs.gam
-
-SEM CAlt
-  | Alt         expr        .   gam                 =   @pat.gathGam `gamUnion` @lhs.gam
-%%]
-
-Use:
-
-%%[(8888 codegen corein)
-SEM CExpr
-  | Var         loc         .   (st,undefNmMp)      =   let lk mlev r
-                                                              =   gamLookupMetaLev mlev r @lhs.gam
-                                                              <|> fmap libindaspCore (lamMpLookupAsp (acbrefNm r) (acbaspkeyDefaultSysfTy mlev) (cenvLamMp @lhs.env))
-                                                        in  chkLkup' Map.empty (\l r -> Map.singleton l [r]) (@lhs.mlev+1) @ref lk
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type checking: actual checking
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen corein)
-ATTR CExpr CAlt [ | | st: {SysF.Ty} ]
-
-SEM CExpr
-  | App         loc         .   (st,mout)           =   case (@func.st,@arg.stBoundL) of
-                                                          (CExpr_Arr abi r, (abo:_))
-                                                            -> (SysF.moutCSubst mout `cSubstApp` r, mout)
-                                                            where mout = SysF.matchRL0Bind @lhs.mlev abo abi
-                                                          _ -> ( appDbg "SysF.Check.CExpr.App.res"
-                                                               , SysF.emptyMatchOut {SysF.moutErrL = [rngLift emptyRange Err_TyCoreMatchClash (pp @func.st) (pp arr) Nothing Nothing]}
-                                                               )
-                                                            where arr = CExpr_Arr (CBind_Bind hsnWild @arg.stBoundL) (acoreVar hsnWild)
-  | Case        loc         .   (st,moutL)          =   let match ts = filter SysF.moutHasErr $ zipWith (SysF.match @lhs.mlev) (tail ts) (init ts)
-                                                        in  case @alts.stL of
-                                                              -- ts       -> (t,match (t:ts))
-                                                              []       -> (appDbg "SysF.Check.CExpr.Case.st",[])
-                                                              ts@(t:_) -> (t,match ts)
-  | Lam         loc         .   st                  =   CExpr_Arr @bind.stBind @body.st
-  | Let         loc         .   st                  =   @body.st
-  | Int         loc         .   st                  =   SysF.sysftyInt
-  | Char        loc         .   st                  =   SysF.sysftyChar
-  | Dbg         loc         .   st                  =   @self
-  | Cast        loc         .   st                  =   @ty.self
-  | * - Lam Let Var Int Char Dbg App Ann Cast Case
-                loc         .   st                  =   (appDbg "SysF.Check.CExpr.st" :: SysF.Ty)
-
-ATTR CBind [ | | stBind: CBind ]
+%%[(8 codegen corein)
+ATTR CodeAGItf CModule CExpr AllBindOnly [ | | hasMain USE {||} {False} : Bool ]
 
 SEM CBind
-  | Bind        loc         .   stBind              =   case @bindAspects.stBoundL of
-                                                          (b:_) -> CBind_Bind @nm [b]
-                                                          _     -> CBind_Bind @nm [CBound_Val acbaspkeyDefault @lhs.mlev CLbl_None $ appDbg "SysF.Check.CBind.Bind.bound"]
+  | Bind        lhs         .   hasMain	      			=   @nm == hsnMain
 
-ATTR AllBound [ | | stBoundL USE {++} {[]} : {[CBound]} ]
-
-SEM CBound
-  | Val         loc         .   stBoundL            =   let t = if @mlev == metaLevVal then @expr.st else @expr.self
-                                                        in  [CBound_Val @aspectKeyS (@mlev+1) @lbl t]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -284,7 +284,7 @@ emptyECU
       , ecuIsTopMod          = False
       , ecuHasMain           = False
       , ecuNeedsCompile      = True
-      , ecuMbSrcTime          = Nothing
+      , ecuMbSrcTime         = Nothing
       , ecuMbHIInfoTime      = Nothing
 %%[[(50 codegen)
       , ecuMbCoreTime        = Nothing
@@ -340,6 +340,12 @@ ecuIsOrphan = isJust . HI.hiiMbOrphan . ecuAnHIInfo
 %%][50
 ecuIsOrphan = const False
 %%]]
+%%]
+
+%%[50 export(ecuIsFromCoreSrc)
+-- | Is compilation from Core source
+ecuIsFromCoreSrc :: EHCompileUnit -> Bool
+ecuIsFromCoreSrc = ecuStateIsCore . ecuState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

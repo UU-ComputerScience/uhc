@@ -289,7 +289,7 @@ coreScanOpts opts
         ,   scoDollarIdent      =   True
         ,   scoOpChars          =   Set.fromList "<->:=+*"
         ,   scoSpecChars        =   Set.fromList "!=();{}#\\|,`"
-        ,   scoSpecPairs        =   scoSpecPairs ehScanOpts'
+        ,   scoSpecPairs        =   Set.fromList [] `Set.union` scoSpecPairs ehScanOpts'
         }
   where hsScanOpts' = hsScanOpts opts
         ehScanOpts' = ehScanOpts opts
