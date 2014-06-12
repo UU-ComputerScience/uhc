@@ -7,13 +7,16 @@
 %%% Basic/shared parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Parser} import(UU.Parsing, UHC.Util.ParseUtils, UHC.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
+%%[8 module {%{EH}Base.Parser} import(UU.Parsing, UHC.Util.Utils, UHC.Util.ParseUtils, UHC.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
 %%]
 
 %%[8 import({%{EH}Base.ParseUtils}) export(module {%{EH}Base.ParseUtils})
 %%]
 
-%%[50 import(qualified Data.Set as Set,qualified UHC.Util.Rel as Rel)
+%%[8 import({%{EH}Error}, {%{EH}Error.Pretty})
+%%]
+
+%%[8 import(qualified Data.Map as Map,qualified Data.Set as Set,qualified UHC.Util.Rel as Rel, Data.List)
 %%]
 
 %%[(5020 hmtyinfer) import(qualified {%{EH}Pred} as Pr)
@@ -24,20 +27,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(pDollNm,pUID,pInt)
-
 pDollNm :: P HsName
 pDollNm
-  = tokMkQName
+  = (parseHsName . tokenVals) -- tokMkQName
     <$> (   pVaridTk  <|> pConidTk
 %%[[50
         <|> pQVaridTk <|> pQConidTk
 %%]]
         )
 
--- counterpart of ppUIDParseable
+-- counterpart of ppUIDParseable/showUIDParseable
 pUID :: P UID
 -- pUID = mkUID <$ pOCURLY <*> pList1Sep pCOMMA pInt <* pCCURLY
-pUID = mkUID <$ pPERCENT <*> pList1Sep pCOMMA pInt <* pPERCENT
+pUID = mkUID <$ pBACKQUOTE <* pOCURLY <*> pList1Sep pCOMMA pInt <* pCCURLY
+-- pUID = mkUID <$ pPERCENT <* pOBRACK <*> pList1Sep pSLASH pInt <* pCBRACK
 
 pInt :: P Int
 pInt = tokMkInt <$> pInteger10Tk
@@ -101,8 +104,96 @@ pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCU
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Parsers for HsName, in particular to its internal structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+pHsNameUnique :: P HsNameUnique
+pHsNameUnique
+  =   HsNameUnique_Int    <$> pInt
+  <|> HsNameUnique_UID    <$> pUID
+  <|> HsNameUnique_String <$> pStr
+
+pHsNameUniqifier :: P HsNameUniqifier
+pHsNameUniqifier
+  =   HsNameUniqifier_New                  <$ pKeyTk "NEW"
+  <|> HsNameUniqifier_Error                <$ pKeyTk "ERR"
+  <|> HsNameUniqifier_GloballyUnique       <$ pKeyTk "UNQ"
+  <|> HsNameUniqifier_Evaluated            <$ pKeyTk "EVL"
+  <|> HsNameUniqifier_Field                <$ pKeyTk "FLD"
+  <|> HsNameUniqifier_Class                <$ pKeyTk "CLS"
+  <|> HsNameUniqifier_ClassDict            <$ pKeyTk "DCT"
+  <|> HsNameUniqifier_SelfDict             <$ pKeyTk "SDC"
+  <|> HsNameUniqifier_ResultDict           <$ pKeyTk "RDC"
+  <|> HsNameUniqifier_SuperClass           <$ pKeyTk "SUP"
+  <|> HsNameUniqifier_DictField            <$ pKeyTk "DFL"
+  <|> HsNameUniqifier_Inline               <$ pKeyTk "INL"
+  <|> HsNameUniqifier_GloballyUniqueDict   <$ pKeyTk "UND"
+  <|> HsNameUniqifier_FieldOffset          <$ pKeyTk "OFF"
+  <|> HsNameUniqifier_CaseContinuation     <$ pKeyTk "CCN"
+  <|> HsNameUniqifier_GrinUpdated          <$ pKeyTk "UPD"
+  <|> HsNameUniqifier_FFIArg               <$ pKeyTk "FFI"
+  <|> HsNameUniqifier_LacksLabel           <$ pKeyTk "LBL"
+  <|> HsNameUniqifier_BindAspect           <$ pKeyTk "ASP"
+  <|> HsNameUniqifier_Strict               <$ pKeyTk "STR"
+%%[[91 
+  <|> HsNameUniqifier_GenericClass         <$ pKeyTk "GEN"
+%%]] 
+%%[[(8 javascript) 
+  <|> HsNameUniqifier_JSSwitchResult       <$ pKeyTk "JSW"
+%%]] 
+%%[[(8 grin) 
+  <|> HsNameUniqifier_GRINTmpVar       	   <$ pKeyTk "GRN"
+%%]] 
+%%[[(8 cmm) 
+  <|> HsNameUniqifier_CMMTmpVar       	   <$ pKeyTk "CMM"
+%%]] 
+%%[[90
+  <|> HsNameUniqifier_FFE                  <$ pKeyTk "FFE"
+  <|> HsNameUniqifier_FFECoerced           <$ pKeyTk "FFC"
+%%]]
+
+pHsNameUniqifierMp :: P HsNameUniqifierMp
+pHsNameUniqifierMp
+  = Map.fromList <$> pList ((pSep *> pHsNameUniqifier) <+> (pOCURLY *> pList (pSep *> pHsNameUnique)) <* pCCURLY)
+  where pSep = tokConcat <$> pBACKQUOTE <*> pBACKQUOTE -- pAT
+
+pHsName :: P HsName
+pHsName
+  = hsnMkModf <$> pList_ng (pS <* pDOT) <*> pB <*> pHsNameUniqifierMp
+  where pS =   tokMkStr  <$> (pVaridTk <|> pConidTk <|> pVarsymTk <|> pConsymTk <|> pK)
+        pK =   pAnyKey pKeyTk $ Set.toList $ scoKeywordsTxt hsnScanOpts
+        pB =   mkHNmBase . concat
+                          <$> pList1 pS
+           <|> mkHNm      <$> pUID
+           <|> tokMkQName <$> pDOT
+%%]
+
+%%[8 export(parseHsName)
+parseHsName :: [String] -> HsName
+parseHsName ss
+  = p $ concat $ intersperse "." ss
+  where p s = case parseToResMsgs pHsName $ scan hsnScanOpts (initPos s) s of
+          (res,[]) -> res
+          (res,ms) -> hsnUniqifyStr HsNameUniqifier_Error (show ms) res  
+%%]
+parseHsName ss
+  = case initlast $ map p ss of
+      Just (qs,b) -> mkHNm qs `hsnSetQual` b
+      _           -> hsnUnknown
+  where p s = case parseToResMsgs pHsName $ scan hsnScanOpts (initPos s) s of
+          (res,[]) -> res
+          (res,ms) -> hsnUniqifyStr HsNameUniqifier_Error (show ms) res
+          
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(pStr)
+pStr :: P String
+pStr = tokMkStr <$> pStringTk
+%%]
 
 %%[50 export(pCurlySemiBlock,pCurlys,pSemiBlock,pCurlyCommaBlock)
 pSemiBlock :: P p -> P [p]

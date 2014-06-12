@@ -183,10 +183,15 @@ instance PP UID where
   pp = text . show
 %%]
 
-%%[8 export(ppUIDParseable)
+%%[8 export(showUIDParseable, ppUIDParseable)
+-- | Inverse of pUID
+showUIDParseable :: UID -> String
+-- showUIDParseable uid = "%[" ++ (concat $ intersperse "/" $ map show $ uidInts uid) ++ "]"
+showUIDParseable uid = "`{" ++ (concat $ intersperse "," $ map show $ uidInts uid) ++ "}"
+
+-- | Inverse of pUID
 ppUIDParseable :: UID -> PP_Doc
--- ppUIDParseable uid = ppCurlysCommas $ uidInts uid
-ppUIDParseable uid = "%" >|< (ppCommas $ uidInts uid) >|< "%"
+ppUIDParseable = pp . showUIDParseable
 %%]
 
 %%[7

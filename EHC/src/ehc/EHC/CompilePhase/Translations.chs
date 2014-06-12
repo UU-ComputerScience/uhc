@@ -253,6 +253,11 @@ cpGenGrinGenInfo modNm
                         | otherwise        = crsiExpNmOffMp modNm crsi
              modOffMp   | isWholeProg = Map.filterWithKey (\n _ -> n == modNm) $ crsiModOffMp crsi
                         | otherwise   = crsiModOffMp crsi
+       -- ; lift $ putStrLn $ "cpGenGrinGenInfo " ++ show impNmL
+       -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHSDeclImpNmS " ++ show (ecuHSDeclImpNmS ecu)
+       -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHIDeclImpNmS " ++ show (ecuHIDeclImpNmS ecu)
+       -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHIUsedImpNmS " ++ show (ecuHIUsedImpNmS ecu)
+       -- ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu
        ; return
            ( Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
            , if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst modOffMp ] else []

@@ -118,7 +118,7 @@ instance Show CoreOpt where
 %%[[(8 coreout)
   -- show CoreOpt_PPParseable      = "pp-parseable"
   show CoreOpt_Dump             	= "dump"
-  show CoreOpt_DumpAlsoNonParseable	= "dump-alsononparseable"
+  show CoreOpt_DumpAlsoNonParseable	= "whendump-alsononparseable"
 %%]]
 %%[[(8 coresysf)
   show CoreOpt_SysF             	= "sysf"

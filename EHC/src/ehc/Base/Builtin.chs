@@ -71,7 +71,7 @@ hsnIsWild x = hsnQualified x == hsnWild
 %%]
 
 %%[1.strHiddenPrefix export(hsnStrHiddenPrefix)
-hsnStrHiddenPrefix                  =   "$"
+hsnStrHiddenPrefix                  =   "_'"
 %%]
 
 %%[7
@@ -747,17 +747,17 @@ hsnModIntlStackTrace                    =   hsnPrefixQual hsnUHC (hsnFromString 
 %%[9 export(hsnClass2Dict)
 -- Dict datatype name for class name, only used when `not ehcCfgClassViaRec'
 hsnClass2Dict :: HsName -> HsName
-hsnClass2Dict = mkHNmHidden . hsnPrefix "Dict-"
+hsnClass2Dict = mkHNmHidden . hsnPrefix "Dict_"
 %%]
 
 %%[9 export(hsnClass2Kind)
 hsnClass2Kind :: HsName -> HsName
-hsnClass2Kind = mkHNmHidden . hsnPrefix "ClassKind-"
+hsnClass2Kind = mkHNmHidden . hsnPrefix "ClassKind_"
 %%]
 
 %%[9 export(hsnClass2Polarity)
 hsnClass2Polarity :: HsName -> HsName
-hsnClass2Polarity = mkHNmHidden . hsnPrefix "ClassPolarity-"
+hsnClass2Polarity = mkHNmHidden . hsnPrefix "ClassPolarity_"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

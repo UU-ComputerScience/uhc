@@ -284,11 +284,11 @@ coreScanOpts opts
                                         ])
                                     `Set.union` scoKeywordsTxt tyScanOpts
                                     `Set.union` scoKeywordsTxt hsScanOpts'
-        ,	scoKeywExtraChars	=	Set.fromList "._@"
+        ,	scoKeywExtraChars	=	Set.fromList "."
         ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts `Set.union` scoKeywordsOps hsScanOpts'
         ,   scoDollarIdent      =   True
         ,   scoOpChars          =   Set.fromList "<->:=+*"
-        ,   scoSpecChars        =   Set.fromList "!=[]();{}#/\\|,%"
+        ,   scoSpecChars        =   Set.fromList "!=();{}#\\|,`"
         ,   scoSpecPairs        =   scoSpecPairs ehScanOpts'
         }
   where hsScanOpts' = hsScanOpts opts
@@ -366,6 +366,55 @@ tyScanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   Set.fromList [ "uid" ]
         }
+%%]
+
+%%[8
+hsnScanOpts :: ScanOpts
+hsnScanOpts
+  =  defaultScanOpts
+        {   scoKeywordsTxt      =   Set.fromList
+        								[ "NEW"
+                                        , "ERR"
+                                        , "UNQ"
+                                        , "EVL"
+                                        , "FLD"
+                                        , "CLS"
+                                        , "DCT"
+                                        , "SDC"
+                                        , "RDC"
+                                        , "SUP"
+                                        , "DFL"
+                                        , "INL"
+                                        , "UND"
+                                        , "OFF"
+                                        , "CCN"
+                                        , "UPD"
+                                        , "FFI"
+                                        , "LBL"
+                                        , "ASP"
+                                        , "STR"
+%%[[91 
+                                        , "GEN"
+%%]] 
+%%[[(8 javascript) 
+                                        , "JSW"
+%%]] 
+%%[[(8 grin) 
+                                        , "GRN"
+%%]] 
+%%[[(8 cmm) 
+                                        , "CMM"
+%%]] 
+%%[[90
+                                        , "FFE"
+                                        , "FFC"
+%%]]
+        							 	]
+        ,	scoSpecChars        =   Set.fromList ".{},`"
+        ,   scoOpChars          =   Set.fromList "[]:" `Set.union` scoOpChars hsScanOpts'
+        ,   scoAllowQualified   =   False
+        }
+  where hsScanOpts' = hsScanOpts emptyEHCOpts
 %%]
 
 %%[90
@@ -586,6 +635,18 @@ pHNm p = (hsnFromString . tokGetVal) <$> p
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Token utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+tokConcat :: Token -> Token -> Token
+tokConcat t1 t2 = Reserved (tokenVal t1 ++ tokenVal t2) (position t1)
+
+tokEmpty :: Token
+tokEmpty = Reserved "" noPos
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scanner related parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -618,6 +679,7 @@ pMODULE        ,
     pBACKQUOTE ,
     pLET       ,
     pLAM       ,
+    pSLASH     ,
     pUNDERSCORE,
     pIN
   :: IsParser p Token => p Token
@@ -652,6 +714,7 @@ pRARROW          = pKeyw hsnArrow
 pBACKQUOTE       = pKeyTk "`"
 pLET             = pKeyTk "let"
 pLAM             = pKeyTk "\\"
+pSLASH           = pKeyTk "/"
 pUNDERSCORE      = pKeyTk "_"
 pIN              = pKeyTk "in"
 

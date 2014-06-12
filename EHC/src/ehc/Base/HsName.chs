@@ -58,6 +58,7 @@ HsNameUniqifier to guarantee such an invariant.
 data HsNameUniqifier
   = HsNameUniqifier_Blank               -- just a new identifier, with an empty show
   | HsNameUniqifier_New                 -- just a new identifier
+  | HsNameUniqifier_Error      			-- error
   | HsNameUniqifier_GloballyUnique      -- globally unique
   | HsNameUniqifier_Evaluated           -- evaluated
   | HsNameUniqifier_Field               -- extracted field
@@ -98,6 +99,7 @@ data HsNameUniqifier
 instance Show HsNameUniqifier where
   show HsNameUniqifier_Blank                = ""
   show HsNameUniqifier_New                  = "NEW"
+  show HsNameUniqifier_Error       			= "ERR"
   show HsNameUniqifier_GloballyUnique       = "UNQ"
   show HsNameUniqifier_Evaluated            = "EVL"
   show HsNameUniqifier_Field                = "FLD"
@@ -143,24 +145,32 @@ data HsNameUnique
   | HsNameUnique_UID        !UID
   deriving (Eq,Ord)
 
+showHsNameUnique :: (UID -> String) -> (String -> String) -> HsNameUnique -> String
+showHsNameUnique _    _    (HsNameUnique_None    ) = ""
+showHsNameUnique _    shws (HsNameUnique_String s) = shws s
+showHsNameUnique _    _    (HsNameUnique_Int    i) = show i
+showHsNameUnique shwu _    (HsNameUnique_UID    u) = shwu u
+
 instance Show HsNameUnique where
-  show (HsNameUnique_None    ) = ""
-  show (HsNameUnique_String s) = s
-  show (HsNameUnique_Int    i) = show i
-  show (HsNameUnique_UID    u) = show u
+  show = showHsNameUnique hsnShowUID id
 %%]
 
-%%[7
+%%[7 export(HsNameUniqifierMp)
 type HsNameUniqifierMp = Map.Map HsNameUniqifier [HsNameUnique]
 
 emptyHsNameUniqifierMp :: HsNameUniqifierMp
 emptyHsNameUniqifierMp = Map.empty
 
+-- | Show uniqifier map, parseable back again when properly parameterized.
+showHsNameUniqifierMp'' :: (UID -> String) -> (String -> String) -> (String -> String) -> Bool -> String -> HsNameUniqifierMp -> [String]
+showHsNameUniqifierMp'' shwu shws brk showLen usep us
+  = [ usep ++ slen u ++ show uqf ++ (brk $ concat [ usep ++ showHsNameUnique shwu shws uu | uu <- u, uu /= HsNameUnique_None ]) | (uqf,u) <- Map.toList us ]
+  where slen u | showLen && l /= 1  = usep ++ show l
+               | otherwise          = ""
+               where l = length u
+
 showHsNameUniqifierMp' :: Bool -> String -> HsNameUniqifierMp -> [String]
-showHsNameUniqifierMp' showLen usep us
-  = [ slen u ++ show uqf ++ concat [ usep ++ show uu | uu <- u, uu /= HsNameUnique_None ] | (uqf,u) <- Map.toList us ]
-  where slen u | showLen   = usep ++ show (length u)
-               | otherwise = ""
+showHsNameUniqifierMp' = showHsNameUniqifierMp'' hsnShowUID id id
 
 showHsNameUniqifierMp :: String -> HsNameUniqifierMp -> [String]
 showHsNameUniqifierMp = showHsNameUniqifierMp' True
@@ -284,6 +294,7 @@ hsnFixateHash n                       = n
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.HsName.type export(HsName)
+-- | Haskell name representation, exports of constructors only intented for internal use
 data HsName
   =   HsName_Base
         { hsnBaseStr            ::  !String
@@ -344,7 +355,7 @@ hsnIsNr = isJust . hsnMbNr
 {-# INLINE hsnIsNr #-}
 %%]
 
-%%[1
+%%[7 export(hsnMkModf)
 -- | Smart constructor for HsName_Modf
 hsnMkModf :: [String] -> HsName -> HsNameUniqifierMp -> HsName
 %%[[1
@@ -475,27 +486,38 @@ instance PP HsName where
 %%]
 
 
-%%[7 export(hsnShow)
-hsnShow :: Bool -> String -> String -> HsName -> String
-hsnShow _ _    _    (HsName_Base   s           )  = {- hsnHNmFldToString -} s
-hsnShow _ _    _    (HsName_UID    i           )  = 'u' : show i
-hsnShow l qsep usep (HsName_Modf _ qs b us     )  = concat $ (intersperse qsep $ qs ++ [hsnShow l qsep usep b]) ++ showHsNameUniqifierMp' l usep us
-hsnShow _ _    _    (HsName_Pos    p           )  = show p
+%%[7 export(hsnShow, hsnShow')
+-- | Parameterizable show of HsName when used from within the Show instance for HsName, or for a parseable representation used by (e.g.) Core pretty printing
+hsnShow' :: (UID -> String) -> (String -> String) -> (String -> String) -> String -> String -> HsName -> String
+hsnShow' shwu shws brk qsep usep n
+    = shw n
+  where shw n = case n of
+          HsName_Base   s                 -> s
+          HsName_UID    i                 -> shwu i
+          HsName_Modf _ qs b us           -> concat $ (intersperse qsep $ qs ++ [shw b]) ++ showHsNameUniqifierMp'' shwu shws brk False usep us
+          HsName_Pos    p                 -> show p
 %%[[8
-hsnShow _ _    _    (HsName_Nr n OrigNone        )  = "x_"        ++ show n
-hsnShow l _    usep (HsName_Nr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow l "." usep hsn
-hsnShow l _    usep (HsName_Nr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow l "." usep hsn
-hsnShow l _    usep (HsName_Nr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow l "." usep hsn
+          HsName_Nr n OrigNone            -> "x_"        ++ show n
+          HsName_Nr n (OrigLocal  hsn)    -> "x_"        ++ show n ++ "_" ++ shw hsn
+          HsName_Nr n (OrigGlobal hsn)    -> "global_x_" ++ show n ++ "_" ++ shw hsn
+          HsName_Nr n (OrigFunc   hsn)    -> "fun_x_"    ++ show n ++ "_" ++ shw hsn
 %%]]
+
+-- | Parseable show of HsName when used from within the Show instance for HsName
+hsnShow :: String -> String -> HsName -> String
+hsnShow q u n = hsnShow' hsnShowUID id id q u n
+{-# INLINE hsnShow #-}
+
+hsnShowUID i = 'u' : show i
 %%]
 
 %%[1
 instance Show HsName where
 %%[[1
   show (HsName_Base s) = s
-  show (HsName_UID  i) = 'u' : show i
+  show (HsName_UID  i) = hsnShowUID i
 %%][7
-  show = hsnShow True "." "_@"
+  show = hsnShow "." "_@"
 %%]]
 %%]
 

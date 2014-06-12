@@ -31,7 +31,7 @@
 type CParser       hp     =    PlainParser Token hp
 
 pS :: CParser String
-pS = tokMkStr <$> pStringTk
+pS = pStr
 %%]
 
 %%[(50 corein)

@@ -102,7 +102,7 @@
 %%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars,ppHsnEscapeWith,hsnOkChars, hsnNotOkStrs)
 ppHsnEscapeWith :: Char -> (Char -> Bool) -> (String -> Bool) -> (HsName -> Bool) -> HsName -> (PP_Doc,Bool)
 ppHsnEscapeWith escChar okChars notOkStr leaveAsIs n = flip ST.runState False $ do
-    let shown = show n
+    let shown = hsnShow' showUIDParseable show (\s -> "{" ++ s ++ "}") "." "``" n
     if leaveAsIs n
       then return $ pp n
       else do cs <- fmap concat $ forM shown esc
