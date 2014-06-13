@@ -36,13 +36,24 @@ pS = pStr
 
 %%[(50 corein)
 pINT		,
+%%[[97
+  pINTEGER  ,
+%%]]
   pCHAR
     :: CParser HsName
 pINT = tokMkQName <$> pKeyTk "Int" -- pKeywHsNname hsnInt
 pCHAR = tokMkQName <$> pKeyTk "Char" -- pKeywHsNname hsnChar
+%%[[97
+pINTEGER = tokMkQName <$> pKeyTk "Integer" -- pKeywHsNname hsnInteger
+%%]]
 
 pCTy :: CParser Ty
-pCTy = pTy' (pDollNm <|> pINT <|> pCHAR)
+pCTy
+  = pTy' (   pDollNm <|> pINT <|> pCHAR
+%%[[97
+         <|> pINTEGER
+%%]]
+         )
 %%]
 
 %%[(50 corein) export(pCModule,pCExpr)
@@ -51,8 +62,11 @@ pCModule
   = (\m e tm -> CModule_Mod m e tm) <$ pMODULE <*> pDollNm <* pEQUAL <*> pCExpr <*> pA (pA pCTag)
   where pA pE = pOCURLY *> pListSep pSEMI ((,) <$> pDollNm <* pEQUAL <*> pE) <* pCCURLY
 
+pCTagTag :: CParser CTag
+pCTagTag = pKeyTk "Tag" *> pCTag
+
 pCTagOnly :: CParser CTag
-pCTagOnly = pHASH *> pKeyTk "Tag" *> pCTag
+pCTagOnly = pHASH *> pCTagTag
 
 pCNumber :: CParser CExpr
 pCNumber
@@ -61,26 +75,29 @@ pCNumber
               <|> (CExpr_Char    . head) <$ pCHAR
               <|> (CExpr_String        ) <$ pKeyTk "String"
 %%[[97
-              <|> (CExpr_Integer . read) <$ pKeyTk "Integer"
+              <|> (CExpr_Integer . read) <$ pINTEGER
 %%]]
               )
               <*> (tokMkStr <$> pStringTk)
           <|> CExpr_Tup <$ pKeyTk "Tag" <*> pCTag
           )
 
+{-
 pCExprAnn :: CParser (CExpr -> CExpr)
 pCExprAnn
   =   CExpr_Ann
       <$> (pDCOLON *> (CExprAnn_Ty <$> pTy)
           )
   <|> pSucceed id
+-}
 
 pCExprBase :: CParser CExpr
 pCExprBase
   =   acoreVar <$> pDollNm
   <|> pCNumber
-  <|> pOPAREN *> (pCExpr <**> pCExprAnn) <* pCPAREN
+  <|> pOPAREN *> (pCExpr {- <**> pCExprAnn -}) <* pCPAREN
 
+{-
 pCExprBaseMeta :: CParser (CExpr,CMetaVal)
 pCExprBaseMeta
   =   (\v m -> (acoreVar v, m))<$> pDollNm <*> pCMetaValOpt
@@ -100,14 +117,19 @@ pCExprSelSuffixMeta
 
 pCExprSelMeta :: CParser (CExpr,CMetaVal)
 pCExprSelMeta = pCExprBaseMeta <??> pCExprSelSuffixMeta
+-}
 
 pCExprSel :: CParser CExpr
-pCExprSel = pCExprBase <??> pCExprSelSuffix
+pCExprSel = pCExprBase -- <??> pCExprSelSuffix
 
 pCExpr :: CParser CExpr
 pCExpr
+{-
   =   (\f as -> acoreApp f (map fst as))
                      <$> pCExprSel <*> pList pCExprSelMeta
+-}
+  =   (\f as -> acoreApp f as)
+                     <$> pCExprSel <*> pList pCExprSel -- pCExprSelMeta
   <|> acoreLam       <$  pLAM <*> pList1 (pDollNm) <* pRARROW <*> pCExpr
   <|> CExpr_Let      <$  pLET <*> pMaybe CBindCateg_Plain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> (\(c,_) s i t -> CExpr_FFI c s (mkImpEnt c i) t)
@@ -130,9 +152,12 @@ pCExpr
 %%]]
 
 
+{-
 pTrack          ::   CParser Track
 pTrack          =    (\x -> TrackVarApply x [])  <$> pDollNm     -- TODO: this is just a mockup, should do real track parsing
+-}
 
+{-
 pMbDollNm :: CParser (Maybe HsName)
 pMbDollNm
   =  f <$> pDollNm
@@ -149,8 +174,9 @@ pManyDollNm
                       = []
                       where ms@(~(Just m)) = hsnMbBaseString n
           f ns        = ns
+-}
 
-
+{-
 pCMetas :: CParser CMetas
 pCMetas
   =   (,) <$ pOCURLY <*> pCMetaBind <* pCOMMA <*> pCMetaVal <* pCCURLY
@@ -177,6 +203,7 @@ pCMetaVal
 pCMetaValOpt :: CParser CMetaVal
 pCMetaValOpt
   =   pMaybe CMetaVal_Val id (pCOLON *> pCMetaVal)
+-}
 
 pCBound :: CParser CBound
 pCBound
@@ -220,7 +247,7 @@ pCPat
               )
               <*> (tokMkStr <$> pStringTk)
           <|> (\t r fs -> CPat_Con t r $ zipWith (\o (mf,n) -> acorePatFldTy (acoreTyErr "pCPatFld") (maybe (n, CExpr_Int o) id mf) n) [0..] fs)		-- TODO, use refGen instead of baked in 0.. ...
-              <$  pKeyTk "Tag" <*> pCTag
+              <$> pCTagTag
               <*  pOCURLY <*> pCPatRest <*> pListSep pCOMMA pCPatFld <* pCCURLY
           )
   <|> CPat_Var <$> pDollNm

@@ -271,11 +271,10 @@ coreScanOpts opts
                                         , "BINDPLAIN", "BINDFUNCTION0", "BINDFUNCTION1", "BINDAPPLY0"
                                         , "VAL"
                                         , "FAIL"
-                                        , "foreign"
 %%[[9
                                         , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED", "TRACK"
 %%]]
-%%[[50
+%%[[97
                                         , "Integer"
 %%]]
 %%[[90

@@ -163,10 +163,21 @@ pHsName
   = hsnMkModf <$> pList_ng (pS <* pDOT) <*> pB <*> pHsNameUniqifierMp
   where pS =   tokMkStr  <$> (pVaridTk <|> pConidTk <|> pVarsymTk <|> pConsymTk <|> pK)
         pK =   pAnyKey pKeyTk $ Set.toList $ scoKeywordsTxt hsnScanOpts
-        pB =   mkHNmBase . concat
-                          <$> pList1 pS
-           <|> mkHNm      <$> pUID
-           <|> tokMkQName <$> pDOT
+        pB =   mkHNmBase . concat <$> pList1 pS
+           <|> mkHNm              <$> pUID
+           <|> tokMkQName         <$> pDOT
+
+pHsName_Qual :: P String
+pHsName_Qual
+  = tokMkStr  <$> (pVaridTk <|> pConidTk <|> pVarsymTk <|> pConsymTk <|> pK)
+  where pK =   pAnyKey pKeyTk $ Set.toList $ scoKeywordsTxt hsnScanOpts
+
+pHsName_Base :: P (HsName, HsNameUniqifierMp)
+pHsName_Base
+  = pB <+> pHsNameUniqifierMp
+  where pB =   mkHNmBase . concat <$> pList1 pHsName_Qual
+           <|> mkHNm              <$> pUID
+           <|> tokMkQName         <$> pDOT
 %%]
 
 %%[8 export(parseHsName)
@@ -178,12 +189,18 @@ parseHsName ss
           (res,ms) -> hsnUniqifyStr HsNameUniqifier_Error (show ms) res  
 %%]
 parseHsName ss
-  = case initlast $ map p ss of
-      Just (qs,b) -> mkHNm qs `hsnSetQual` b
+  = case initlast ss of
+      Just ([],b) -> case initlast $ splitForQualified b of
+                       Just (qs,b) -> mk qs b
+                       _           -> hsnUnknown
+      Just (qs,b) -> mk qs b
       _           -> hsnUnknown
-  where p s = case parseToResMsgs pHsName $ scan hsnScanOpts (initPos s) s of
-          (res,[]) -> res
-          (res,ms) -> hsnUniqifyStr HsNameUniqifier_Error (show ms) res
+  where prs p s = case parseToResMsgs p $ scan hsnScanOpts (initPos s) s of
+          (res,[]) -> (res, id)
+          (res,ms) -> (res, hsnUniqifyStr HsNameUniqifier_Error (show ms))
+        mk qs b = foldr (.) be qse $ hsnMkModf qs' b' u'
+          where (qs'    ,qse) = unzip $ map (prs pHsName_Qual) qs
+                ((b',u'),be ) = prs pHsName_Base b
           
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
