@@ -193,6 +193,9 @@ instance HsNameUniqueable UID where
 %%[7
 uniqifierMpAdd :: HsNameUniqifier -> HsNameUnique -> HsNameUniqifierMp -> HsNameUniqifierMp
 uniqifierMpAdd ufier u m = Map.unionWith (++) (Map.singleton ufier [u]) m
+
+uniqifierMpUnion :: HsNameUniqifierMp -> HsNameUniqifierMp -> HsNameUniqifierMp
+uniqifierMpUnion = Map.unionWith (++)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -361,7 +364,8 @@ hsnMkModf :: [String] -> HsName -> HsNameUniqifierMp -> HsName
 %%[[1
 hsnMkModf = HsName_Modf 0
 %%][99
-hsnMkModf q b u = hsnFixateHash $ HsName_Modf 0 q b u
+-- hsnMkModf q b u = hsnFixateHash $ HsName_Modf 0 q b u
+hsnMkModf q b u = hsnFixateHash $ either (\(_,n) -> n {hsnQualifiers = q, hsnUniqifiers = hsnUniqifiers n `uniqifierMpUnion` u}) (\b -> HsName_Modf 0 q b u) $ hsnCanonicSplit b
 %%]]
 {-# INLINE hsnMkModf #-}
 %%]

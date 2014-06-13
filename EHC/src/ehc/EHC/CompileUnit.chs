@@ -342,7 +342,7 @@ ecuIsOrphan = const False
 %%]]
 %%]
 
-%%[50 export(ecuIsFromCoreSrc)
+%%[5050 export(ecuIsFromCoreSrc)
 -- | Is compilation from Core source
 ecuIsFromCoreSrc :: EHCompileUnit -> Bool
 ecuIsFromCoreSrc = ecuStateIsCore . ecuState

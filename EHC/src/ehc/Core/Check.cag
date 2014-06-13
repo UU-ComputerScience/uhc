@@ -29,7 +29,7 @@
 %%[(50 codegen corein) hs import(UHC.Util.Pretty)
 %%]
 
-%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonMetaLev})
+%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred})
 WRAPPER CodeAGItf
 %%]
 
@@ -71,10 +71,10 @@ cmodCheck' opts env cmod
 cmodCheck
   :: EHCOpts
      -> CheckEnv -> CModule
-     -> ( ErrL			-- check errors
-        , HsName		-- the actual name of the module as used.
-        , [HsName]		-- imported modules
-        , Bool			-- has a main
+     -> ( ErrL          -- check errors
+        , HsName        -- the actual name of the module as used.
+        , [HsName]      -- imported modules
+        , Bool          -- has a main
         )
 cmodCheck opts env cmod
   = ( Seq.toList $ errs_Syn_CodeAGItf t
@@ -113,7 +113,7 @@ ATTR AllCodeNT [ | | self: SELF ]
 ATTR CodeAGItf CModule [ | | realModuleNm: HsName ]
 
 SEM CModule
-  | Mod			lhs			.	realModuleNm		=	@moduleNm
+  | Mod         lhs         .   realModuleNm        =   @moduleNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,7 +124,30 @@ SEM CModule
 ATTR CodeAGItf CModule CExpr AllBindOnly [ | | hasMain USE {||} {False} : Bool ]
 
 SEM CBind
-  | Bind        lhs         .   hasMain	      			=   @nm == hsnMain
+  | Bind        lhs         .   hasMain             =   @nm == hsnMain
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module is already lambda lifted?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen corein)
+ATTR AllCodeNT [ | | isFreeOfLam USE {&&} {True} : Bool ]
+ATTR CExpr [ | | lamBodyIsFreeOfLam: Bool ]
+ATTR CodeAGItf CModule CExpr AllBind [ | | isLamLifted USE {&&} {True} : Bool ]
+
+SEM CExpr
+  | Lam         lhs         .   isFreeOfLam         =   False
+                            .   lamBodyIsFreeOfLam  =   if @body.whatBelow == ExprIsLam
+                                                        then @body.lamBodyIsFreeOfLam
+                                                        else @body.isFreeOfLam
+  | * - Lam     lhs         .   lamBodyIsFreeOfLam  =   False
+
+SEM CBound
+  | Bind Val    loc         .   isLamLifted         =   if @expr.whatBelow == ExprIsLam
+                                                        then @lhs.isGlobal && @expr.lamBodyIsFreeOfLam
+                                                        else @expr.isFreeOfLam
 
 %%]
 

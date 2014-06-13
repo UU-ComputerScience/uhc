@@ -86,6 +86,7 @@ cpFoldCoreMod modNm
                  core     = panicJust "cpFoldCoreMod" mbCore
                  coreSem  = Core2ChkSem.cmodCheck' opts Core2ChkSem.emptyCheckEnv core
                  hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
+         -- ;  lift $ putStrLn $ "cpFoldCoreMod " ++ show hasMain
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSemMod coreSem
                                 . ecuSetHasMain hasMain

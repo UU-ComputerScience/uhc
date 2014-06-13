@@ -60,6 +60,8 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 -- Core semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: transformations, on core
@@ -80,6 +82,11 @@ cpTransformCore optimScope modNm
                              , trfstUniq            	= crsiNextUID crsi
                              , trfstExtra = emptyTrfCoreExtra
                                  { trfcoreECUState		= ecuState ecu
+%%[[8
+                                 , trfcoreIsLamLifted	= False
+%%][(50 corein)
+                                 , trfcoreIsLamLifted	= maybe False Core2ChkSem.isLamLifted_Syn_CodeAGItf $ ecuMbCoreSemMod ecu
+%%]]
 %%[[50
                                  , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
@@ -88,6 +95,9 @@ cpTransformCore optimScope modNm
                              }
               trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsiCoreInh crsi) modNm trfcoreIn
        
+%%[[(50 corein)
+       -- ; lift $ putStrLn $ "cpTransformCore trfcoreIsLamLifted: " ++ show (trfcoreIsLamLifted $ trfstExtra trfcoreIn)
+%%]]
          -- put back result: Core
        ; cpUpdCU modNm $! ecuStoreCore (trfstMod trfcoreOut)
 
