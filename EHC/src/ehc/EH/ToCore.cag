@@ -48,6 +48,14 @@ SEM AGItf
   | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then acoreVar hsnMain else @expr.letCBody
                                                     d = if @insertMainDef then acoreLet CBindCateg_Plain [acoreBind1Ty hsnMain (acoreTyErr $ "EH.ToCore.AGItf.main") @expr.letCBody] else id
                                                 in  CModule_Mod @lhs.moduleNm
+                                                        [ CDeclMeta_Data tn
+                                                            [ CDataCon_Con cn (ctagTag ctag) (ctagArity ctag)
+                                                            | (cn,dti) <- Map.toList $ dgiConstrTagMp dgi
+                                                            , let ctag = dtiCTag dti
+                                                            ]
+                                                        | (tn,dgi) <- gamToAssocL @expr.gathDataGam
+                                                        , not (dgiIsNewtype dgi)
+                                                        ]
                                                         (
 %%[[9
                                                            cSubstAppExpr True @expr.cSubst

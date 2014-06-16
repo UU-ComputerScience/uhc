@@ -487,7 +487,7 @@ SEM CAltL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllNT [ | rvarMp: RVarMp | ]
+ATTR AllCodeNT [ | rvarMp: RVarMp | ]
 
 SEM CodeAGItf
   | AGItf       loc         .   rvarMp          =   emptyRVarMp
@@ -530,7 +530,7 @@ SEM CPatFld
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllNT [ finalRVarMp: RVarMp | | ]
+ATTR AllCodeNT [ finalRVarMp: RVarMp | | ]
 
 SEM CodeAGItf
   | AGItf       module      .   finalRVarMp     =   @module.rvarMp
@@ -798,7 +798,7 @@ SEM CExpr
 %%]
 
 %%[(8 codegen)
-ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR AllNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBound

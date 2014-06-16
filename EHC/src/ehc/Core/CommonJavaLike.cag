@@ -13,7 +13,7 @@
 %%[[99
 ATTR CodeAGItf CModule [ | | moduleClassNm: HsName ]
 %%]]
-ATTR AllNT [ cvarNmModCfg: CVarNmModuleCfg | | ]
+ATTR AllCodeNT [ cvarNmModCfg: CVarNmModuleCfg | | ]
 %%]
 
 %%[(8 jazy || javascript)
@@ -99,7 +99,7 @@ SEM CBind
 %%]
 
 %%[(8 jazy || javascript)
-ATTR AllNT [ cvarMp: CVarMp | | ]
+ATTR AllCodeNT [ cvarMp: CVarMp | | ]
 
 SEM CodeAGItf
   | AGItf       loc         .   cvarMp          =   Map.empty

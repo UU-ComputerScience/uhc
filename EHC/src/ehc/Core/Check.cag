@@ -10,7 +10,7 @@
 %%[(50 codegen corein) hs module {%{EH}Core.Check} export(Syn_CodeAGItf(..))
 %%]
 
-%%[(50 codegen corein) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam})
+%%[(50 codegen corein) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
 %%[(50 codegen corein) hs import({%{EH}Base.TermLike},{%{EH}AbstractCore},{%{EH}Core})
@@ -109,7 +109,7 @@ ATTR AllCodeNT [ | | self: SELF ]
 %%% Module name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen corein)
+%%[(50 codegen corein)
 ATTR CodeAGItf CModule [ | | realModuleNm: HsName ]
 
 SEM CModule
@@ -120,7 +120,7 @@ SEM CModule
 %%% Module has 'main'?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen corein)
+%%[(50 codegen corein)
 ATTR CodeAGItf CModule CExpr AllBindOnly [ | | hasMain USE {||} {False} : Bool ]
 
 SEM CBind
@@ -132,7 +132,7 @@ SEM CBind
 %%% Module is already lambda lifted?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen corein)
+%%[(50 codegen corein)
 ATTR AllCodeNT [ | | isFreeOfLam USE {&&} {True} : Bool ]
 ATTR CExpr [ | | lamBodyIsFreeOfLam: Bool ]
 ATTR CodeAGItf CModule CExpr AllBind [ | | isLamLifted USE {&&} {True} : Bool ]
@@ -149,6 +149,27 @@ SEM CBound
                                                         then @lhs.isGlobal && @expr.lamBodyIsFreeOfLam
                                                         else @expr.isFreeOfLam
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DataGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen corein)
+-- Gathering of dataGam
+ATTR CodeAGItf CModule AllDeclMeta [ | | gathDataGam USE {`gamUnion`} {emptyGam} : DataGam ]
+
+SEM CDeclMeta
+  | Data		lhs			.	gathDataGam			=	gamSingleton @tyNm $ mkDGIForCodegenOnly @tyNm @dataCons.dataConstrTagMp
+
+ATTR AllDataCon [ | | dataConstrTagMp USE {`Map.union`} {Map.empty}: DataConstrTagMp ]
+
+SEM CDataCon
+  | Con         loc         .   dti                 =   emptyDataTagInfo
+                                                            { dtiConNm          = @conNm
+                                                            , dtiCTag           = mkOnlyConInfoCTag @conNm @tagNr @arity
+                                                            }
+				lhs			.	dataConstrTagMp		=	Map.singleton @conNm @dti
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -81,7 +81,7 @@ emptyJI = Seq.empty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy)
-ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
+ATTR CodeAGItf AllCodeNT [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,7 +212,7 @@ lblTake1 l = (l,l+1)
 %%]
 
 %%[(8 jazy)
-ATTR AllNT [ | lblSeed: {J.Label} | ]
+ATTR AllCodeNT [ | lblSeed: {J.Label} | ]
 
 SEM CodeAGItf
   | AGItf       loc         .   lblSeed         =   0
@@ -339,7 +339,7 @@ TBD: assume presence of self, assume size == 1
 TBD: outside current lexical level, cannot be accessed locally, is closure (which is only half baked available in JVM)
 
 %%[(8 jazy)
-ATTR AllNT [ localOffset: {J.Local} | | ]
+ATTR AllCodeNT [ localOffset: {J.Local} | | ]
 ATTR AllPat [ | offsetOffset: {J.Local} | ]
 
 SEM CodeAGItf
@@ -809,8 +809,8 @@ jFunCls thisNm nOrigArgs args jiInitL jbody jbinds subclasses
 %%]
 
 %%[(8 jazy)
-ATTR AllNT [ | | subClasses  USE {`Seq.union`} {Seq.empty} : JClasses ]
-ATTR AllNT [ | | globClasses USE {`Seq.union`} {Seq.empty} : JClasses ]
+ATTR AllCodeNT [ | | subClasses  USE {`Seq.union`} {Seq.empty} : JClasses ]
+ATTR AllCodeNT [ | | globClasses USE {`Seq.union`} {Seq.empty} : JClasses ]
 %%]
 
 %%[(8 jazy)

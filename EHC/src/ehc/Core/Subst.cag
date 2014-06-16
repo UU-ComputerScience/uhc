@@ -228,7 +228,7 @@ SEM CExpr
 %%]
 
 %%[(8 codegen)
-ATTR AllCodeNT CodeAGItf [ | | cRepl: SELF ]
+ATTR AllNT CodeAGItf [ | | cRepl: SELF ]
 %%]
 
 %%[(8 codegen)

@@ -10,10 +10,10 @@ SEM Decl
   		constrs.polVarMp < constrs.dataAltTy
   		constrs.polVarMp < constrs.tyKiGam
   		constrs.dataAltTyL < constrs.kiVarMp
-  		constrs.kiVarMp < constrs.maxArity
+  		-- constrs.kiVarMp < constrs.maxArity
   		-- constrs.kiVarMp < constrs.dataTy
   		constrs.intlTyKiGam < constrs.patValGam
-  		constrs.intlTyKiGam < constrs.tyNm
+  		-- constrs.intlTyKiGam < constrs.tyNm
   
   | TySig
   		tyExpr.ty < tyExpr.knPolCtx

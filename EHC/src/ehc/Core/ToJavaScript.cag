@@ -56,11 +56,11 @@ cmod2JavaScriptModule opts dataGam cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 javascript)
-ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
+ATTR CodeAGItf AllCodeNT [ opts: EHCOpts | | ]
 %%]
 
 %%[(8 javascript)
-ATTR CodeAGItf AllNT [ dataGam: DataGam | | ]
+ATTR CodeAGItf AllCodeNT [ dataGam: DataGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,7 +68,7 @@ ATTR CodeAGItf AllNT [ dataGam: DataGam | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 javascript)
-ATTR AllNT [ | gUniq: UID | ]
+ATTR AllCodeNT [ | gUniq: UID | ]
 
 SEM CodeAGItf
   | AGItf       loc         .   gUniq           =   uidStart

@@ -287,10 +287,11 @@ cModMerge2 :: ([CModule],CModule) -> CModule
 cModMerge2 (mimpL,mmain)
   = mkM mmain
   where (mkM,_)   = cModMergeByPullingIn lkupPull cexprFvS cbindExprs
-                                         (\bs (CModule_Mod modNm _ _) -> CModule_Mod modNm (acoreLetN bs $ rootExpr) allTags)
+                                         (\bs (CModule_Mod modNm _ _ _) -> CModule_Mod modNm allMeta (acoreLetN bs $ rootExpr) allTags)
                                          rootExpr rootExports
         rootExpr  = cmoddbMainExpr modDbMain
         allTags   = concatMap cmoddbTagsMp $ modDbMain : modDbImp
+        allMeta   = concatMap cmoddbMeta   $ modDbMain : modDbImp
         modDbMain =     cexprModAsDatabase mmain
         modDbImp  = map cexprModAsDatabase mimpL
         modDbMp = Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]

@@ -240,7 +240,7 @@ howHor  = HowPP  (>#<)  (>#<)  ppSpaces  ppListSep
 %%]
 
 %%[(8 coreout)
-ATTR AllExpr CModule - AllMeta [ ppHow: HowPP | | ]
+ATTR AllMetaNT AllExpr CModule - AllMeta [ ppHow: HowPP | | ]
 
 SEM CodeAGItf
   | AGItf       loc         .   ppHow       =   howVert
@@ -297,13 +297,24 @@ ppBound opts isSingleNoNm mbLev s pv
 %%]
 
 %%[(8 coreout)
-ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatFldL CBindL CAltL CBoundL CBindAnnL [ | | ppL: {[PP_Doc]} ]
+ATTR CodeAGItf AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR CPatFldL CBindL CAltL CBoundL CBindAnnL CDataConL CDeclMetaL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
-  | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm >#< "=" >-< @expr.pp >-< "-- data type tag map:" >-< ppCTagsMp CfgPP_Core @ctagsMp
+  | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm
+                                                >-< (if null @declMetas.ppL then empty else ppCurlysSemisBlock @declMetas.ppL)
+                                                >-< "="
+                                                >-< @expr.pp
+                                                >-< "-- data type tag map:"
+                                                >-< ppCTagsMp CfgPP_Core @ctagsMp
+
+SEM CDeclMeta
+  | Data		lhs			.	pp			=	howDef @lhs.ppHow ("data" >#< ppCNm @tyNm) ("=" >#< ppCurlysCommasBlock @dataCons.ppL)
+
+SEM CDataCon
+  | Con			lhs			.	pp			=	ppCNm @conNm >#< "=" >#< ppCurlysCommas [pp @tagNr, pp @arity]
 
 SEM CExpr
   | Int         loc         .   pp          =   ppLit "Int"    (show @int)
@@ -392,7 +403,7 @@ SEM CBound
   | Val         loc         .   pp          =   ppBound @lhs.opts True (Just @lev) @sep @ppBound
   | * - Val     loc         .   pp          =   @ppBound
 
-SEM CBoundL CBindL CPatFldL CAltL CBindAnnL
+SEM CBoundL CBindL CPatFldL CAltL CBindAnnL CDataConL CDeclMetaL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 

@@ -160,12 +160,7 @@ pHsNameUniqifierMp
 
 pHsName :: P HsName
 pHsName
-  = hsnMkModf <$> pList_ng (pS <* pDOT) <*> pB <*> pHsNameUniqifierMp
-  where pS =   tokMkStr  <$> (pVaridTk <|> pConidTk <|> pVarsymTk <|> pConsymTk <|> pK)
-        pK =   pAnyKey pKeyTk $ Set.toList $ scoKeywordsTxt hsnScanOpts
-        pB =   mkHNmBase . concat <$> pList1 pS
-           <|> mkHNm              <$> pUID
-           <|> tokMkQName         <$> pDOT
+  = (\qs (b,u) -> hsnMkModf qs b u) <$> pList_ng (pHsName_Qual <* pDOT) <*> pHsName_Base
 
 pHsName_Qual :: P String
 pHsName_Qual

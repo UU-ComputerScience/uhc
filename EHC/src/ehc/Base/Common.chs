@@ -390,6 +390,16 @@ emptyCTag = CTag hsnUnknown hsnUnknown 0 0 0
 {-# INLINE emptyCTag #-}
 %%]
 
+%%[8 export(mkOnlyConInfoCTag, patchTyInfoCTag)
+-- | Construct a minimal datatype tag which still must be completed wrt more global datatype info
+mkOnlyConInfoCTag :: HsName -> Int -> Int -> CTag
+mkOnlyConInfoCTag conNm tg arity = emptyCTag {ctagNm = conNm, ctagTag' = tg, ctagArity = arity}
+
+-- | Patch a datatype tag with datatype global info
+patchTyInfoCTag :: HsName -> Int -> CTag -> CTag
+patchTyInfoCTag tyNm maxArity t = t {ctagTyNm = tyNm, ctagMaxArity = maxArity}
+%%]
+
 %%[9 export(mkClassCTag)
 -- only used when `not ehcCfgClassViaRec'
 mkClassCTag :: HsName -> Int -> CTag

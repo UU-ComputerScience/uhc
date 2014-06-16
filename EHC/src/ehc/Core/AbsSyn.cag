@@ -43,8 +43,35 @@ DATA CodeAGItf
 %%[(8 codegen)
 DATA CModule
   | Mod         moduleNm        : {HsName}
+                declMetas		: CDeclMetaL
                 expr            : CExpr
                 ctagsMp         : {CTagsMp}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Decl for various pieces of meta info, for now (20140616) only datatype
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CDeclMeta
+  | Data		tyNm			: {HsName}
+  				dataCons		: CDataConL
+
+TYPE CDeclMetaL	= [CDeclMeta]
+
+SET AllDeclMeta	= CDeclMeta CDeclMetaL
+
+-- Equivalent of data type def holding the minimal pieces of info required for codegen
+DATA CDataCon
+  | Con			conNm			: {HsName}
+  				tagNr			: {Int}				-- runtime tag
+  				arity			: {Int}				-- nr of fields, excluding tag
+
+TYPE CDataConL	= [CDataCon]
+
+SET AllDataCon	= CDataCon CDataConL
+
+SET AllMetaNT 	= AllDeclMeta AllDataCon
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -402,5 +429,6 @@ SET AllExpr
 
 SET AllNT
   = AllCodeNT
+    AllMetaNT
 %%]
 

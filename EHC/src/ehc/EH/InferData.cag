@@ -351,8 +351,9 @@ SEM DataConstr
 %%[[8
                             .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
                             .   arity               =   length @dataConGadtFldTyL
-                            .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity @lhs.maxArity
-                loc         .   ctag                :   CTag
+                            .   ctag                =   patchTyInfoCTag @lhs.tyNm @lhs.maxArity $ mkOnlyConInfoCTag @conNm @tag @arity
+                            							-- 20141016 AD: patch should not be necessary, to be sorted out,
+                            							-- codegen somewhere depends on this info prematurely (before full gathering) to be available
 %%]]
 %%]
 

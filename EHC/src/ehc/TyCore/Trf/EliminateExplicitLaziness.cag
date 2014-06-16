@@ -45,7 +45,7 @@ cmodTrfEliminateExplicitLaziness tcmod
 
 %%[(8 codegen tycore tauphi)
 ATTR AGItf [ | | cTrf: Module ]
-ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR AllNT [ | | cTrf: SELF ]
 
 SEM AGItf
   | AGItf       lhs         .   cTrf        =   @module.cTrf

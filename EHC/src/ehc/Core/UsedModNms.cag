@@ -50,7 +50,7 @@ collapseToModNm = Set.unions . Set.toList . Set.map (Set.fromList . maybeToList 
 It is necessary to gather used modules because of re-exporting there may be references to modules which are not imported explicitly.
 
 %%[(50 codegen)
-ATTR AllNT [ | | usedNmS USE {`Set.union`} {Set.empty}: HsNameS ]
+ATTR AllCodeNT [ | | usedNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 ATTR CodeAGItf [ | | usedModNmS: HsNameS ]
 %%]
 

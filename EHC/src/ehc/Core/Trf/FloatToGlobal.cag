@@ -240,7 +240,7 @@ move insflt@(ins,flt)
 
 %%[(8 codegen)
 ATTR CodeAGItf [ | | cTrf: CModule ]
-ATTR AllCodeNT [ | | cTrf: SELF    ]
+ATTR AllNT [ | | cTrf: SELF ]
 %%]
 
 %%[(8 codegen)

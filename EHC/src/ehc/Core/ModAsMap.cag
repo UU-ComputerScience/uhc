@@ -57,6 +57,7 @@ SEM CModule
                                                             , cmoddbBindArr     = listArray (0, nrBinds-1) arrs
                                                             , cmoddbMainExpr    = @expr.expr
                                                             , cmoddbTagsMp      = @ctagsMp
+                                                            , cmoddbMeta		= @declMetas.copy
                                                             }
 %%]
 

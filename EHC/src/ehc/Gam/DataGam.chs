@@ -207,7 +207,7 @@ mkDGI tyNm dty ki cNmL m nt
 %%[[50
       cNmL
 %%]]
-      m
+      m'
 %%[[8
       fm nt mx
 %%]]
@@ -216,8 +216,9 @@ mkDGI tyNm dty ki cNmL m nt
 %%]]
 %%[[8
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
-             $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m, (f,fi) <- Map.toList $ dtiFldMp ci ]
+             $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m', (f,fi) <- Map.toList $ dtiFldMp ci ]
         mx = if Map.null m then (-1) else (ctagMaxArity $ dtiCTag $ head $ Map.elems m)
+        m' = Map.map (\dti -> dti {dtiCTag = patchTyInfoCTag tyNm mx $ dtiCTag dti}) m
 %%]]
 %%]
 
@@ -234,6 +235,13 @@ mkDGIPlain tyNm dty dki cNmL m
           Nothing
 %%]]
 
+%%]
+
+%%[(8 codegen) export(mkDGIForCodegenOnly)
+-- | Construct a datatype info as extracted from (e.g.) Core intended only for codegen (i.e. no type system stuff).
+mkDGIForCodegenOnly :: HsName -> DataConstrTagMp -> DataGamInfo
+mkDGIForCodegenOnly tyNm m
+  = mkDGIPlain tyNm Ty_Any Ty_Any (Map.keys m) m
 %%]
 
 %%[(7 hmtyinfer) export(emptyDataGamInfo,emptyDGI)

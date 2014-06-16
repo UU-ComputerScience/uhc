@@ -76,7 +76,6 @@ cpParseWithFPath
  = do { cr <- get
       ; (fn,fh) <- lift $ openFPath (maybe (ecuFilePath (crCU modNm cr)) id mbFp) ReadMode False
       ; tokens  <- lift $ scan scanOpts fn fh
-      -- ; lift $ putStrLn $ show tokens -- does not work, no Show instance
       ; let (res,msgs) = parse parser tokens
             errs       = map (rngLift emptyRange mkPPErr) msgs
       ; cpUpdCU modNm (store res)
