@@ -217,7 +217,10 @@ mkDGI tyNm dty ki cNmL m nt
 %%[[8
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
              $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m', (f,fi) <- Map.toList $ dtiFldMp ci ]
-        mx = if Map.null m then (-1) else (ctagMaxArity $ dtiCTag $ head $ Map.elems m)
+        mx = maximum
+               ( (if Map.null m then (-1) else (ctagMaxArity $ dtiCTag $ head $ Map.elems m))
+               : [ ctagArity $ dtiCTag dti | dti <- Map.elems m ]
+               )
         m' = Map.map (\dti -> dti {dtiCTag = patchTyInfoCTag tyNm mx $ dtiCTag dti}) m
 %%]]
 %%]

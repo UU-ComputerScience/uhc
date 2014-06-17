@@ -62,6 +62,7 @@ Core/Trf/ExplicitStackTrace.cag
 Core/Trf/OptimizeStrictness.cag
 Core/Trf/EraseExtractTysigCore.cag
 Core/Trf/ElimNonCodegenConstructs.cag
+Core/Trf/FixAfterParse.cag
 Core/SysF/Check.cag
 GrinCode/Pretty.cag
 GrinCode/FreeVars.cag

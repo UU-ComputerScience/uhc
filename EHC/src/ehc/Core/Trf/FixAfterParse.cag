@@ -1,0 +1,77 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fixes after parsing of Core 
+%%% (1) CTag inlined info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 codegen corein) hs module {%{EH}Core.Trf.FixAfterParse} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(50 codegen corein) hs import({%{EH}AbstractCore})
+%%]
+
+%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen corein)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 codegen corein) hs export(cmodTrfFixAfterParse)
+cmodTrfFixAfterParse
+  :: DataGam
+     -> CModule
+     -> CModule
+cmodTrfFixAfterParse dataGam cmod
+  = ( cTrf_Syn_CodeAGItf t
+    )
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                           (Inh_CodeAGItf
+                             { dataGam_Inh_CodeAGItf = dataGam
+                             })
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 codegen corein)
+ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 codegen corein) hs
+fixCTag :: DataGam -> CTag -> CTag
+fixCTag g (t@(CTag {ctagTyNm=tn, ctagNm=cn})) = maybe t id $ dataGamLookupTag tn cn g
+fixCTag _  t                                  =       t
+%%]
+
+%%[(50 codegen corein)
+ATTR AllNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%[(50 codegen corein)
+SEM CExpr
+  | Tup         lhs			.	cTrf			=	@cTrf {tag_CExpr_Tup = fixCTag @lhs.dataGam @tag}
+
+SEM CPat
+  | Con         lhs			.	cTrf			=	@cTrf {tag_CPat_Con = fixCTag @lhs.dataGam @tag}
+%%]
+SEM CExpr
+  -- Non substituted failure continutations default to their error expression
+  | CaseAltFail lhs         .   cTrf            =   @errorExpr.cTrf
+

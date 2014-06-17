@@ -58,6 +58,10 @@
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
 %%]
+%%[(50 codegen corein) import({%{EH}Core.Trf.FixAfterParse})
+%%]
+
+-- Misc
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
@@ -122,6 +126,14 @@ trfCore opts optimScope dataGam modNm trfcore
           = do { -- initial is just to obtain Core for dumping stages
                  t_initial
                  
+%%[[(8 corein)
+               ; when isFromCoreSrc $ do
+                   { -- fix whatever needs to be fixed when read from Core src
+                     t_fix_postparse
+
+                   }
+%%]]
+
 %%[[(8 coresysf)
                  -- type check
                ; when (ehcOptCoreSysF opts)
@@ -248,9 +260,12 @@ trfCore opts optimScope dataGam modNm trfcore
           where gl' = Map.union l gl
 
         -- actual transformations
-        t_initial       = liftTrfModPlain  osmw "initial"            $ id
+        t_initial       = liftTrfModPlain  osmw "initial"           $ id
+%%[[(50 corein)
+        t_fix_postparse	= liftTrfModPlain  osm "fix-postparse"  	$ cmodTrfFixAfterParse dataGam
+%%]]
 %%[[(8 coresysf)
-        t_sysf_check    = liftCheckMod  osm "sysf-type-check"  $ \s -> cmodSysfCheck opts (emptyCheckEnv {cenvLamMp = trfcoreInhLamMp $ trfstExtra s})
+        t_sysf_check    = liftCheckMod     osm "sysf-type-check"    $ \s -> cmodSysfCheck opts (emptyCheckEnv {cenvLamMp = trfcoreInhLamMp $ trfstExtra s})
 %%]]
         t_eta_red       = liftTrfModPlain  osm "eta-red"            $ cmodTrfEtaRed
         t_erase_ty      = liftTrfModWithStateExtra osmw "erase-ty" lamMpPropagate

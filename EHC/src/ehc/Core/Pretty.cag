@@ -307,8 +307,8 @@ SEM CModule
                                                 >-< (if null @declMetas.ppL then empty else ppCurlysSemisBlock @declMetas.ppL)
                                                 >-< "="
                                                 >-< @expr.pp
-                                                >-< "-- data type tag map:"
-                                                >-< ppCTagsMp CfgPP_Core @ctagsMp
+                                                -- >-< "-- data type tag map:"
+                                                -- >-< ppCTagsMp CfgPP_Core @ctagsMp
 
 SEM CDeclMeta
   | Data		lhs			.	pp			=	howDef @lhs.ppHow ("data" >#< ppCNm @tyNm) ("=" >#< ppCurlysCommasBlock @dataCons.ppL)

@@ -45,7 +45,7 @@ DATA CModule
   | Mod         moduleNm        : {HsName}
                 declMetas		: CDeclMetaL
                 expr            : CExpr
-                ctagsMp         : {CTagsMp}
+                -- ctagsMp         : {CTagsMp}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

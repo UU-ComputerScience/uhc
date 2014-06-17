@@ -510,7 +510,7 @@ cpEhcModuleCompile1 targHSState modNm
            (ECUSCore CROnlyImports,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
-                   ; cpEhcCoreAnalyseModule modNm
+                   ; cpProcessCoreModFold modNm
                    ; cpEhcCoreModuleCommonPhases True True True {- isMainMod isTopMod doMkExec -} opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSCore CRAllSem))
                    ; return defaultResult
@@ -1098,6 +1098,15 @@ cpProcessCoreFold modNm
 %%[[50
 	  ++ [ cpFlowCoreSemAfterFold modNm ]
 %%]]
+%%]
+
+%%[(50 codegen corein)
+cpProcessCoreModFold :: HsName -> EHCompilePhase ()
+cpProcessCoreModFold modNm
+  = cpSeq $
+      [ cpEhcCoreAnalyseModule modNm
+      , cpFlowCoreModSem modNm
+      ]
 %%]
 
 %%[(8 codegen)

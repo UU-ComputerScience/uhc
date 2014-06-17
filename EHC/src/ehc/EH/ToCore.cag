@@ -72,7 +72,7 @@ SEM AGItf
                                                            Nothing
 %%]]
                                                         )
-                                                        [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
+                                                        -- [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
                 loc         .   extraCBindL =   []
 %%]
 

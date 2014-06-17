@@ -39,8 +39,11 @@
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonCtxtStrict},{Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv})
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonCtxtStrict})
 WRAPPER CodeAGItf
+%%]
+
+%%[(8 codegen grin) ag import({Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv},{Core/CommonDataGam})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,8 +85,8 @@ ATTR CModule CodeAGItf [ importUsedModules: ImportUsedModules | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%]
+ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gathering LamInfo, providing hook for Core/CommonLamInfo
@@ -181,9 +184,12 @@ SEM CModule
   | Mod         lhs         .   grMod       =   GrModule_Mod @moduleNm
                                                              @expr.grGlobalL
                                                              @expr.grBindL
+                                                             {-
                                                              (            primNmList2GrTagMap (grBuiltinTyNmL @lhs.opts)
                                                              `Map.union`  cTagsMp2GrTagMap @ctagsMp
                                                              )
+                                                             -}
+                                                             Map.empty
 %%]
 
 %%[(8 codegen grin)

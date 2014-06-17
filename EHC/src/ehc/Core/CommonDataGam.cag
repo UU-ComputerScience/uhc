@@ -1,0 +1,31 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common functionality to extract/propagate datatype info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DataGam gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen corein)
+-- Gathering of dataGam
+ATTR CodeAGItf CModule AllDeclMeta [ | | gathDataGam USE {`gamUnion`} {emptyGam} : DataGam ]
+
+SEM CDeclMeta
+  | Data		lhs			.	gathDataGam			=	gamSingleton @tyNm $ mkDGIForCodegenOnly @tyNm @dataCons.dataConstrTagMp
+
+ATTR AllDataCon [ | | dataConstrTagMp USE {`Map.union`} {Map.empty}: DataConstrTagMp ]
+
+SEM CDataCon
+  | Con         loc         .   dti                 =   emptyDataTagInfo
+                                                            { dtiConNm          = @conNm
+                                                            , dtiCTag           = mkOnlyConInfoCTag @conNm @tagNr @arity
+                                                            }
+				lhs			.	dataConstrTagMp		=	Map.singleton @conNm @dti
+%%]
+
+%%[(8 codegen corein)
+ATTR CodeAGItf AllCodeNT [ dataGam: DataGam | | ]
+
+SEM CModule
+  | Mod			loc			.	dataGam				=	@lhs.dataGam `gamUnion` @declMetas.gathDataGam		-- order important, inherited overrides local defs
+%%]

@@ -84,7 +84,11 @@ cpFoldCoreMod modNm
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbCore   = ecuMbCore ecu
                  core     = panicJust "cpFoldCoreMod" mbCore
-                 coreSem  = Core2ChkSem.cmodCheck' opts Core2ChkSem.emptyCheckEnv core
+                 inh      = Core2ChkSem.Inh_CodeAGItf
+                                { Core2ChkSem.opts_Inh_CodeAGItf = opts
+                                , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsiEHInh crsi
+                                }
+                 coreSem  = Core2ChkSem.cmodCheck' inh core
                  hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
          -- ;  lift $ putStrLn $ "cpFoldCoreMod " ++ show hasMain
          ;  when (isJust mbCore)

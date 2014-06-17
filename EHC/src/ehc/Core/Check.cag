@@ -7,7 +7,7 @@
 %%% Check core module when provided as source
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs module {%{EH}Core.Check} export(Syn_CodeAGItf(..))
+%%[(50 codegen corein) hs module {%{EH}Core.Check}
 %%]
 
 %%[(50 codegen corein) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
@@ -29,7 +29,7 @@
 %%[(50 codegen corein) hs import(UHC.Util.Pretty)
 %%]
 
-%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred})
+%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
 WRAPPER CodeAGItf
 %%]
 
@@ -42,7 +42,8 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs export(CheckEnv(..),emptyCheckEnv)
+%%[(50 codegen corein) hs
+%%]
 data CheckEnv
   = CheckEnv
       {- cenvLamMp       :: LamMp
@@ -52,22 +53,19 @@ emptyCheckEnv
   = CheckEnv
       -- emptyLamMp
 
-%%]
 
-%%[(50 codegen corein) hs export(cmodCheck')
+%%[(50 codegen corein) hs export(cmodCheck', Inh_CodeAGItf(..), Syn_CodeAGItf(..))
 cmodCheck'
-  :: EHCOpts
-     -> CheckEnv -> CModule
+  :: Inh_CodeAGItf
+     -> CModule
      -> Syn_CodeAGItf
-cmodCheck' opts env cmod
+cmodCheck' inh cmod
   = t
   where t = wrap_CodeAGItf
               (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-              (Inh_CodeAGItf
-                { opts_Inh_CodeAGItf = opts
-                , env_Inh_CodeAGItf  = env
-                })
+              inh
 
+%%]
 cmodCheck
   :: EHCOpts
      -> CheckEnv -> CModule
@@ -83,7 +81,6 @@ cmodCheck opts env cmod
     , True
     )
   where t = cmodCheck' opts env cmod
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info
@@ -93,7 +90,7 @@ cmodCheck opts env cmod
 ATTR
   AllCodeNT CodeAGItf
     [ opts: EHCOpts
-      env : CheckEnv
+      -- env : CheckEnv
     | | ]
 %%]
 
@@ -149,27 +146,6 @@ SEM CBound
                                                         then @lhs.isGlobal && @expr.lamBodyIsFreeOfLam
                                                         else @expr.isFreeOfLam
 
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% DataGam
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen corein)
--- Gathering of dataGam
-ATTR CodeAGItf CModule AllDeclMeta [ | | gathDataGam USE {`gamUnion`} {emptyGam} : DataGam ]
-
-SEM CDeclMeta
-  | Data		lhs			.	gathDataGam			=	gamSingleton @tyNm $ mkDGIForCodegenOnly @tyNm @dataCons.dataConstrTagMp
-
-ATTR AllDataCon [ | | dataConstrTagMp USE {`Map.union`} {Map.empty}: DataConstrTagMp ]
-
-SEM CDataCon
-  | Con         loc         .   dti                 =   emptyDataTagInfo
-                                                            { dtiConNm          = @conNm
-                                                            , dtiCTag           = mkOnlyConInfoCTag @conNm @tagNr @arity
-                                                            }
-				lhs			.	dataConstrTagMp		=	Map.singleton @conNm @dti
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

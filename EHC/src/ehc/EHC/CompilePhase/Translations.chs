@@ -257,6 +257,7 @@ cpGenGrinGenInfo modNm
        -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHSDeclImpNmS " ++ show (ecuHSDeclImpNmS ecu)
        -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHIDeclImpNmS " ++ show (ecuHIDeclImpNmS ecu)
        -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHIUsedImpNmS " ++ show (ecuHIUsedImpNmS ecu)
+       -- ; lift $ putStrLn $ "cpGenGrinGenInfo modOffMp " ++ show modOffMp
        -- ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu
        ; return
            ( Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
