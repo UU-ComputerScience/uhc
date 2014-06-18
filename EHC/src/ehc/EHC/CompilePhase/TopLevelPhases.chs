@@ -903,6 +903,7 @@ cpEhcCoreImport
 cpEhcCoreAnalyseModule :: HsName -> EHCompilePhase ()
 cpEhcCoreAnalyseModule modNm
   = do { cr <- get
+       ; cpUpdateModOffMp [modNm]
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              coreSem = panicJust "cpEhcCoreAnalyseModule" $ ecuMbCoreSemMod ecu
              errs = Seq.toList $ Core2ChkSem.errs_Syn_CodeAGItf coreSem
