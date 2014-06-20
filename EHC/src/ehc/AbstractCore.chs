@@ -1278,12 +1278,7 @@ cSubstAppSubst = Map.union
 infixr `cSubstApp`
 
 class CSubstitutable       e m b ba t a
-                   | e  ->   m b ba t
-                   , m  -> e
-                   , b  -> e
-                   , ba -> e
-                   , t  -> e
-                   , a  -> e m b ba t
+                   | a  -> e m b ba t
   where
   cSubstApp :: CSubst' e m b ba t -> a -> a
 
