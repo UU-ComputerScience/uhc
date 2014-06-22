@@ -303,7 +303,7 @@
 
 #ifdef __UHC_BUILDS_O__
 
-#if defined(__UHC_TARGET_BC__) || defined(__UHC_TARGET_C__)
+#if defined(__UHC_TARGET_BC__) || defined(__UHC_TARGET_CR__) || defined(__UHC_TARGET_C__)
 // # define HsBool				Word
 // # define HsInt				Word
 // # define HsWord64			Word64

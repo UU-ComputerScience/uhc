@@ -266,7 +266,7 @@ instance Bits Int where
     rotateR                = primRotateRightInt
 #if defined( __UHC_TARGET_JS__ )
     bitSize  _             = 31 -- for now...
-#elif defined( __UHC_TARGET_BC__ )
+#elif defined( __UHC_TARGET_BC__ ) || defined( __UHC_TARGET_CR__ )
     bitSize _              = SIZEOF_HSINT*8 - BITSIZEOF_WORDTAG
 #else
     bitSize _              = SIZEOF_HSINT*8
