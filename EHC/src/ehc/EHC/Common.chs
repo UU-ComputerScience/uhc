@@ -104,10 +104,17 @@ data EHState
 
 The state C compilation can be in, which basically is just administering it has to be compiled
 
-%%[(90 codegen) export(CState(..))
+%%[(90 codegen) export(CState(..), OState(..))
+-- | State for .c files
 data CState
   = CStart
   | CAllSem
+  deriving (Show,Eq)
+
+-- | State for .o files
+data OState
+  = OStart
+  | OAllSem
   deriving (Show,Eq)
 %%]
 
@@ -125,17 +132,18 @@ The state any compilation can be in
 
 %%[8 export(EHCompileUnitState(..))
 data EHCompileUnitState
-  = ECUSUnknown
-  | ECUSHaskell !HSState
-  | ECUSEh      !EHState
+  = ECUS_Unknown
+  | ECUS_Haskell !HSState
+  | ECUS_Eh      !EHState
 %%[[(90 codegen)
-  | ECUSC       !CState
+  | ECUS_C       !CState
+  | ECUS_O       !OState
 %%]]
 %%[[(50 corein)
-  | ECUSCore    !CRState
+  | ECUS_Core    !CRState
 %%]]
-  | ECUSGrin
-  | ECUSFail
+  | ECUS_Grin
+  | ECUS_Fail
   deriving (Show,Eq)
 %%]
 
@@ -144,7 +152,7 @@ data EHCompileUnitState
 ecuStateIsCore :: EHCompileUnitState -> Bool
 ecuStateIsCore st = case st of
 %%[[(50 corein)
-  ECUSCore _ -> True
+  ECUS_Core _ -> True
 %%]]
   _          -> False
 %%]
@@ -167,11 +175,11 @@ data EHCompileUnitKind
 ecuStateToKind :: EHCompileUnitState -> EHCompileUnitKind
 ecuStateToKind s
   = case s of
-      ECUSHaskell _ -> EHCUKind_HS
+      ECUS_Haskell _ -> EHCUKind_HS
 %%[[(90 codegen)
-      ECUSC       _ -> EHCUKind_C
+      ECUS_C       _ -> EHCUKind_C
 %%]]
-      _             -> EHCUKind_None
+      _              -> EHCUKind_None
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

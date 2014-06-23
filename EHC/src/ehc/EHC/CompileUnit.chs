@@ -278,7 +278,7 @@ emptyECU
 %%[[(8 javascript)
       , ecuMbJavaScript      = Nothing
 %%]]
-      , ecuState             = ECUSUnknown
+      , ecuState             = ECUS_Unknown
 %%[[50
       , ecuImportUsedModules = emptyImportUsedModules
       , ecuIsTopMod          = False
@@ -354,23 +354,23 @@ ecuIsFromCoreSrc = ecuStateIsCore . ecuState
 
 %%[8
 instance CompileUnitState EHCompileUnitState where
-  cusDefault      = ECUSEh EHStart
-  cusUnk          = ECUSUnknown
-  cusIsUnk        = (==ECUSUnknown)
+  cusDefault      = ECUS_Eh EHStart
+  cusUnk          = ECUS_Unknown
+  cusIsUnk        = (==ECUS_Unknown)
 %%]
 %%[8.cusIsImpKnown
   cusIsImpKnown _ = True
 %%]
 %%[50 -8.cusIsImpKnown
   cusIsImpKnown s = case s of
-                      ECUSHaskell HSOnlyImports  -> True
-                      ECUSHaskell HIOnlyImports  -> True
-                      ECUSHaskell HMOnlyMinimal  -> True
+                      ECUS_Haskell HSOnlyImports  -> True
+                      ECUS_Haskell HIOnlyImports  -> True
+                      ECUS_Haskell HMOnlyMinimal  -> True
 %%[[99
-                      ECUSHaskell LHSOnlyImports -> True
+                      ECUS_Haskell LHSOnlyImports -> True
 %%]]
-                      ECUSHaskell HSAllSem       -> True
-                      ECUSHaskell HIAllSem       -> True
+                      ECUS_Haskell HSAllSem       -> True
+                      ECUS_Haskell HIAllSem       -> True
                       _                          -> False
 %%]
 

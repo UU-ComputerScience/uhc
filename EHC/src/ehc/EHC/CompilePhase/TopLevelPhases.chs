@@ -345,8 +345,8 @@ cpEhcFullProgBetweenModuleFlow :: HsName -> EHCompilePhase ()
 cpEhcFullProgBetweenModuleFlow modNm
   = do { cr <- get
        ; case ecuState $ crCU modNm cr of
-           ECUSHaskell HSAllSem -> return ()
-           ECUSHaskell HIAllSem -> cpFlowHISem modNm
+           ECUS_Haskell HSAllSem -> return ()
+           ECUS_Haskell HIAllSem -> cpFlowHISem modNm
            _                    -> return ()
 %%[[99
        ; cpCleanupFlow modNm
@@ -387,15 +387,15 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
 %%]
 %%[5050
-           (ECUSHaskell HIStart,Just HMOnlyMinimal)
+           (ECUS_Haskell HIStart,Just HMOnlyMinimal)
              -- |    st == HIStart
              -> do { cpMsg modNm VerboseNormal ("Minimal of HM")
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HMOnlyMinimal))
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HMOnlyMinimal))
                    ; return modNm
                    }
 %%]
 %%[50
-           (ECUSHaskell st,Just HSOnlyImports)
+           (ECUS_Haskell st,Just HSOnlyImports)
              |    st == HSStart
 %%[[99
                || st == LHSStart
@@ -413,15 +413,15 @@ cpEhcModuleCompile1 targHSState modNm
                               ; let (ecu,_,opts,fp) = crBaseInfo modNm2 cr
                               ; lift $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm2 ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmS ecu))
                               })
-                   ; cpUpdCU modNm2 (ecuStoreState (ECUSHaskell stnext))
+                   ; cpUpdCU modNm2 (ecuStoreState (ECUS_Haskell stnext))
                    ; cpStopAt CompilePoint_Imports
                    ; return modNm2
                    }
              where stnext = hsstateNext st
-           (ECUSHaskell HIStart,Just HSOnlyImports)
+           (ECUS_Haskell HIStart,Just HSOnlyImports)
              -> do { cpMsg modNm VerboseNormal ("Imports of HI")
                    ; cpEhcHaskellModulePrepareHI modNm
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell (hsstateNext HIStart)))
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell (hsstateNext HIStart)))
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
                               ; let (ecu,_,opts,fp) = crBaseInfo modNm cr
@@ -429,14 +429,14 @@ cpEhcModuleCompile1 targHSState modNm
                               })
                    ; return defaultResult
                    }
-           (ECUSHaskell st,Just HSOnlyImports)
+           (ECUS_Haskell st,Just HSOnlyImports)
              |    st == HSOnlyImports
                || st == HIOnlyImports
 %%[[99
                || st == LHSOnlyImports
 %%]]
              -> return defaultResult
-           (ECUSHaskell st,Just HSAllSem)
+           (ECUS_Haskell st,Just HSAllSem)
              |    st == HSOnlyImports
 %%[[99
                || st == LHSOnlyImports
@@ -447,10 +447,10 @@ cpEhcModuleCompile1 targHSState modNm
                                                    (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
                                                    modNm
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HSAllSem))
                    ; return defaultResult
                    }
-           (ECUSHaskell st,Just HIAllSem)
+           (ECUS_Haskell st,Just HIAllSem)
              |    st == HSOnlyImports
                || st == HIOnlyImports
 %%[[99
@@ -460,13 +460,13 @@ cpEhcModuleCompile1 targHSState modNm
 %%[[(50 codegen grin)
                    ; cpUpdateModOffMp [modNm]
 %%]]
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HIAllSem))
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HIAllSem))
                    ; return defaultResult
                    }
 %%]]
 %%]
 %%[8
-           (ECUSHaskell HSStart,_)
+           (ECUS_Haskell HSStart,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Haskell"
                    ; cpEhcHaskellModulePrepare modNm
                    ; cpEhcHaskellParse
@@ -482,11 +482,11 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptWholeProgHPTAnalysis opts)
                           (cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm)
 %%]]
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HSAllSem))
                    ; return defaultResult
                    }
 %%[[50
-           (ECUSHaskell st,Just HMOnlyMinimal)
+           (ECUS_Haskell st,Just HMOnlyMinimal)
              |    st == HIStart || st == HSStart -- st /= HMOnlyMinimal
              -> do { let mod = emptyMod' modNm
                    ; cpUpdCU modNm (ecuStoreMod mod)
@@ -494,32 +494,32 @@ cpEhcModuleCompile1 targHSState modNm
 %%[[(50 codegen grin)
 				   ; cpUpdateModOffMp [modNm]
 %%]]
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HMOnlyMinimal))
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HMOnlyMinimal))
                    ; return defaultResult
                    }
 %%[[(50 corein)
-           (ECUSCore CRStart,Just HSOnlyImports)
+           (ECUS_Core CRStart,Just HSOnlyImports)
              -> do { cpMsg modNm VerboseNormal "Reading Core"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
                    ; cpEhcHaskellModulePrepareSrc modNm
                    ; modNm2 <- cpEhcCoreImport modNm
                    ; cpGetDummyCheckSrcMod modNm2		-- really dummy, should be based on actual import info to be extracted by cpEhcCoreImport
-                   ; cpUpdCU modNm2 (ecuStoreState (ECUSCore CROnlyImports))
+                   ; cpUpdCU modNm2 (ecuStoreState (ECUS_Core CROnlyImports))
                    ; return modNm2
                    }
-           (ECUSCore CROnlyImports,_)
+           (ECUS_Core CROnlyImports,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
                    ; cpProcessCoreModFold modNm
                    ; cpEhcCoreModuleCommonPhases True True True {- isMainMod isTopMod doMkExec -} opts modNm
-                   ; cpUpdCU modNm (ecuStoreState (ECUSCore CRAllSem))
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult
                    }
 %%]]
            (_,Just HSOnlyImports)
              -> return defaultResult
 %%]]
-           (ECUSEh EHStart,_)
+           (ECUS_Eh EHStart,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling EH"
                    ; cpUpdOpts (\o -> o {ehcOptHsChecksInEH = True})
                    ; cpEhcEhParse modNm
@@ -532,15 +532,15 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptWholeProgHPTAnalysis opts)
                           (cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm)
 %%]]   
-                   ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_Eh EHAllSem))
                    ; return defaultResult
                    }
 %%[[(90 codegen)
-           (ECUSC CStart,_)
+           (ECUS_C CStart,_)
              | targetIsOnUnixAndOrC (ehcOptTarget opts)
              -> do { cpSeq [ cpMsg modNm VerboseMinimal "Compiling C"
                            , cpCompileWithGCC FinalCompile_Module [] modNm
-                           , cpUpdCU modNm (ecuStoreState (ECUSC CAllSem))
+                           , cpUpdCU modNm (ecuStoreState (ECUS_C CAllSem))
                            ]
                    ; return defaultResult
                    }
@@ -548,9 +548,21 @@ cpEhcModuleCompile1 targHSState modNm
              -> do { cpMsg modNm VerboseMinimal "Skipping C"
                    ; return defaultResult
                    }
+           (ECUS_O OStart,_)
+             | targetIsOnUnixAndOrC (ehcOptTarget opts)
+             -> do { cpSeq [ cpMsg modNm VerboseMinimal "Passing through .o file"
+                           -- , cpCompileWithGCC FinalCompile_Module [] modNm
+                           , cpUpdCU modNm (ecuStoreState (ECUS_O OAllSem))
+                           ]
+                   ; return defaultResult
+                   }
+             | otherwise
+             -> do { cpMsg modNm VerboseMinimal "Skipping .o file"
+                   ; return defaultResult
+                   }
 %%]]
 %%[[(8 codegen grin grinparser)
-           (ECUSGrin,_)
+           (ECUS_Grin,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Grin"
                    ; cpParseGrin modNm
                    ; cpProcessGrin modNm

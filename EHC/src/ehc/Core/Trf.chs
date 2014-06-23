@@ -104,7 +104,7 @@ emptyTrfCoreExtra = TrfCoreExtra
 %%[[99
                        Set.empty
 %%]]
-                       ECUSUnknown
+                       ECUS_Unknown
                        False
 %%]
 

@@ -249,24 +249,29 @@ type FileSuffMp = [(FileSuffix,EHCompileUnitState)]
 
 mkFileSuffMpHs :: EHCOpts -> FileSuffMp
 mkFileSuffMpHs opts
-  = [ ( Just "hs"  , ECUSHaskell HSStart )
+  = [ ( Just "hs"  , ECUS_Haskell HSStart )
 %%[[99
-    , ( Just "lhs" , ECUSHaskell LHSStart )
+    , ( Just "lhs" , ECUS_Haskell LHSStart )
 %%]]
-    , ( Just "eh"  , ECUSEh EHStart )
+    , ( Just "eh"  , ECUS_Eh EHStart )
 %%[[50
-    , ( Just "hi"  , ECUSHaskell HIStart )
+    , ( Just "hi"  , ECUS_Haskell HIStart )
 %%]]
 %%[[(8 grin)
     -- currently not supported
-    , ( Just "grin", ECUSGrin )
+    -- , ( Just "grin", ECUS_Grin )
 %%]]
 %%[[(50 corein)
-    , ( Just Cfg.suffixDotlessInputTextualCore, ECUSCore CRStart )
+    , ( Just Cfg.suffixDotlessInputTextualCore, ECUS_Core CRStart )
 %%]]
     ]
 %%[[(90 codegen)
-    ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts) then [ ( Just "c"   , ECUSC CStart ) ] else [])
+    ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts)
+        then [ ( Just "c"   , ECUS_C CStart )
+             , ( Just "o"   , ECUS_O OStart )
+             ]
+        else []
+       )
 %%]]
 %%]
 
@@ -274,7 +279,7 @@ mkFileSuffMpHs opts
 -- Suffix map for empty suffix, defaults to .hs
 fileSuffMpHsNoSuff :: FileSuffMp
 fileSuffMpHsNoSuff
-  = [ ( Nothing  , ECUSHaskell HSStart )
+  = [ ( Nothing  , ECUS_Haskell HSStart )
     ]
 %%]
 
@@ -497,7 +502,7 @@ doCompileRun fnL@(fn:_) opts
                        ; let modNmS = Map.keysSet $ crCUCache cr
                              ms = Set.unions
                                     [ case cuState e of
-                                        -- ECUSHaskell HIOnlyImports -> ecuTransClosedOrphanModS ecu
+                                        -- ECUS_Haskell HIOnlyImports -> ecuTransClosedOrphanModS ecu
                                         _                         -> ecuImpNmS e
                                     | m <- Set.toList modNmS, let e = crCU m cr
                                     ]
@@ -532,8 +537,8 @@ doCompileRun fnL@(fn:_) opts
                ; cpImportGatherFromModsWithImp
                    (if ehcOptPriv opts
                     then \ecu -> case ecuState ecu of
-                                   -- ECUSHaskell HIStart -> Set.toList $ ecuTransClosedOrphanModS ecu
-                                   ECUSHaskell HIOnlyImports -> [] -- Set.toList $ ecuTransClosedOrphanModS ecu
+                                   -- ECUS_Haskell HIStart -> Set.toList $ ecuTransClosedOrphanModS ecu
+                                   ECUS_Haskell HIOnlyImports -> [] -- Set.toList $ ecuTransClosedOrphanModS ecu
                                    _ -> ecuImpNmL ecu
                     else ecuImpNmL
                    )
