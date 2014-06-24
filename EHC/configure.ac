@@ -376,6 +376,28 @@ esac
 
 AC_SUBST(TOPLEVEL_SYSTEM_ABSPATH_PREFIX, "$toplevelSystemAbsolutePathPrefix")
 
+### 'with' option for haddock
+AC_ARG_WITH(haddock,
+[AS_HELP_STRING([--with-haddock=<haddock>],[Use a command different from 'haddock' to generate doc.])],
+[ haddockCmd="$withval" ],
+[
+  if test "$HADDOCK" = ""; then
+    AC_PATH_PROG(haddockCmd,haddock)
+  else
+    haddockCmd=$HADDOCK
+  fi
+]
+)
+if test "$haddockCmd" != "no" -a -x "$haddockCmd"; then
+  haddockExists="yes"
+  haddockVersion=`$haddockCmd --version | head -n 1`
+else
+  haddockCmd=""
+  haddockExists="no"
+fi
+AC_SUBST(HADDOCK_CMD,$haddockCmd)
+AC_SUBST(HADDOCK_VERSION, $haddockVersion)
+
 ### 'with' option for Haskell compiler, by default ghc
 AC_ARG_WITH(hc,
 [AS_HELP_STRING([--with-hc=<haskell compiler>],[Use a command different from 'ghc' to compile with GHC.])],
@@ -436,15 +458,37 @@ AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibsRequired="fgl syb uulib network binary hashable uhc-util"
+# gather for some libraries version info
+ghcLibsRequiredWithVersion=""
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
   then
     for l in ${ghcLibsRequired}
     do
-      pkg=`$ghcPkgCmd list --simple-output ${l}`
+      pkg=`$ghcPkgCmd list --simple-output ${l} | sed -e 'y/ /\n/' | tail -1`
+      #echo $pkg
       if test "x${pkg}" != "x" ; then
         ghcLibsRequiredAndPresent="${pkg} ${ghcLibsRequiredAndPresent}"
+        pkgBase=`echo ${pkg} | sed -E -e 's/^([[^-]]+(-[[^-]]+)*)-.*/\1/'`
+        pkgVersion=`echo ${pkg} | sed -E -e 's/^(([[^-]]+-)+)([[^.]]+(\.[[^.]]+)*)$/\3/'`
+        pkgVersionNoDot=`echo ${pkgVersion} | sed -E -e 's/\.//'g`
+        #echo $pkgBase
+        #echo $pkgVersion
+        #echo $pkgVersionNoDot
+        ### here do special treatment of packages, now we have names and packages available
+        case ${pkgBase} in
+          fgl)
+            if test ${pkgVersionNoDot} -ge 5500
+            then
+              ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} fgl>=5.5 graphviz"
+            else
+              ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} fgl<5.5"
+            fi
+            ;;
+          *)
+            ;;
+        esac
       else
         ghcLibsRequiredButAbsent="${l} ${ghcLibsRequiredButAbsent}"
       fi
@@ -453,30 +497,8 @@ then
   fi
 fi
 
-### 'with' option for haddock
-AC_ARG_WITH(haddock,
-[AS_HELP_STRING([--with-haddock=<haddock>],[Use a command different from 'haddock' to generate doc.])],
-[ haddockCmd="$withval" ],
-[
-  if test "$HADDOCK" = ""; then
-    AC_PATH_PROG(haddockCmd,haddock)
-  else
-    haddockCmd=$HADDOCK
-  fi
-]
-)
-if test "$haddockCmd" != "no" -a -x "$haddockCmd"; then
-  haddockExists="yes"
-  haddockVersion=`$haddockCmd --version | head -n 1`
-else
-  haddockCmd=""
-  haddockExists="no"
-fi
-AC_SUBST(HADDOCK_CMD,$haddockCmd)
-AC_SUBST(HADDOCK_VERSION, $haddockVersion)
-
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="base mtl fgl directory hashable>=1.1&&<1.3 uhc-util>=0.1.3"
+cabal_base_lib_depends="${ghcLibsRequiredWithVersion} base mtl directory hashable>=1.1&&<1.3 uhc-util>=0.1.3"
 if test x$enableClr = "xyes"
 then
   cabal_base_lib_depends="$cabal_base_lib_depends language-cil"
