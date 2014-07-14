@@ -80,7 +80,7 @@ cpTransformGrin modNm
                  trafos  =     (                                  mk [flt,bae]                             )
                            ++  (if not needMetaInfo          then mk [mte]                    else []      )
                            ++  (if forBytecode               then mk [unb]                    else []      )
-                           ++  (if optimizing                then mk evel1                    else []      )
+                           ++  (if optimizing                then mk evel1                    else mk evel0)
                            ++  (if forBytecodeOrSimilar && optimizing
                                                              then inline ++ mk (evel2++[cpr]) else []      )
                            ++  (if optimizing                then mk [nme]                    else []      )
@@ -97,7 +97,8 @@ cpTransformGrin modNm
                          unb  = ( grMayLiveUnboxed (Bytecode.tagAllowsUnboxedLife opts)
                                                                  , "unbox"            )
 %%[[8
-                         evel1 = [ ale, eve, flt, ale ]
+                         evel0 = [ ale ] --, eve, flt, ale ]
+                         evel1 = evel0 ++ [ eve, flt, ale ]
                          evel2 = [ flt ] ++ evel1
 %%]]
 %%[[8                              
