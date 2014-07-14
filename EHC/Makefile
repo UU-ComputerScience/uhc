@@ -441,10 +441,9 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(INSTALL_LIB_JS)
-	@echo $(JSCRIPT_JS_JSCRIPT_DRV_JS)
-	@echo $(SRC_JSCRIPT_PREFIX)
-	@echo $(JSCRIPT_BLD_JSCRIPT_PREFIX)
+	@echo $(EHC_ASPECTS_SUFFIX2)
+	@echo $(EHC_ASPECTS_SUFFIX)
+	@echo $(EHC_BUILD_SUFFIX)
 
 tstv:
 	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=100 tst

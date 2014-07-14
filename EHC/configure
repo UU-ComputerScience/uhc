@@ -3912,13 +3912,14 @@ if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
   then
-    for l in ${ghcLibsRequired}
+    for pkgBase in ${ghcLibsRequired}
     do
-      pkg=`$ghcPkgCmd list --simple-output ${l} | sed -e 'y/ /\n/' | tail -1`
+      pkg=`$ghcPkgCmd list --simple-output ${pkgBase} | sed -e 'y/ /\n/' | tail -1`
       #echo $pkg
       if test "x${pkg}" != "x" ; then
         ghcLibsRequiredAndPresent="${pkg} ${ghcLibsRequiredAndPresent}"
-        pkgBase=`echo ${pkg} | sed -E -e 's/^([^-]+(-[^-]+)*)-.*/\1/'`
+        #pkgBase=`echo ${pkg} | sed -E -e 's/^([[^-]]+(-[[^-]]+)*)-.*/\1/'`
+        #pkgBase=`echo ${pkg} | sed -E -e 's/^([[^-]]+(-[[^-]]+)*)-.*/\1/'`
         pkgVersion=`echo ${pkg} | sed -E -e 's/^(([^-]+-)+)([^.]+(\.[^.]+)*)$/\3/'`
         pkgVersionNoDot=`echo ${pkgVersion} | sed -E -e 's/\.//'g`
         #echo $pkgBase
@@ -3938,7 +3939,7 @@ then
             ;;
         esac
       else
-        ghcLibsRequiredButAbsent="${l} ${ghcLibsRequiredButAbsent}"
+        ghcLibsRequiredButAbsent="${pkgBase} ${ghcLibsRequiredButAbsent}"
       fi
     done
 

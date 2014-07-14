@@ -464,19 +464,14 @@ if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
   then
-    for l in ${ghcLibsRequired}
+    for pkgBase in ${ghcLibsRequired}
     do
-      pkg=`$ghcPkgCmd list --simple-output ${l} | sed -e 'y/ /\n/' | tail -1`
-      #echo $pkg
+      pkg=`$ghcPkgCmd list --simple-output ${pkgBase} | sed -e 'y/ /\n/' | tail -1`
       if test "x${pkg}" != "x" ; then
         ghcLibsRequiredAndPresent="${pkg} ${ghcLibsRequiredAndPresent}"
-        pkgBase=`echo ${pkg} | sed -E -e 's/^([[^-]]+(-[[^-]]+)*)-.*/\1/'`
         pkgVersion=`echo ${pkg} | sed -E -e 's/^(([[^-]]+-)+)([[^.]]+(\.[[^.]]+)*)$/\3/'`
         pkgVersionNoDot=`echo ${pkgVersion} | sed -E -e 's/\.//'g`
-        #echo $pkgBase
-        #echo $pkgVersion
-        #echo $pkgVersionNoDot
-        ### here do special treatment of packages, now we have names and packages available
+        ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           fgl)
             if test ${pkgVersionNoDot} -ge 5500
@@ -490,10 +485,9 @@ then
             ;;
         esac
       else
-        ghcLibsRequiredButAbsent="${l} ${ghcLibsRequiredButAbsent}"
+        ghcLibsRequiredButAbsent="${pkgBase} ${ghcLibsRequiredButAbsent}"
       fi
     done
-    
   fi
 fi
 
@@ -653,17 +647,17 @@ AC_SUBST(CC_STD_FLAG,$cc_std_flag)
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
-        then
-          cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
-          if test -L "$toplevelSystemAbsolutePathPrefix/$cppCmd"
-          then
-            cppCmd="$cppCmd-3"
-          fi
-        fi
-        ;;
+    if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
+    then
+      cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
+      if test -L "$toplevelSystemAbsolutePathPrefix/$cppCmd"
+      then
+        cppCmd="$cppCmd-3"
+      fi
+    fi
+    ;;
   *)
-        ;;
+    ;;
 esac
 
 AC_SUBST(CPP_CMD,$cppCmd)

@@ -895,7 +895,7 @@ cpEhcCorePerModulePart1 modNm
        }
 %%]
 
-%%[50
+%%[(50 codegen corein)
 -- | Get import information from Core module source text.
 cpEhcCoreImport
   :: HsName -> EHCompilePhase HsName
