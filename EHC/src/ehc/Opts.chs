@@ -719,7 +719,7 @@ ehcCmdLineOpts
                                         }
          oOutputDir           s o   = o { ehcOptOutputDir                   = Just s
                                           -- no linking when no output file is generated. This is not failsafe, requires better solution as now no executable is generated when no --output is specified. Should depend on existence of main.
-                                        , ehcOptDoLinking                   = isJust (ehcOptMbOutputFile o)
+                                        -- , ehcOptDoLinking                   = isJust (ehcOptMbOutputFile o)
                                         }
          oOutputFile          s o   = o { ehcOptMbOutputFile                = Just (mkFPath s)
                                         , ehcOptDoLinking                   = True

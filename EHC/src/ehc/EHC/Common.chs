@@ -226,7 +226,11 @@ mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
                       | filelocIsPkg l -> f (const Nothing)
                       | otherwise      -> f ehcOptOutputDir
         f g     = case g opts of
-                    Just d -> (fpathPrependDir d' $ mkFPath modNm, Just d')
+                    Just d -> ( fpathPrependDir d'
+                                $ fpathSetBase (fpathBase fp)	-- ensure possibly adapted name in filesys is used
+                                $ mkFPath modNm					-- includes module hierarchy into filename
+                              , Just d'
+                              )
                            where d' = filePathUnPrefix d
                     _      -> (fp,Nothing)
 %%]]
