@@ -504,7 +504,7 @@ pBody' opts addDecl
               <**> (   (\ts c -> mkRngNm Constructor_Constructor c ts) <$> pList pTB
 %%]
 %%[7
-                   <|> pCurlys' ((\fs r c -> mkRngNm Constructor_Record c fs) <$> pList1Sep pCOMMA pFieldDeclaration)
+                   <|> pCurlys' ((\fs r c -> mkRngNm Constructor_Record c fs) <$> pListSep pCOMMA pFieldDeclaration)
 %%]
 %%[5
                    )
