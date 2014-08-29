@@ -259,7 +259,7 @@ mkPerModuleOutputFPath opts doSepBy_ modNm fp suffix
 %%[[8
   where fpO m f= mkOutputFPath opts m f suffix
 %%][99
-  where fpO m f= case ehcOptPkg opts of
+  where fpO m f= case ehcOptPkgOpt opts of
                    Just _        -> nm_
                    _ | doSepBy_  -> nm_
                      | otherwise -> mkOutputFPath opts m f suffix

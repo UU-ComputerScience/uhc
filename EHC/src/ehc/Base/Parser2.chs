@@ -45,11 +45,14 @@ pVersion :: P Version
 pVersion = (\v -> Version (map read v) []) <$> pList1Sep pDOT pInteger10
 %%]
 
-%%[99 export(parsePkgKey)
+%%[99 export(parsePkgKey, parsePkgKeys)
+scanOptsPkgKey = defaultScanOpts {scoSpecChars = Set.fromList ".-", scoAllowFloat = False}
+
 parsePkgKey :: String -> Maybe PkgKey
-parsePkgKey
-  = parseString scanOpts pPkgKey
-  where scanOpts   = defaultScanOpts {scoSpecChars = Set.fromList ".-", scoAllowFloat = False}
+parsePkgKey = parseString scanOptsPkgKey pPkgKey
+
+parsePkgKeys :: String -> Maybe [PkgKey]
+parsePkgKeys = parseString scanOptsPkgKey (pList pPkgKey)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -163,26 +163,28 @@ pkgSearchFilter mkKey mk ss
 %%[99 export(PackageCfgKeyVals,PackageInfo(..),PackageMp,Module2PackageMp,PackageDatabase(..),emptyPackageMp,emptyPackageDatabase)
 type PackageCfgKeyVals = Map.Map String String
 
+-- | Per package info
 data PackageInfo
   = PackageInfo
-      { pkginfoLoc					:: !FileLoc						-- directory location
-      , pkginfoOrder				:: !Int							-- for multiple packages the relative order
+      { pkginfoLoc					:: !FileLoc						-- ^ directory location
+      , pkginfoOrder				:: !Int							-- ^ for multiple packages the relative order
       -- , pkginfoKeyVals				:: PackageCfgKeyVals			-- key/value pairs of pkg config info
-      , pkginfoExposedModules		:: !HsNameS						-- exposed modules
-      , pkginfoIsExposed		    :: !Bool						-- pkg is exposed?
+      , pkginfoExposedModules		:: !HsNameS						-- ^ exposed modules
+      , pkginfoBuildDepends			:: !(Set.Set PkgKey)			-- ^ pkgs dependend on
+      , pkginfoIsExposed		    :: !Bool						-- ^ pkg is exposed?
       }
       deriving Show
 
--- content of a package (keys are name, then version)
+-- | content of a package (keys are name, then version)
 type PackageMp = Map.Map PkgKey1 (Map.Map PkgKey2 [PackageInfo])
 
 emptyPackageMp :: PackageMp
 emptyPackageMp = Map.empty
 
--- reverse map from module name to package key
+-- | reverse map from module name to package key
 type Module2PackageMp = Map.Map HsName [PkgKey]
 
--- A package database contains an actual package map, plus a function
+-- | A package database contains an actual package map, plus a function
 -- that maps modules to associated package maps. The latter is computed
 -- by "freezing" the package database using "pkgDbFreeze".
 data PackageDatabase

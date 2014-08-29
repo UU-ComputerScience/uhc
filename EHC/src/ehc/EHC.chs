@@ -117,8 +117,8 @@ main
          ;  let opts3 = opts2 { ehcOptUserDir = userDir
                               , ehcOptOutputDir =
                                   let outputDir = maybe "." id (ehcOptOutputDir opts2)
-                                  in  case ehcOptPkg opts2 of
-                                        Just (PkgOption_Build s)
+                                  in  case ehcOptPkgOpt opts2 of
+                                        Just (PkgOption {pkgoptName=s})
                                           -> case parsePkgKey s of
                                                Just k  -> Just $
                                                           outputDir ++ "/" ++

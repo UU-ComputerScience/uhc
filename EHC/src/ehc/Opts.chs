@@ -430,11 +430,15 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser)                 "meta: print user package dir (then stop)"
      ,  Option ""   ["package"]             (ReqArg oExposePackage "package")       "see --pkg-expose"
      ,  Option ""   ["hide-all-packages"]   (NoArg oHideAllPackages)                "see --pkg-hide-all"
-     ,  Option ""   ["pkg-build"]           (ReqArg oPkgBuild "package")            "pkg: build package from files. Implies --compile-only"
      ,  Option ""   ["pkg-expose"]          (ReqArg oExposePackage "package")       "pkg: expose/use package"
      ,  Option ""   ["pkg-hide"]            (ReqArg oHidePackage   "package")       "pkg: hide package"
      ,  Option ""   ["pkg-hide-all"]        (NoArg oHideAllPackages)                "pkg: hide all (implicitly) assumed/used packages"
      ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")          "pkg: package search directories, each dir has <pkg>/<variant>/<target>/<flavor>"
+     ,  Option ""   ["pkg-build"]           (ReqArg oPkgBuild "package")            "pkg build: build package from files. Implies --compile-only"
+     ,  Option ""   ["pkg-build-exposed"]   (ReqArg oPkgBuildExposedModules "modules")
+     																				"pkg build: for package building, exposed modules (blank separated)"
+     ,  Option ""   ["pkg-build-depends"]   (ReqArg oPkgBuildBuildDepends "packages")
+     																				"pkg build: for package building, depended on packages (blank separated)"
      ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")          "cfg: installation root (to be used only by wrapper script)"
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant")   "cfg: installation variant (to be used only by wrapper script)"
      ,  Option ""   ["optP"]                (ReqArg (oCmdLineOpts Cmd_CPP_Preprocessing) "opt for cmd")
@@ -694,7 +698,7 @@ ehcCmdLineOpts
 %%]]
 %%[[50
          oNoRecomp              o   = o { ehcOptCheckRecompile              = False    }
-         oCompileOnly           o   = o { ehcOptDoLinking                   = False    }
+         oCompileOnly           o   = o { ehcOptLinkingStyle                = LinkingStyle_None }
 %%]]
 %%[[99
          oNoHiCheck             o   = o { ehcOptHiValidityCheck             = False    }
@@ -709,8 +713,8 @@ ehcCmdLineOpts
          oLimitCtxtRed          o l = o { ehcOptPrfCutOffAt                 = l }
          oMetaPkgdirSys         o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_System }
          oMetaPkgdirUser        o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_User }
-         oExposePackage       s o   = o { ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s]
-                                        , ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter parsePkgKey PackageSearchFilter_ExposePkg [s]
+         oExposePackage       s o   = o { ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter parsePkgKey PackageSearchFilter_ExposePkg [s]
+                                        -- , ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s]
                                         }
          oHidePackage         s o   = o { ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter parsePkgKey PackageSearchFilter_HidePkg [s]
                                         }
@@ -719,14 +723,20 @@ ehcCmdLineOpts
                                         }
          oOutputDir           s o   = o { ehcOptOutputDir                   = Just s
                                           -- no linking when no output file is generated. This is not failsafe, requires better solution as now no executable is generated when no --output is specified. Should depend on existence of main.
-                                        -- , ehcOptDoLinking                   = isJust (ehcOptMbOutputFile o)
+                                        -- , ehcOptDoExecLinking                   = isJust (ehcOptMbOutputFile o)
                                         }
          oOutputFile          s o   = o { ehcOptMbOutputFile                = Just (mkFPath s)
-                                        , ehcOptDoLinking                   = True
+                                        , ehcOptLinkingStyle                = LinkingStyle_Exec
                                         }
          oKeepIntermediateFiles o   = o { ehcOptKeepIntermediateFiles       = True }
-         oPkgBuild            s o   = o { ehcOptPkg                         = Just (PkgOption_Build s)
-                                        , ehcOptDoLinking                   = False
+         oPkgBuild            s o   = o { ehcOptPkgOpt                      = Just ((maybe emptyPkgOption id $ ehcOptPkgOpt o) {pkgoptName=s})
+                                        , ehcOptLinkingStyle                = LinkingStyle_Pkg
+                                        }
+         oPkgBuildExposedModules
+                              s o   = o { ehcOptPkgOpt                      = Just ((maybe emptyPkgOption id $ ehcOptPkgOpt o) {pkgoptExposedModules = words s})
+                                        }
+         oPkgBuildBuildDepends
+                              s o   = o { ehcOptPkgOpt                      = Just ((maybe emptyPkgOption id $ ehcOptPkgOpt o) {pkgoptBuildDepends = words s})
                                         }
          oCfgInstallRoot      s o   = o { ehcOptCfgInstallRoot              = Just s }
          oCfgInstallVariant   s o   = o { ehcOptCfgInstallVariant           = Just s }

@@ -112,9 +112,8 @@ cpEhcFullProgLinkAllModules modNmL
             (_,opts) = crBaseInfo' cr   -- '
       ; when (not $ null modNmL)
              (cpMsg (head modNmL) VerboseDebug ("Main mod split: " ++ show mainModNmL ++ ": " ++ show impModNmL))
-      ; case mainModNmL of
-          [mainModNm]
-            | ehcOptDoLinking opts
+      ; case (mainModNmL, ehcOptLinkingStyle opts) of
+          ([mainModNm], LinkingStyle_Exec)
                 -> case () of
                      () | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
                             -> cpSeq (  hpt
@@ -134,25 +133,32 @@ cpEhcFullProgLinkAllModules modNmL
                               hpt  = [ cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
                                      , cpEhcCorePerModulePart2 mainModNm
                                      ]
-            | otherwise
+          ([mainModNm], _)
                 -> return ()
                    -- cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayNotHaveMain mainModNm]
-          _ | ehcOptDoLinking opts
+          ([], LinkingStyle_Exec)
                 -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MustHaveMain]
-            | otherwise
-%%[[50
+          ([], LinkingStyle_None)
                 -> return ()
-%%][99
-                -> case ehcOptPkg opts of
-                     Just (PkgOption_Build pkg)
-                       | targetAllowsOLinking (ehcOptTarget opts)
-                         -> cpLinkO impModNmL pkg
-%%[[(99 jazy)
-                       | targetAllowsJarLinking (ehcOptTarget opts)
-                         -> cpLinkJar Nothing impModNmL (JarMk_Pkg pkg)
-%%]]
-                     _ -> return ()
-%%]]
+%%[[99
+          ([], LinkingStyle_Pkg)
+                -> do let cfgwr o = liftIO $ pkgWritePkgOptionAsCfg o fp
+                            where (fp,_) = mkInOrOutputFPathDirFor OutputFor_Pkg opts l l ""
+                                  l = mkFPath ""
+                      case ehcOptPkgOpt opts of
+                        Just (pkgopt@(PkgOption {pkgoptName=pkg})) -> do
+                          cfgwr pkgopt
+                          case () of
+                            () | targetAllowsOLinking (ehcOptTarget opts) -> do
+                                  cpLinkO impModNmL pkg
+                                  cfgwr pkgopt
+%%[[(99 jazy)       
+                              | targetAllowsJarLinking (ehcOptTarget opts) -> do
+                                  cpLinkJar Nothing impModNmL (JarMk_Pkg pkg)
+                                  cfgwr pkgopt
+%%]]       
+                        _ -> return ()
+%%]]   
       }
   where splitMain cr = partition (\n -> ecuHasMain $ crCU n cr)
 %%]

@@ -33,13 +33,29 @@ packages.
 -- general imports
 %%[99 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Version, Data.List, Data.Maybe, Data.Char)
 %%]
-%%[99 import(System.Environment, System.Directory, Control.Monad)
+%%[99 import(System.Environment, System.Directory, Control.Monad, Control.Monad.State)
 %%]
 %%[99 import(System.IO,System.Exit,System.Environment,UHC.Util.FPath,UHC.Util.Utils)
 %%]
 
 -- debug
 %%[99 import(UHC.Util.Debug)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Package config file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+-- | The config file name, wrapped inside a Maybe when it can indeed be created
+pkgCfgFPath :: FPath -> IO (Maybe (FPath, FilePath))
+pkgCfgFPath pkgfp = do
+    createDirectoryIfMissing True pkgdir
+    isDir <- doesDirectoryExist pkgdir		-- remove this...??
+    if isDir
+      then return $ Just (fpathSetDir pkgdir $ fpathFromStr Cfg.ehcPkgConfigfileName, pkgdir)
+      else return Nothing
+  where pkgdir = fpathToStr pkgfp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,6 +77,13 @@ pkgMpUnion
 pkgMpLookup :: PkgKey -> PackageMp -> Maybe PackageInfo
 pkgMpLookup (k1,k2) m1
   = fmap head $ mapLookup2 k1 k2 m1
+
+-- | Get an element from a non empty PackageMp
+pkgMpFindMin :: PackageMp -> PackageInfo
+pkgMpFindMin m1
+  = head ps
+  where (_,m2) = Map.findMin m1
+        (_,ps) = Map.findMin m2
 
 pkgMpDifference :: PackageMp -> PackageMp -> PackageMp
 pkgMpDifference mp mpDiff
@@ -99,6 +122,17 @@ pkgDbLookup:: PkgKey -> PackageDatabase -> Maybe PackageInfo
 pkgDbLookup key db
   = pkgMpLookup key $ pkgDbPkgMp db
 
+{-
+pkgMpSelectMpOnKey :: PkgKey -> PackageMp -> PackageMp
+pkgMpSelectMpOnKey key@(pkgNm,mbVersion) mp
+  = case mbVersion of
+      Just pkgVersion -> case lkup of
+                           Just m -> maybe emptyPackageMp (\i -> pkgMpSingletonL key i) $ Map.lookup mbVersion m
+                           _      -> emptyPackageMp
+      _               -> maybe emptyPackageMp (Map.singleton pkgNm) lkup
+  where lkup = Map.lookup pkgNm mp
+-}
+
 pkgDbSelectMpOnKey :: PkgKey -> PackageDatabase -> PackageMp
 pkgDbSelectMpOnKey key@(pkgNm,mbVersion) db
   = case mbVersion of
@@ -107,6 +141,23 @@ pkgDbSelectMpOnKey key@(pkgNm,mbVersion) db
                            _      -> emptyPackageMp
       _               -> maybe emptyPackageMp (Map.singleton pkgNm) lkup
   where lkup = Map.lookup pkgNm $ pkgDbPkgMp db
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Write pkg config file content based on PkgOption
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(pkgWritePkgOptionAsCfg)
+-- | Write pkg config file into dir, using PkgOption
+pkgWritePkgOptionAsCfg :: PkgOption -> FPath -> IO ()
+pkgWritePkgOptionAsCfg pkgopt pkgfp
+  = do mbCfgFP@(~(Just (cfgFP, pkgdir))) <- pkgCfgFPath pkgfp
+       if isJust mbCfgFP
+         then writeFile (fpathToStr cfgFP) $ unlines $ map (\(k,v) -> k ++ ": " ++ v)
+                [ ("exposed-modules", unwords $ pkgoptExposedModules pkgopt )
+                , ("build-depends"  , unwords $ pkgoptBuildDepends   pkgopt )
+                ]
+         else return ()
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,6 +173,7 @@ pkgCfgParse :: String -> [PackageInfo -> PackageInfo]
 pkgCfgParse s
   = map (\(k,v) -> case map toLower k of
                      "exposed-modules" -> add (\ns i -> i {pkginfoExposedModules = Set.fromList ns}) parseModuleNames v
+                     "build-depends"   -> add (\ns i -> i {pkginfoBuildDepends   = Set.fromList ns}) parsePkgKeys     v
                      "exposed"         -> add (\ex i -> i {pkginfoIsExposed      = ex             }) parseBool        v
                      _                 -> id
         ) $ Map.toList kvs
@@ -164,10 +216,11 @@ pkgMpFromDirFile :: EHCOpts -> PkgKey -> Int -> FPath -> IO PackageMp
 pkgMpFromDirFile opts pkgkey order pkgfp
   = do -- print pkgfp
        -- print mbKey
-       isDir <- doesDirectoryExist pkgdir
-       if isDir then
-              do { let fpCfg = fpathToStr $ fpathSetDir pkgdir $ fpathFromStr Cfg.ehcPkgConfigfileName
-                       pkgInfo = PackageInfo (mkPkgFileLoc pkgkey pkgdir) order Set.empty True
+       -- isDir <- doesDirectoryExist pkgdir
+       mbCfgFP@(~(Just (cfgFP, pkgdir))) <- pkgCfgFPath pkgfp
+       if isJust mbCfgFP -- isDir
+         then do { let fpCfg = fpathToStr cfgFP
+                       pkgInfo = PackageInfo (mkPkgFileLoc pkgkey pkgdir) order Set.empty Set.empty True
                  ; cfgExists <- doesFileExist fpCfg
                  ; pm <- if cfgExists
                    then do h <- openFile fpCfg ReadMode
@@ -180,7 +233,7 @@ pkgMpFromDirFile opts pkgkey order pkgfp
                  ; return pm
                  }
          else return Map.empty
-  where pkgdir = fpathToStr pkgfp
+  -- where pkgdir = fpathToStr pkgfp
 
 -- read content of a dir containing package dirs
 pkgMpFromDir :: EHCOpts -> Int -> FilePath -> IO PackageMp
@@ -221,6 +274,46 @@ pkgDbFromDirs opts fps
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(pkgDbSelectBySearchFilter)
+data SearchFilterState
+  = SearchFilterState
+      { sfstMp		:: PackageMp
+      , sfstErr		:: [Err]
+      }
+
+-- | select from full package db, building a db according to the search filter, monadically
+pkgDbSelectBySearchFilterM :: [PackageSearchFilter] -> PackageDatabase -> State SearchFilterState ()
+pkgDbSelectBySearchFilterM searchFilters fullDb
+  = all searchFilters
+  where all searchFilters = forM_ searchFilters sel
+        sel  PackageSearchFilter_HideAll         = modify $ \st -> st {sfstMp = emptyPackageMp}
+        sel (PackageSearchFilter_HidePkg   keys) = forM_ keys (one (\_ -> return ()) (flip pkgMpDifference))
+        sel (PackageSearchFilter_ExposePkg keys) = forM_ keys (one onerec            pkgMpUnion            )
+        one onerec cmb k = do
+          -- get the package info (inside a map) from the full db
+          let s = pkgDbSelectMpOnKey k fullDb
+          if Map.null s
+            -- if not in full db, error
+            then modify $ \st -> st {sfstErr = sfstErr st ++ [mkErr_NamesNotIntrod emptyRange "package" [mkHNm k]]}
+            else do
+              -- get the package map under construction
+              mp <- gets sfstMp
+              let mbInMp = pkgMpLookup k mp
+              -- combine it with previous anyway
+              modify $ \st -> st {sfstMp = cmb s mp}
+              case mbInMp of
+                -- if not yet encountered in previous, possibly recurse over the dependends
+                Nothing -> onerec s
+                _       -> return ()
+        onerec s = all [PackageSearchFilter_ExposePkg $ Set.toList $ pkginfoBuildDepends $ pkgMpFindMin s]
+
+-- | select from full package db, building a db according to the search filter
+pkgDbSelectBySearchFilter :: [PackageSearchFilter] -> PackageDatabase -> (PackageDatabase, [Err])
+pkgDbSelectBySearchFilter searchFilters fullDb
+  = (emptyPackageDatabase {pkgDbPkgMp = sfstMp st}, sfstErr st)
+  where st = execState (pkgDbSelectBySearchFilterM searchFilters fullDb) (SearchFilterState emptyPackageMp [])
+%%]
+
+%%[9999 export(pkgDbSelectBySearchFilter)
 -- select from full package db, building a db according to the search filter
 pkgDbSelectBySearchFilter :: [PackageSearchFilter] -> PackageDatabase -> (PackageDatabase, [Err])
 pkgDbSelectBySearchFilter searchFilters fullDb

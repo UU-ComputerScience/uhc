@@ -88,9 +88,18 @@ data InOrOutputFor
 %%% Package option, other than just using it. Similar to ghc-pkg.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(PkgOption(..))
+%%[99 export(PkgOption(..), emptyPkgOption)
+-- | Build pkg options, all (except obligatory name) wrapped in Maybe/[] because of possible absence.
+-- 20140829 AD: will be used to construct config file
 data PkgOption
-  = PkgOption_Build PkgName                         -- build a package
+  = PkgOption
+      { pkgoptName 				:: PkgName					-- ^ build a package with name
+      , pkgoptExposedModules	:: [String]					-- ^ 20140829 AD not yet used: exposed modules
+      , pkgoptBuildDepends		:: [PkgName]				-- ^ 20140829 AD not yet used: depends on pkgs
+      }
+
+emptyPkgOption :: PkgOption
+emptyPkgOption = PkgOption emptyPkgName [] []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -282,7 +291,8 @@ data EHCOpts
 %%[[50
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
-      ,  ehcOptDoLinking      ::  Bool              -- do link, if False compile only
+      -- ,  ehcOptDoExecLinking      ::  Bool              -- do link, if False compile only
+      ,  ehcOptLinkingStyle   ::  LinkingStyle      -- how to link, possibly no linking (e.g. when compile only)
 %%]]
 %%[[92
       ,  ehcOptGenGenerics    ::  Bool              -- generate for use of generics
@@ -302,7 +312,7 @@ data EHCOpts
       ,  ehcOptLibFileLocPath ::  FileLocPath
       ,  ehcOptPkgdirLocPath  ::  StringPath
       ,  ehcOptPkgDb          ::  PackageDatabase   -- package database to be used for searching packages
-      ,  ehcOptLibPackages    ::  [String]
+      -- ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
       ,  ehcOptUserDir        ::  String            -- user dir for storing user specific stuff
       ,  ehcOptMbOutputFile   ::  Maybe FPath       -- in which file to put generated output/executable
@@ -314,7 +324,7 @@ data EHCOpts
       ,  ehcOptOutputDir      ::  Maybe String      -- where to put output, instead of same dir as input file
       ,  ehcOptKeepIntermediateFiles
                               ::  Bool              -- keep intermediate files
-      ,  ehcOptPkg            ::  Maybe PkgOption   -- package building (etc) option
+      ,  ehcOptPkgOpt         ::  Maybe PkgOption   -- package building (etc) option
       ,  ehcOptCfgInstallRoot        ::  Maybe String      -- the directory where the installation resides; overrides ehcenvInstallRoot
       ,  ehcOptCfgInstallVariant     ::  Maybe String      -- the installation variant; overrides ehcenvVariant
       ,  ehcOptCmdLineOpts    ::  CmdLineOpts       -- options from the commandline and pragma for such options
@@ -453,7 +463,8 @@ emptyEHCOpts
 %%[[50
       ,  ehcOptCheckRecompile   =   True
       ,  ehcDebugStopAtHIError  =   False
-      ,  ehcOptDoLinking        =   True
+      -- ,  ehcOptDoExecLinking        =   True
+      ,  ehcOptLinkingStyle     =   LinkingStyle_Exec      -- how to link, possibly no linking (e.g. when compile only)
 %%]]
 %%[[92
       ,  ehcOptGenGenerics      =   True
@@ -474,7 +485,7 @@ emptyEHCOpts
       ,  ehcOptLibFileLocPath   =   []
       ,  ehcOptPkgdirLocPath    =   []
       ,  ehcOptPkgDb            =   emptyPackageDatabase
-      ,  ehcOptLibPackages      =   []
+      -- ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
       ,  ehcOptUserDir          =   ""
       ,  ehcOptMbOutputFile     =   Nothing
@@ -485,7 +496,7 @@ emptyEHCOpts
       ,  ehcOptOutputDir        =   Nothing
       ,  ehcOptKeepIntermediateFiles
                                 =   False
-      ,  ehcOptPkg              =   Nothing
+      ,  ehcOptPkgOpt           =   Nothing
       ,  ehcOptCfgInstallRoot   =   Nothing
       ,  ehcOptCfgInstallVariant=   Nothing
       ,  ehcOptCmdLineOpts      =   []
@@ -658,6 +669,16 @@ ehcOptFromJust :: EHCOpts -> String -> a -> Maybe a -> a
 ehcOptFromJust opts panicMsg n m
   | ehcOptDebug opts = maybe n id m
   | otherwise        = panicJust panicMsg m
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Do linking?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50 export(ehcOptDoExecLinking)
+-- | Do linking into executable?
+ehcOptDoExecLinking :: EHCOpts -> Bool
+ehcOptDoExecLinking opts = ehcOptLinkingStyle opts == LinkingStyle_Exec
 %%]
 
 

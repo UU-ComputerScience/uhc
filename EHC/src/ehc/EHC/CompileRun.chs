@@ -476,10 +476,10 @@ crSetAndCheckMain modNm
        ; let (crsi,opts) = crBaseInfo' cr
              mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
        ; case crsiMbMainNm crsi of
-           Just n | n /= modNm      -> mkerr 1 [n]
-           _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
-             | otherwise            -> return ()
-                                       -- mkerr 0 []
+           Just n | n /= modNm          -> mkerr 1 [n]
+           _ | ehcOptDoExecLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
+             | otherwise                -> return ()
+                                           -- mkerr 0 []
        }
 %%]
 

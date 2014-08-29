@@ -1169,8 +1169,25 @@ instance PP a => PP (AlwaysEq a) where
 %%% Package name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(PkgName)
+%%[99 export(PkgName, emptyPkgName)
 type PkgName = String
+
+emptyPkgName = ""
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Linking style
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50 export(LinkingStyle(..))
+-- | How to do linking/packaging
+data LinkingStyle
+  = LinkingStyle_None			-- ^ no linking (e.g. indicated by --compile-only flag)
+  | LinkingStyle_Exec			-- ^ executable linking
+%%[[99
+  | LinkingStyle_Pkg			-- ^ package linking
+%%]]
+  deriving (Eq,Ord,Enum,Bounded)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

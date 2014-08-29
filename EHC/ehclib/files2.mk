@@ -201,19 +201,16 @@ ehclib-variant-dflt: \
 			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV) $(EHCLIB_ALL_SPECIALS) $(EHCLIB_MAP_PKG2VERSIONED_SH),) \
 			$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_PRELUDE) \
-	     ,pkgs="" ; \
+	     ,pkgsexpopt="" ; \
+	     pkgs="" ; \
 	     $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
 	        pkgv=`/bin/sh $(EHCLIB_MAP_PKG2VERSIONED_SH) $${pkg}` ; \
 	        mkdir -p $(call FUN_INSTALL_PKG_PREFIX,$${pkgv}) ;\
 	        hsFiles="`find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'`" ; \
-	        ( echo $${hsFiles} | \
-	            sed -e 's+^+exposed-modules: +' \
-	                -e "s+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg}/++g" \
-	                -e 's+\.[^.]*hs++g' \
-	                -e 's+/+.+g' ; \
-	        ) > $(call FUN_INSTALL_PKG_PREFIX,$${pkgv})$(UHC_PKG_CONFIGFILE_NAME) ; \
+	        expModules="`echo $${hsFiles} | sed -e s+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg}/++g -e 's+\.[^.]*hs++g' -e 's+/+.+g'`" ; \
+	        bldDepends="$${pkgs}" ; \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
 	          $(EHCLIB_BASE_OPTS) \
 	          $(EHCLIB_DEBUG_OPTS) \
@@ -222,14 +219,17 @@ ehclib-variant-dflt: \
 	          --target=$(EHC_VARIANT_TARGET) \
 	          --odir=$(call FUN_DIR_VARIANT_LIB_PKG_PREFIX,$(INSTALL_DIR),$(EHC_VARIANT)) \
 	          --pkg-build=$${pkgv} \
+	          --pkg-build-exposed="$${expModules}" \
+	          --pkg-build-depends="$${bldDepends}" \
 	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(call FUN_INSTALL_PKG_PREFIX,$${pkgv})) \
-	          $${pkgs} \
+	          $${pkgsexpopt} \
 	          $${hsFiles} \
 	          $(if $(EHC_CFG_USE_UNIX_AND_C),`find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.c'`,) \
 	          +RTS -K30m ; \
 	        err=$$? ; \
 	        if test $${err} -ne 0 ; then exit $${err} ; fi ; \
-	        pkgs="$${pkgs} --pkg-expose $${pkgv}" ; \
+	        pkgsexpopt="$${pkgsexpopt} --pkg-expose $${pkgv}" ; \
+	        pkgs="$${pkgs} $${pkgv}" ; \
 	      done \
 	     ,)
 
