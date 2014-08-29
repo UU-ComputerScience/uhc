@@ -286,9 +286,9 @@ pkgDbSelectBySearchFilterM searchFilters fullDb
   = all searchFilters
   where all searchFilters = forM_ searchFilters sel
         sel  PackageSearchFilter_HideAll         = modify $ \st -> st {sfstMp = emptyPackageMp}
-        sel (PackageSearchFilter_HidePkg   keys) = forM_ keys (one (\_ -> return ()) (flip pkgMpDifference))
-        sel (PackageSearchFilter_ExposePkg keys) = forM_ keys (one onerec            pkgMpUnion            )
-        one onerec cmb k = do
+        sel (PackageSearchFilter_HidePkg   keys) = forM_ keys (one (\_ -> return ()) (flip pkgMpDifference) (\_ m -> m))
+        sel (PackageSearchFilter_ExposePkg keys) = forM_ keys (one onerec            (\_ m -> m           ) pkgMpUnion )
+        one onerec cmbPresent cmbAbsent k = do
           -- get the package info (inside a map) from the full db
           let s = pkgDbSelectMpOnKey k fullDb
           if Map.null s
@@ -298,12 +298,13 @@ pkgDbSelectBySearchFilterM searchFilters fullDb
               -- get the package map under construction
               mp <- gets sfstMp
               let mbInMp = pkgMpLookup k mp
-              -- combine it with previous anyway
-              modify $ \st -> st {sfstMp = cmb s mp}
               case mbInMp of
-                -- if not yet encountered in previous, possibly recurse over the dependends
-                Nothing -> onerec s
-                _       -> return ()
+                -- if not yet encountered, add it, and recurse over the dependends
+                Nothing -> do
+                  modify $ \st -> st {sfstMp = cmbAbsent s mp}
+                  onerec s
+                _ ->
+                  modify $ \st -> st {sfstMp = cmbPresent s mp}
         onerec s = all [PackageSearchFilter_ExposePkg $ Set.toList $ pkginfoBuildDepends $ pkgMpFindMin s]
 
 -- | select from full package db, building a db according to the search filter
