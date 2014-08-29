@@ -159,7 +159,7 @@ cpFoldHs modNm
 %%[[50
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
-                     ; when hasMain (crSetAndCheckMain modNm)
+                     -- ; when hasMain (crSetAndCheckMain modNm)
 %%]]
                      })
          }
@@ -209,7 +209,7 @@ cpFoldHIInfo modNm
                                                 ( -- (\v -> tr "cpFoldHIInfo.hiiExps" (pp v) v) $
                                                  HI.hiiExps hiInfo)
                                                 (HI.hiiHiddenExps hiInfo)
-                     ; when hasMain (crSetAndCheckMain modNm)
+                     -- ; when hasMain (crSetAndCheckMain modNm)
                      ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
                      ; cpUpdCU modNm ( ecuStorePrevHIInfo hiInfo
                                      . ecuStoreHIDeclImpS (HI.hiiHIDeclImpModS hiInfo)

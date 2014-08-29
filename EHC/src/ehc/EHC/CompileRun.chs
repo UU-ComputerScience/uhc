@@ -478,7 +478,8 @@ crSetAndCheckMain modNm
        ; case crsiMbMainNm crsi of
            Just n | n /= modNm      -> mkerr 1 [n]
            _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
-             | otherwise            -> mkerr 0 []
+             | otherwise            -> return ()
+                                       -- mkerr 0 []
        }
 %%]
 

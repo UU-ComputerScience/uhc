@@ -135,7 +135,8 @@ cpEhcFullProgLinkAllModules modNmL
                                      , cpEhcCorePerModulePart2 mainModNm
                                      ]
             | otherwise
-                -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayNotHaveMain mainModNm]
+                -> return ()
+                   -- cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayNotHaveMain mainModNm]
           _ | ehcOptDoLinking opts
                 -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MustHaveMain]
             | otherwise
@@ -332,7 +333,10 @@ cpEhcFullProgModuleCompile1 modNm
        ; let (ecu,_,_,_) = crBaseInfo modNm cr
              targ = if ecuNeedsCompile ecu then HSAllSem else HIAllSem
        ; cpEhcModuleCompile1 (Just targ) modNm
-       ; return ()
+       ; cr <- get
+       ; let (ecu,_,_,_) = crBaseInfo modNm cr
+       -- ; return ()
+       ; when (ecuHasMain ecu) (crSetAndCheckMain modNm)
        }
 %%]
 
