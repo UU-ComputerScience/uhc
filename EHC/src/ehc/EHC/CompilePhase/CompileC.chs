@@ -61,16 +61,17 @@ gccDefs opts builds
 %%]
 
 %%[(99 codegen)
-gccInclDirs :: EHCOpts -> [PkgModulePartition] -> [String]
+gccInclDirs :: EHCOpts -> [PkgModulePartition] -> [FilePath]
+gccInclDirs opts pkgKeyDirL = ds ++ (map fst $ Map.elems pdmp)
+  where (ds,pdmp) = pkgPartInclDirs opts pkgKeyDirL
+%%]
 gccInclDirs opts pkgKeyDirL
   =            [ mki kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
   ++ catMaybes [ mkp p        | p                <- map tup123to12 pkgKeyDirL                                   ]
   where mki (FileLocKind_Dir    ) d = d
         mki (FileLocKind_Pkg _ _) d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
         mki  FileLocKind_PkgDb    d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
-        -- mkp (_,d) = Just (Cfg.mkPkgIncludeDir $ filePathMkPrefix d)
         mkp (k,_) = fmap (Cfg.mkPkgIncludeDir . filePathMkPrefix . filelocDir . pkginfoLoc) $ pkgDbLookup k $ ehcOptPkgDb opts
-%%]
 
 %%[(8 codegen) export(cpCompileWithGCC)
 cpCompileWithGCC :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()

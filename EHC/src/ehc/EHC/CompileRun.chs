@@ -455,13 +455,13 @@ crPartitionIntoPkgAndOthers :: EHCompileRun -> [HsName] -> ([PkgModulePartition]
 crPartitionIntoPkgAndOthers cr modNmL
   = ( [ (p,d,m)
       | ((p,d),m) <- Map.toList $ Map.unionsWith (++) $ map Map.fromList ps
-      ] -- nub $ concat ps
+      ]
     , concat ms
     )
   where (ps,ms) = unzip $ map loc modNmL
         loc m = case filelocKind $ ecuFileLocation ecu of
-                  FileLocKind_Dir	  -> ([]         ,[m])
-                  FileLocKind_Pkg p d -> ([((p,d),[m])],[] )
+                  FileLocKind_Dir	  -> ([           ], [m])
+                  FileLocKind_Pkg p d -> ([((p,d),[m])], [ ])
               where (ecu,_,_,_) = crBaseInfo m cr
 %%]
 

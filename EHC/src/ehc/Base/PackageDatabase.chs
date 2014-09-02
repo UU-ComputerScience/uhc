@@ -334,8 +334,32 @@ pkgDbSelectBySearchFilter searchFilters fullDb
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(PkgModulePartition)
-type PkgModulePartition = (PkgKey,String,[HsName])
+type PkgModulePartition
+  = ( PkgKey				-- package
+    , String				-- unused: dir
+    , [HsName]				-- unused: mod names
+    )
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Package include dirs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TBD: use proper directory path, to be precomputed in PkgModulePartition
+
+%%[99 export(pkgPartInclDirs)
+-- | Obtain the locations to be included in general and per package (together with modules from pkg)
+pkgPartInclDirs :: EHCOpts -> [PkgModulePartition] -> ([FilePath], Map.Map PkgKey (FilePath,[HsName]))
+pkgPartInclDirs opts pkgKeyDirL
+  = ( [ mki kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
+    , Map.fromList $ catMaybes [ mkp p | p <- pkgKeyDirL ]
+    )
+  where mki (FileLocKind_Dir    ) d = d
+        mki (FileLocKind_Pkg _ _) d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
+        mki  FileLocKind_PkgDb    d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
+        mkp (k,_,ms) = fmap (\d -> (k, (Cfg.mkPkgIncludeDir $ filePathMkPrefix $ filelocDir $ pkginfoLoc d, ms))) $ pkgDbLookup k $ ehcOptPkgDb opts
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The exposed packages, as specified by their config file

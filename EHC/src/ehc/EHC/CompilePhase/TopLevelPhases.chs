@@ -150,13 +150,12 @@ cpEhcFullProgLinkAllModules modNmL
                           cfgwr pkgopt
                           case () of
                             () | targetAllowsOLinking (ehcOptTarget opts) -> do
-                                  cpLinkO impModNmL pkg
-                                  cfgwr pkgopt
+                                   cpLinkO impModNmL pkg
 %%[[(99 jazy)       
-                              | targetAllowsJarLinking (ehcOptTarget opts) -> do
-                                  cpLinkJar Nothing impModNmL (JarMk_Pkg pkg)
-                                  cfgwr pkgopt
+                               | targetAllowsJarLinking (ehcOptTarget opts) -> do
+                                   cpLinkJar Nothing impModNmL (JarMk_Pkg pkg)
 %%]]       
+                            _ -> return ()
                         _ -> return ()
 %%]]   
       }

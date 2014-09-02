@@ -9,6 +9,8 @@ JavaScript compilation
 
 %%[(8 codegen javascript) import(System.Directory, Data.List(intercalate), Data.Either, System.Exit)
 %%]
+%%[(8 codegen javascript) import(qualified Data.Map as Map)
+%%]
 %%[(8 codegen javascript) import(Control.Monad.State)
 %%]
 
@@ -32,6 +34,8 @@ JavaScript compilation
 %%[(8 codegen javascript) import({%{EH}Core.ToJavaScript})
 %%]
 %%[(8 codegen javascript) import({%{EH}Base.Bits},{%{EH}JavaScript.Pretty})
+%%]
+%%[(99 codegen javascript) import({%{EH}Base.FileSearchLocation},{%{EH}Base.PackageDatabase})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,11 +62,14 @@ cpCompileJavaScript :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase (
 cpCompileJavaScript how othModNmL modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+              optsNoOdir      = opts {ehcOptOutputDir = Nothing}
               mbJs            = ecuMbJavaScript ecu
-              fpO m f = outputMkFPathJavaScriptModule opts m f Cfg.suffixJavaScriptLib
-              -- fpM     = fpO modNm fp
-              fpExec  = mkPerExecOutputFPath opts modNm fp (Just "js")
-              fpHtml  = mkPerExecOutputFPath opts modNm fp (Just "html")
+              fpOOpts o m f   = outputMkFPathJavaScriptModule o m f Cfg.suffixJavaScriptLib
+              fpO m f         = fpOOpts opts m f
+              fpExecOpts o    = mkPerExecOutputFPath o modNm fp (Just "js")
+              fpExec          = fpExecOpts opts
+              fpHtml          = mkPerExecOutputFPath opts modNm fp (Just "html")
+              variant         = Cfg.installVariant opts
 
        ; when (isJust mbJs && ehcOptEmitJavaScript opts)
               (do { when (ehcOptVerbosity opts >= VerboseDebug)
@@ -98,18 +105,46 @@ cpCompileJavaScript how othModNmL modNm
 %%]]
                         | otherwise
                         -> do { cpJavaScript (fpathToStr fpExec) [fpathToStr fpM]
-                              ; mkHtml fpHtml $ ( map fpathToStr jsDeps )
-                                               ++ rts 
-                                               ++ [ fpathToStr (fpO m fp) | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ] 
-                                               ++ [ fpathToStr fpExec ]
+                              ; mkHtml fpHtml $
+                                  ( map fpathToStr jsDeps )
+                                  ++ rts
+                                  {-
+                                  -}
+%%[[99
+                                  ++ concat
+                                       [ -- [ d ++ "/" ++ (fpathToStr $ mkFPath m) | m <- ms ]
+                                         [ mkpgkl k m | m <- ms ]
+                                       | (k,(d,ms)) <- Map.toList pkgKeyDirModsMp
+                                       ]
+%%]]
+                                  ++ [ fpathToStr (fpO m fp) | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ] 
+                                  ++ [ fpathToStr $ fpExecOpts optsNoOdir ]
                               }
                         where rts = map (Cfg.mkInstalledRts opts Cfg.mkJavaScriptLibFilename Cfg.INST_LIB (Cfg.installVariant opts)) Cfg.libnamesRts
+                              (pkgKeyDirL,othModNmL2)
+%%[[8
+                                = ([], othModNmL)
+%%][99
+                                = crPartitionIntoPkgAndOthers cr othModNmL
+                              (_,pkgKeyDirModsMp) = pkgPartInclDirs opts pkgKeyDirL
+%%]]
 %%[[8
                               oth = []
 %%][50
                               oth | ehcOptWholeProgOptimizationScope opts = []
-                                  | otherwise                             = [ fpO m fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
+                                  | otherwise                             = [ fpO m fp | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ]
 %%]]
+%%[[99
+                              mkpgkl l m = Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG2 variant (showPkgKey l)
+                                               ++ "/" ++ mkInternalPkgFileBase l (Cfg.installVariant opts) (ehcOptTarget opts) (ehcOptTargetFlavor opts)
+                                               ++ "/" ++ (fpathToStr $ fpOOpts optsNoOdir m $ mkFPath m)
+{-
+                              mkpgkl l m = fpathToStr $ fpO m $ mkFPath $ Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG2 variant (showPkgKey l)
+                                               ++ "/" ++ mkInternalPkgFileBase l (Cfg.installVariant opts) (ehcOptTarget opts) (ehcOptTargetFlavor opts)
+                                               -- ++ "/" ++ fpO m (mkFPath m)
+-}
+%%]]
+
                       _ -> return ()
                   }
               )
