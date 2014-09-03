@@ -388,7 +388,7 @@ doCompilePrepare fnL@(fn:_) opts
                         ]
                     )
        ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (pkgSearchFilter Just PackageSearchFilter_ExposePkg (map tup123to1 $ pkgExposedPackages pkgDb1)
-                                                           ++ ehcOptPackageSearchFilter opts
+                                                           ++ sort (ehcOptPackageSearchFilter opts)
                                                           ) pkgDb1
              pkgDb3 = pkgDbFreeze pkgDb2
        -- ; putStrLn $ "db1 " ++ show pkgDb1

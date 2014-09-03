@@ -142,11 +142,14 @@ showPkgKey = show . mkHNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(PackageSearchFilter(..))
+-- | Description of hiding/exposing pkgs, determining the used packages for looking up modules.
 data PackageSearchFilter
+  -- Note: the below order is important, it is used for sorting just before having its effect on searchable packages.
+  -- The current order means that in its filtering hiding is done first, thereby starting out with all available pkgs, then hide (all), then expose selectively
   = PackageSearchFilter_HideAll
   | PackageSearchFilter_HidePkg			[PkgKey]
   | PackageSearchFilter_ExposePkg		[PkgKey]
-  deriving Show
+  deriving (Show, Eq, Ord)
 %%]
 
 %%[99 export(pkgSearchFilter)
