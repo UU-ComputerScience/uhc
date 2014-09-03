@@ -269,11 +269,11 @@ mkPerModuleOutputFPath opts doSepBy_ modNm fp suffix
 %%]
 
 %%[8 export(mkPerExecOutputFPath)
--- | FPath for final executable
-mkPerExecOutputFPath :: EHCOpts -> HsName -> FPath -> Maybe String -> FPath
+-- | FPath for final executable, with possible suffix (and forcing flag, even on given exec)
+mkPerExecOutputFPath :: EHCOpts -> HsName -> FPath -> Maybe (String, Bool) -> FPath
 mkPerExecOutputFPath opts modNm fp mbSuffix
-  = fpExec
-  where fpExecBasedOnSrc = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) mbSuffix
+  = maybe id (\(s,force) -> if force then fpathSetSuff s else id) mbSuffix fpExec
+  where fpExecBasedOnSrc = maybe (mkOutputFPath opts modNm fp "") (\(s,_) -> mkOutputFPath opts modNm fp s) mbSuffix
 %%[[8
         fpExec = fpExecBasedOnSrc
 %%][99

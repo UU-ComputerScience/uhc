@@ -312,8 +312,8 @@ data EHCOpts
       ,  ehcOptLibFileLocPath ::  FileLocPath
       ,  ehcOptPkgdirLocPath  ::  StringPath
       ,  ehcOptPkgDb          ::  PackageDatabase   -- package database to be used for searching packages
-      -- ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
+      ,  ehcCurDir            ::  String            -- current dir (not an option, but set initially)
       ,  ehcOptUserDir        ::  String            -- user dir for storing user specific stuff
       ,  ehcOptMbOutputFile   ::  Maybe FPath       -- in which file to put generated output/executable
       ,  ehcOptCPP            ::  Bool              -- do preprocess with C preprecessor CPP
@@ -485,8 +485,8 @@ emptyEHCOpts
       ,  ehcOptLibFileLocPath   =   []
       ,  ehcOptPkgdirLocPath    =   []
       ,  ehcOptPkgDb            =   emptyPackageDatabase
-      -- ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
+      ,  ehcCurDir              =   ""
       ,  ehcOptUserDir          =   ""
       ,  ehcOptMbOutputFile     =   Nothing
       ,  ehcOptCPP              =   False

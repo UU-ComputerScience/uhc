@@ -12,6 +12,8 @@
 
 %%[1 import(System.Console.GetOpt, System.IO, System.Exit, System.Process, System.Environment)
 %%]
+%%[99 import(System.Directory)
+%%]
 %%[1.fastseq import(qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[1 import(qualified {%{EH}Config} as Cfg)
@@ -85,11 +87,15 @@ main :: IO ()
 main
   =  do  {  args      <- getArgs
          ;  progName  <- getProgName
+%%[[99
+         ;  curDir  <- getCurrentDirectory
+%%]]
          ;  let  opts1          = defaultEHCOpts
 %%[[8
                                     { ehcOptEnvironment     = defaultEHCEnvironment
 %%[[99
                                     , ehcProgName           = p
+                                    , ehcCurDir             = curDir
 %%]]
                                     }
 %%]]

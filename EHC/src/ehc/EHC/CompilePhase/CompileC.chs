@@ -84,7 +84,7 @@ cpCompileWithGCC how othModNmL modNm
 %%]]
                             _          -> mkOutputFPath opts modNm fp "c"
                  fpO m f = mkPerModuleOutputFPath opts False m f "o"
-                 fpExec = mkPerExecOutputFPath opts modNm fp Cfg.mbSuffixExec
+                 fpExec = mkPerExecOutputFPath opts modNm fp (fmap (flip (,) False) Cfg.mbSuffixExec)
                  variant= Cfg.installVariant opts
                  (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt,genOFiles
 %%[[99

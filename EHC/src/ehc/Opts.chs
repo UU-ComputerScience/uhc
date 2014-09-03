@@ -410,8 +410,8 @@ ehcCmdLineOpts
      ,  Option "L"  ["lib-search-path"]     (ReqArg oLibFileLocPath "path")         "search path for library files, see also --import-path"
      ,  Option ""   ["cpp"]                 (NoArg oCPP)                            "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]  (intArg oLimitTyBetaRed)                "type synonym expansion limit"     
-     ,  Option ""   ["odir"]                (ReqArg oOutputDir "dir")               "base directory for generated files. Implies --compile-only"
-     ,  Option "o"  ["output"]              (ReqArg oOutputFile "file")             "file to generate executable to"
+     ,  Option ""   ["odir"]                (ReqArg oOutputDir "dir")               "base directory for generated files"
+     ,  Option "o"  ["output"]              (ReqArg oOutputFile "file")             "file to generate executable to (implies --compile-only off)"
      ,  Option ""   ["keep-intermediate-files"] (NoArg oKeepIntermediateFiles)      "keep intermediate files (default=off)"
 %%]]
 %%[[(99 hmtyinfer tyderivtree)
