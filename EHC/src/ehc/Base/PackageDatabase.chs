@@ -122,7 +122,6 @@ pkgDbLookup:: PkgKey -> PackageDatabase -> Maybe PackageInfo
 pkgDbLookup key db
   = pkgMpLookup key $ pkgDbPkgMp db
 
-{-
 pkgMpSelectMpOnKey :: PkgKey -> PackageMp -> PackageMp
 pkgMpSelectMpOnKey key@(pkgNm,mbVersion) mp
   = case mbVersion of
@@ -131,16 +130,17 @@ pkgMpSelectMpOnKey key@(pkgNm,mbVersion) mp
                            _      -> emptyPackageMp
       _               -> maybe emptyPackageMp (Map.singleton pkgNm) lkup
   where lkup = Map.lookup pkgNm mp
--}
 
 pkgDbSelectMpOnKey :: PkgKey -> PackageDatabase -> PackageMp
-pkgDbSelectMpOnKey key@(pkgNm,mbVersion) db
+pkgDbSelectMpOnKey key@(pkgNm,mbVersion) db = pkgMpSelectMpOnKey key $ pkgDbPkgMp db
+{-
   = case mbVersion of
       Just pkgVersion -> case lkup of
                            Just m -> maybe emptyPackageMp (\i -> pkgMpSingletonL key i) $ Map.lookup mbVersion m
                            _      -> emptyPackageMp
       _               -> maybe emptyPackageMp (Map.singleton pkgNm) lkup
   where lkup = Map.lookup pkgNm $ pkgDbPkgMp db
+-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -297,13 +297,13 @@ pkgDbSelectBySearchFilterM searchFilters fullDb
             else do
               -- get the package map under construction
               mp <- gets sfstMp
-              let mbInMp = pkgMpLookup k mp
-              case mbInMp of
-                -- if not yet encountered, add it, and recurse over the dependends
-                Nothing -> do
+              let inMp = pkgMpSelectMpOnKey k mp
+              if Map.null inMp
+                then do
+                  -- if not yet encountered, add it, and recurse over the dependends
                   modify $ \st -> st {sfstMp = cmbAbsent s mp}
                   onerec s
-                _ ->
+                else
                   modify $ \st -> st {sfstMp = cmbPresent s mp}
         onerec s = all [PackageSearchFilter_ExposePkg $ Set.toList $ pkginfoBuildDepends $ pkgMpFindMin s]
 
