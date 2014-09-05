@@ -1149,6 +1149,9 @@ cpProcessCoreRest modNm
                 ++ (if CoreOpt_Dump `elem` ehcOptCoreOpts opts
                     then [void $ cpOutputCore False [] "" Cfg.suffixDotlessOutputTextualCore modNm]
                     else [])
+                ++ (if CoreOpt_DumpBinary `elem` ehcOptCoreOpts opts
+                    then [void $ cpOutputCore True [] "" Cfg.suffixDotlessOutputBinaryCore modNm]
+                    else [])
 %%]]
 %%[[99
                 ++ [ cpCleanupCore [modNm] ]
