@@ -474,11 +474,14 @@ then
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           fgl)
+            # with uhc-util >= 0.1.3.7 no longer necessary
             if test ${pkgVersionNoDot} -ge 5500
             then
-              ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} fgl>=5.5 graphviz"
+              #ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} fgl>=5.5 graphviz"
+              ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} fgl"
             else
-              ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} fgl<5.5"
+              #ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} fgl<5.5"
+              ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} fgl"
             fi
             ;;
           *)
@@ -492,7 +495,7 @@ then
 fi
 
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="${ghcLibsRequiredWithVersion} base mtl directory hashable>=1.1&&<1.3 uhc-util>=0.1.3"
+cabal_base_lib_depends="${ghcLibsRequiredWithVersion} base mtl directory hashable>=1.1&&<1.3 uhc-util>=0.1.3.7"
 if test x$enableClr = "xyes"
 then
   cabal_base_lib_depends="$cabal_base_lib_depends language-cil"

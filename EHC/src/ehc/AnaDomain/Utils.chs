@@ -22,7 +22,7 @@
 %%[(8 codegen) hs import(UHC.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(Control.Monad.State hiding (join), Control.Applicative)
+%%[(8 codegen) hs import(Control.Monad.State, Control.Applicative)
 %%]
 
 -- debug only
@@ -270,8 +270,8 @@ assSolve bound qualS
                      , "transitivity 2"
                      )
                 where canDo = varIsFree && not (null ll1) && not (null rr1) && isJust mbMt
-                      mbMt@(~(Just (mt,ams1))) = if null rr1 then Just (top,ams0) else r1 ams0 meet arsq
-                      mbJn@(~(Just (jn,ams2))) = if null ll1 then Just (bot,ams1) else r1 ams1 join alsq
+                      mbMt@(~(Just (mt,ams1))) = if null rr1 then Just (top,ams0) else r1 ams0 meetl arsq
+                      mbJn@(~(Just (jn,ams2))) = if null ll1 then Just (bot,ams1) else r1 ams1 joinl alsq
                       varConstraint
                         = if null rr1 then [] else [RelevQual_SubEval (AnaEval_Var var) mt]
               -- symmetry
@@ -308,11 +308,11 @@ assSolve bound qualS
                 -> return ( [RelevQual_SubEval (AnaEval_Var var) mt], amsLocalVarMp ams1, slv ars
                           , "right meet"
                           )
-                where mbMt@(~(Just (mt,ams1))) = r1 ams0 meet arsq
+                where mbMt@(~(Just (mt,ams1))) = r1 ams0 meetl arsq
               {-
               ([], (_:_))
                 | varIsFree
-                -> do (mt,ams1) <- r1 ams0 meet arsq
+                -> do (mt,ams1) <- r1 ams0 meetl arsq
                       return ( [], bindAnaEval var mt |+> amsLocalVarMp ams1, slv ars
                              , "right meet"
                              )
@@ -324,7 +324,7 @@ assSolve bound qualS
                 -> return ( [], emptyRVarMp, slv als, "left forget" )
               -}
               {-
-                -> do (jn,ams1) <- r1 ams0 join alsq
+                -> do (jn,ams1) <- r1 ams0 joinl alsq
                       return ( [], bindAnaEval var jn |+> amsLocalVarMp ams1, slv als
                              , "left join"
                              )

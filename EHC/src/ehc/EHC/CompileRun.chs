@@ -10,7 +10,7 @@ An EHC compile run maintains info for one compilation invocation
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
-%%[8 import(System.IO, System.Exit, System.Environment, System.Process, System.Cmd(rawSystem))
+%%[8 import(System.IO, System.Exit, System.Environment, System.Process)
 %%]
 %%[99 import(UHC.Util.Time, System.CPUTime, System.Locale, Data.IORef, System.IO.Unsafe)
 %%]

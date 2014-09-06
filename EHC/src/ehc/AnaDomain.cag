@@ -16,7 +16,7 @@ Analysis domains
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.List, Data.Maybe)
 %%]
-%%[(8 codegen) hs import(Control.Monad.State hiding (join), Control.Applicative)
+%%[(8 codegen) hs import(Control.Monad.State, Control.Applicative)
 %%]
 %%[(8 codegen) hs import(UHC.Util.Utils)
 %%]
@@ -135,8 +135,8 @@ class AnaLattice a where
   
   fresh :: UID -> a
   
-  meet  :: a -> a -> AMS (Maybe a)
-  join  :: a -> a -> AMS (Maybe a)
+  meetl  :: a -> a -> AMS (Maybe a)
+  joinl  :: a -> a -> AMS (Maybe a)
   
   -- base <= base
   leBB_l :: a -> a -> AMS (AMSOut a)
@@ -205,13 +205,13 @@ instance AnaLattice AnaEval where
 
   fresh = AnaEval_Var
 
-  meet a1@(AnaEval_Var v1) a2               = anaVar amsLookupEval (Just a1) (meet a2) anaEvalMeet v1 a1 a2
-  meet a1 a2@(AnaEval_Var v2)               = anaVar amsLookupEval (Just a1) (meet a1) anaEvalMeet v2 a2 a1
-  meet a1 a2                                = anaEvalMeet a1 a2
+  meetl a1@(AnaEval_Var v1) a2              = anaVar amsLookupEval (Just a1) (meetl a2) anaEvalMeet v1 a1 a2
+  meetl a1 a2@(AnaEval_Var v2)              = anaVar amsLookupEval (Just a1) (meetl a1) anaEvalMeet v2 a2 a1
+  meetl a1 a2                               = anaEvalMeet a1 a2
 
-  join a1@(AnaEval_Var v1) a2               = anaVar amsLookupEval (Just a1) (join a2) anaEvalJoin v1 a1 a2
-  join a1 a2@(AnaEval_Var v2)               = anaVar amsLookupEval (Just a1) (join a1) anaEvalJoin v2 a2 a1
-  join a1 a2                                = anaEvalJoin a1 a2
+  joinl a1@(AnaEval_Var v1) a2              = anaVar amsLookupEval (Just a1) (joinl a2) anaEvalJoin v1 a1 a2
+  joinl a1 a2@(AnaEval_Var v2)              = anaVar amsLookupEval (Just a1) (joinl a1) anaEvalJoin v2 a2 a1
+  joinl a1 a2                               = anaEvalJoin a1 a2
   
   leBB_l a1@(AnaEval_Var v1) a2             = anaVar amsLookupEval (amsoMkOk a1 a1 $ RelevCoe_Eval a1 a1) (flip leBB_l a2)       leBB_r     v1 a1 a2
   leBB_l a1 a2                              = leBB_r a1 a2
@@ -310,11 +310,11 @@ instance AnaLattice RelevTy where
   fresh u   = RelevTy_Ana (fresh u1)
             where (_,u1) = mkNewLevUID u
 
-  meet  (RelevTy_Ana a11) (RelevTy_Ana a21) = liftM (fmap RelevTy_Ana) (meet  a11 a21)
-  meet  _                 _                 = return Nothing
+  meetl  (RelevTy_Ana a11) (RelevTy_Ana a21) = liftM (fmap RelevTy_Ana) (meetl  a11 a21)
+  meetl  _                 _                 = return Nothing
 
-  join  (RelevTy_Ana a11) (RelevTy_Ana a21) = liftM (fmap RelevTy_Ana) (join  a11 a21)
-  join  _                 _                 = return Nothing
+  joinl  (RelevTy_Ana a11) (RelevTy_Ana a21) = liftM (fmap RelevTy_Ana) (joinl  a11 a21)
+  joinl  _                 _                 = return Nothing
 
   leBB  (RelevTy_Ana a11) (RelevTy_Ana a21) = do { AMSOut l h c True <- leBB a11 a21
                                                  ; return $ amsoMkOk (RelevTy_Ana l) (RelevTy_Ana h) c
