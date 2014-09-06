@@ -303,22 +303,22 @@ linkerSymbolPrefix = "@LINKER_SYMBOL_PREFIX@"
 
 %%]
 
-%%[8 export(suffixDotlessBinaryCore, suffixDotlessOutputBinaryCore, suffixDotlessOutputTextualCore, suffixDotlessInputTextualCore)
+%%[8 export(suffixDotlessBinaryCore, suffixDotlessInputOutputBinaryCore, suffixDotlessOutputTextualCore, suffixDotlessInputOutputTextualCore)
 -- | Suffix (dotless) for binary core files, to be read in as part of the compilation process
 suffixDotlessBinaryCore :: String
 suffixDotlessBinaryCore = "cr"
 
 -- | Suffix (dotless) for binary dumped/output core files
-suffixDotlessOutputBinaryCore :: String
-suffixDotlessOutputBinaryCore = "bcr"
+suffixDotlessInputOutputBinaryCore :: String
+suffixDotlessInputOutputBinaryCore = "bcr"
 
 -- | Suffix (dotless) for textually dumped/output core files
 suffixDotlessOutputTextualCore :: String
 suffixDotlessOutputTextualCore = "tcr"
 
 -- | Suffix (dotless) for textually read core files
-suffixDotlessInputTextualCore :: String
-suffixDotlessInputTextualCore = suffixDotlessOutputTextualCore
+suffixDotlessInputOutputTextualCore :: String
+suffixDotlessInputOutputTextualCore = suffixDotlessOutputTextualCore
 
 %%]
 

@@ -507,15 +507,17 @@ cpEhcModuleCompile1 targHSState modNm
                    ; return defaultResult
                    }
 %%[[(50 corein)
-           (ECUS_Core CRStart,Just HSOnlyImports)
-             -> do { cpMsg modNm VerboseNormal "Reading Core"
+           (ECUS_Core cst, Just HSOnlyImports)
+             | cst == CRStartText || isBinary
+             -> do { cpMsg modNm VerboseNormal $ "Reading Core (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
                    ; cpEhcHaskellModulePrepareSrc modNm
-                   ; modNm2 <- cpEhcCoreImport modNm
+                   ; modNm2 <- cpEhcCoreImport isBinary modNm
                    ; cpGetDummyCheckSrcMod modNm2		-- really dummy, should be based on actual import info to be extracted by cpEhcCoreImport
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_Core CROnlyImports))
                    ; return modNm2
                    }
+             where isBinary = cst == CRStartBinary
            (ECUS_Core CROnlyImports,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
@@ -907,13 +909,15 @@ cpEhcCorePerModulePart1 modNm
 %%[(50 codegen corein)
 -- | Get import information from Core module source text.
 cpEhcCoreImport
-  :: HsName -> EHCompilePhase HsName
+  :: Bool -> HsName -> EHCompilePhase HsName
 cpEhcCoreImport
-     modNm
+     isBinary modNm
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
        
-       ; cpParseCoreWithFPath Nothing modNm
+       ; if isBinary
+         then cpDecodeCore Cfg.suffixDotlessInputOutputBinaryCore modNm
+         else cpParseCoreWithFPath Nothing modNm
        ; cpFoldCoreMod modNm
        ; cpGetCoreModnameAndImports modNm
        }
@@ -1150,7 +1154,7 @@ cpProcessCoreRest modNm
                     then [void $ cpOutputCore False [] "" Cfg.suffixDotlessOutputTextualCore modNm]
                     else [])
                 ++ (if CoreOpt_DumpBinary `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore True [] "" Cfg.suffixDotlessOutputBinaryCore modNm]
+                    then [void $ cpOutputCore True [] "" Cfg.suffixDotlessInputOutputBinaryCore modNm]
                     else [])
 %%]]
 %%[[99

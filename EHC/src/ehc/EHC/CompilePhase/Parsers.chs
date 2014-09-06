@@ -210,7 +210,7 @@ cpParseCore :: HsName -> EHCompilePhase ()
 cpParseCore modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-              fpC     = fpathSetSuff Cfg.suffixDotlessInputTextualCore fp
+              fpC     = fpathSetSuff Cfg.suffixDotlessInputOutputTextualCore fp
        ; cpMsg' modNm VerboseALot "Parsing" Nothing fpC
        ; errs <- cpParsePlainToErrs CorePrs.pCModule (coreScanOpts opts) ecuStoreCore fpC modNm
        ; when (ehcDebugStopAtCoreError opts)
@@ -309,8 +309,8 @@ cpDecodeGrin = cpDecode "grin" ecuStoreGrin
 %%]
 
 %%[(50 codegen) export(cpDecodeCore)
-cpDecodeCore :: HsName -> EHCompilePhase ()
-cpDecodeCore = cpDecode Cfg.suffixDotlessBinaryCore ecuStoreCore
+cpDecodeCore :: String -> HsName -> EHCompilePhase ()
+cpDecodeCore suff = cpDecode suff ecuStoreCore
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -335,7 +335,7 @@ cpGetPrevCore modNm
   = do { cr <- get
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbCoreTime ecu) && isNothing (ecuMbCore ecu))
-              (cpDecodeCore modNm)
+              (cpDecodeCore Cfg.suffixDotlessBinaryCore modNm)
               -- (cpParseCore modNm)
        }
 %%]

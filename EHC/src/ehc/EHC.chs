@@ -268,7 +268,8 @@ mkFileSuffMpHs opts
     -- , ( Just "grin", ECUS_Grin )
 %%]]
 %%[[(50 corein)
-    , ( Just Cfg.suffixDotlessInputTextualCore, ECUS_Core CRStart )
+    , ( Just Cfg.suffixDotlessInputOutputTextualCore, ECUS_Core CRStartText   )
+    , ( Just Cfg.suffixDotlessInputOutputBinaryCore , ECUS_Core CRStartBinary )
 %%]]
     ]
 %%[[(90 codegen)

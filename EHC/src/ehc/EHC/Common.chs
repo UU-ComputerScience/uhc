@@ -122,7 +122,8 @@ The state Core compilation can be in
 
 %%[(50 corein) export(CRState(..))
 data CRState
-  = CRStart
+  = CRStartText
+  | CRStartBinary
   | CROnlyImports
   | CRAllSem
   deriving (Show,Eq)
