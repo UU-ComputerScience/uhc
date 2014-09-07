@@ -1120,7 +1120,7 @@ cpProcessCoreFold modNm
 %%[[50
 	  [ cpFlowCoreSemBeforeFold modNm ] ++
 %%]]
-      [ cpFoldCore modNm ]
+      [ cpFoldCore2Grin modNm ]
 %%[[50
 	  ++ [ cpFlowCoreSemAfterFold modNm ]
 %%]]

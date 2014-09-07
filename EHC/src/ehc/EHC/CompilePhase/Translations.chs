@@ -15,6 +15,8 @@ Translation to another AST
 
 %%[(50 codegen) import({%{EH}Base.Optimize})
 %%]
+%%[(50 codegen) import({%{EH}EHC.CompilePhase.Module})
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -245,10 +247,9 @@ cpGenGrinGenInfo
        )
 cpGenGrinGenInfo modNm
   = do { cr <- get
+       ; impNmL <- cpGenImpNmInfo modNm
        ; let (ecu,crsi,opts,fp) = crBaseInfo modNm cr
              isWholeProg = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
-             impNmL     | isWholeProg = []
-                        | otherwise   = ecuImpNmL ecu
              expNmFldMp | ecuIsMainMod ecu = Map.empty
                         | otherwise        = crsiExpNmOffMp modNm crsi
              modOffMp   | isWholeProg = Map.filterWithKey (\n _ -> n == modNm) $ crsiModOffMp crsi

@@ -76,6 +76,7 @@ SEM CModule
                                                     mk    [d]     e = acoreLet    (defCateg d) [defCore d]      e
                                                 in  CModule_Mod
                                                       @moduleNm
+                                                      @imports.cTrf
                                                       @declMetas.cTrf
                                                       (foldr mk @expr.letBody @sccDefs)
                                                       -- @ctagsMp

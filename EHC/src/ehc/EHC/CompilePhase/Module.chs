@@ -19,6 +19,9 @@ Module analysis
 %%[50 import(Control.Monad.State)
 %%]
 
+%%[50 import({%{EH}Base.Optimize})
+%%]
+
 %%[50 import({%{EH}EHC.Common})
 %%]
 %%[50 import({%{EH}EHC.CompileUnit})
@@ -105,7 +108,11 @@ cpGetCoreModnameAndImports modNm
               Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
                      | otherwise       -> do { cpUpdCU modNm upd ; return modNm }
               -}
-              Just _ -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', cuUpdKey modNm' ecu))
+              Just _ -> cpUpdCUWithKey modNm $ \_ ecu ->
+                          ( modNm'
+                          , ecuStoreHSDeclImpS (Set.fromList $ Core2ChkSem.impModNmL_Syn_CodeAGItf crSemMod )
+                            $ cuUpdKey modNm' ecu
+                          )
               _      -> return modNm
          }
 %%]
@@ -237,6 +244,23 @@ cpUpdateModOffMp modNmL
                                            where (o, offset') = refGen1 offset 1 modNm
                             where new = crsiExpNmOffMp modNm crsi
        ; cpUpdSI (\crsi -> crsi {crsiModOffMp = offMp'})
+       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generate list of all imported modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 codegen) export(cpGenImpNmInfo)
+-- | Compute imported module names
+cpGenImpNmInfo :: HsName -> EHCompilePhase [HsName]
+cpGenImpNmInfo modNm
+  = do { cr <- get
+       ; let (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+             isWholeProg = ehcOptOptimizationScope opts > OptimizationScope_PerModule
+             impNmL     | isWholeProg = []
+                        | otherwise   = ecuImpNmL ecu
+       ; return impNmL
        }
 %%]
 

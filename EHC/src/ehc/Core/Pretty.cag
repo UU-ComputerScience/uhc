@@ -128,6 +128,9 @@ ppTrack t = text (show t)
 
 ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
+
+ppSemi :: PP x => x -> PP_Doc
+ppSemi = (>|< ";")
 %%]
 
 %%[(9 coreout) hs
@@ -298,12 +301,13 @@ ppBound opts isSingleNoNm mbLev s pv
 
 %%[(8 coreout)
 ATTR CodeAGItf AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatFldL CBindL CAltL CBoundL CBindAnnL CDataConL CDeclMetaL [ | | ppL: {[PP_Doc]} ]
+ATTR CPatFldL CBindL CAltL CBoundL CBindAnnL CDataConL CDeclMetaL CImportL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
   | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm
+                                                >-< (vlist $ map ppSemi @imports.ppL)
                                                 >-< (if null @declMetas.ppL then empty else ppCurlysSemisBlock @declMetas.ppL)
                                                 >-< "="
                                                 >-< @expr.pp
@@ -312,6 +316,9 @@ SEM CModule
 
 SEM CDeclMeta
   | Data		lhs			.	pp			=	howDef @lhs.ppHow ("data" >#< ppCNm @tyNm) ("=" >#< ppCurlysCommasBlock @dataCons.ppL)
+
+SEM CImport
+  | Import		lhs			.	pp			=	"import" >#< ppCNm @nm
 
 SEM CDataCon
   | Con			lhs			.	pp			=	ppCNm @conNm >#< "=" >#< ppCurlysCommas [pp @tagNr, pp @arity]
@@ -403,7 +410,7 @@ SEM CBound
   | Val         loc         .   pp          =   ppBound @lhs.opts True (Just @lev) @sep @ppBound
   | * - Val     loc         .   pp          =   @ppBound
 
-SEM CBoundL CBindL CPatFldL CAltL CBindAnnL CDataConL CDeclMetaL
+SEM CBoundL CBindL CPatFldL CAltL CBindAnnL CDataConL CDeclMetaL CImportL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 

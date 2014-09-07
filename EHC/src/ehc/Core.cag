@@ -34,6 +34,9 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs export(CBindAnn(..), CBindAnnL, CExprAnn(..))
 %%]
 
+%%[(8 codegen) hs export(CImport(..), CImportL)
+%%]
+
 %%[(8 codegen) hs export(CDeclMeta(..), CDeclMetaL, CDataCon(..), CDataConL)
 %%]
 
@@ -65,6 +68,9 @@ DERIVING *
 %%[[50
   , Typeable, Data
 %%]]
+
+DERIVING CImport
+  : Ord
 %%]
 
 %%[(50 codegen) ag
@@ -86,6 +92,16 @@ type RPat           = RPat'         CExpr CTy CBind CPatRest
 type RPatConBind    = RPatConBind'  CExpr CTy CBind CPatRest
 type RPatFld        = RPatFld'      CExpr CTy CBind CPatRest
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Update CModule fields
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 codegen) hs export(cmodSetImports)
+-- | Set imports
+cmodSetImports :: [HsName] -> CModule -> CModule
+cmodSetImports imp m = m {imports_CModule_Mod = map CImport_Import imp}
+%%]]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tuple operator info
@@ -242,7 +258,7 @@ cmetaLiftDict = fmap2Tuple CMetaVal_Dict
 
 %%[(8 codegen) hs export(mkCMod,emptyCModule)
 mkCMod :: CExpr -> CModule
-mkCMod e = CModule_Mod (hsnFromString "") [] e -- []
+mkCMod e = CModule_Mod (hsnFromString "") [] [] e -- []
 
 emptyCModule :: CModule
 emptyCModule = mkCMod (CExpr_Int 0)
@@ -425,8 +441,8 @@ cModMerge mL
   = foldr1 cmb mL
   where get (CExpr_Let c b e) = CExpr_Let c b . get e
         get  _                = id
-        cmb (CModule_Mod m1 mt1 e1) (CModule_Mod m2 mt2 e2)
-          = CModule_Mod m2 (mt1++mt2) (get e1 e2)
+        cmb (CModule_Mod m1 im1 mt1 e1) (CModule_Mod m2 im2 mt2 e2)
+          = CModule_Mod m2 (im1++im2) (mt1++mt2) (get e1 e2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -461,11 +477,12 @@ data CModuleDatabase
       , cmoddbBindMp        :: !CDbModuleBindMp     -- map of name to bindings
       , cmoddbMainExpr      :: !CExpr               -- the final expr of the module's let expr
       -- , cmoddbTagsMp        :: !CTagsMp             -- datatype info
+      , cmoddbImports       :: !CImportL            -- imports
       , cmoddbMeta          :: !CDeclMetaL          -- meta info/decl
       }
 
 emptyCModuleDatabase :: CModuleDatabase
-emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (CExpr_Int 0) []
+emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (CExpr_Int 0) [] []
 %%]
 
 %%[(50 codegen) hs export(cmoddbLookup)
@@ -720,25 +737,32 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
 
 %%[(50 codegen) hs
 instance Serialize CModule where
-  sput (CModule_Mod   a b c ) = sputWord8 0 >> sput a >> sput b >> sput c
+  sput (CModule_Mod   a b c d) = {- sputWord8 0 >> -} sput a >> sput b >> sput c >> sput d
   sget
-    = do t <- sgetWord8
+    = do {- t <- sgetWord8
          case t of
-            0 -> liftM3 CModule_Mod         sget sget sget
+            0 -> -} liftM4 CModule_Mod         sget sget sget sget
+
+instance Serialize CImport where
+  sput (CImport_Import a  ) = {- sputWord8 0 >> -} sput a
+  sget
+    = do {- t <- sgetWord8
+         case t of
+            0 -> -} liftM   CImport_Import       sget
 
 instance Serialize CDeclMeta where
-  sput (CDeclMeta_Data   a b) = sputWord8 0 >> sput a >> sput b
+  sput (CDeclMeta_Data   a b) = {- sputWord8 0 >> -} sput a >> sput b
   sget
-    = do t <- sgetWord8
+    = do {- t <- sgetWord8
          case t of
-            0 -> liftM2  CDeclMeta_Data         sget sget
+            0 -> -} liftM2  CDeclMeta_Data         sget sget
 
 instance Serialize CDataCon where
-  sput (CDataCon_Con   a b c) = sputWord8 0 >> sput a >> sput b >> sput c
+  sput (CDataCon_Con   a b c) = {- sputWord8 0 >> -} sput a >> sput b >> sput c
   sget
-    = do t <- sgetWord8
+    = do {- t <- sgetWord8
          case t of
-            0 -> liftM3  CDataCon_Con         sget sget sget
+            0 -> -} liftM3  CDataCon_Con         sget sget sget
 
 instance Serialize CExpr where
   sput (CExpr_Let       a b c       ) = sputWord8  0 >> sput a >> sput b >> sput c
@@ -859,18 +883,18 @@ instance Serialize CBound where
             6 -> liftM2 CBound_Ty            sget sget
 
 instance Serialize CBind where
-  sput (CBind_Bind a b      ) = sputWord8 0 >> sput a >> sput b
+  sput (CBind_Bind a b      ) = {- sputWord8 0 >> -} sput a >> sput b
   sget
-    = do t <- sgetWord8
+    = do {- t <- sgetWord8
          case t of
-            0 -> liftM2 CBind_Bind          sget sget
+            0 -> -} liftM2 CBind_Bind          sget sget
 
 instance Serialize CAlt where
-  sput (CAlt_Alt   a b      ) = sputWord8 0 >> sput a >> sput b
+  sput (CAlt_Alt   a b      ) = {- sputWord8 0 >> -} sput a >> sput b
   sget
-    = do t <- sgetWord8
+    = do {- t <- sgetWord8
          case t of
-            0 -> liftM2 CAlt_Alt         sget sget         
+            0 -> -} liftM2 CAlt_Alt         sget sget         
 
 instance Serialize CPat where
   sput (CPat_Var       a        ) = sputWord8 0 >> sput a
@@ -901,11 +925,11 @@ instance Serialize CPatRest where
             1 -> return CPatRest_Empty  
 
 instance Serialize CPatFld where
-  sput (CPatFld_Fld   a b c d ) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
+  sput (CPatFld_Fld   a b c d ) = {- sputWord8 0 >> -} sput a >> sput b >> sput c >> sput d
   sget
-    = do t <- sgetWord8
+    = do {- t <- sgetWord8
          case t of
-            0 -> liftM4 CPatFld_Fld         sget sget sget sget
+            0 -> -} liftM4 CPatFld_Fld         sget sget sget sget
 
 instance Serialize CBindCateg where
   sput = sputEnum8

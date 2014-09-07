@@ -43,9 +43,23 @@ DATA CodeAGItf
 %%[(8 codegen)
 DATA CModule
   | Mod         moduleNm        : {HsName}
+                imports			: CImportL
                 declMetas		: CDeclMetaL
                 expr            : CExpr
                 -- ctagsMp         : {CTagsMp}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Imports
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CImport
+  | Import		nm				: {HsName}
+
+TYPE CImportL	= [CImport]
+
+SET AllImport	= CImportL CImport
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -430,5 +444,6 @@ SET AllExpr
 SET AllNT
   = AllCodeNT
     AllMetaNT
+    AllImport
 %%]
 
