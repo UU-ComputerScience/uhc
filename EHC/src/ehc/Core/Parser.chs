@@ -143,7 +143,7 @@ pCExpr
 -}
   =   (\f as -> acoreApp f as)
                      <$> pCExprSel <*> pList pCExprSel -- pCExprSelMeta
-  <|> acoreLam       <$  pLAM <*> pList1 (pDollNm) <* pRARROW <*> pCExpr
+  <|> mkLam          <$  pLAM <*> pList1 (pDollNm) <* pRARROW <*> pCExpr
   <|> CExpr_Let      <$  pLET <*> pMaybe CBindCateg_Plain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> (\(c,_) s i t -> CExpr_FFI c s (mkImpEnt c i) t)
                      <$  pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
@@ -157,6 +157,8 @@ pCExpr
           <|> CBindCateg_FFE    <$ pKeyTk "foreignexport"
 %%]]
           <|> CBindCateg_Strict <$ pBANG
+        -- mkLam = acoreLam -- not used to avoid spurious intro of error type info
+        mkLam as e = foldr (\n e -> CExpr_Lam (CBind_Bind n []) e) e as
 %%[[8
         mkImpEnt c e = e
 %%][90
