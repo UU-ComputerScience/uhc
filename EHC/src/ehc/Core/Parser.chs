@@ -261,7 +261,11 @@ pCPat
               <|> (CPat_Char . head) <$ pCHAR
               )
               <*> (tokMkStr <$> pStringTk)
-          <|> (\t r fs -> CPat_Con t r $ zipWith (\o (mf,n) -> acorePatFldTy (acoreTyErr "pCPatFld") (maybe (n, CExpr_Int o) id mf) n) [0..] fs)		-- TODO, use refGen instead of baked in 0.. ...
+          -- <|> (\t r fs -> CPat_Con t r $ zipWith (\o (mf,n) -> acorePatFldTy (acoreTyErr "pCPatFld") (maybe (n, CExpr_Int o) id mf) n) [0..] fs)		-- TODO, use refGen instead of baked in 0.. ...
+          <|> 
+              -- TODO, use refGen instead of baked in 0.. ...
+              (\t r fs -> CPat_Con t r $ zipWith (\o (mf,n) -> let (lbl',o') = fromMaybe (n, CExpr_Int o) mf
+                                                                in CPatFld_Fld lbl' o' (CBind_Bind n []) []) [0..] fs)
               <$> pCTagTag
               <*  pOCURLY <*> pCPatRest <*> pListSep pCOMMA pCPatFld <* pCCURLY
           )
