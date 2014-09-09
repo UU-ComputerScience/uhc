@@ -336,7 +336,7 @@ cpEhcFullProgModuleCompile1 modNm
        ; cpEhcFullProgModuleDetermineNeedsCompile modNm
        ; cr <- get
        ; let (ecu,_,_,_) = crBaseInfo modNm cr
-             targ = if ecuNeedsCompile ecu then HSAllSem else HIAllSem
+             targ = ecuFinalDestinationState ecu -- ECUS_Haskell $ if ecuNeedsCompile ecu then HSAllSem else HIAllSem
        ; cpEhcModuleCompile1 (Just targ) modNm
        ; cr <- get
        ; let (ecu,_,_,_) = crBaseInfo modNm cr
@@ -356,7 +356,7 @@ cpEhcFullProgBetweenModuleFlow modNm
        ; case ecuState $ crCU modNm cr of
            ECUS_Haskell HSAllSem -> return ()
            ECUS_Haskell HIAllSem -> cpFlowHISem modNm
-           _                    -> return ()
+           _                     -> return ()
 %%[[99
        ; cpCleanupFlow modNm
 %%]]
@@ -372,7 +372,7 @@ cpEhcModuleCompile1 :: HsName -> EHCompilePhase ()
 cpEhcModuleCompile1 modNm
 %%]
 %%[50 -8.cpEhcModuleCompile1.sig export(cpEhcModuleCompile1)
-cpEhcModuleCompile1 :: Maybe HSState -> HsName -> EHCompilePhase HsName
+cpEhcModuleCompile1 :: Maybe EHCompileUnitState -> HsName -> EHCompilePhase HsName
 cpEhcModuleCompile1 targHSState modNm
 %%]
 %%[8
@@ -396,7 +396,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
 %%]
 %%[5050
-           (ECUS_Haskell HIStart,Just HMOnlyMinimal)
+           (ECUS_Haskell HIStart,Just (ECUS_Haskell HMOnlyMinimal))
              -- |    st == HIStart
              -> do { cpMsg modNm VerboseNormal ("Minimal of HM")
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HMOnlyMinimal))
@@ -404,7 +404,7 @@ cpEhcModuleCompile1 targHSState modNm
                    }
 %%]
 %%[50
-           (ECUS_Haskell st,Just HSOnlyImports)
+           (ECUS_Haskell st,Just (ECUS_Haskell HSOnlyImports))
              |    st == HSStart
 %%[[99
                || st == LHSStart
@@ -427,7 +427,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; return modNm2
                    }
              where stnext = hsstateNext st
-           (ECUS_Haskell HIStart,Just HSOnlyImports)
+           (ECUS_Haskell HIStart,Just (ECUS_Haskell HSOnlyImports))
              -> do { cpMsg modNm VerboseNormal ("Imports of HI")
                    ; cpEhcHaskellModulePrepareHI modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell (hsstateNext HIStart)))
@@ -438,14 +438,14 @@ cpEhcModuleCompile1 targHSState modNm
                               })
                    ; return defaultResult
                    }
-           (ECUS_Haskell st,Just HSOnlyImports)
+           (ECUS_Haskell st,Just (ECUS_Haskell HSOnlyImports))
              |    st == HSOnlyImports
                || st == HIOnlyImports
 %%[[99
                || st == LHSOnlyImports
 %%]]
              -> return defaultResult
-           (ECUS_Haskell st,Just HSAllSem)
+           (ECUS_Haskell st,Just (ECUS_Haskell HSAllSem))
              |    st == HSOnlyImports
 %%[[99
                || st == LHSOnlyImports
@@ -459,7 +459,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HSAllSem))
                    ; return defaultResult
                    }
-           (ECUS_Haskell st,Just HIAllSem)
+           (ECUS_Haskell st,Just (ECUS_Haskell HIAllSem))
              |    st == HSOnlyImports
                || st == HIOnlyImports
 %%[[99
@@ -495,7 +495,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; return defaultResult
                    }
 %%[[50
-           (ECUS_Haskell st,Just HMOnlyMinimal)
+           (ECUS_Haskell st,Just (ECUS_Haskell HMOnlyMinimal))
              |    st == HIStart || st == HSStart -- st /= HMOnlyMinimal
              -> do { let mod = emptyMod' modNm
                    ; cpUpdCU modNm (ecuStoreMod mod)
@@ -507,7 +507,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; return defaultResult
                    }
 %%[[(50 corein)
-           (ECUS_Core cst, Just HSOnlyImports)
+           (ECUS_Core cst, Just (ECUS_Haskell HSOnlyImports))
              | cst == CRStartText || isBinary
              -> do { cpMsg modNm VerboseNormal $ "Reading Core (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
@@ -518,16 +518,17 @@ cpEhcModuleCompile1 targHSState modNm
                    ; return modNm2
                    }
              where isBinary = cst == CRStartBinary
-           (ECUS_Core CROnlyImports,_)
+           (ECUS_Core CROnlyImports,Just (ECUS_Core CRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
+                   ; cpEhcCoreAnalyseModuleItf modNm
                    ; cpProcessCoreModFold modNm
                    ; cpEhcCoreModuleCommonPhases True True True {- isMainMod isTopMod doMkExec -} opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult
                    }
 %%]]
-           (_,Just HSOnlyImports)
+           (_,Just (ECUS_Haskell HSOnlyImports))
              -> return defaultResult
 %%]]
            (ECUS_Eh EHStart,_)
@@ -847,6 +848,21 @@ cpEhcHaskellAnalyseModuleItf modNm
 %%]]
 %%[[99
           , cpCleanupHSMod modNm
+%%]]
+          ]
+%%]
+
+%%[(50 corein)
+-- | Analyse a Core text/binary src module for
+--     (1) module information (import, export, etc),
+cpEhcCoreAnalyseModuleItf :: HsName -> EHCompilePhase ()
+cpEhcCoreAnalyseModuleItf modNm
+  = cpSeq [ cpCheckMods [modNm]
+%%[[(50 codegen grin)
+          , cpUpdateModOffMp [modNm]
+%%]]
+%%[[99
+          -- , cpCleanupHSMod modNm
 %%]]
           ]
 %%]

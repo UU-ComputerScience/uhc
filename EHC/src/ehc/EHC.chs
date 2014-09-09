@@ -503,7 +503,7 @@ doCompileRun fnL@(fn:_) opts
                ; return ()
                }
           where toplayer fpL topModNmL
-                  = zipWithM (\fp topModNm -> imp1 opts fileSuffMpHs searchPath HSOnlyImports (Just fp) Nothing topModNm) fpL topModNmL
+                  = zipWithM (\fp topModNm -> imp1 opts fileSuffMpHs searchPath (ECUS_Haskell HSOnlyImports) (Just fp) Nothing topModNm) fpL topModNmL
                 onelayer
                   = do { cr <- get
                        ; let modNmS = Map.keysSet $ crCUCache cr
@@ -515,7 +515,7 @@ doCompileRun fnL@(fn:_) opts
                                     ]
                                   `Set.difference` modNmS
                        ; sequence -- or: cpSeq + return ()
-                           [ do { i@(m',_) <- imp1 opts fileSuffMpHs searchPath HSOnlyImports Nothing Nothing m
+                           [ do { i@(m',_) <- imp1 opts fileSuffMpHs searchPath (ECUS_Haskell HSOnlyImports) Nothing Nothing m
                                 -- ; cpEhcFullProgModuleDetermineNeedsCompile m'
                                 ; return i
                                 }
@@ -538,7 +538,7 @@ doCompileRun fnL@(fn:_) opts
                  cpCheckMods' (const emptyModMpInfo) [modBuiltin]
                
                -- start with directly importing top modules, providing the filepath directly
-               ; topModNmL' <- zipWithM (\fp topModNm -> imp HSOnlyImports (Just fp) Nothing topModNm) fpL topModNmL
+               ; topModNmL' <- zipWithM (\fp topModNm -> imp (ECUS_Haskell HSOnlyImports) (Just fp) Nothing topModNm) fpL topModNmL
                
                -- follow the import relation to chase modules which have to be analysed
                ; cpImportGatherFromModsWithImp
@@ -549,16 +549,16 @@ doCompileRun fnL@(fn:_) opts
                                    _ -> ecuImpNmL ecu
                     else ecuImpNmL
                    )
-                   (imp HSOnlyImports Nothing) (map fst topModNmL')
+                   (imp (ECUS_Haskell HSOnlyImports) Nothing) (map fst topModNmL')
                
                -- import orphans
                ; when (ehcOptPriv opts)
                       (do { 
                           -- import orphans
-                            importAlso HSOnlyImports ecuTransClosedOrphanModS
+                            importAlso (ECUS_Haskell HSOnlyImports) ecuTransClosedOrphanModS
                           
                           -- import used remaining modules, but just minimally                          
-                          ; importAlso HMOnlyMinimal (Set.unions . Map.elems . ecuTransClosedUsedModMp)
+                          ; importAlso (ECUS_Haskell HMOnlyMinimal) (Set.unions . Map.elems . ecuTransClosedUsedModMp)
                           })
 
                -- inhibit mutual recursiveness
@@ -575,7 +575,7 @@ doCompileRun fnL@(fn:_) opts
                 imp = imp1 opts fileSuffMpHs searchPath
                 
                 -- import others, but then in a (slightly) different way
-                importAlso :: HSState -> (EHCompileUnit -> Set.Set HsName) -> EHCompilePhase ()
+                importAlso :: EHCompileUnitState -> (EHCompileUnit -> Set.Set HsName) -> EHCompilePhase ()
                 importAlso how getNms
                   = do { cr <- get
                        ; let allAnalysedModS = Map.keysSet $ crCUCache cr
@@ -585,7 +585,7 @@ doCompileRun fnL@(fn:_) opts
                            (imp how Nothing) (Set.toList allNewS)
                        }
 
-        imp1 :: EHCOpts -> FileSuffMp -> FileLocPath -> HSState -> Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
+        imp1 :: EHCOpts -> FileSuffMp -> FileLocPath -> EHCompileUnitState -> Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
         imp1 opts fileSuffMpHs searchPath desiredState mbFp mbPrev nm
           = do { let isTopModule = isJust mbFp
                      fileSuffMpHs' = (if isTopModule then fileSuffMpHsNoSuff else []) ++ fileSuffMpHs

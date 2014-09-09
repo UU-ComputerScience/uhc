@@ -357,7 +357,7 @@ SEM CExpr
 %%][90
                 loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
 %%]]
-  | Dbg         loc         .   pp          =   ppParens $ "<<DBG:" >#< @info >#< ">>"
+  | Dbg         loc         .   pp          =   {- whenMore @lhs.opts $ -} ppParens $ "<<DBG:" >#< @info >#< ">>"
 %%[[(8 coresysf)
   | Arr         loc         .   pp          =   @bind.pp >#< "->" >#< @body.pp
   | Cast		loc			.	pp			=	howDef @lhs.ppHow (pp "cast") (howAside @lhs.ppHow (ppParens @expr.pp) (ppParens @ty.pp))

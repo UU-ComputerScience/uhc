@@ -148,6 +148,23 @@ data EHCompileUnitState
   deriving (Show,Eq)
 %%]
 
+%%[8 export(ecuStateFinalDestination)
+-- | The final state
+ecuStateFinalDestination :: (EHCompileUnitState -> EHCompileUnitState) -> EHCompileUnitState -> EHCompileUnitState
+ecuStateFinalDestination postModf
+  = postModf . n
+  where n (ECUS_Haskell _) = ECUS_Haskell HSAllSem
+        n (ECUS_Eh      _) = ECUS_Eh      EHAllSem
+%%[[(90 codegen)
+        n (ECUS_C       _) = ECUS_C       CAllSem
+        n (ECUS_O       _) = ECUS_O       OAllSem
+%%]]
+%%[[(50 corein)
+        n (ECUS_Core    _) = ECUS_Core    CRAllSem
+%%]]
+        n _                = ECUS_Fail
+%%]
+
 %%[50 export(ecuStateIsCore)
 -- | Is compilation from Core source
 ecuStateIsCore :: EHCompileUnitState -> Bool
@@ -155,7 +172,7 @@ ecuStateIsCore st = case st of
 %%[[(50 corein)
   ECUS_Core _ -> True
 %%]]
-  _          -> False
+  _           -> False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

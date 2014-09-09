@@ -371,7 +371,10 @@ instance CompileUnitState EHCompileUnitState where
 %%]]
                       ECUS_Haskell HSAllSem       -> True
                       ECUS_Haskell HIAllSem       -> True
-                      _                          -> False
+%%[[(50 corein)
+                      ECUS_Core    CROnlyImports  -> True
+%%]]
+                      _                           -> False
 %%]
 
 %%[8
@@ -424,6 +427,16 @@ instance PP EHCompileUnit where
       ":" >#< ppBracketsCommas (ecuImpNmL ecu) >|<
 %%]]
       "," >#< show (ecuState ecu)
+%%]
+
+%%[8 export(ecuFinalDestinationState)
+-- | The final state to be reached
+ecuFinalDestinationState :: EHCompileUnit -> EHCompileUnitState
+ecuFinalDestinationState ecu = ecuStateFinalDestination upd $ ecuState ecu
+  where upd (ECUS_Haskell _)
+          | ecuNeedsCompile ecu = ECUS_Haskell HSAllSem
+          | otherwise           = ECUS_Haskell HIAllSem
+        upd s                   = s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
