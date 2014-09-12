@@ -306,16 +306,17 @@ ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
-  | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm
+  | Mod         lhs         .   pp          =   ppSemi ("module" >#< ppCNm @moduleNm)
                                                 >-< (vlist $ map ppSemi @imports.ppL)
-                                                >-< (if null @declMetas.ppL then empty else ppCurlysSemisBlock @declMetas.ppL)
-                                                >-< "="
+                                                >-< (vlist $ map ppSemi @declMetas.ppL)
+                                                -- >-< (if null @declMetas.ppL then empty else ppCurlysSemisBlock @declMetas.ppL)
+                                                -- >-< "="
                                                 >-< @expr.pp
                                                 -- >-< "-- data type tag map:"
                                                 -- >-< ppCTagsMp CfgPP_Core @ctagsMp
 
 SEM CDeclMeta
-  | Data		lhs			.	pp			=	howDef @lhs.ppHow ("data" >#< ppCNm @tyNm) ("=" >#< ppCurlysCommasBlock @dataCons.ppL)
+  | Data		lhs			.	pp			=	howDef @lhs.ppHow ("data" >#< ppCNm @tyNm) ("=" >#< ppBlockWithStrings{-H-} "" "" ", " @dataCons.ppL)
 
 SEM CImport
   | Import		lhs			.	pp			=	"import" >#< ppCNm @nm

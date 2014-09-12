@@ -59,9 +59,13 @@ pCTy
 %%[(50 corein) export(pCModule,pCExpr)
 pCModule :: CParser CModule
 pCModule
-  = (\m mt e -> CModule_Mod m mt e) <$ pMODULE <*> pDollNm <*> pI <*> pM <* pEQUAL <*> pCExpr -- <*> pA (pA pCTag)
+  = (\m mt e -> CModule_Mod m mt e)
+    <$  pMODULE <*> pDollNm <* pSEMI
+    <*> pI
+    <*> pM
+    <*> pCExpr -- <*> pA (pA pCTag)
   where -- pA pE = pOCURLY *> pListSep pSEMI ((,) <$> pDollNm <* pEQUAL <*> pE) <* pCCURLY
-        pM    = pMaybe [] id $ pOCURLY *> pListSep pSEMI pCDeclMeta <* pCCURLY
+        pM    = pList pCDeclMeta -- pMaybe [] id $ pOCURLY *> pListSep pSEMI pCDeclMeta <* pCCURLY
         pI    = pList pCImport
 
 pCImport :: CParser CImport
@@ -70,7 +74,7 @@ pCImport
 
 pCDeclMeta :: CParser CDeclMeta
 pCDeclMeta
-  =   CDeclMeta_Data <$ pDATA <*> pDollNm <* pEQUAL <* pOCURLY <*> pListSep pCOMMA pCDataCon <* pCCURLY
+  =   CDeclMeta_Data <$ pDATA <*> pDollNm <* pEQUAL <*> pListSep pCOMMA pCDataCon <* pSEMI
 
 pCDataCon :: CParser CDataCon
 pCDataCon = CDataCon_Con <$> pDollNm <* pEQUAL <* pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCCURLY
