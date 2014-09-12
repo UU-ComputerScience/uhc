@@ -521,9 +521,11 @@ cpEhcModuleCompile1 targHSState modNm
            (ECUS_Core CROnlyImports,Just (ECUS_Core CRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
-                   ; cpEhcCoreAnalyseModuleItf modNm
+                   ; cpEhcCoreModuleAfterImport (ecuIsTopMod ecu) opts modNm
+{-
                    ; cpProcessCoreModFold modNm
                    ; cpEhcCoreModuleCommonPhases True True True {- isMainMod isTopMod doMkExec -} opts modNm
+-}
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult
                    }
@@ -620,11 +622,9 @@ cpEhcEhModuleCommonPhases isMainMod isTopMod doMkExec opts modNm
           ]
 %%]
 
-%%[8 haddock
-HS common phases: HS analysis + EH common
-%%]
-
 %%[8
+-- | Common phases when starting with a Haskell module.
+-- HS common phases: HS analysis + EH common
 cpEhcHaskellModuleCommonPhases :: Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhase ()
 cpEhcHaskellModuleCommonPhases isTopMod doMkExec opts modNm
   = cpSeq [ cpEhcHaskellAnalyseModuleDefs modNm
@@ -641,11 +641,9 @@ cpEhcHaskellModuleCommonPhases isTopMod doMkExec opts modNm
           ]       
 %%]
 
-%%[50 haddock
-Post module import common phases: Parse + Module analysis + HS common
-%%]
-
 %%[50
+-- | All the work to be done after Haskell src imports have been read/analysed.
+-- Post module import common phases: Parse + Module analysis + HS common
 cpEhcHaskellModuleAfterImport
   :: Bool -> EHCOpts -> HSState
 %%[[99
@@ -667,6 +665,28 @@ cpEhcHaskellModuleAfterImport
           , cpEhcHaskellModuleCommonPhases isTopMod False opts modNm
           , cpEhcHaskellModulePostlude modNm
           ]       
+%%]
+
+%%[(50 corein)
+-- | All the work to be done after Core src/binary imports have been read/analysed
+cpEhcCoreModuleAfterImport
+  :: Bool -> EHCOpts
+     -> HsName -> EHCompilePhase ()
+cpEhcCoreModuleAfterImport
+     isTopMod opts
+     modNm
+  = do { cr <- get
+       ; let (ecu,_,_,_) = crBaseInfo modNm cr
+       ; cpSeq
+          [ cpEhcCoreAnalyseModuleItf modNm
+          , cpProcessCoreModFold modNm
+          , cpEhcCoreModuleCommonPhases (ecuIsMainMod ecu) isTopMod False opts modNm
+{-
+          , cpEhcHaskellModuleCommonPhases isTopMod False opts modNm
+          , cpEhcHaskellModulePostlude modNm
+-}
+          ]  
+       }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
