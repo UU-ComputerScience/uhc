@@ -62,14 +62,14 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,TermLike UID Parser Parser2 Pragma Strictness GenC Target BasicAnnot Fld Common Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,Range RLList TermLike UID Parser Parser2 Pragma Strictness GenC Target BasicAnnot Fld Common Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Base/HsName/,Builtin) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Core Foreign GrinCode) \
 													$(addsuffix /Trf,Core TyCore JavaScript Cmm) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
-													$(addprefix CodeGen/,CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
+													$(addprefix CodeGen/,Tag CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
 													$(addprefix Foreign/,Boxing) \
 													$(addprefix Core/Run/,Val) \
 													$(addprefix Core/,Utils Run FFI Coercion) \

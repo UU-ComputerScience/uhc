@@ -10,10 +10,13 @@
 %%[1 module {%{EH}Base.Common}
 %%]
 
-%%[1 import(UU.Scanner.Position,UHC.Util.Utils)
+%%[1 import(UHC.Util.Utils)
 %%]
 
 %%[1 import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin}) export(module {%{EH}Base.HsName})
+%%]
+
+%%[1 import({%{EH}Base.Range}) export(module {%{EH}Base.Range})
 %%]
 
 %%[1 import({%{EH}Base.UID}) export(module {%{EH}Base.UID})
@@ -55,6 +58,9 @@
 %%[8 import({%{EH}Base.Fld}) export(module {%{EH}Base.Fld})
 %%]
 
+%%[8 import({%{EH}CodeGen.Tag}) export(module {%{EH}CodeGen.Tag})
+%%]
+
 %%[8 import (qualified Data.Map as Map)
 %%]
 
@@ -64,6 +70,9 @@
 %%[8 import(Control.Monad, qualified Control.Monad.State as ST)
 %%]
 %%[50 import(UHC.Util.Binary, UHC.Util.Serialize)
+%%]
+
+%%[9 import({%{EH}Base.RLList}) export(module {%{EH}Base.RLList})
 %%]
 
 %%[9999 import({%{EH}Base.Hashable})
@@ -334,150 +343,6 @@ instance PP Belowness where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tags (of data)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs export(CTag(..),ctagIsRec,ctagTag,ctagChar,ctagInt,emptyCTag)
-data CTag
-  = CTagRec
-  | CTag
-      { ctagTyNm        :: !HsName
-      , ctagNm          :: !HsName
-      , ctagTag'        :: !Int
-      , ctagArity       :: !Int
-      , ctagMaxArity    :: !Int
-      }
-  deriving (Show,Eq,Ord)
-
-ctagIsRec :: CTag -> Bool
-ctagIsRec CTagRec = True
-ctagIsRec t       = False
-
-ctagTag :: CTag -> Int
-ctagTag CTagRec = 0
-ctagTag t       = ctagTag' t
-
-ctagInt  =  CTag hsnInt  hsnInt  0 1 1
-{-# INLINE ctagInt #-}
-ctagChar =  CTag hsnChar hsnChar 0 1 1
-{-# INLINE ctagChar #-}
-
-emptyCTag = CTag hsnUnknown hsnUnknown 0 0 0
-{-# INLINE emptyCTag #-}
-%%]
-
-%%[8 export(mkOnlyConInfoCTag, patchTyInfoCTag)
--- | Construct a minimal datatype tag which still must be completed wrt more global datatype info
-mkOnlyConInfoCTag :: HsName -> Int -> Int -> CTag
-mkOnlyConInfoCTag conNm tg arity = emptyCTag {ctagNm = conNm, ctagTag' = tg, ctagArity = arity}
-
--- | Patch a datatype tag with datatype global info
-patchTyInfoCTag :: HsName -> Int -> CTag -> CTag
-patchTyInfoCTag tyNm maxArity t = t {ctagTyNm = tyNm, ctagMaxArity = maxArity}
-%%]
-
-%%[9 export(mkClassCTag)
--- only used when `not ehcCfgClassViaRec'
-mkClassCTag :: HsName -> Int -> CTag
-mkClassCTag n sz = CTag n n 0 sz sz
-%%]
-
-%%[8 hs export(ctag,ppCTag,ppCTagInt)
-ctag :: a -> (HsName -> HsName -> Int -> Int -> Int -> a) -> CTag -> a
-ctag n t tg = case tg of {CTag tn cn i a ma -> t tn cn i a ma; _ -> n}
-{-# INLINE ctag #-}
-
-ppCTag :: CTag -> PP_Doc
-ppCTag = ctag (pp "Rec") (\tn cn t a ma -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a >|< "/" >|< pp ma)
-
-ppCTagInt :: CTag -> PP_Doc
-ppCTagInt = ctag (pp "-1") (\_ _ t _ _ -> pp t)
-
-instance PP CTag where
-  pp = ppCTag
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tags abstraction/interface
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs export(TagDataInfo(..))
--- | datatype info about tag: type name & constr name, required throughout various codegen stages
-data TagDataInfo = TagDataInfo
-  { tagDataInfoTypeNm 	:: !HsName
-  , tagDataInfoConstrNm	:: !HsName
-  }
-  deriving (Show)
-
-instance Eq TagDataInfo where
-  i1 == i2 = tagDataInfoConstrNm i1 == tagDataInfoConstrNm i2
-
-instance Ord TagDataInfo where
-  i1 `compare` i2 = tagDataInfoConstrNm i1 `compare` tagDataInfoConstrNm i2
-%%]
-
-%%[8 hs export(mkTyIsConTagInfo, mkConTagInfo, emptyTagDataInfo)
-mkTyConTagInfo :: HsName -> HsName -> TagDataInfo
-mkTyConTagInfo = TagDataInfo
-{-# INLINE mkTyConTagInfo #-}
-
--- | Construct info when Ty and Con name are equal
-mkTyIsConTagInfo :: HsName -> TagDataInfo
-mkTyIsConTagInfo n = mkTyConTagInfo n n
-{-# INLINE mkTyIsConTagInfo #-}
-
-mkConTagInfo :: HsName -> TagDataInfo
-mkConTagInfo cn = mkTyConTagInfo hsnUnknown cn
-{-# INLINE mkConTagInfo #-}
-
-emptyTagDataInfo = mkTyConTagInfo hsnUnknown hsnUnknown
-%%]
-
-%%[8 hs export(tagInfoInt, tagInfoChar)
-tagInfoInt  = mkTyIsConTagInfo hsnInt
-tagInfoChar = mkTyIsConTagInfo hsnChar
-%%]
-
-%%[8 hs export(TagLike(..), tagDataInfo)
-class TagLike t where
-  tagIsData			:: t -> Bool
-  tagIsTup			:: t -> Bool
-  
-  -- | extract data related info, only allowed when tagIsData
-  tagMbDataInfo		:: t -> Maybe TagDataInfo
-  tagDataTypeNm   	:: t -> HsName
-  tagDataConstrNm 	:: t -> HsName
-  tagDataTag		:: t -> Int
-  
-  -- defaults: either tagDataInfo or tagDataTypeNm and tagDataConstrNm and tagIsData
-  tagMbDataInfo		t	= if tagIsData t then Just (emptyTagDataInfo {tagDataInfoTypeNm = tagDataTypeNm t, tagDataInfoConstrNm = tagDataConstrNm t}) else Nothing
-  tagDataTypeNm			= tagDataInfoTypeNm . tagDataInfo
-  tagDataConstrNm		= tagDataInfoConstrNm . tagDataInfo
-  tagIsData 			= isJust . tagMbDataInfo
-  
-  -- defaults
-  tagIsTup				= not . tagIsData
-
--- | Assuming a datatype, return info
-tagDataInfo :: TagLike t => t -> TagDataInfo
-tagDataInfo = fromJust . tagMbDataInfo
-{-# INLINE tagDataInfo #-}
-
-instance TagLike CTag where
-  tagMbDataInfo	 	= ctag Nothing (\tn cn _ _ _ -> Just (emptyTagDataInfo {tagDataInfoTypeNm = tn, tagDataInfoConstrNm = cn}))
-  tagDataTag 		= ctagTag'
-  -- not necessary:
-  tagIsTup  		= ctagIsRec
-  tagDataTypeNm 	= ctagTyNm
-  tagDataConstrNm 	= ctagNm
-%%]
-
-%%[8 hs
-instance PP TagDataInfo where
-  pp i = tagDataInfoTypeNm i >|< "#" >|< tagDataInfoConstrNm i
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Label for expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -513,17 +378,6 @@ data Unbox
   = Unbox_FirstField
   | Unbox_Tag         !Int
   | Unbox_None
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc info passed to backend
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs export(CTagsMp, emptyCTagsMp)
-type CTagsMp = AssocL HsName (AssocL HsName CTag)
-
-emptyCTagsMp :: CTagsMp
-emptyCTagsMp = []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -640,141 +494,6 @@ fixityMaxPrio = 9
 %%[91 export(fixityAppPrio)
 fixityAppPrio :: Int
 fixityAppPrio = fixityMaxPrio + 1
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Eq,Ord for Pos
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-instance Eq Pos where
-  p1 == p2 = line p1 == line p2 && column p1 == column p2
-
-instance Ord Pos where
-  compare p1 p2
-    = case compare (line p1) (line p2) of
-        EQ -> compare (column p1) (column p2)
-        c  -> c
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Range
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2)
-data Range
-  = Range_Range    !Pos !Pos
-  | Range_Unknown
-  | Range_Builtin
-
-emptyRange :: Range
-emptyRange = Range_Unknown
-
-builtinRange :: Range
-builtinRange = Range_Builtin
-
-mkPos :: Position p => p -> Pos
-mkPos p = Pos (line p) (column p) (file p)
-
-mkRange1 :: Position p => p -> Range
-mkRange1 p = Range_Range (mkPos p) noPos
-
-mkRange2 :: Position p => p -> p -> Range
-mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
-%%]
-
-%%[1
-show2Pos :: Pos -> Pos -> String
-show2Pos p1 p2
-  | p1 /= p2 && p2 /= noPos  = if line p1 == line p2
-                               then mk (show (line p1))                          (Just $ show (column p1) ++ "-" ++ show (column p2))
-                               else mk (show (line p1) ++ "-" ++ show (line p2)) Nothing
-  | otherwise                =      mk (show (line p1))                          (Just $ show (column p1))
-  where mk l c = file p1 ++ ":" ++ l ++ maybe "" (":" ++) c
-%%]
-
-%%[1
-instance Show Range where
-  show (Range_Range p q) = show2Pos p q
-  show Range_Unknown     = "??"
-  show Range_Builtin     = "builtin"
-
-instance PP Range where
-  pp = pp . show
-%%]
-
-%%[1 export(isEmptyRange)
-isEmptyRange :: Range -> Bool
-isEmptyRange  Range_Unknown    = True
-isEmptyRange (Range_Range p _) = p == noPos
-isEmptyRange  _                = False
-%%]
-
-20100209 AD: The lax equality/compare goes badly with serialization. TBD: fix this...
-
-%%[50
-instance Eq Range where
-  _ == _ = True             -- a Range is ballast, not a criterium to decide equality for
-
-instance Ord Range where
-  _ `compare` _ = EQ        -- a Range is ballast, not a criterium to decide equality for
-%%]
-
-%%[1
-rngAdd :: Range -> Range -> Range
-rngAdd r1 r2
-  = case (r1,r2) of
-      (Range_Range l1 h1,Range_Range l2 h2)
-        -> Range_Range (l1 `min` l2) (h1 `max` h2)
-      (Range_Range _ _,_)
-        -> r1
-      (_,Range_Range _ _)
-        -> r2
-      _ -> Range_Unknown
-%%]
-
-%%[5 export(rangeUnion,rangeUnions)
-posMax, posMin :: Pos -> Pos -> Pos
-posMax (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `max` l2) (c1 `max` c2) f1
-posMin (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `min` l2) (c1 `min` c2) f1
-
-rangeUnion :: Range -> Range -> Range
-rangeUnion (Range_Range b1 e1) (Range_Range b2 e2) = Range_Range (b1 `posMin` b2) (e1' `posMax` e2')
-                                                  where e1' = if e1 == noPos then b1 else e1
-                                                        e2' = if e2 == noPos then b2 else e2
-rangeUnion Range_Unknown       r2                  = r2
-rangeUnion r1                  _                   = r1
-
-rangeUnions :: [Range] -> Range
-rangeUnions = foldr1 rangeUnion
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Lifting of Range
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.rngLift export(RngLiftArg,rngLift,rngAntilift)
-type RngLiftArg  x = x
-type RngLift     x = Range -> RngLiftArg x -> x
-
-rngLift :: RngLift v
-rngLift r v = v
-
-rngAntilift :: v -> RngLiftArg v
-rngAntilift = id
-%%]
-
-%%[99 -1.rngLift export(RngLiftArg,rngLift,rngAntilift)
-type RngLiftArg  x = Range -> x
-type RngLift     x = Range -> RngLiftArg x -> x
-
-rngLift :: RngLift v
-rngLift r mkv
-  = x `seq` x
-  where x = mkv r
-
-rngAntilift :: v -> RngLiftArg v
-rngAntilift = const
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -911,15 +630,6 @@ data Backend
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fake AG dependency: first param is not used, only introduces an AG dependency
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-%%]
-agFakeDependOn :: a -> b -> b
-agFakeDependOn _ x = x
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable name (used by CHR)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1028,97 +738,6 @@ combineToDistinguishedElts (l:ls)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Run length encoded list
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9 export(RLList(..))
-newtype RLList a
-  = RLList [(a,Int)]
-  deriving (Eq)
-
-instance Ord a => Ord (RLList a) where
-  (RLList [])           `compare` (RLList [])           = EQ
-  (RLList [])           `compare` (RLList _ )           = LT
-  (RLList _ )           `compare` (RLList [])           = GT
-  (RLList ((x1,c1):l1)) `compare` (RLList ((x2,c2):l2)) | x1 == x2 = if c1 == c2
-                                                                     then RLList l1 `compare` RLList l2
-                                                                     else c1 `compare` c2
-                                                        | x1 <  x2 = LT
-                                                        | x1 >  x2 = GT
-%%]
-
-%%[9 export(rllConcat,rllSingleton,rllEmpty,rllToList,rllFromList)
-rllConcat :: Eq a => RLList a -> RLList a -> RLList a
-rllConcat (RLList []) rll2  = rll2
-rllConcat rll1 (RLList [])  = rll1
-rllConcat (RLList l1) (RLList l2@(h2@(x2,c2):t2))
-                            | x1 == x2  = RLList (h1 ++ [(x1,c1+c2)] ++ t2)
-                            | otherwise = RLList (l1 ++ l2)
-                            where (h1,t1@(x1,c1)) = fromJust (initlast l1)
-
-rllEmpty :: RLList a
-rllEmpty = RLList []
-
-rllSingleton :: a -> RLList a
-rllSingleton x = RLList [(x,1)]
-
-rllToList :: RLList a -> [a]
-rllToList (RLList l) = concatMap (\(x,c) -> replicate c x) l
-
-rllFromList :: Eq a => [a] -> RLList a
-rllFromList l = RLList [ (x,length g) | g@(x:_) <- group l ]
-%%]
-
-%%[9 export(rllLength,rllNull)
-rllLength :: RLList a -> Int
-rllLength (RLList l) = sum $ map snd l
-
-rllNull :: RLList a -> Bool
-rllNull (RLList []) = True
-rllNull (RLList _ ) = False
-%%]
-
-%%[9 export(rllIsPrefixOf)
-rllIsPrefixOf :: Eq a => RLList a -> RLList a -> Bool
-rllIsPrefixOf (RLList []) _ = True
-rllIsPrefixOf _ (RLList []) = False
-rllIsPrefixOf (RLList ((x1,c1):l1)) (RLList ((x2,c2):l2))
-                            | x1 == x2  = if c1 < c2
-                                          then True
-                                          else if c1 > c2
-                                          then False
-                                          else rllIsPrefixOf (RLList l1) (RLList l2)
-                            | otherwise = False
-%%]
-
-%%[9 export(rllInits,rllInit,rllInitLast)
-rllInitLast :: Eq a => RLList a -> Maybe (RLList a,a)
-rllInitLast (RLList l ) = il [] l
-                        where il acc [(x,1)]    = Just (RLList (reverse acc),x)
-                              il acc [(x,c)]    = Just (RLList (reverse ((x,c-1):acc)),x)
-                              il acc (a:as)     = il (a:acc) as
-                              il _   _          = Nothing
-
-rllInit :: Eq a => RLList a -> RLList a
-rllInit = fst . fromJust . rllInitLast
-
-rllInits :: Eq a => RLList a -> [RLList a]
-rllInits = map rllFromList . inits . rllToList
-%%]
-
-%%[9 export(rllHeadTail)
-rllHeadTail :: RLList a -> Maybe (a,RLList a)
-rllHeadTail (RLList [])        = Nothing
-rllHeadTail (RLList ((x,1):t)) = Just (x,RLList t)
-rllHeadTail (RLList ((x,c):t)) = Just (x,RLList ((x,c-1):t))
-%%]
-
-%%[9
-instance Show a => Show (RLList a) where
-  show = show . rllToList
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AlwaysEq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1200,43 +819,6 @@ metaLevTy, metaLevKi, metaLevSo :: MetaLev
 metaLevTy  = metaLevVal + 1
 metaLevKi  = metaLevTy  + 1
 metaLevSo  = metaLevKi  + 1
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Typeable, Data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[50
-deriving instance Typeable VarUIDHsName
-deriving instance Data VarUIDHsName
-
-deriving instance Typeable TagDataInfo
-deriving instance Data TagDataInfo
-
-deriving instance Typeable Fixity
-deriving instance Data Fixity
-
-deriving instance Typeable1 AlwaysEq
-deriving instance Data x => Data (AlwaysEq x)
-
-deriving instance Typeable PredOccId
-deriving instance Data PredOccId
-
-deriving instance Typeable1 RLList
-deriving instance Data x => Data (RLList x)
-
-deriving instance Typeable CLbl
-deriving instance Data CLbl
-
-deriving instance Typeable CTag
-deriving instance Data CTag
-
-deriving instance Typeable Range
-deriving instance Data Range
-
-deriving instance Typeable Pos
-deriving instance Data Pos
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1415,11 +997,6 @@ data KnownPrim
   deriving (Show,Eq,Enum,Bounded)
 %%]
 
-%%[50
-deriving instance Data KnownPrim
-deriving instance Typeable KnownPrim
-%%]
-
 %%[8
 instance PP KnownPrim where
   pp = pp . show
@@ -1449,6 +1026,36 @@ str2stMp = str2stMpWithOmit []
 
 showStr2stMp :: Map.Map String opt -> String
 showStr2stMp = concat . intersperse " " . Map.keys
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Typeable, Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50
+deriving instance Data KnownPrim
+deriving instance Typeable KnownPrim
+%%]
+
+%%[50
+deriving instance Typeable VarUIDHsName
+deriving instance Data VarUIDHsName
+
+deriving instance Typeable TagDataInfo
+deriving instance Data TagDataInfo
+
+deriving instance Typeable Fixity
+deriving instance Data Fixity
+
+deriving instance Typeable1 AlwaysEq
+deriving instance Data x => Data (AlwaysEq x)
+
+deriving instance Typeable PredOccId
+deriving instance Data PredOccId
+
+deriving instance Typeable CLbl
+deriving instance Data CLbl
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1512,39 +1119,5 @@ instance Serialize PredOccId where
   sput = sputPlain
   sget = sgetPlain
 
-instance Binary a => Binary (RLList a) where
-  put (RLList a) = put a
-  get = liftM RLList get
-
-instance Serialize CTag where
-  sput = sputShared
-  sget = sgetShared
-  sputNested (CTagRec          ) = sputWord8 0
-  sputNested (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
-  sgetNested
-    = do t <- sgetWord8
-         case t of
-           0 -> return CTagRec
-           1 -> liftM5 CTag    sget sget sget sget sget
-
-instance Binary Range where
-  put (Range_Unknown    ) = putWord8 0
-  put (Range_Builtin    ) = putWord8 1
-  put (Range_Range   a b) = putWord8 2 >> put a >> put b
-  get = do t <- getWord8
-           case t of
-             0 -> return Range_Unknown
-             1 -> return Range_Builtin
-             2 -> liftM2 Range_Range get get
-
-instance Serialize Range where
-  sput = sputShared
-  sget = sgetShared
-  sputNested = sputPlain
-  sgetNested = sgetPlain
-
-instance Binary Pos where
-  put (Pos a b c) = put a >> put b >> put c
-  get = liftM3 Pos get get get
 %%]
 
