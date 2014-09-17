@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin},{%{EH}Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).Ty hs import({%{EH}Ty})

@@ -23,7 +23,7 @@ In due time this will replace the current machinery for BasicSize, BasicAnnot
 %%[(8 codegen) import({%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Builtin}, {%{EH}Base.Builtin2}, {%{EH}Opts})
+%%[(8 codegen) import({%{EH}Base.HsName.Builtin}, {%{EH}Base.Builtin2}, {%{EH}Opts})
 %%]
 
 %%[(8 codegen) import({%{EH}Ty}, {%{EH}Gam.DataGam})

@@ -8,7 +8,7 @@
 %%% but have no semantics during further codegen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.ElimNonCodegenConstructs} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen) hs module {%{EH}Core.Trf.ElimNonCodegenConstructs} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})

@@ -8,7 +8,7 @@
 %%[8 import({%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.TermLike},{%{EH}Opts.Base},{%{EH}Ty})
+%%[(8 codegen) import({%{EH}Base.HsName.Builtin},{%{EH}Base.TermLike},{%{EH}Opts.Base},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) import(UHC.Util.Pretty,UHC.Util.Utils)

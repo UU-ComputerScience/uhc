@@ -271,6 +271,9 @@ mkFileSuffMpHs opts
     , ( Just Cfg.suffixDotlessInputOutputTextualCore, ECUS_Core CRStartText   )
     , ( Just Cfg.suffixDotlessInputOutputBinaryCore , ECUS_Core CRStartBinary )
 %%]]
+%%[[(50 corebackend)
+    , ( Just Cfg.suffixDotlessBinaryCore , ECUS_Core CRStartBinary )
+%%]]
     ]
 %%[[(90 codegen)
     ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts)

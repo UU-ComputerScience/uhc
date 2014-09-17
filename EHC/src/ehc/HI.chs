@@ -7,7 +7,7 @@
 %%% Haskell importable interface to HI/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Builtin},{%{EH}NameAspect})
+%%[50 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.HsName.Builtin},{%{EH}NameAspect})
 %%]
 
 %%[50 hs import ({%{EH}Gam.Full})

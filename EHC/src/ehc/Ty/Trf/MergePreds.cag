@@ -19,7 +19,7 @@ what the context to be passed will be. To solve this, each possible location for
 (the @proveOccs attribute of Impls_Tail), which is later on used to patch with the tmpoImplsPrvReq result returned in TyMergePredOut.
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.MergePreds} import(UHC.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.MergePreds} import(UHC.Util.Utils,{%{EH}Base.Common},{%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam})

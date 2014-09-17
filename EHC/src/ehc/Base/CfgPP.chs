@@ -20,7 +20,7 @@ As class variations on PP
 %%[8 hs module {%{EH}Base.CfgPP}
 %%]
 
-%%[8 import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Opts.Base},{%{EH}Base.Builtin},{%{EH}Scanner.Common})
+%%[8 import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Opts.Base},{%{EH}Base.HsName.Builtin},{%{EH}Scanner.Common})
 %%]
 
 %%[8 import(Data.Char,qualified Data.Set as Set)

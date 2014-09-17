@@ -5,7 +5,7 @@
 %%[(8 cmm) hs module {%{EH}Cmm.Pretty}
 %%]
 
-%%[(8 cmm) hs import({%{EH}Base.Builtin},{%{EH}Cmm} hiding (cmt, cvar),{%{EH}Base.Common} hiding (Range),{%{EH}Opts})
+%%[(8 cmm) hs import({%{EH}Base.HsName.Builtin},{%{EH}Cmm} hiding (cmt, cvar),{%{EH}Base.Common} hiding (Range),{%{EH}Opts})
 %%]
 
 %%[(8 cmm) hs import({%{EH}CodeGen.CVar})

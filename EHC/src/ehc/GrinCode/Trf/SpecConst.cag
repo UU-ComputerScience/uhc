@@ -9,7 +9,7 @@ Specialize functions that are called with constant arguments
 
 %%[(8 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}GrinCode.Trf.SubstExpr(substExpr)})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}GrinCode.Trf.SubstExpr(substExpr)})
 %%]
 %%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe)
 %%]

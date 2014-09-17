@@ -5,7 +5,7 @@
 %%[(8 codegen) module {%{EH}AbstractCore.Utils} import ({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty})
+%%[(8 codegen) import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty})
 %%]
 
 %%[(8 codegen hmtyinfer) import({%{EH}Gam},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})

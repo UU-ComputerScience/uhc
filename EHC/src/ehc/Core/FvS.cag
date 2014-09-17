@@ -10,7 +10,7 @@
 %%[(8 codegen) hs module {%{EH}Core.FvS} import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cexprFvS)
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Core},{%{EH}Ty}) export(cexprFvS)
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonBindNm})

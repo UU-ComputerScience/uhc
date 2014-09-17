@@ -7,7 +7,7 @@
 %%% Type check as system F
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen coresysf) hs module {%{EH}Core.SysF.Check} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error})
+%%[(8 codegen coresysf) hs module {%{EH}Core.SysF.Check} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error})
 %%]
 
 %%[(8 codegen coresysf) hs import({%{EH}Gam})

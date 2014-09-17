@@ -13,7 +13,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
+%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts.Base})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore}) export(module {%{EH}AbstractCore})
@@ -25,7 +25,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..),TargetFlavor(..))) export(module {%{EH}Base.Target})
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Pretty,UHC.Util.Utils,Control.Applicative((<|>)))
+%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Utils,Control.Applicative((<|>)))
 %%]
 
 %%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
@@ -476,7 +476,6 @@ data CModuleDatabase
       , cmoddbBindArr       :: !CDbBindArray        -- bindings
       , cmoddbBindMp        :: !CDbModuleBindMp     -- map of name to bindings
       , cmoddbMainExpr      :: !CExpr               -- the final expr of the module's let expr
-      -- , cmoddbTagsMp        :: !CTagsMp             -- datatype info
       , cmoddbImports       :: !CImportL            -- imports
       , cmoddbMeta          :: !CDeclMetaL          -- meta info/decl
       }
@@ -729,6 +728,23 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
   acoreCoeArg                           = CExpr_CoeArg
   acoreExprIsCoeArg                     = (== CExpr_CoeArg)
 %%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Running Core: runtime references
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(RRef(..))
+-- | Identifier references for use during running Core
+data RRef
+  = RRef_Glb		-- ^ global reference to module and its entry
+      { rrefMod		:: !Int		-- ^ module
+      , rrefEntry	:: !Int		-- ^ entry inside module
+      }
+  | RRef_Loc		-- ^ local reference to on stack value
+      { rrefLev		:: !Int		-- ^ level
+      , rrefEntry	:: !Int		-- ^ entry inside level
+      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

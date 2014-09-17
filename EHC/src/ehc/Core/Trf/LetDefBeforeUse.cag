@@ -34,7 +34,7 @@ Assumptions:
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Debug},{%{EH}Base.Builtin})
+%%[(8 codegen) hs import({%{EH}Base.Debug},{%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(8 codegen) hs import(UHC.Util.Utils(scc))

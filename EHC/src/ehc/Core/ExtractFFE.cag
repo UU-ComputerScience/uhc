@@ -13,7 +13,7 @@
 %%[(90 codegen) hs import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(90 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
+%%[(90 codegen) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(90 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonBindNm})

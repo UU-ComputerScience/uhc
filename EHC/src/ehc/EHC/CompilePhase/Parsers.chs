@@ -292,24 +292,24 @@ cpDecodeHIInfo modNm
 
 %%[50
 -- | Decode from serialized file and store result in the compileunit for the module modNm
-cpDecode :: Serialize x => String -> EcuUpdater x -> HsName -> EHCompilePhase ()
-cpDecode suff store modNm
+cpDecode :: Serialize x => Maybe String -> EcuUpdater x -> HsName -> EHCompilePhase ()
+cpDecode mbSuff store modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-              fpC     = fpathSetSuff suff fp
+              fpC     = maybe id fpathSetSuff mbSuff fp
        ; cpMsg' modNm VerboseALot "Decoding" Nothing fpC
-       ; x <- lift $ getSerializeFile (fpathToStr fpC)
+       ; x <- liftIO $ getSerializeFile (fpathToStr fpC)
        ; cpUpdCU modNm (store x)
        }
 %%]
 
 %%[(50 codegen grin) export(cpDecodeGrin)
 cpDecodeGrin :: HsName -> EHCompilePhase ()
-cpDecodeGrin = cpDecode "grin" ecuStoreGrin
+cpDecodeGrin = cpDecode (Just "grin") ecuStoreGrin
 %%]
 
 %%[(50 codegen) export(cpDecodeCore)
-cpDecodeCore :: String -> HsName -> EHCompilePhase ()
+cpDecodeCore :: Maybe String -> HsName -> EHCompilePhase ()
 cpDecodeCore suff = cpDecode suff ecuStoreCore
 %%]
 
@@ -335,7 +335,7 @@ cpGetPrevCore modNm
   = do { cr <- get
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbCoreTime ecu) && isNothing (ecuMbCore ecu))
-              (cpDecodeCore Cfg.suffixDotlessBinaryCore modNm)
+              (cpDecodeCore (Just Cfg.suffixDotlessBinaryCore) modNm)
               -- (cpParseCore modNm)
        }
 %%]

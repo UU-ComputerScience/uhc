@@ -62,7 +62,8 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,TermLike UID Parser Parser2 Pragma Strictness GenC Target BasicAnnot Common Builtin Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,TermLike UID Parser Parser2 Pragma Strictness GenC Target BasicAnnot Fld Common Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/HsName/,Builtin) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Core Foreign GrinCode) \
 													$(addsuffix /Trf,Core TyCore JavaScript Cmm) \
@@ -70,7 +71,8 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
 													$(addprefix CodeGen/,CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
 													$(addprefix Foreign/,Boxing) \
-													$(addprefix Core/,Utils FFI Coercion) \
+													$(addprefix Core/Run/,Val) \
+													$(addprefix Core/,Utils Run FFI Coercion) \
 													$(addprefix Core/SysF/,AsTy) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
 													$(addprefix TyCore/Trf/,Common) \

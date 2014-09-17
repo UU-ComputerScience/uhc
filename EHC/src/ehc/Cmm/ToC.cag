@@ -5,7 +5,7 @@
 %%[(8 codegen cmm) hs module {%{EH}Cmm.ToC}
 %%]
 
-%%[(8 codegen cmm) hs import({%{EH}Base.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts})
+%%[(8 codegen cmm) hs import({%{EH}Base.HsName.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts})
 %%]
 
 %%[(8 codegen cmm) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})

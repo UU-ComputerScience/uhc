@@ -15,7 +15,7 @@ Assumes:
 %%[(8 codegen) hs module {%{EH}Core.Trf.CAFGlobalAsArg} import(UHC.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfCAFGlobalAsArg)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Core.Utils})
+%%[(8 codegen) hs import({%{EH}Base.HsName.Builtin},{%{EH}Core.Utils})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})

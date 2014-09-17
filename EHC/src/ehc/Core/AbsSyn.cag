@@ -150,6 +150,11 @@ DATA CExpr
 %%]]
                 ty              : {Ty}
 
+%%[[(8888 corerun)
+  -- only for running
+  | VarRRef		ref				: {RRef}		-- Index into array (instead of name)
+%%]]
+
 %%[[9090
   -- FFE binding (not yet implemented for all backends)
   | FFE         callconv        : {FFIWay}

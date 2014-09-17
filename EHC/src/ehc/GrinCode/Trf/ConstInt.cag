@@ -8,7 +8,7 @@
 
 %%[(97 codegen grin wholeprogAnal) ag import({GrinCode/AbsSyn})
 %%]
-%%[(97 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(97 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 %%[(97 codegen grin wholeprogAnal) hs import(qualified Data.Map as Map, Data.Maybe)
 %%]

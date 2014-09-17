@@ -17,7 +17,7 @@ WRAPPER GrAGItf
 %%[(8 codegen grin wholeprogAnal) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(simpleNullary)
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(simpleNullary)
 
 simpleNullary :: GrModule -> GrModule
 simpleNullary code

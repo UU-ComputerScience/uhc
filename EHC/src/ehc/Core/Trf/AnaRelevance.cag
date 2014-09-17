@@ -13,7 +13,7 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%% Type based simplifications
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Gam},{%{EH}Opts},{%{EH}Base.Optimize},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(8 codegen) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin},{%{EH}Gam},{%{EH}Opts},{%{EH}Base.Optimize},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative)

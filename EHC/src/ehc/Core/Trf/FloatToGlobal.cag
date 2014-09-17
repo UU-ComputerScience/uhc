@@ -29,7 +29,7 @@ The following invariants are and must be maintained:
 %%[(8 codegen) hs module {%{EH}Core.Trf.FloatToGlobal} import(UHC.Util.Utils,qualified UHC.Util.FastSeq as Seq)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List(partition) )

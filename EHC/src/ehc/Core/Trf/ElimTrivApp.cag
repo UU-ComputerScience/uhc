@@ -14,7 +14,7 @@ This is done for Prelude functions:
 %%[(8 codegen) hs module {%{EH}Core.Trf.ElimTrivApp} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) hs import(UHC.Util.Utils)

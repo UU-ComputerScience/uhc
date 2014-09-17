@@ -29,7 +29,7 @@
 %%[7 import(qualified Data.Set as Set)
 %%]
 
-%%[8 import(Data.List,{%{EH}Base.Builtin})
+%%[8 import(Data.List,{%{EH}Base.HsName.Builtin})
 %%]
 
 %%[8 import(UHC.Util.FPath)

@@ -11,7 +11,7 @@ Note (20120525): lamMp use removed because of cyclic module import
 %%% Core Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 coreout) hs module {%{EH}Core.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)})
+%%[(8 coreout) hs module {%{EH}Core.Pretty} import(UHC.Util.Pretty,{%{EH}Base.HsName.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)})
 %%]
 %%[(8 coreout) hs import({%{EH}Ty.Pretty})
 %%]
@@ -26,6 +26,10 @@ Note (20120525): lamMp use removed because of cyclic module import
 
 %%[(90 coreout) hs import({%{EH}Foreign.Pretty})
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 coreout).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonMetaLev})
 WRAPPER
@@ -332,6 +336,9 @@ SEM CExpr
   | Integer     loc         .   pp          =   ppLit "Integer" (show @integer)
 %%]
   | Var         loc         .   pp          =   ppACoreBindRef ppCNm @ref
+%%[[(8888 corerun)
+  | VarRRef		loc         .   pp          =   pp @ref
+%%]]
   | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
                                                     fun  = ppParens @appFunPP
                                                 in  howDef @lhs.ppHow fun (foldr1 (howAside @lhs.ppHow) args)

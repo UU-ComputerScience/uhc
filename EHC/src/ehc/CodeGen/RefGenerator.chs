@@ -5,7 +5,7 @@
 %%[8 hs module {%{EH}CodeGen.RefGenerator}
 %%]
 
-%%[8 hs import({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[8 hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin})
 %%]
 
 %%[8 hs import(Control.Monad, Control.Monad.State)

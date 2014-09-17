@@ -15,7 +15,7 @@
 %%[(8 java) hs import(qualified UHC.Util.FastSeq as Seq, UHC.Util.Utils)
 %%]
 
-%%[(8 java) hs import({%{EH}Base.HsName},{%{EH}Base.Builtin})
+%%[(8 java) hs import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin})
 %%]
 %%[(8 java) hs import({%{EH}Base.Bits})
 %%]

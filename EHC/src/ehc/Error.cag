@@ -16,6 +16,9 @@
 %%[1 hs import(UHC.Util.Pretty,qualified UHC.Util.FastSeq as Seq)
 %%]
 
+%%[1 hs import(Control.Monad.Error.Class)
+%%]
+
 %%[1 ag import({Error/AbsSyn})
 %%]
 
@@ -48,6 +51,15 @@ type ThingAndRange x = (x,Maybe [(Range,Maybe PP_Doc)])
 
 %%[1 hs export(ErrSq)
 type ErrSq = Seq.FastSeq Err
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+instance Error Err where
+  strMsg m = rngLift emptyRange Err_Str m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

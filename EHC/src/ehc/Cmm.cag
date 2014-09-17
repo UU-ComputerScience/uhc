@@ -11,7 +11,7 @@ C subset, modelled after C--
 %%% Haskell importable interface to Cmm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen cmm) hs module {%{EH}Cmm} import({%{EH}Base.Common} hiding (Range), {%{EH}Base.Builtin})
+%%[(8 codegen cmm) hs module {%{EH}Cmm} import({%{EH}Base.Common} hiding (Range), {%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(8 codegen cmm) hs import(UHC.Util.Utils)

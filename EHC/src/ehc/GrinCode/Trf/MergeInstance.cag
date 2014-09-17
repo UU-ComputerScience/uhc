@@ -18,7 +18,7 @@ WRAPPER GrAGItf
 %%]
 
 
-%%[(9 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(mergeInstance)
+%%[(9 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(mergeInstance)
 
 mergeInstance :: GrModule -> GrModule
 mergeInstance code

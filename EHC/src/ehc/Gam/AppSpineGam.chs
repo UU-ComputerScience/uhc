@@ -5,7 +5,7 @@
 %%[4 module {%{EH}Gam.AppSpineGam}
 %%]
 
-%%[4 hs import ({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[4 hs import ({%{EH}Base.Common},{%{EH}Base.HsName.Builtin})
 %%]
 %%[4 import({%{EH}Ty.FitsInCommon})
 %%]

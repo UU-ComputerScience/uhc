@@ -7,7 +7,7 @@
 %%% Core parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corein) module {%{EH}Core.Parser} import({%{EH}Base.Common}, {%{EH}Base.Builtin})
+%%[(8 corein) module {%{EH}Core.Parser} import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(8 corein) import(UHC.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})

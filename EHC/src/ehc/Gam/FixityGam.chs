@@ -8,7 +8,7 @@
 %%[1 import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
-%%[1 hs import ({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[1 hs import ({%{EH}Base.Common},{%{EH}Base.HsName.Builtin})
 %%]
 %%[(1 hmtyast) hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]

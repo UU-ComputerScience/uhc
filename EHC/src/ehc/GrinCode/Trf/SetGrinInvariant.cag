@@ -23,7 +23,7 @@ WRAPPER GrAGItf
 %%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.SetGrinInvariant} import(qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen grin wholeprogAnal) hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(setGrinInvariant)
+%%[(8 codegen grin wholeprogAnal) hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.HsName.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(setGrinInvariant)
 
 setGrinInvariant :: GrModule -> GrModule
 setGrinInvariant code

@@ -8,7 +8,7 @@
 %%% (1) CTag inlined info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs module {%{EH}Core.Trf.FixAfterParse} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
+%%[(50 codegen corein) hs module {%{EH}Core.Trf.FixAfterParse} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(50 codegen corein) hs import({%{EH}AbstractCore})

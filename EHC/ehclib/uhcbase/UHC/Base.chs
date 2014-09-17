@@ -976,7 +976,7 @@ foreign import prim primQuotInteger :: Integer -> Integer -> Integer
 foreign import prim primRemInteger  :: Integer -> Integer -> Integer
 #endif
 
-#if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JS__)
+#if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
 foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
 foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
 #endif

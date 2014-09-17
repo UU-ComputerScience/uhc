@@ -2,7 +2,7 @@
 %%% Deriving info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(91 codegen) module {%{EH}Deriving} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Ty})
+%%[(91 codegen) module {%{EH}Deriving} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Ty})
 %%]
 
 %%[(91 codegen) import({%{EH}Core},{%{EH}Core.Utils})

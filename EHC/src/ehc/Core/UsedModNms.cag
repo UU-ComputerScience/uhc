@@ -10,7 +10,7 @@
 %%[(50 codegen) hs module {%{EH}Core.UsedModNms} import(qualified Data.Set as Set,Data.Maybe)
 %%]
 
-%%[(50 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
+%%[(50 codegen) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(50 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm})

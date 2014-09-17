@@ -38,7 +38,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin wholeprogAnal) hs import(Data.List, Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.Monoid)
 %%]
-%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common(HptMap, Variable, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..), AbstractNodes(..), evaluateNr, evaluateArgNr)})
 %%]

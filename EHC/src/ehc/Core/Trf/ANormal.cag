@@ -13,7 +13,7 @@ The purpose is to end up with bindings which (later) directly correspond to a CA
 For that to work, all arguments of an application closure must themselves be bound to names, i.e. be closures themselves.
 %%]
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.ANormal} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.Builtin}) export(cmodTrfANormal)
+%%[(8 codegen) hs module {%{EH}Core.Trf.ANormal} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.HsName.Builtin}) export(cmodTrfANormal)
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe,qualified Data.Set as Set, Data.List as List, qualified Data.Map as Map)

@@ -25,7 +25,7 @@ Conversion from Pred to CHR.
 %%[(9 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
-%%[(13 hmtyinfer) import({%{EH}Base.Builtin})
+%%[(13 hmtyinfer) import({%{EH}Base.HsName.Builtin})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

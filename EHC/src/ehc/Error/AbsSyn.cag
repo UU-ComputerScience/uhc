@@ -20,6 +20,12 @@ DATA Err
 %%% Error structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1
+DATA Err
+  | PP          		pp         : {PP_Doc}
+  | Str          		str        : {String}
+%%]
+
 %%[(1 hmtyinfer || hmtyast).UnifyClash
 DATA Err
   | UnifyClash          ty1        : {Ty}
@@ -144,7 +150,6 @@ DATA Err
 %%][99
                         entities   : {[ThingAndRange HsName]}
 %%]]
-  | PP                  pp         : {PP_Doc}
 %%]
 
 %%[(8 codegen)

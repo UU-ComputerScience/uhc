@@ -22,7 +22,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn},{%{EH}Ty.TreeTrieKey})
 %%]
 
-%%[(10 hmtyinfer) import({%{EH}Base.Builtin})
+%%[(10 hmtyinfer) import({%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(41 hmtyinfer) import({%{EH}Ty.Trf.MergePreds}, {%{EH}Ty.FitsInCommon}, {%{EH}Opts}, Debug.Trace)

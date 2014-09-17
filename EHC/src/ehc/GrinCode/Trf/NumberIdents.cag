@@ -21,7 +21,7 @@ The parameters of a function are numbered consecutively after that.
 
 %%[(8 codegen grin wholeprogAnal) hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
 %%]
-%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
 %%]

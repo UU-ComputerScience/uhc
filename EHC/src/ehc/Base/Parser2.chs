@@ -12,7 +12,7 @@ This should be in Base.Parser, but because of module circularities in an additio
 %%[8 module {%{EH}Base.Parser2}
 %%]
 
-%%[8 import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
+%%[8 import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
 %%]
 
 %%[8 import({%{EH}Base.Parser})

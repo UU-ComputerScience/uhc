@@ -59,15 +59,36 @@ mkPPErr r = Err_PP r . pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.ppMsgErr hs
+%%[[1
+ppMsgErr' :: PP msg => Maybe msg -> PP_Doc -> PP_Doc
+ppMsgErr' msg err = mke msg err
+%%][99
+ppMsgErr' :: PP msg => Maybe msg -> PP_Doc -> Range -> PP_Doc
+ppMsgErr' msg err r
+  = mkre (mke msg err)
+%%]]
+  where mke Nothing  err = err
+        mke (Just m) err = m >|< ":" >-< indent 2 err
+%%[[99
+        mkre x | isEmptyRange r = x
+               | otherwise      = r  >|< ":" >-< indent 2 x
+%%]]
+
+%%[[1
 ppMsgErr :: PP msg => msg -> PP_Doc -> PP_Doc
-ppMsgErr msg err = msg  >|< ":" >-< indent 2 err
-%%]
-%%[99 -1.ppMsgErr hs
+ppMsgErr msg err = ppMsgErr' (Just msg) err
+%%][99
 ppMsgErr :: PP msg => msg -> PP_Doc -> Range -> PP_Doc
-ppMsgErr msg err r
-  = mke (msg >|< ":" >-< indent 2 err)
-  where mke x | isEmptyRange r = x
-              | otherwise      = r  >|< ":" >-< indent 2 x
+ppMsgErr msg err r = ppMsgErr' (Just msg) err r
+%%]]
+
+%%[[1
+ppNoMsgErr :: PP_Doc -> PP_Doc
+ppNoMsgErr err = ppMsgErr' (Nothing :: Maybe PP_Doc) err
+%%][99
+ppNoMsgErr :: PP_Doc -> Range -> PP_Doc
+ppNoMsgErr err r = ppMsgErr' (Nothing :: Maybe PP_Doc) err r
+%%]]
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs
@@ -150,6 +171,18 @@ strCapHeading kind title@(ht:tt)
 %%[1
 ATTR Err [ | | pp: PP_Doc ]
 ATTR ErrL [ | | ppL: {[PP_Doc]} ]
+%%]
+
+%%[1
+SEM Err
+  | PP          		lhs     .  pp   =   ppNoMsgErr  @pp
+%%[[99
+                                                        @range
+%%]]
+  | Str          		lhs     .  pp   =   ppNoMsgErr  (pp @str)
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[(1 hmtyinfer || hmtyast)
@@ -336,7 +369,6 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | PP                  lhs     .  pp   =   @pp
 %%]
 
 %%[(8 codegen)

@@ -2,7 +2,7 @@
 %%% Prettyprint Grin ByteCode program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}GrinByteCode.ToC} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}GrinByteCode})
+%%[(8 codegen grin) hs module {%{EH}GrinByteCode.ToC} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Opts},{%{EH}GrinByteCode})
 %%]
 
 %%[(8 codegen grin) hs import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},qualified {%{EH}Config} as Cfg,{%{EH}GrinByteCode}, {%{EH}LamInfo})

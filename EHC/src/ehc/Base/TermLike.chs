@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.TermLike} import(UU.Scanner.Position,UHC.Util.Utils,{%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin})
+%%[1 module {%{EH}Base.TermLike} import(UU.Scanner.Position,UHC.Util.Utils,{%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.HsName.Builtin})
 %%]
 
 %%[1 import(Control.Applicative((<|>)), Control.Monad, Data.Maybe)

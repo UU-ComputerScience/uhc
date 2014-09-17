@@ -10,7 +10,7 @@
 %%[1 module {%{EH}Gam} import({%{EH}Gam.Base}) export(module {%{EH}Gam.Base})
 %%]
 
-%%[1 module {%{EH}Gam} import(Data.List,UHC.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect})
+%%[1 module {%{EH}Gam} import(Data.List,UHC.Util.Utils,{%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}NameAspect})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).Ty import({%{EH}Ty})

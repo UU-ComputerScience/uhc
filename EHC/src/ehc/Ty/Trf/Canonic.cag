@@ -36,7 +36,7 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 \verb@Impls_Nil@, and removed in the type itself.
 %%]
 
-%%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2})
+%%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2})
 %%]
 
 %%[(9 hmtyinfer) hs import(Data.Maybe,qualified Data.Set as Set)
@@ -52,7 +52,7 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 %%]
 %%[(90 hmtyinfer) hs import({%{EH}Gam.Full})
 %%]
-%%[(98 hmtyinfer) hs import({%{EH}Base.Builtin})
+%%[(98 hmtyinfer) hs import({%{EH}Base.HsName.Builtin})
 %%]
 %%[(98 hmtyinfer) hs import(Control.Applicative)
 %%]

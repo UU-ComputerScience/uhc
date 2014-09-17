@@ -16,7 +16,7 @@ No special reason except it is the first transformation.
 %%[(8 codegen) hs module {%{EH}Core.Trf.EtaRed} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})

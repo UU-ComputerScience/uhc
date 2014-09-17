@@ -5,7 +5,7 @@
 %%[(8 codegen) hs module {%{EH}CodeGen.Const}
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(8 codegen) hs import({%{EH}CodeGen.RefGenerator})

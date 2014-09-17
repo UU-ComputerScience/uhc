@@ -7,7 +7,7 @@
 %%% Basic/shared parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Parser} import(UU.Parsing, UHC.Util.Utils, UHC.Util.ParseUtils, UHC.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
+%%[8 module {%{EH}Base.Parser} import(UU.Parsing, UHC.Util.Utils, UHC.Util.ParseUtils, UHC.Util.ScanUtils, {%{EH}Base.HsName.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
 %%]
 
 %%[8 import({%{EH}Base.ParseUtils}) export(module {%{EH}Base.ParseUtils})

@@ -8,7 +8,7 @@
 %%[(7 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
-%%[(7 hmtyinfer) hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin})
+%%[(7 hmtyinfer) hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin})
 %%]
 %%[(7 hmtyinfer) hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]

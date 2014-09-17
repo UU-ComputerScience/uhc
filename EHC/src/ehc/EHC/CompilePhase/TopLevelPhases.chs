@@ -952,7 +952,8 @@ cpEhcCoreImport
        ; let (_,opts) = crBaseInfo' cr
        
        ; if isBinary
-         then cpDecodeCore Cfg.suffixDotlessInputOutputBinaryCore modNm
+         then -- cpDecodeCore (Just Cfg.suffixDotlessInputOutputBinaryCore) modNm
+              cpDecodeCore Nothing modNm
          else cpParseCoreWithFPath Nothing modNm
        ; cpFoldCoreMod modNm
        ; cpGetCoreModnameAndImports modNm

@@ -7,7 +7,7 @@
 %%% Erase type info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.EraseExtractTysigCore} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen) hs module {%{EH}Core.Trf.EraseExtractTysigCore} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) hs import({%{EH}AbstractCore})

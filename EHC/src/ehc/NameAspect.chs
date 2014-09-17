@@ -2,7 +2,7 @@
 %%% Aspect of name, for use by HS -> EH
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}NameAspect} import({%{EH}Base.Common},{%{EH}Base.Builtin},qualified {%{EH}EH} as EH)
+%%[1 module {%{EH}NameAspect} import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin},qualified {%{EH}EH} as EH)
 %%]
 
 %%[1 import(UHC.Util.Pretty)

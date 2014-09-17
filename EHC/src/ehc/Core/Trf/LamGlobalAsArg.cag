@@ -31,7 +31,7 @@ in ...f g...
 %%[(8 codegen) hs module {%{EH}Core.Trf.LamGlobalAsArg} import(UHC.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 codegen) hs import({%{EH}Core.Utils})

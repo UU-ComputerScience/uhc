@@ -7,7 +7,7 @@
 %%% TyCore base
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) hs module {%{EH}TyCore.Base} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts})
+%%[(8 codegen tycore) hs module {%{EH}TyCore.Base} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts})
 %%]
 %%[(8 codegen tycore) hs import ({%{EH}TyCore},{%{EH}Ty.ToTyCore}) export(module {%{EH}TyCore},module {%{EH}Ty.ToTyCore})
 %%]

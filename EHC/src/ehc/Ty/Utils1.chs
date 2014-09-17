@@ -8,7 +8,7 @@
 %%[(2 hmtyinfer || hmtyast) import(UHC.Util.Pretty) 
 %%]
 
-%%[(98 hmtyinfer || hmtyast) import({%{EH}Base.Builtin}, {%{EH}Opts}) 
+%%[(98 hmtyinfer || hmtyast) import({%{EH}Base.HsName.Builtin}, {%{EH}Opts}) 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -12,7 +12,7 @@ Various Java like code generation utility snippets.
 %%[(8 jazy || javascript) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 
-%%[(8 jazy || javascript) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims})
+%%[(8 jazy || javascript) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims})
 %%]
 
 %%[(8 jazy || javascript) hs import(UHC.Util.Pretty, UHC.Util.Utils, qualified UHC.Util.FastSeq as Seq)

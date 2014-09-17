@@ -8,7 +8,7 @@ do not delay constructorfunctions: instead of F/Con, use C/Con;
 
 %%[(8 codegen grin wholeprogAnal) hs module {%{EH}GrinCode.Trf.CleanupPass} export(cleanupPass)
 %%]
-%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Data.Maybe(fromJust))
+%%[(8 codegen grin wholeprogAnal) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.HsName.Builtin}(hsnIsConstructorName), Data.Maybe(fromJust))
 %%]
 %%[(8 codegen grin wholeprogAnal) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]

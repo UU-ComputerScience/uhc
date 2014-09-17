@@ -7,10 +7,13 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,UHC.Util.Utils)
+%%[1 module {%{EH}Base.Common}
 %%]
 
-%%[1 module {%{EH}Base.Common} import({%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
+%%[1 import(UU.Scanner.Position,UHC.Util.Utils)
+%%]
+
+%%[1 import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
 %%[1 import({%{EH}Base.UID}) export(module {%{EH}Base.UID})
@@ -19,25 +22,13 @@
 %%[1 import(UHC.Util.AssocL) export(module UHC.Util.AssocL)
 %%]
 
-%%[1 import(UHC.Util.Pretty, Data.List) export(ppSpaced, ppCon, ppCmt)
+%%[1 import(UHC.Util.Pretty, Data.List)
 %%]
 
 %%[1 import(Control.Applicative((<|>)))
 %%]
 
-%%[1 export(ParNeed(..), ParNeedL, parNeedApp)
-%%]
-
-%%[1 export(Fixity(..))
-%%]
-
-%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2)
-%%]
-
-%%[1 export(NmLev,nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule)
-%%]
-
-%%[1 import(UHC.Util.ScanUtils) export(tokMkQName,tokMkQNames,tokMkInt,tokMkStr)
+%%[1 import(UHC.Util.ScanUtils)
 %%]
 
 %%[1.Token hs import(UU.Scanner.Token)
@@ -49,12 +40,6 @@
 %%[5 -1.Token hs import({%{EH}Scanner.Token}, {%{EH}Scanner.Machine(scanpredIsIdChar, scanpredIsKeywExtra)})
 %%]
 
-%%[2 export(unions)
-%%]
-
-%%[4 export(listCombineUniq)
-%%]
-
 %%[7777 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
 %%]
 
@@ -64,22 +49,13 @@
 %%[7_2 export(threadMap,Belowness(..), groupAllBy, mergeListMap)
 %%]
 
-%%[7 export(uidHNm, uidQualHNm)
-%%]
-
 %%[8 import (UHC.Util.FPath,System.IO,System.Environment,System.Exit,Data.Char,Data.Maybe,Numeric)
 %%]
 
-%%[8 export(putCompileMsg)
+%%[8 import({%{EH}Base.Fld}) export(module {%{EH}Base.Fld})
 %%]
 
-%%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
-%%]
-
-%%[9 export(ppListV)
-%%]
-
-%%[9 export(snd3,thd)
+%%[8 import (qualified Data.Map as Map)
 %%]
 
 %%[(8 codegen || hmtyinfer || hmtyast) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
@@ -207,7 +183,7 @@ ppAppTop' cc@(conNm,_) [_,a] [True,_] _ | hsnIsArrow conNm || hsnIsPrArrow conNm
 ppAppTop' cc argL _ dflt                                                            = ppAppTop cc argL dflt
 %%]
 
-%%[1.PP.NeededByExpr
+%%[1.PP.NeededByExpr export(ppCon, ppCmt)
 ppCon :: HsName -> PP_Doc
 ppCon nm =  if    hsnIsProd nm
             then  ppParens (text (replicate (hsnProdArity nm - 1) ','))
@@ -217,7 +193,7 @@ ppCmt :: PP_Doc -> PP_Doc
 ppCmt p = "{-" >#< p >#< "-}"
 %%]
 
-%%[1.PP.Rest
+%%[1.PP.Rest export(ppSpaced)
 
 ppSpaced :: PP a => [a] -> PP_Doc
 ppSpaced = ppListSep "" "" " "
@@ -254,22 +230,22 @@ mkExtAppPP = mkExtAppPP' "|"
 instance (PP a, PP b) => PP (a,b) where
   pp (a,b) = ppParensCommas' [pp a,pp b]
 
-%%[8
+%%[8 export(ppPair)
 ppPair :: (PP a, PP b) => (a,b) -> PP_Doc
 ppPair (x,y) = ppParens (pp x >|< "," >|< pp y)
 %%]
 
-%%[8
+%%[8 export(showPP)
 showPP :: PP a => a -> String
 showPP x = disp (pp x) 100 ""
 %%]
 
-%%[8
+%%[8 export(ppFM)
 ppFM :: (PP k,PP v) => Map.Map k v -> PP_Doc
 ppFM = ppAssocL . Map.toList
 %%]
 
-%%[9
+%%[9 export(ppListV)
 ppListV :: PP a => [a] -> PP_Doc
 ppListV = vlist . map pp
 %%]
@@ -278,7 +254,7 @@ ppListV = vlist . map pp
 %%% Putting stuff on output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(putCompileMsg)
 putCompileMsg :: Verbosity -> Verbosity -> String -> Maybe String -> HsName -> FPath -> IO ()
 putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
   = if optsVerbosity >= v
@@ -313,7 +289,7 @@ writeBinaryToFile = writeToFile' True
 %%% Prio computation for need of parenthesis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.ParNeed
+%%[1.ParNeed export(ParNeed(..), ParNeedL, parNeedApp)
 data ParNeed =  ParNotNeeded | ParNeededLow | ParNeeded | ParNeededHigh | ParOverrideNeeded
                 deriving (Eq,Ord)
 
@@ -554,12 +530,12 @@ emptyCTagsMp = []
 %%% List related, should move in time to general library
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.unions
+%%[2.unions export(unions)
 unions :: Eq a => [[a]] -> [a]
 unions = foldr union []
 %%]
 
-%%[4.listCombineUniq
+%%[4.listCombineUniq export(listCombineUniq)
 listCombineUniq :: Eq a => [[a]] -> [a]
 listCombineUniq = nub . concat
 %%]
@@ -596,7 +572,7 @@ strBlankPad :: Int -> String -> String
 strBlankPad n s = s ++ replicate (n - length s) ' '
 %%]
 
-%%[9
+%%[9 export(snd3,thd)
 snd3 :: (a,b,c) -> b
 snd3 (a,b,c) = b
 
@@ -645,7 +621,7 @@ data CompilePoint
 %%% Fixity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1 export(Fixity(..))
 data Fixity
   = Fixity_Infix | Fixity_Infixr | Fixity_Infixl
   deriving (Eq,Ord,Show,Enum)
@@ -685,7 +661,7 @@ instance Ord Pos where
 %%% Range
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2)
 data Range
   = Range_Range    !Pos !Pos
   | Range_Unknown
@@ -826,7 +802,7 @@ data InstDerivingFrom
 %%% Levels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
+%%[1 hs export(NmLev,nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule)
 type NmLev = Int
 
 nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule :: NmLev
@@ -847,7 +823,7 @@ tokenVal = genTokVal
 %%[5 -1.tokenVal hs
 %%]
 
-%%[1 hs
+%%[1 hs export(tokMkInt,tokMkStr)
 -- Assumption: tokTpIsInt (genTokTp t) == True
 tokMkInt :: Token -> Int
 tokMkInt t
@@ -860,12 +836,12 @@ tokMkStr :: Token -> String
 tokMkStr = tokenVal
 %%]
 
-%%[1.tokMkQName hs
+%%[1.tokMkQName hs export(tokMkQName)
 tokMkQName :: Token -> HsName
 tokMkQName = hsnFromString . tokenVal
 %%]
 
-%%[7 -1.tokMkQName hs
+%%[7 -1.tokMkQName hs export(tokMkQName)
 tokMkQName :: Token -> HsName
 tokMkQName t
   = case genTokTp t of
@@ -875,7 +851,7 @@ tokMkQName t
       _                       -> mkHNm $ concat $ intersperse "." $ tokenVals t		-- ok
       _                       -> mkHNm $ concat $ tokenVals t						-- not ok
 
-%%[1 hs
+%%[1 hs export(tokMkQNames)
 tokMkQNames :: [Token] -> [HsName]
 tokMkQNames = map tokMkQName
 
@@ -1231,11 +1207,6 @@ metaLevSo  = metaLevKi  + 1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
-deriving instance Typeable1 Fld'
-deriving instance Data x => Data (Fld' x)
-%%]
-
-%%[50
 deriving instance Typeable VarUIDHsName
 deriving instance Data VarUIDHsName
 
@@ -1282,12 +1253,12 @@ type VarIdS   = Set.Set UID
 %%% HsName functionality for UID
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[7 export(uidHNm)
 uidHNm :: UID -> HsName
 uidHNm = mkHNm -- hsnFromString . show
 %%]
 
-%%[7
+%%[7 export(uidQualHNm)
 uidQualHNm :: HsName -> UID -> HsName
 uidQualHNm modnm uid =
 %%[[50
@@ -1481,108 +1452,8 @@ showStr2stMp = concat . intersperse " " . Map.keys
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Field access, holding both name and offset, for delayed decision about this
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs export(Fld'(..), Fld, noFld)
--- | Field (combined dereference + field access), doubly represented by index and name
-data Fld' inx
-  = Fld
-      { _fldNm	:: Maybe HsName
-      , _fldInx	:: Maybe inx
-      }
-
-type Fld = Fld' Int
-
-noFld :: Fld
-noFld = Fld (Just hsnUnknown) (Just 0)
-%%]
-
-%%[(8 codegen) hs export(mkFldNm, mkFldInx)
--- | Make a Fld holding only a name
-mkFldNm :: HsName -> Fld' inx
-mkFldNm n = Fld (Just n) Nothing
-
--- | Make a Fld holding only an inx
-mkFldInx :: inx -> Fld' inx
-mkFldInx i = Fld Nothing (Just i)
-%%]
-
-%%[8 hs
-instance Eq inx => Eq (Fld' inx) where
-  (Fld {_fldInx=Just i1}) == (Fld {_fldInx=Just i2}) = i1 == i2
-  (Fld {_fldNm =     n1}) == (Fld {_fldNm =     n2}) = n1 == n2
-
-instance Ord inx => Ord (Fld' inx) where
-  (Fld {_fldInx=Just i1}) `compare` (Fld {_fldInx=Just i2}) = i1 `compare` i2
-  (Fld {_fldNm =     n1}) `compare` (Fld {_fldNm =     n2}) = n1 `compare` n2
-
-instance Show inx => Show (Fld' inx) where
-  -- show f = maybe (maybe "??Fld" show $ _fldNm f) show $ _fldInx f
-  show (Fld {_fldNm=Just n , _fldInx=Just i }) = show n ++ "(" ++ show i ++ ")"
-  show (Fld {_fldNm=Nothing, _fldInx=Just i }) =                  show i
-  show (Fld {_fldNm=Just n , _fldInx=Nothing}) = show n
-  show _                                       = "??Fld"
-
-instance Show inx => PP (Fld' inx) where
-  pp = pp . show
-
-instance HSNM inx => HSNM (Fld' inx) where
-  mkHNm = fldNm
-%%]
-
-%%[8 hs export(fldFoldNmInx, fldFoldInxNm)
--- | Fold over Fld, preference to name
-fldFoldNmInx :: (HsName -> x) -> (inx -> x) -> x -> Fld' inx -> x
-fldFoldNmInx n i dflt f = maybe (maybe dflt i $ _fldInx f) n $ _fldNm f
-
--- | Fold over Fld, preference to inx
-fldFoldInxNm :: (HsName -> x) -> (inx -> x) -> x -> Fld' inx -> x
-fldFoldInxNm n i dflt f = maybe (maybe dflt n $ _fldNm f) i $ _fldInx f
-%%]
-
-%%[8 hs export(fldInt, fldNm)
--- | Fld access preferred by name
-fldNm :: HSNM inx => Fld' inx -> HsName
-fldNm = fldFoldNmInx id mkHNm hsnUnknown -- maybe (maybe hsnUnknown mkHNm $ _fldInx f) id $ _fldNm f
-{-# INLINE fldNm #-}
-
--- | Fld access preferred by index
-fldInt :: Fld -> Int
-fldInt = fldFoldInxNm (const 0) id 0 -- maybe 0 id $ _fldInx f
-{-# INLINE fldInt #-}
-%%]
-
-%%[(8 codegen) hs export(fldMapNm)
--- |
-fldMapNm :: (HsName -> HsName) -> Fld' inx -> Fld' inx
-fldMapNm f fld = fld {_fldNm = fmap f $ _fldNm fld}
-%%]
-
-%%[(8 codegen) hs export(RefOfFld(..))
-class RefOfFld fld a where
-  refOfFld :: fld -> a
-
-instance RefOfFld (Fld' inx) (Fld' inx) where
-  refOfFld = id
-
-instance RefOfFld Fld Int where
-  refOfFld = fldInt
-
-instance HSNM inx => RefOfFld (Fld' inx) HsName where
-  refOfFld = fldNm
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[50
-instance Serialize x => Serialize (Fld' x) where
-  sput (Fld a b) = sput a >> sput b
-  sget = liftM2 Fld sget sget
-%%]
 
 %%[50
 instance Binary KnownPrim where

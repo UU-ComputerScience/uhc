@@ -7,7 +7,7 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Quantify} import(UHC.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyQuantify)
+%%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Quantify} import(UHC.Util.Utils,{%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyQuantify)
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},UHC.Util.Pretty)

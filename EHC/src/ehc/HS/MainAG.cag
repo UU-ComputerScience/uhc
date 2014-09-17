@@ -11,7 +11,7 @@
 %%[1 hs module {%{EH}HS.MainAG}
 %%]
 
-%%[1 hs import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.Builtin},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, UHC.Util.DependencyGraph)
+%%[1 hs import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, UHC.Util.DependencyGraph)
 %%]
 
 %%[1 hs import(qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils)

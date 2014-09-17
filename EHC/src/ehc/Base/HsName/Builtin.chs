@@ -2,7 +2,7 @@
 %%% Builtin: names, ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Builtin} import({%{EH}Base.HsName}, Data.Maybe)
+%%[1 module {%{EH}Base.HsName.Builtin} import({%{EH}Base.HsName}, Data.Maybe)
 %%]
 
 %%[1 import(UHC.Util.Utils)

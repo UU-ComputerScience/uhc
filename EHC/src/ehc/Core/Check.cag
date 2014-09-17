@@ -10,7 +10,7 @@
 %%[(50 codegen corein) hs module {%{EH}Core.Check}
 %%]
 
-%%[(50 codegen corein) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
+%%[(50 codegen corein) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
 %%[(50 codegen corein) hs import({%{EH}Base.TermLike},{%{EH}AbstractCore},{%{EH}Core})

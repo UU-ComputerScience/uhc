@@ -22,7 +22,7 @@
 %%[7 import(qualified Data.Set as Set)
 %%]
 
-%%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin})
+%%[8 import(Data.List,Data.Char,{%{EH}Base.HsName.Builtin})
 %%]
 
 %%[8 import(UHC.Util.FPath)
@@ -115,6 +115,9 @@ data CoreOpt
   | CoreOpt_Dump 				-- dump textual core output
   | CoreOpt_DumpBinary			-- dump binary core output
   | CoreOpt_DumpAlsoNonParseable-- dump also the parts which are not parseable
+%%]]
+%%[[(8 corerun)
+  | CoreOpt_Run					-- run after compilation
 %%]]
 %%[[(8 coresysf)
   | CoreOpt_SysF				-- 20120419, work in startup/progress: generate System F

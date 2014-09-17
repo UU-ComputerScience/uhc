@@ -12,7 +12,7 @@
 %%% Module adm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 module {%{EH}Module} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Error},{%{EH}NameAspect})
+%%[50 module {%{EH}Module} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Error},{%{EH}NameAspect})
 %%]
 
 %%[50 import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map)

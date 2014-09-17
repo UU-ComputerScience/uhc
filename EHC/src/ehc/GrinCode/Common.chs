@@ -6,7 +6,7 @@
 %%]
 %%[(8 codegen grin wholeprogAnal) import( qualified Data.Map as Map, Data.Maybe, qualified Data.Set as Set, Data.Array, Data.Monoid, Data.Char(isDigit) )
 %%]
-%%[(8 codegen grin wholeprogAnal) import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
+%%[(8 codegen grin wholeprogAnal) import( {%{EH}Base.Common}, {%{EH}Base.HsName.Builtin} )
 %%]
 %%[(8 codegen grin wholeprogAnal) import( {%{EH}GrinCode} )
 %%]

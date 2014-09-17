@@ -22,7 +22,7 @@ Transforms a Grin program to a Silly program.
 %%]
 %%[(8 codegen grin wholeprogAnal wholeprogC) hs import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
-%%[(8 codegen grin wholeprogAnal wholeprogC) hs import( {%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
+%%[(8 codegen grin wholeprogAnal wholeprogC) hs import( {%{EH}Base.HsName.Builtin}, {%{EH}Base.Common}, {%{EH}Opts}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin wholeprogAnal wholeprogC) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
