@@ -11,7 +11,7 @@
 %%[99 import(Data.List (intersperse), Data.Maybe, System.Environment (getArgs))
 %%]
 
-%%[99 import({%{EH}Base.Builtin} (hsnNm2GenerReprTuple))
+%%[99 import({%{EH}Base.HsName.Builtin} (hsnNm2GenerReprTuple))
 %%]
 
 %%[99
