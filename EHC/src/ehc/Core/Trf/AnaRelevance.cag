@@ -13,41 +13,41 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%% Type based simplifications
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin},{%{EH}Gam},{%{EH}Opts},{%{EH}Base.Optimize},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(8 core) hs module {%{EH}Core.Trf.AnaRelevance} import({%{EH}Ty},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin},{%{EH}Gam},{%{EH}Opts},{%{EH}Base.Optimize},{%{EH}Core},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative)
+%%[(8 core) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Control.Applicative)
 %%]
 
-%%[(8 codegen) hs import(UHC.Util.Utils)
+%%[(8 core) hs import(UHC.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Foreign.Extract})
+%%[(8 core) hs import({%{EH}Foreign.Extract})
 %%]
-%%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})
-%%]
-
-%%[(8 codegen) hs import({%{EH}AbstractCore},{%{EH}AnaDomain},{%{EH}AnaDomain.Utils})
+%%[(90 core) hs import({%{EH}CodeGen.BuiltinPrims},{%{EH}Foreign})
 %%]
 
-%%[(8 codegen hmtyinfer) hs import({%{EH}Gam},{%{EH}Gam.DataGam})
+%%[(8 core) hs import({%{EH}AbstractCore},{%{EH}AnaDomain},{%{EH}AnaDomain.Utils})
 %%]
 
-%%[(8 codegen) hs import({%{EH}LamInfo})
+%%[(8 core hmtyinfer) hs import({%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
-%%[(8 codegen) hs import({%{EH}AnaDomain.Trf.Instantiate})
+%%[(8 core) hs import({%{EH}LamInfo})
+%%]
+
+%%[(8 core) hs import({%{EH}AnaDomain.Trf.Instantiate})
 %%]
 
 -- debug only
-%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
+%%[(8 core) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonFFI},{Core/CommonBindNm},{Core/Trf/CommonStructureInfo},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
+%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonFFI},{Core/CommonBindNm},{Core/Trf/CommonStructureInfo},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
 WRAPPER CodeAGItf
 %%]
 
-%%[(99 codegen)
+%%[(99 core)
 -- PRAGMA strictcase
 PRAGMA nocycle
 %%]
@@ -56,7 +56,7 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(cmodTrfAnaRelevance)
+%%[(8 core) hs export(cmodTrfAnaRelevance)
 cmodTrfAnaRelevance
   :: EHCOpts
      -> DataGam
@@ -84,7 +84,7 @@ cmodTrfAnaRelevance
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
@@ -92,14 +92,14 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%% Configuration, only for debugging purposes to temporarily switch on/off specfic parts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 core) hs
 data WhatToRelevInfer
   = WhatToRelevInfer_InstToBot			-- specialize/instantiate types to bot (strict)
   | WhatToRelevInfer_Quant				-- quantify
   deriving Eq
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllCodeNT [ whatTo: {[WhatToRelevInfer]} | | ]
 
 SEM CodeAGItf
@@ -113,13 +113,13 @@ SEM CodeAGItf
 %%% Gathering LamInfo, providing hook for Core/CommonLamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CodeAGItf
   | AGItf       loc         .	howUnionGathLamInfo
   												=	id
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CodeAGItf
   | AGItf       loc         .   howMergeLamInfo	=   (\(LamInfo {laminfoBindAspMp=m}) i -> i {laminfoBindAspMp = m `Map.union` laminfoBindAspMp i})
 %%]
@@ -128,7 +128,7 @@ SEM CodeAGItf
 %%% Newly bound LamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core)
 SEM CBound
   | Bind        loc         .   doBindStrict    =   WhatToRelevInfer_InstToBot `elem` @lhs.whatTo
                 lhs         .   bindLamMp       =   let l = [ (acbaspkeyDefaultRelevTy, LamInfoBindAsp_RelevTy @bindTy) ]
@@ -141,7 +141,7 @@ SEM CBound
 %%% DataGam required tags (strictness info), FFI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core)
 ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%]
 
@@ -149,7 +149,7 @@ ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%% Type sigs for AG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 SEM *
   | *           loc         .   amso            :   {AMSOut RelevTy}
                 loc         .   amsoUp          :   {AMSOut RelevTy}
@@ -165,7 +165,7 @@ SEM *
 %%% Utils: subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 core) hs
 type REnv    = Gam HsName RelevTy
 
 -- | lookup in REnv first, then global LamMp
@@ -177,7 +177,7 @@ renvLookup n renv lammp = gamLookup n renv <|> (fmap libindaspRelevTy $ lamMpLoo
 %%% Unique counter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllCodeNT [ | gUniq: UID | ]
 
 SEM CodeAGItf
@@ -190,7 +190,7 @@ SEM CodeAGItf
 %%% Type env
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllCodeNT [ env: REnv | | ]
 
 SEM CodeAGItf
@@ -227,7 +227,7 @@ SEM CAlt
                 loc			.	patFldUsedTyL	:	{[RelevTy]}
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CPat CPatFldL CPatFld [ | patFldTyL: {[(RelevTy,RelevTy)]} | ]
 
 SEM CPatFld
@@ -237,7 +237,7 @@ SEM CPatFld
 
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllBind -- AllPatFld AllPat
               [ | | gathEnv    USE {`gamUnion`} {emptyGam}: REnv ]
 ATTR AllBind  [ | | gathRecEnv USE {`gamUnion`} {emptyGam}: REnv ]
@@ -251,7 +251,7 @@ SEM CBound
 %%% Type down
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllExpr [ knTy: RelevTy | | ]
 
 SEM CModule
@@ -273,7 +273,7 @@ SEM CPatFld
   | Fld         offset      .   knTy            =   @lhs.knTy -- Case
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 -- | the type of the case itself (instead of alternatives)
 ATTR AllPat AllAlt [ knTyCase: RelevTy | | ]
 
@@ -281,7 +281,7 @@ SEM CExpr
   | Case        alts        .   knTyCase        =   @lhs.knTy
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CAltL
   | Cons        hd          .   knTy            =   @altKnDwTy
 %%]
@@ -290,7 +290,7 @@ SEM CAltL
 %%% Analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CExpr
   | Int Char    loc         .   litTy           =   bot
                             .   (amso,ams)      =   amsLE @lhs.rvarMp @litTy @lhs.knTy
@@ -348,7 +348,7 @@ SEM CExpr
                                                                  | otherwise = freshStrict u
                                                     in  RelevTy_Fun RQuant_None [] [] [lOrS (not e) u | (e,u) <- zip @primArgNeedsEvalL ua] (lOrS @primResNeedsEval ur)
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CAltL
   | Cons        loc         .   (amsoDw,amsDw)  =   amsLE @lhs.rvarMp @altKnDwTy @lhs.knTy     -- both are guaranteed vars, so this enforces a Qual
                             .   rvarMpDw        =   amsLocalVarMp @amsDw |+> @lhs.rvarMp
@@ -369,7 +369,7 @@ SEM CAltL
 %%% Alts of case
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CAltL [ altId: UID  altNrMax: Int | | altNr: Int ]
 
 SEM CAltL
@@ -383,7 +383,7 @@ SEM CExpr
                 loc         .   lUniq           :   UNIQUEREF gUniq
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CAltL
   | Cons        loc         .   altKnUpTy       =   fresh @lUniq
                 loc         .   altKnUpTy       :   RelevTy
@@ -393,7 +393,7 @@ SEM CAltL
                 loc         .   lUniq2          :   UNIQUEREF gUniq
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CExpr CAltL [ altMbScrutTy: MbRelevTy | | ]
 ATTR AllBind [ | | altMbScrutTy USE {<|>} {Nothing} : MbRelevTy ]
 
@@ -409,7 +409,7 @@ SEM CAlt CBound CModule MbCExpr CPatFld
 %%% RelevCoe gathering, to be smartly combined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CExpr CBound CAlt [ | | coe: RelevCoe ]
 
 SEM CExpr
@@ -446,7 +446,7 @@ SEM CPatFld
 %%% Coe up over app spine
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CExpr [ | | funCoe: RelevCoe ]
 
 SEM CExpr
@@ -464,7 +464,7 @@ SEM CExpr
 %%% Type up
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CExpr CAltL [ | | ty: RelevTy ]
 
 SEM CExpr
@@ -476,7 +476,7 @@ SEM CExpr
                 lhs         .   ty              =   RelevTy_Err "unimpl"
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CAltL
   | *           lhs         .   ty              =   @lhs.knTy
 
@@ -486,7 +486,7 @@ SEM CAltL
 %%% VarMp gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllCodeNT [ | rvarMp: RVarMp | ]
 
 SEM CodeAGItf
@@ -496,7 +496,7 @@ SEM CBound
   | Bind        lhs         .   rvarMp          =   @quantVarMp |+> @rvarMpExpr
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CExpr
   | Var Int Char Tup FFI
                 lhs         .   rvarMp          =   amsLocalVarMp @ams |+> @lhs.rvarMp
@@ -504,13 +504,13 @@ SEM CExpr
   | Let         body        .   rvarMp          =   @binds.extraBindRVarMp |+> @binds.rvarMp
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CAltL
   | Cons        hd          .   rvarMp          =   @rvarMpUp
 %%]
   				tl			.	rvarMp			=	@lhs.rvarMp
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllBind [ forQuantRVarMp: RVarMp | | ]
 
 SEM CExpr
@@ -529,7 +529,7 @@ SEM CPatFld
 %%% Final VarMp distribution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllCodeNT [ finalRVarMp: RVarMp | | ]
 
 SEM CodeAGItf
@@ -546,7 +546,7 @@ SEM CAltL
 SEM CExpr
   | Let			binds		.	finalRVarMp		=	@bindsSolveVarMp
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllBind [ | | extraBindRVarMp USE {|+>} {emptyRVarMp}: RVarMp ]
 
 SEM CBound
@@ -558,7 +558,7 @@ SEM CBound
 %%% Constraint gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllCodeNT [ | | qualS USE {`Set.union`} {Set.empty} : RelevQualS ]
 
 SEM CExpr
@@ -570,12 +570,12 @@ SEM CExpr
 %%]
   | Let			lhs			.	qualS			=	Set.union @bindsQualSOuter @body.qualS
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CBound
   | Bind        lhs         .   qualS           =   Set.unions [amsGathQual @amsBind, @expr.qualS]
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CAltL [ | | altQualSL: {[RelevQualS]} ]
 
 SEM CAltL
@@ -595,7 +595,7 @@ Solving then needs to be done for the conditionally arising constraints.
 20101130: TBD for let expressions.
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CExpr
   | Case        loc         .   altQualSLSubs   =   map (Set.map (@alts.rvarMp `varUpd`)) @alts.altQualSL
                             .   altQualSLSolv1  =   let bnd = @lhs.boundRelevTyVarS
@@ -612,7 +612,7 @@ SEM CExpr
                 loc			.	altQualSLSolv1	:	{[(RelevQualS,RVarMp)]}
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CExpr
   | Case        loc         .   altQualSLSolv2  =   let s (q,m) = (Set.map (m3 `varUpd`) q', m4)
                                                                 where m2 = m |+> @lhs.finalRVarMp
@@ -623,7 +623,7 @@ SEM CExpr
                 loc         .   altSolveLVarMp  :   {[RVarMp]}
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CAltL [ altSolveLVarMp: {[RVarMp]} | | ]
 
 SEM CAltL
@@ -631,7 +631,7 @@ SEM CAltL
                                                 =   hdAndTl' (panic "altSolveLVarMp") @lhs.altSolveLVarMp
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CExpr
   | Let         loc         .   bindsCanParticpateInOuterSolving
                                                 =   @categ == CBindCateg_Strict
@@ -646,7 +646,7 @@ SEM CExpr
                                                 :   Bool
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CExpr
   | Let         loc         .   bindsQualSSolv2 =   let (q,m) = @bindsQualSSolv1
                                                         m2 = m |+> @lhs.finalRVarMp
@@ -659,16 +659,16 @@ SEM CExpr
 %%% Variables already bound
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllExpr [ boundRelevTyVarS: UIDS | | ]
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CBound
   | Bind        expr        .   boundRelevTyVarS=   @exprBoundS
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CModule
   | Mod         expr        .   boundRelevTyVarS=   Set.empty
 %%]
@@ -677,7 +677,7 @@ SEM CModule
 %%% Type of a binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CBound
   | Bind        loc         .   (ty,exprKnTy,exprEnv,exprBoundS,bindConstrain)
                                                 =   let noConstrain _ _ _ = (emptyAnaMatchState, Nothing)
@@ -764,7 +764,7 @@ SEM CBound
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllBound [ | | tyAspectL  USE {++} {[]}: {[CBound]} ]
 ATTR AllBound [ | | valAspectL USE {++} {[]}: {[CBound]} ]
 %%]
@@ -773,7 +773,7 @@ ATTR AllBound [ | | valAspectL USE {++} {[]}: {[CBound]} ]
 %%% Transformation: plain
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 core) hs
 dbg opts t1 t2 amso ams = CExpr_Ann (CExprAnn_Debug $ showPP $ "?:" >#< t1 >#< "<=" >#< t2 >-< "ams:" >#< ams >-< "amso:" >#< amso)
 dbgApp opts a f f2 = CExpr_Ann (CExprAnn_Debug $ showPP $ "argTy:" >#< a >#< "funTy:" >#< f >#< "func.ty:" >#< f2)
 dbgBind opts m env = CExpr_Ann (CExprAnn_Debug $ showPP $ "env:" >#< (m `varUpd` env))
@@ -782,13 +782,13 @@ dbgCase opts bnd as asslv asinter = CExpr_Ann (CExprAnn_Debug $ showPP $ "bnd:" 
         ppl l = ppCurlysCommasBlock (map pp1 l)
 %%]
 
-%%[(8 codegen) hs
+%%[(8 core) hs
 annCoe :: RelevCoe -> CExpr -> CExpr
 annCoe RelevCoe_Id e =                            e
 annCoe c           e = CExpr_Ann (CExprAnn_Coe c) e
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CExpr
   | Var         loc         .   dbg             =   dbg     @lhs.opts @envTy @lhs.knTy @amso @ams
   | Int Char    loc         .   dbg             =   dbg     @lhs.opts @litTy @lhs.knTy @amso @ams
@@ -797,7 +797,7 @@ SEM CExpr
   | Case        loc         .   dbg             =   dbgCase @lhs.opts @lhs.boundRelevTyVarS @altQualSLSubs @altQualSLSolv @altQualSIntersect
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
@@ -833,7 +833,7 @@ SEM CPatFld
 %%% Transformation: optimized
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllExpr [ | | oTrf: SELF ]
 
 SEM CBound

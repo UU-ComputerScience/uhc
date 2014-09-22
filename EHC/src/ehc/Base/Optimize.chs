@@ -188,7 +188,7 @@ data OptimizationScope
 %%[[(50 codegen grin)
   | OptimizationScope_WholeGrin			-- whole program, starting with GRIN
 %%]]
-%%[[(50 codegen)
+%%[[(50 codegen core)
   | OptimizationScope_WholeCore			-- whole program, starting with Core
 %%]]
   deriving (Eq,Ord,Enum,Bounded)
@@ -198,7 +198,7 @@ instance Show OptimizationScope where
 %%[[(50 codegen grin)
   show OptimizationScope_WholeGrin = "perwholegrin"
 %%]]
-%%[[(50 codegen)
+%%[[(50 codegen core)
   show OptimizationScope_WholeCore = "perwholecore"
 %%]]
 

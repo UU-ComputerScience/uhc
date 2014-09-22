@@ -20,7 +20,7 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 #
 # 90-99 are reserved for very Haskell specific functionality (like deriving)
 # 100 is Haskell
-# 101 is used (temporary hopefully) for debugging performance problems
+# 101 is UHC as to be installed
 ###########################################################################################
 
 # 1 : explicitly typed lambda calculus
@@ -56,7 +56,7 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 # 100: - debugging/tracing stuff
 # 101: same as 100, but built for installation
 # 102: - removal of necessary stuff (i.e. error messages) to play with AG dependencies, mem usage
-# 103: 99 + Holgers debugger work
+# 103: same as 100, but built for cabal based installation of platform independent subset of UHC
 
 # 40: + GADT experiment
 # 41: + GADT by Arie Middelkoop
@@ -72,6 +72,7 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 EHC_PREL_VARIANT				:= 99
 EHC_UHC_VARIANT					:= 100
 EHC_UHC_INSTALL_VARIANT			:= 101
+EHC_UHC_CABAL_VARIANT			:= 103
 EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT)
 EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
 EHC_LTM_VARIANTS				:= $(EHC_GMP_VARIANTS)
@@ -84,7 +85,7 @@ EHC_OTHER_NOCODE_VARIANTS		:=
 EHC_OTHER_NOPREL_VARIANTS		:= 
 #EHC_OTHER_NOCODE_VARIANTS		:= 4_2 6_4 7_2
 #EHC_OTHER_NOPREL_VARIANTS		:= 8_2
-EHC_OTHER_PREL_VARIANTS			:= 102 103
+EHC_OTHER_PREL_VARIANTS			:= 102 $(EHC_UHC_CABAL_VARIANT)
 EHC_OTHER_CODE_VARIANTS			:= $(EHC_OTHER_NOPREL_VARIANTS) $(EHC_OTHER_PREL_VARIANTS) 
 EHC_OTHER_VARIANTS				:= $(EHC_OTHER_NOCODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
 EHC_CODE_VARIANTS				:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
@@ -138,8 +139,9 @@ endif
 # Names of compiler executables
 ###########################################################################################
 
-EHC_EXEC_NAME		:= @EHC_EXEC_NAME@
-UHC_EXEC_NAME		:= @UHC_EXEC_NAME@
+EHC_EXEC_NAME			:= @EHC_EXEC_NAME@
+UHC_EXEC_NAME			:= @UHC_EXEC_NAME@
+UHCLIGHT_EXEC_NAME		:= $(UHC_EXEC_NAME)l
 
 ###########################################################################################
 # GIT revision nr, and cmd to extract, if present
@@ -448,7 +450,7 @@ GHC_PKG_NAME_PREFIX						:=
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
 EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 19 < 20 < 30 < 31 < 50 < 90 < 91 < 92 < 93 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
 						$(EHC_UHC_VARIANT) < 102, \
-						$(EHC_PREL_VARIANT) < 103, \
+						$(EHC_UHC_VARIANT) < 103, \
 						6 < 6_4, \
 						15 < 41
 

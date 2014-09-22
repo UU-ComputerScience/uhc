@@ -26,9 +26,9 @@
 %%[(50 codegen tycore) hs import(qualified {%{EH}TyCore} as C)
 %%]
 
-%%[(50 codegen grin) hs import({%{EH}GrinCode})
+%%[(50 grin) hs import({%{EH}GrinCode})
 %%]
-%%[(50 codegen grin) hs import({%{EH}GrinByteCode})
+%%[(50 grin) hs import({%{EH}GrinByteCode})
 %%]
 
 %%[50 hs import({%{EH}Config},{%{EH}Module})

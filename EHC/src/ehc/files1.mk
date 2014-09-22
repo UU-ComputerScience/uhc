@@ -23,6 +23,7 @@ EHC_ALL_HADDOCKS						:= $(patsubst %,$(EHC_HDOC_PREFIX)%/$(EHC_HADDOCK_NAME),$(
 UHC_INSTALL_EXEC						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
 UHC_INSTALL_SHELL						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)
 EHC_FOR_UHC_BLD_EXEC					:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHC_INSTALL_VARIANT))
+EHC_FOR_UHCLIGHT_BLD_EXEC				:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHC_CABAL_VARIANT))
 
 # sources + dpds, for .rul
 EHC_RULES_1_SRC_RUL						:= $(SRC_EHC_PREFIX)rules.rul
@@ -54,7 +55,7 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics Module Config BuiltinPrims NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
+													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics Module Config NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \
@@ -62,14 +63,14 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,Range RLList TermLike UID Parser Parser2 Pragma Strictness GenC Target BasicAnnot Fld Common Builtin2 HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,Range RLList TermLike UID Parser Parser2 Pragma Strictness Target Fld Common HsName Debug TreeTrie CfgPP LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Base/HsName/,Builtin) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Core Foreign GrinCode) \
 													$(addsuffix /Trf,Core TyCore JavaScript Cmm) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
-													$(addprefix CodeGen/,Tag CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
+													$(addprefix CodeGen/,BuiltinPrims BasicAnnot BuiltinSizeInfo GenC Tag CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
 													$(addprefix Foreign/,Boxing) \
 													$(addprefix Core/Run/,Val) \
 													$(addprefix Core/,Utils Run FFI Coercion) \
@@ -184,13 +185,13 @@ EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_99		:= $(UUAGC_OPTS_WHEN_UHC_AST_DATA)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_100	:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_99)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_101	:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_100)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_102	:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_100)
-EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_103	:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_99)
+EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_103	:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_100)
 
 EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_99		:= $(UUAGC_OPTS_WHEN_UHC_AST_SEM)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_100		:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_99)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_101		:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_100)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_102		:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_100)
-EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_103		:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_99)
+EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_103		:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_100)
 
 EHC_SHUFFLE_OPTS_WHEN_UHC_99			:= $(SHUFFLE_OPTS_WHEN_UHC)
 EHC_SHUFFLE_OPTS_WHEN_UHC_100			:= $(EHC_SHUFFLE_OPTS_WHEN_UHC_99)
@@ -269,7 +270,7 @@ EHC_BY_RULER_RULES_99					:= $(EHC_BY_RULER_RULES_98)
 EHC_BY_RULER_RULES_100					:= $(EHC_BY_RULER_RULES_99)
 EHC_BY_RULER_RULES_101					:= $(EHC_BY_RULER_RULES_100)
 EHC_BY_RULER_RULES_102					:= $(EHC_BY_RULER_RULES_100)
-EHC_BY_RULER_RULES_103					:= $(EHC_BY_RULER_RULES_99)
+EHC_BY_RULER_RULES_103					:= $(EHC_BY_RULER_RULES_100)
 
 ###########################################################################################
 # derived
@@ -411,7 +412,7 @@ $(EHC_HS_UTILCPP_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX
 
 # signature of source code
 $(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
-	@(echo "module $(LIB_EHC_PKG_NAMEBASE).$(EHC_HS_SIG_MAIN) where" ; \
+	@(echo "module $(LIB_EHC_QUAL_PREFIX)$(EHC_HS_SIG_MAIN) where" ; \
 	  echo "sig = \"`$(call FUN_MD5,$^)`\"" ; \
 	  echo "timestamp = \"`date '+%G%m%d %z %H%M%S'`\"" \
 	) > $@

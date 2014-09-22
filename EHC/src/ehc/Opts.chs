@@ -186,7 +186,7 @@ Some are there for (temporary) backwards compatibility.
 -- do something with whole program
 ehcOptWholeProgOptimizationScope :: EHCOpts -> Bool
 ehcOptWholeProgOptimizationScope opts
-  = ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin
+  = ehcOptOptimizationScope opts > OptimizationScope_PerModule
 %%]
 
 %%[(50 codegen) export(ehcOptEarlyModMerge)
@@ -366,6 +366,8 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["gen-trampoline"]      (boolArg oSetGenTrampoline)             "codegen: use trampoline mechanism (development/internal use only)"
+%%]]
+%%[[(8 grin)
      ,  Option ""   ["gen-boxgrin"]      	(boolArg oSetGenBoxGrin)             	"codegen: generate simplified grin wrt boxing (development/internal use only)"
 %%]]
 %%[[(8 codegen)
@@ -506,8 +508,8 @@ ehcCmdLineOpts
 %%[[7_2
          oUnique         o =  o { ehcOptUniqueness    = False   }
 %%]]
-%%[[(8 codegen)
-         oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
+%%[[(8 grin)
+         oTimeCompile    o =  o { ehcOptTimeGrinCompile       = True    }
 %%]]
 %%[[(8 codegen)
          oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s ++ ehcOptCoreOpts o}
@@ -538,7 +540,7 @@ ehcCmdLineOpts
          oTarget        s o =  o { ehcOptMbTarget          = mbtarget
 %%[[50
                                  , ehcOptOptimizationScope = if isJustOk mbtarget && targetDoesHPTAnalysis (fromJustOk mbtarget)
-                                                             then max oscope OptimizationScope_WholeGrin
+                                                             then max oscope (maxBound :: OptimizationScope)
                                                              else oscope
 %%]]
                                  }
@@ -635,7 +637,7 @@ ehcCmdLineOpts
                                 Just "4"    -> o { ehcOptVerbosity     = VerboseDebug       }
                                 Nothing     -> o { ehcOptVerbosity     = succ (ehcOptVerbosity o)}
                                 _           -> o
-%%[[(8 codegen grin)
+%%[[(8 codegen)
          oOptimization ms o
                            = o' {ehcOptOptimizations = optimizeRequiresClosure os}
                            where (o',doSetOpts)
@@ -840,6 +842,10 @@ optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
 optDumpJavaScriptStages o b = o { ehcOptDumpJavaScriptStages = b }
 %%]
 
+%%[(8 codegen)
+oSetGenTrampoline	 o b = o { ehcOptGenTrampoline_ = b }
+%%]
+
 %%[(8 codegen grin)
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }
 optSetGenTrace2      o b = o { ehcOptGenTrace2      = b }
@@ -847,7 +853,6 @@ optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
-oSetGenTrampoline	 o b = o { ehcOptGenTrampoline_ = b }
 oSetGenBoxGrin		 o b = o { ehcOptGenBoxGrin_    = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 -- optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }

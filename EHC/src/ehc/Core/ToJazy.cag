@@ -15,7 +15,7 @@
 %%[(8 jazy) hs import(UHC.Util.Utils, qualified UHC.Util.FastSeq as Seq)
 %%]
 
-%%[(8 jazy) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims},{%{EH}Base.BasicAnnot},{%{EH}CodeGen.GenJavaLike})
+%%[(8 jazy) hs import({%{EH}Base.HsName.Builtin},{%{EH}CodeGen.BuiltinSizeInfo},{%{EH}CodeGen.BuiltinPrims},{%{EH}CodeGen.BasicAnnot},{%{EH}CodeGen.GenJavaLike})
 %%]
 
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as J)

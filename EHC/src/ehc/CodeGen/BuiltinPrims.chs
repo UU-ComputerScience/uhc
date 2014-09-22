@@ -4,24 +4,27 @@
 
 %%[doesWhat doclatex
 The prims table describes special handling for some primitives, independent of the backend (for now).
-Module {%{EH}BuiltinPrims} describes similar information required in the frontend.
+Module {%{EH}CodeGen.BuiltinSizeInfo} describes similar information required in the frontend.
 Ideally, these tables should be merged.
 %%]
 
-%%[(8 codegen).moduleHeader module {%{EH}BuiltinPrims}
+%%[(8 core).moduleHeader module {%{EH}CodeGen.BuiltinPrims}
 %%]
 
-%%[(8 codegen) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.BasicAnnot},{%{EH}Base.HsName.Builtin},{%{EH}GrinCode},{%{EH}GrinByteCode})
+%%[(8 core) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Opts},{%{EH}CodeGen.BasicAnnot},{%{EH}Base.HsName.Builtin})
 %%]
 
-%%[(8 codegen) import(qualified Data.Map as Map, qualified UHC.Util.FastSeq as Seq, UHC.Util.Pretty, UHC.Util.Utils)
+%%[(8 core grin) import({%{EH}GrinCode},{%{EH}GrinByteCode})
+%%]
+
+%%[(8 core) import(qualified Data.Map as Map, qualified UHC.Util.FastSeq as Seq, UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(96 codegen grin) export(PrimitiveNeedsEval(..),lookupPrimNeedsEval)
+%%[(96 core) export(PrimitiveNeedsEval(..),lookupPrimNeedsEval)
 data PrimitiveNeedsEval
   = Prim    
       { primArgNeedEval     :: ![Bool]  		-- default: True
@@ -36,7 +39,7 @@ lookupPrimNeedsEval {- backend -} name =  Map.lookup name primsNeedsEval {- >>= 
 %%% Primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(96 codegen grin)
+%%[(96 core)
 primsNeedsEval :: Map.Map String ({- Map.Map Backend -} PrimitiveNeedsEval)
 primsNeedsEval
   = Map.fromList
@@ -62,7 +65,7 @@ The prims table describes alternate implementation, in particular how to inline.
 Module {%{Base}Builtin} describes similar information required in the frontend.
 Ideally, these tables should be merged.
 
-%%[(8 codegen grin) export(Backend(..), Primitive(..), lookupPrim)
+%%[(8 core grin) export(Backend(..), Primitive(..), lookupPrim)
 
 -- Interface
 

@@ -8,7 +8,7 @@
 %%[(8 codegen cmm) hs import({%{EH}Base.HsName.Builtin},{%{EH}Cmm},{%{EH}Base.Common} hiding (Range),{%{EH}Opts})
 %%]
 
-%%[(8 codegen cmm) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})
+%%[(8 codegen cmm) hs import(UHC.Util.Pretty,{%{EH}CodeGen.GenC})
 %%]
 
 %%[(8 codegen cmm) hs import({%{EH}CodeGen.ValAccess} as VA)

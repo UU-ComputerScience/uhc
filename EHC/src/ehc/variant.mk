@@ -6,8 +6,13 @@
 # aspects, EHC_ASPECTS to be configured at top level, for now here
 ###########################################################################################
 
-EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
-											,base hmtyinfer codegen grin corein coreout \
+ifeq ($(EHC_VARIANT),$(EHC_UHC_CABAL_VARIANT))
+EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core corein coreout corebackend corerun
+else
+EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core grin corein coreout machdep
+endif
+EHC_ASPECTS								:= $(strip $(sort $(if $(ASPECTS),$(ASPECTS) \
+											,$(EHC_ASPECTS_MINIMAL) \
 											 $(if $(EHC_CFG_USE_RULER),,noHmTyRuler) \
 											 $(if $(ENABLE_JAVA),java jazy,) \
 											 $(if $(ENABLE_LLVM),llvm,) \
@@ -20,7 +25,7 @@ EHC_ASPECTS								:= $(strip $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_CORESYSF),coresysf,) \
 											 $(if $(ENABLE_CORE_ASINPOUTP),corebackend corerun,) \
 											 $(if $(ENABLE_TAUPHI),tauphi,) \
-											))
+											)))
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)
 EHC_ASPECTS_SUFFIX2						:= $(subst -,,$(EHC_ASPECTS_SUFFIX))
 
@@ -74,9 +79,21 @@ RTS_GCC_CC_OPTS_VARIANT_TARGET			:= -D$(EHC_VARIANT_TARGET_UHC_DEFINE1) -D$(EHC_
 # lib/cabal/module config
 ###########################################################################################
 
+# for enduser installable variants the module qualifiers are different
 LIB_EHC_BASE							:= EH
-#LIB_EHC_QUAL							:= $(subst -,,$(subst _,x,$(LIB_EHC_BASE)$(EHC_VARIANT))$(EHC_BUILD_SUFFIX)$(EHC_ASPECTS_SUFFIX2))
+ifeq ($(EHC_VARIANT),$(EHC_UHC_INSTALL_VARIANT))
+# uhc compiler
+LIB_EHC_QUAL							:= UHC.Compiler
+else
+ifeq ($(EHC_VARIANT),$(EHC_UHC_CABAL_VARIANT))
+# uhc cabal/package installation
+LIB_EHC_QUAL							:= UHC.Light.Compiler
+else
+# default
 LIB_EHC_QUAL							:= $(subst _,x,$(LIB_EHC_BASE)$(EHC_VARIANT))$(EHC_ASPECTS_SUFFIX2)
+endif
+endif
+
 LIB_EHC_QUAL_PREFIX						:= $(LIB_EHC_QUAL).
 LIB_EHC_HS_PREFIX						:= $(subst .,$(PATH_SEP),$(LIB_EHC_QUAL_PREFIX))
 LIB_EHC_PKG_NAMEBASE					:= $(GHC_PKG_NAME_PREFIX)$(subst .,-,$(LIB_EHC_QUAL))

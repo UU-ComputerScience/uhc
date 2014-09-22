@@ -7,12 +7,12 @@
 %%% Utilities for dealing with FFI, for now part of Core, meant for Grin gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Core.FFI} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Builtin2},{%{EH}Opts},{%{EH}Base.Target},{%{EH}Base.Common},{%{EH}Base.TermLike})
+%%[(8 codegen) module {%{EH}Core.FFI} import({%{EH}Base.HsName.Builtin},{%{EH}CodeGen.BuiltinSizeInfo},{%{EH}Opts},{%{EH}Base.Target},{%{EH}Base.Common},{%{EH}Base.TermLike})
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.List,Data.Maybe)
 %%]
-%%[(8 codegen hmtyinfer) hs import({%{EH}Base.BasicAnnot},{%{EH}Ty},{%{EH}Gam.DataGam})
+%%[(8 codegen hmtyinfer) hs import({%{EH}CodeGen.BasicAnnot},{%{EH}Ty},{%{EH}Gam.DataGam})
 %%]
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
@@ -20,11 +20,11 @@
 %%]
 %%[(8 codegen) hs import(qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
-%%[(8 codegen) hs import({%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}GrinCode})
 %%]
 %%[(8 codegen) hs import({%{EH}Foreign.Extract}, {%{EH}Foreign.Boxing})
 %%]
-%%[(90 codegen) hs import({%{EH}BuiltinPrims})
+%%[(90 codegen) hs import({%{EH}CodeGen.BuiltinPrims})
 %%]
 
 -- debug
@@ -39,9 +39,12 @@
 -- | is ty going to be passed unboxed to ffi, return info about it if so?
 tyNmFFIBoxBasicAnnot :: EHCOpts -> HsName -> Maybe BasicAnnot
 tyNmFFIBoxBasicAnnot opts
+%%[[(8 grin)
   = \n -> fmap biGrinBoxAnnot $ m n
   where m = builtinGrinInfo opts
-
+%%][8
+  = const Nothing
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,16 +55,20 @@ tyNmFFIBoxBasicAnnot opts
 -- | is ty living as a tagged pointer?
 tyNmGBMayLiveAsTaggedPtr :: EHCOpts -> HsName -> Maybe BuiltinInfo
 tyNmGBMayLiveAsTaggedPtr opts
+%%[[(8 grin)
   | targetIsGrinBytecode (ehcOptTarget opts) = builtinGrinInfo opts
+%%]]
   | otherwise                                = const Nothing
 
 -- | BasicAnnot when unboxing also means living as tagged pointer
 tyNmGBTagPtrBasicAnnot :: EHCOpts -> Bool -> HsName -> BasicAnnot -> BasicAnnot
 tyNmGBTagPtrBasicAnnot opts box t annot
   = case tyNmGBMayLiveAsTaggedPtr opts t of
-      Just x  -> if biGbcMayLiveUnboxed x
-                 then annot {baTagging = if box then BasicAnnotTagging_ToPtr else BasicAnnotTagging_FromPtr, baIsSigned = biIsSigned x} 
-                 else annot
+      Just x
+%%[[(8 grin)
+        | biGbcMayLiveUnboxed x -> annot {baTagging = if box then BasicAnnotTagging_ToPtr else BasicAnnotTagging_FromPtr, baIsSigned = biIsSigned x} 
+%%]]
+        | otherwise             -> annot
       Nothing -> annot
 %%]
 

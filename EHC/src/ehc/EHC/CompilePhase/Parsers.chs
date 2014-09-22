@@ -340,7 +340,7 @@ cpGetPrevCore modNm
        }
 %%]
 
-%%[(50 codegen) export(cpGetPrevGrin)
+%%[(50 codegen grin) export(cpGetPrevGrin)
 cpGetPrevGrin :: HsName -> EHCompilePhase ()
 cpGetPrevGrin modNm
   = do { cr <- get

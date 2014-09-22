@@ -605,7 +605,7 @@ task minVerbosity taskDesc ca f = do
     finishMsg minVerbosity mbMsg cpuTime =  harden_ $ do
         { currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
         ; guard (currentVerbosity >= minVerbosity)
-        ; doTiming <- gets (ehcOptTimeCompile . gcsOpts)
+        ; doTiming <- gets (ehcOptTimeGrinCompile . gcsOpts)
         ; let timeMsg      =  showFFloat (Just 5) (fromInteger cpuTime / 1000000000000) " seconds"
               formatMsg m  | doTiming   =  " (" ++ m ++ ", " ++ timeMsg ++ ")"
                            | otherwise  =  " (" ++ m ++ ")"

@@ -33,7 +33,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- Language semantics: Core
-%%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 %%[(8 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]
@@ -149,6 +149,8 @@ data EHCompileUnit
       , ecuMbEHSem           :: !(Maybe EHSem.Syn_AGItf)
 %%[[(8 codegen)
       , ecuMbCore            :: !(Maybe Core.CModule)
+%%]]
+%%[[(8 codegen core)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
 %%]]
 %%[[(8 codegen corein)
@@ -256,6 +258,8 @@ emptyECU
 %%]]
 %%[[(8 codegen)
       , ecuMbCore            = Nothing
+%%]]
+%%[[(8 codegen core)
       , ecuMbCoreSem         = Nothing
 %%]]
 %%[[(8 codegen corein)
@@ -473,10 +477,12 @@ ecuStoreCoreSemMod :: EcuUpdater Core2ChkSem.Syn_CodeAGItf
 ecuStoreCoreSemMod x ecu = ecu { ecuMbCoreSemMod = Just x }
 %%]
 
-%%[(8 codegen) export(ecuStoreCoreSem,ecuStoreCore)
+%%[(8 codegen core) export(ecuStoreCoreSem)
 ecuStoreCoreSem :: EcuUpdater Core2GrSem.Syn_CodeAGItf
 ecuStoreCoreSem x ecu = ecu { ecuMbCoreSem = Just x }
+%%]
 
+%%[(8 codegen) export(ecuStoreCore)
 ecuStoreCore :: EcuUpdater Core.CModule
 %%[[8
 ecuStoreCore x ecu = ecu { ecuMbCore = Just x }

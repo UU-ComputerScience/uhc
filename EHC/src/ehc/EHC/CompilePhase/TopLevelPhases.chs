@@ -56,7 +56,9 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.Output})
 %%]
-%%[(8 codegen grin) import({%{EH}EHC.CompilePhase.Transformations},{%{EH}EHC.CompilePhase.TransformGrin})
+%%[(8 codegen) import({%{EH}EHC.CompilePhase.Transformations})
+%%]
+%%[(8 grin) import({%{EH}EHC.CompilePhase.TransformGrin})
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.Semantics})
 %%]
@@ -117,12 +119,11 @@ cpEhcFullProgLinkAllModules modNmL
                 -> case () of
                      () | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
                             -> cpSeq (  hpt
+%%[[(99 grin)
                                      ++ [ cpProcessAfterGrin mainModNm
-%%[[99
                                         , cpCleanupGrin [mainModNm]
-%%]]
                                         ]
-
+%%]]
                                      ++ exec
                                      )
                         | targetDoesHPTAnalysis (ehcOptTarget opts)
@@ -217,20 +218,22 @@ Post processing involves the following:
 2. compile+link everything together
 %%]
 
-%%[(50 codegen grin)
-cpEhcFullProgPostModulePhases, cpEhcGrinFullProgPostModulePhases, cpEhcCoreFullProgPostModulePhases
-  :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
-
+%%[(50 codegen)
+cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
 cpEhcFullProgPostModulePhases opts modNmL modSpl
-  = (if  ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
-    then cpEhcCoreFullProgPostModulePhases
-    else cpEhcGrinFullProgPostModulePhases
-    ) opts modNmL modSpl
+%%[[(50 grin)
+  | ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin = cpEhcGrinFullProgPostModulePhases opts modNmL modSpl
+%%]]
+  | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore = cpEhcCoreFullProgPostModulePhases opts modNmL modSpl
+  | otherwise                                                   = return ()
+%%]
 
+%%[(50 codegen grin)
+cpEhcGrinFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
 cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpEnsureGrin m | m <- modNmL]
            , mergeIntoOneBigGrin
-%%[[99
+%%[[(99 grin)
            , cpCleanupGrin impModNmL -- clean up unused Grin (moved here from cpCleanupCU)
 %%]]
            ]
@@ -254,7 +257,10 @@ cpEnsureGrin nm
        ; when (isNothing $ ecuMbGrin $ crCU nm cr)
          $ do { cpGetPrevCore nm ; cpProcessCoreFold nm ; cpProcessCoreRest nm }
        }
+%%]
 
+%%[(50 codegen)
+cpEhcCoreFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
 cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpGetPrevCore m | m <- modNmL]
            , mergeIntoOneBigCore
@@ -717,7 +723,13 @@ cpEhcHaskellModulePrepareSrc modNm
 
 cpEhcHaskellModulePrepareHS2 :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepareHS2 modNm
-  = cpSeq [ cpGetMetaInfo [GetMeta_Src, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir] modNm
+  = cpSeq [ cpGetMetaInfo
+              [ GetMeta_Src, GetMeta_HI, GetMeta_Core
+%%[[(50 grin)
+              , GetMeta_Grin
+%%]]
+              , GetMeta_Dir
+              ] modNm
           , cpGetPrevHI modNm
           -- , cpFoldHI modNm
           , cpFoldHIInfo modNm
@@ -725,7 +737,12 @@ cpEhcHaskellModulePrepareHS2 modNm
 
 cpEhcHaskellModulePrepareHI :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepareHI modNm
-  = cpSeq [ cpGetMetaInfo [GetMeta_HI, GetMeta_Core, GetMeta_Grin] modNm
+  = cpSeq [ cpGetMetaInfo
+              [ GetMeta_HI, GetMeta_Core
+%%[[(50 grin)
+              , GetMeta_Grin
+%%]]
+              ] modNm
           , cpGetPrevHI modNm
           -- , cpFoldHI modNm
           , cpFoldHIInfo modNm
@@ -985,7 +1002,9 @@ cpEhcCorePerModulePart2 modNm
              earlyMerge = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
 %%]]
        ; cpSeq [ when earlyMerge $ cpProcessCoreRest modNm
+%%[[(8 grin)
                , when (ehcOptIsViaGrin opts) (cpProcessGrin modNm)
+%%]]
                ]
        }
 %%]
@@ -999,10 +1018,10 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
              , cpMsg modNm VerboseDebug "cpFlowOptim"
              , cpFlowOptim modNm
 %%]]
-%%[[99
+%%[[(99 grin)
              , cpCleanupGrin [modNm]
-%%]]
              , cpProcessAfterGrin modNm
+%%]]
              ]
           ++ (if not isMainMod || doMkExec
               then let how = if doMkExec then FinalCompile_Exec else FinalCompile_Module
@@ -1178,8 +1197,11 @@ cpProcessCoreRest :: HsName -> EHCompilePhase ()
 cpProcessCoreRest modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; cpSeq (   [ cpTranslateCore2Grin modNm ]
+       ; cpSeq (   []
+%%[[(8 grin)
+                ++ [ cpTranslateCore2Grin modNm ]
                 ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin True "" modNm] else [])
+%%]]
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
 %%]]

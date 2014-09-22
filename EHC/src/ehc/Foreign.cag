@@ -25,7 +25,7 @@
 %%[90 hs import(UHC.Util.Utils)
 %%]
 
-%%[9090 hs import({%{EH}BuiltinPrims})
+%%[9090 hs import({%{EH}CodeGen.BuiltinPrims})
 %%]
 
 %%[90 hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)

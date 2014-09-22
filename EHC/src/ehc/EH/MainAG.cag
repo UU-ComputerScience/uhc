@@ -82,7 +82,7 @@
 %%[(8 codegen) hs import({%{EH}Core.Subst})
 %%]
 
-%%[(90 codegen) hs import({%{EH}BuiltinPrims},{%{EH}Foreign})
+%%[(90 codegen) hs import({%{EH}CodeGen.BuiltinPrims},{%{EH}Foreign})
 %%]
 
 %%[(9 hmtyinfer) hs import(Control.Monad.State)

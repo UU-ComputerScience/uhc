@@ -1087,7 +1087,7 @@ data Track
 
 %%]
 
-%%[(50 codegen grin) hs
+%%[(50 codegen) hs
 
 instance Serialize Track where
   sput (TrackNone             ) = sputWord8 0

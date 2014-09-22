@@ -14,9 +14,6 @@
 %%[(8 codegen cmm javascript) hs import(qualified {%{EH}JavaScript} as JS)
 %%]
 
-%%[(88 codegen cmm javascript) hs import(UHC.Util.Pretty,{%{EH}Base.GenC})
-%%]
-
 %%[(8 codegen cmm javascript) hs import({%{EH}CodeGen.ValAccess} as VA, {%{EH}CodeGen.CVar})
 %%]
 %%[(8 codegen cmm javascript) hs import({%{EH}Gam.DataGam})

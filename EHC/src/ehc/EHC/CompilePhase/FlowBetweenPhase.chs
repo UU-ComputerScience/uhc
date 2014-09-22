@@ -38,7 +38,7 @@ XXX
 %%]
 
 -- Core semantics
-%%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 %%[(50 codegen) import({%{EH}Core})
 %%]

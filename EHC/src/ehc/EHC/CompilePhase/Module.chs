@@ -39,7 +39,7 @@ Module analysis
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]
 
-%%[(50 codegen grin) hs import({%{EH}CodeGen.RefGenerator})
+%%[(50 codegen) hs import({%{EH}CodeGen.RefGenerator})
 %%]
 
 %%[50 import({%{EH}Base.Debug})
@@ -87,11 +87,19 @@ data GetMeta
   = GetMeta_Src
   | GetMeta_HI
   | GetMeta_Core
+%%[[(50 grin)
   | GetMeta_Grin
+%%]]
   | GetMeta_Dir
   deriving (Eq,Ord)
 
-allGetMeta = [GetMeta_Src, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir]
+allGetMeta
+  = [ GetMeta_Src, GetMeta_HI, GetMeta_Core
+%%[[(50 grin)
+    , GetMeta_Grin
+%%]]
+    , GetMeta_Dir
+    ]
 
 %%]
 
@@ -172,7 +180,7 @@ cpGetMetaInfo gm modNm
                                               (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
 %%]]
                  )
-%%[[(50 codegen)
+%%[[(50 codegen grin)
          ;  when (GetMeta_Grin `elem` gm)
                  (tm opts ecu ecuStoreGrinTime      (fpathSetSuff "grin"      fp     ))
 %%]]

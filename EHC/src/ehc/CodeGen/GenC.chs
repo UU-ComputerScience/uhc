@@ -6,27 +6,27 @@
 Various C code generation snippets.
 %%]
 
-%%[(8 codegen) hs module {%{EH}Base.GenC}
+%%[(8 machdep) hs module {%{EH}CodeGen.GenC}
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
+%%[(8 machdep) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 
-%%[(8 codegen) hs import(UHC.Util.Pretty)
+%%[(8 machdep) hs import(UHC.Util.Pretty)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.BasicAnnot})
+%%[(8 machdep) hs import({%{EH}CodeGen.BasicAnnot})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(GenC)
+%%[(8 machdep) export(GenC)
 type GenC = PP_Doc
 %%]
 
-%%[(8 codegen) export(genc)
+%%[(8 machdep) export(genc)
 genc :: PP x => x -> GenC
 genc = pp
 %%]
@@ -35,7 +35,7 @@ genc = pp
 %%% General: comment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencCmt)
+%%[(8 machdep) export(gencCmt)
 gencCmt :: PP a => a -> GenC
 gencCmt = ppPacked "/* " " */"
 %%]
@@ -44,7 +44,7 @@ gencCmt = ppPacked "/* " " */"
 %%% Pointer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencDeref,gencTyDeref)
+%%[(8 machdep) export(gencDeref,gencTyDeref)
 gencDeref :: PP a => a -> GenC
 gencDeref x = "*" >|< x
 
@@ -52,7 +52,7 @@ gencTyDeref :: PP a => a -> GenC
 gencTyDeref x = (x >|< "*")
 %%]
 
-%%[(8 codegen) export(gencAddrOf)
+%%[(8 machdep) export(gencAddrOf)
 -- | C address of: &(x)
 gencAddrOf :: PP a => a -> GenC
 gencAddrOf x = "&" >|< ppParens x
@@ -63,14 +63,14 @@ gencAddrOf x = "&" >|< ppParens x
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencNULL)
+%%[(8 machdep) export(gencNULL)
 -- | C constant: NULL
 gencNULL :: GenC
 gencNULL = genc "NULL"
 
 %%]
 
-%%[(8 codegen) export(gencInt)
+%%[(8 machdep) export(gencInt)
 -- | C constant: int
 gencInt :: (PP ty, PP int) => Maybe ty -> (GenC -> GenC) -> int -> GenC
 gencInt mbTy mkL int
@@ -83,7 +83,7 @@ gencInt mbTy mkL int
 %%% Statements
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencAssign,gencUpdAssign)
+%%[(8 machdep) export(gencAssign,gencUpdAssign)
 -- | C update assign: lval <op>= rval ;
 gencUpdAssign :: (PP lval,PP rval) => String -> lval -> rval -> GenC
 gencUpdAssign op lval rval = gencStat (lval >#< op >|< "=" >-< indent 1 rval)
@@ -98,7 +98,7 @@ gencAssign = gencUpdAssign ""
 %%% Expressions: general
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencCast,gencCall,gencSizeof,gencStr)
+%%[(8 machdep) export(gencCast,gencCall,gencSizeof,gencStr)
 -- | C cast: ((ty)(val))
 gencCast :: (PP ty,PP val) => ty -> val -> GenC
 -- gencCast ty val = "Cast" >|< ppParensCommas [genc ty,genc val]
@@ -118,7 +118,7 @@ gencStr = genc . show
 
 %%]
 
-%%[(8 codegen) export(gencOp,gencOpL1Pre,gencOpL2)
+%%[(8 machdep) export(gencOp,gencOpL1Pre,gencOpL2)
 -- | C binary operator expression: o e, [] variant
 gencOpL1Pre :: (PP op,PP e) => op -> [e] -> GenC
 gencOpL1Pre o [e] = ppParens (o >#< e)
@@ -137,7 +137,7 @@ gencOp o e1 e2 = gencOpL2 o [e1,e2]
 %%% Expressions: array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencArray,gencArrayV,gencArrayV',gencArrayAt,gencAddrArrayAt)
+%%[(8 machdep) export(gencArray,gencArrayV,gencArrayV',gencArrayAt,gencAddrArrayAt)
 -- | C array: { ... }
 gencArray :: PP a => [a] -> GenC
 gencArray = ppCurlysCommasBlock
@@ -163,7 +163,7 @@ gencAddrArrayAt a o = gencAddrOf $ gencArrayAt a o
 %%% Declarations: type, value defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencTypeDecl,gencVarDecl,gencVarDeclInit,gencVarDeclInitV)
+%%[(8 machdep) export(gencTypeDecl,gencVarDecl,gencVarDeclInit,gencVarDeclInitV)
 gencTypeDecl :: (PP res,PP ty) => res -> ty -> GenC
 gencTypeDecl res ty = gencEndsemic ("typedef" >#< res >#< ty)
 
@@ -180,7 +180,7 @@ gencVarDeclInitV :: (PP ty,PP var,PP init) => ty -> var -> init -> GenC
 gencVarDeclInitV ty var init = gencEndsemic (ty >#< var >#< "=" >-< indent 2 init)
 %%]
 
-%%[(8 codegen) export(gencStatic,gencExtern)
+%%[(8 machdep) export(gencStatic,gencExtern)
 -- | C modifier static: static x
 gencStatic :: PP x => x -> GenC
 gencStatic x = "static" >#< x
@@ -195,7 +195,7 @@ gencExtern x = "extern" >#< x
 %%% Declarations: functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencFunExtern,gencFunDef,gencFunDefArg)
+%%[(8 machdep) export(gencFunExtern,gencFunDef,gencFunDefArg)
 gencFunExtern :: (PP res,PP nm) => res -> nm -> [GenC] -> GenC
 gencFunExtern res nm args = gencEndsemic ("extern" >#< res >#< nm >|< ppParensCommas args)
 
@@ -210,7 +210,7 @@ gencFunDefArg ty nm = ty >#< nm
 %%% Statements
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencEndsemic,gencStat)
+%%[(8 machdep) export(gencEndsemic,gencStat)
 gencEndsemic, gencStat :: PP x => x -> GenC
 gencEndsemic x = x >#< ";"
 gencStat = gencEndsemic
@@ -220,7 +220,7 @@ gencStat = gencEndsemic
 %%% Case
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencSwitch,gencSwitchcase,gencSwitchcase',gencSwitchdefault)
+%%[(8 machdep) export(gencSwitch,gencSwitchcase,gencSwitchcase',gencSwitchdefault)
 gencSwitch :: (PP sel) => sel -> [GenC] -> GenC -> GenC
 gencSwitch sel cases dflt = "switch" >#< ppParens sel >-< ppCurlysBlock (cases ++ [dflt])
 
@@ -239,7 +239,7 @@ gencSwitchdefault = gencSwitchcase' ["default"]
 %%% Control
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencLabel)
+%%[(8 machdep) export(gencLabel)
 gencLabel :: PP l => l -> GenC
 gencLabel l = l >|< ":"
 %%]
@@ -248,7 +248,7 @@ gencLabel l = l >|< ":"
 %%% File level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencInclude,gencInclude')
+%%[(8 machdep) export(gencInclude,gencInclude')
 gencInclude' :: PP f => String -> f -> GenC
 gencInclude' suff f = "#include \"" >|< f >|< (if null suff then empty else ("." >|< suff)) >|< "\""
 
@@ -260,7 +260,7 @@ gencInclude = gencInclude' ""
 %%% Generate function type for [BasicSize]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencBasicSizeGBFunTyNm)
+%%[(8 machdep) export(gencBasicSizeGBFunTyNm)
 gencBasicSizeGBFunTyNm :: String -> [BasicSize] -> String
 gencBasicSizeGBFunTyNm funPrefix (res:args)
   = funPrefix ++ basicGrinSizeCharEncoding res ++ show (length args) ++ concatMap basicGrinSizeCharEncoding args
@@ -269,7 +269,7 @@ gencBasicSizeGBFunTyNm funPrefix (res:args)
 E.g.:
 typedef GB_Word (*GB_CFun_w4wwww)(GB_Word,GB_Word,GB_Word,GB_Word);
 
-%%[(8 codegen) export(gencBasicSizeFunTyDef)
+%%[(8 machdep) export(gencBasicSizeFunTyDef)
 gencBasicSizeFunTyDef :: String -> [BasicSize] -> GenC
 gencBasicSizeFunTyDef funPrefix ty@(res:args)
   = gencTypeDecl (gbtyAsIs $ basicGBTy res)
@@ -278,7 +278,7 @@ gencBasicSizeFunTyDef funPrefix ty@(res:args)
         ppargs args@(_:_) = map (gbtyAsIs . basicGBTy) args
 %%]
 
-%%[(8 codegen) export(gencBasicSizeFunPrefix)
+%%[(8 machdep) export(gencBasicSizeFunPrefix)
 gencBasicSizeFunPrefix :: String
 gencBasicSizeFunPrefix = "gb_callc_"
 %%]
@@ -287,7 +287,7 @@ gencBasicSizeFunPrefix = "gb_callc_"
 %%% Generate function call for [BasicSize]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(gencBasicSizeFunCall)
+%%[(8 machdep) export(gencBasicSizeFunCall)
 gencBasicSizeFunCall :: (PP fun,PP argbase) => String -> [BasicSize] -> fun -> argbase -> (GenC,GenC)
 gencBasicSizeFunCall tyPre ty@(res:args) fun argbase
   = (gencCall (gencCast ({- gencTyDeref $ -} gencBasicSizeGBFunTyNm tyPre ty) fun) (reverse argsStack),sz)
@@ -306,7 +306,7 @@ gencBasicSizeFunCall tyPre ty@(res:args) fun argbase
 
 This is highly specific for the BC backend.
 
-%%[(8 codegen) export(gencWrapperCFunDef)
+%%[(8 machdep) export(gencWrapperCFunDef)
 gencWrapperCFunDef
   :: String -> (Maybe String)
   -> GenC -> [BasicSize] -> Either [BasicSize] (x -> [GenC] -> GenC,[GenC] -> GenC,[(x,[BasicSize])])

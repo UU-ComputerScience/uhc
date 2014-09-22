@@ -2,16 +2,16 @@
 %%% Annotation for size info related to builtin types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Base.BasicAnnot}
+%%[8 hs module {%{EH}CodeGen.BasicAnnot}
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
+%%[8 hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 
-%%[(8 codegen) hs import(UHC.Util.Pretty, UHC.Util.Utils)
+%%[8 hs import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
+%%[8 hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
 %%]
 
 %%[(50 codegen) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
@@ -21,7 +21,7 @@
 %%% BasicSize: size of BasicTy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(BasicSize(..))
+%%[8 hs export(BasicSize(..))
 data BasicSize
   = -- Word variants, bitsize explicit
     BasicSize_Word8
@@ -41,7 +41,7 @@ data BasicSize
   deriving (Eq,Ord,Enum)
 %%]
 
-%%[(50 codegen) hs
+%%[50 hs
 deriving instance Typeable BasicSize
 deriving instance Data BasicSize
 %%]
@@ -49,7 +49,7 @@ deriving instance Data BasicSize
 The Show of BasicSize should returns strings of which the first letter is unique for the type.
 When used to pass to size encoding for bytecode C calls, only this first letter is used.
 
-%%[(8 codegen) hs
+%%[8 hs
 instance Show BasicSize where
   show BasicSize_Word8   = "w1"
   show BasicSize_Word16  = "w2"
@@ -65,13 +65,13 @@ instance Show BasicSize where
 %%]]
 %%]
 
-%%[(8 codegen) hs
+%%[8 hs
 instance PP BasicSize where
   pp = pp . show
 %%]
 
 -- only required for parsing, to become obsolete
-%%[(8 codegen) hs export(basicSizeOf)
+%%[8 hs export(basicSizeOf)
 basicSizeOfMp :: Map.Map Int BasicSize
 basicSizeOfMp
   = Map.fromList
@@ -85,7 +85,7 @@ basicSizeOf :: Int -> BasicSize
 basicSizeOf i = panicJust "BasicAnnot.basicSizeOf" $ Map.lookup i basicSizeOfMp
 %%]
 
-%%[(8 codegen) hs export(basicSizeWord,basicSizeIsWord)
+%%[(8 machdep) hs export(basicSizeWord,basicSizeIsWord)
 basicSizeWord :: BasicSize
 basicSizeWord  = if Cfg.use64Bits then BasicSize_Word64 else BasicSize_Word32
 
@@ -107,7 +107,7 @@ basicSizeIsWord BasicSize_Int64  | Cfg.use64Bits = True
 basicSizeIsWord _                                = False
 %%]
 
-%%[(8 codegen) hs export(basicSizeIsSigned)
+%%[8 hs export(basicSizeIsSigned)
 basicSizeIsSigned :: BasicSize -> Bool
 basicSizeIsSigned BasicSize_Int8  = True
 basicSizeIsSigned BasicSize_Int16 = True
@@ -122,7 +122,7 @@ basicSizeFloat  = BasicSize_Float
 basicSizeDouble = BasicSize_Double
 %%]
 
-%%[(8 codegen) hs export(basicSizeInBytes)
+%%[(8 machdep) hs export(basicSizeInBytes)
 basicSizeInBytes :: BasicSize -> Int
 basicSizeInBytes BasicSize_Word8   = 1
 basicSizeInBytes BasicSize_Word16  = 2
@@ -138,7 +138,7 @@ basicSizeInBytes BasicSize_Double  = Cfg.sizeofDouble
 %%]]
 %%]
 
-%%[(8 codegen) hs export(basicSizeInWords)
+%%[(8 machdep) hs export(basicSizeInWords)
 basicSizeInWords :: BasicSize -> Int
 basicSizeInWords sz = entierLogUpShrBy Cfg.sizeofWordInLog (basicSizeInBytes sz)
 %%]
@@ -150,7 +150,7 @@ basicSizeInWords sz = entierLogUpShrBy Cfg.sizeofWordInLog (basicSizeInBytes sz)
 Permitted (May), not permitted (Not), or required (Must).
 Currently only Not is used, intended for GC which traces/copies live ptrs and must know what not to inspect.
 
-%%[(8 codegen grin) hs export(GCPermit(..))
+%%[(8 machdep) hs export(GCPermit(..))
 data GCPermit
   = GCPermit_Not
   | GCPermit_May
@@ -166,7 +166,7 @@ instance PP GCPermit where
   pp = pp . show
 %%]
 
-%%[(8 codegen) hs
+%%[(8 machdep) hs
 -- a value about which we know it is of BasicSize corresponds to unboxed, hence no GC tracing
 basicSizeGCPermit :: BasicSize -> GCPermit
 basicSizeGCPermit BasicSize_Word64 | Cfg.use32Bits = GCPermit_Not
@@ -188,7 +188,7 @@ basicSizeGCPermit _ = GCPermit_Not
 %%% BasicSize type representation for GrinByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(BasicGBTy(..))
+%%[(8 grin) export(BasicGBTy(..))
 data BasicGBTy
   = BasicGBTy
       { gbtyOnStack		:: String			-- as it lives on the stack, its size must be multiple of Word size, but type may differ
@@ -197,7 +197,7 @@ data BasicGBTy
       }
 %%]
 
-%%[(8 codegen)
+%%[(8 grin)
 basicGBTyMp :: Map.Map BasicSize BasicGBTy
 basicGBTyMp
   = Map.fromList
@@ -219,7 +219,7 @@ basicGBTyMp
       , (BasicSize_Double	, BasicGBTy "GB_Double" "Double"	"Word64"	)
       , (BasicSize_CInt		, BasicGBTy "Word"		"int"		"int"		)
 
-%%[(8 codegen) export(basicGBTy)
+%%[(8 grin) export(basicGBTy)
 basicGBTy :: BasicSize -> BasicGBTy
 basicGBTy b = panicJust "basicGBTy" $ Map.lookup b basicGBTyMp
 %%]
@@ -228,7 +228,7 @@ basicGBTy b = panicJust "basicGBTy" $ Map.lookup b basicGBTyMp
 %%% BasicSize encoding for GrinByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen) export(allGrinBasicSize)
+%%[(8888 grin) export(allGrinBasicSize)
 allGrinBasicSize :: [BasicSize]
 allGrinBasicSize
   =    [ basicSizeWord ]
@@ -240,12 +240,12 @@ allGrinBasicSize
 %%]]
 %%]
 
-%%[(8 codegen) export(basicGrinSizeCharEncoding)
+%%[(8 grin) export(basicGrinSizeCharEncoding)
 basicGrinSizeCharEncoding :: BasicSize -> String
 basicGrinSizeCharEncoding = take 2 . show
 %%]
 
-%%[(8888 codegen grin) export(basicGrinSizeLEncoding)
+%%[(8888 grin) export(basicGrinSizeLEncoding)
 basicGrinSizeLEncoding :: [BasicSize] -> Integer
 basicGrinSizeLEncoding
   = foldr (.|.) 0
@@ -301,7 +301,7 @@ data BasicTy
   deriving (Eq,Ord,Enum)
 %%]
 
-%%[(50 codegen) hs
+%%[50 hs
 deriving instance Typeable BasicTy
 deriving instance Data BasicTy
 %%]
@@ -309,7 +309,7 @@ deriving instance Data BasicTy
 The Show of BasicTy should returns strings of which the first letter is unique for the type.
 When used to pass to code, only this first letter is used.
 
-%%[(8 codegen) hs
+%%[8 hs
 instance Show BasicTy where
   show BasicTy_Word   			= "word"
   show BasicTy_SWord            = "sword"
@@ -321,12 +321,12 @@ instance Show BasicTy where
 %%]]
 %%]
 
-%%[(8 codegen) hs
+%%[8 hs
 instance PP BasicTy where
   pp = pp . show
 %%]
 
-%%[(8888 codegen) hs
+%%[(8888 grin) hs
 -- a value about which we know it is of BasicSize corresponds to unboxed, hence no GC tracing
 btGCPermit :: BasicTy -> GCPermit
 %%[[97
@@ -340,7 +340,7 @@ btGCPermit _              = GCPermit_Must
 %%% BasicAnnot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(BasicAnnotTagging(..))
+%%[(8 grin) hs export(BasicAnnotTagging(..))
 data BasicAnnotTagging
   = BasicAnnotTagging_None		-- no tagging
   | BasicAnnotTagging_FromPtr	-- from tagged pointer to int variant fitting in untagged part
@@ -348,31 +348,37 @@ data BasicAnnotTagging
   deriving (Show,Eq,Enum)
 %%]
 
-%%[(8 codegen) hs export(BasicAnnot(..),basicAnnotWord)
+%%[(8 codegen) hs export(BasicAnnot(..))
 data BasicAnnot
-  = BasicAnnot_Size
+  = BasicAnnot_None
+%%[[(8 grin)
+  | BasicAnnot_Dflt
+  | BasicAnnot_Size
   	  { baSize     	:: BasicSize
   	  , baTy 		:: BasicTy
   	  , baTagging	:: BasicAnnotTagging
   	  , baIsSigned	:: Bool
   	  }
-  | BasicAnnot_Dflt
-  | BasicAnnot_None
+%%]]
   deriving (Show,Eq)
+%%]
 
+%%[(8 grin) hs export(basicAnnotWord)
 basicAnnotWord :: BasicAnnot
 basicAnnotWord = BasicAnnot_Size basicSizeWord BasicTy_Word BasicAnnotTagging_None False
 %%]
 
-%%[(50 codegen) hs
+%%[(50 grin) hs
 deriving instance Typeable BasicAnnotTagging
 deriving instance Data BasicAnnotTagging
+%%]
 
+%%[(50 grin) hs
 deriving instance Typeable BasicAnnot
 deriving instance Data BasicAnnot
 %%]
 
-%%[(8 codegen grin) hs export(grinBasicAnnotSizeInBytes,grinBasicAnnotSizeInWords)
+%%[(8 grin) hs export(grinBasicAnnotSizeInBytes,grinBasicAnnotSizeInWords)
 grinBasicAnnotSizeInBytes :: BasicAnnot -> Int
 grinBasicAnnotSizeInBytes = basicSizeInBytes . grinBasicAnnotSize
 
@@ -380,13 +386,13 @@ grinBasicAnnotSizeInWords :: BasicAnnot -> Int
 grinBasicAnnotSizeInWords = basicSizeInWords . grinBasicAnnotSize
 %%]
 
-%%[(8 codegen grin) hs export(grinBasicAnnotSize)
+%%[(8 grin) hs export(grinBasicAnnotSize)
 grinBasicAnnotSize :: BasicAnnot -> BasicSize
 grinBasicAnnotSize (BasicAnnot_Size          s _ _ _) = s
 grinBasicAnnotSize (BasicAnnot_Dflt                 ) = basicSizeWord
 %%]
 
-%%[(8 codegen grin) hs export(grinBasicAnnotGCPermit)
+%%[(8 grin) hs export(grinBasicAnnotGCPermit)
 grinBasicAnnotGCPermit :: BasicAnnot -> GCPermit
 grinBasicAnnotGCPermit (BasicAnnot_Size          _ _ BasicAnnotTagging_FromPtr _) = GCPermit_Not		-- is unboxed
 grinBasicAnnotGCPermit (BasicAnnot_Size          _ _ BasicAnnotTagging_ToPtr   _) = GCPermit_May		-- freshly tagged, no GC will ever be necessary, but GC checks for it anyway
@@ -394,31 +400,27 @@ grinBasicAnnotGCPermit (BasicAnnot_Size          s _                         _ _
 grinBasicAnnotGCPermit (BasicAnnot_Dflt                                         ) = GCPermit_Must
 %%]
 
-%%[(8 codegen) hs
+%%[(8 grin) hs
 instance PP BasicAnnotTagging where
   pp BasicAnnotTagging_None    = pp "notag"
   pp BasicAnnotTagging_FromPtr = pp "untag"
   pp BasicAnnotTagging_ToPtr   = pp "tag"
+%%]
 
+%%[(8 codegen) hs
 instance PP BasicAnnot where
+%%[[(8 grin)
   pp (BasicAnnot_Size          s t tg sgn) = s >#< t >#< tg >#< sgn
   pp (BasicAnnot_Dflt                    ) = pp "annotdflt"
+%%]]
+  pp _                                     = pp "ANNOT"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances: Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen) hs
-instance Serialize BasicAnnot where
-  sput (BasicAnnot_Size          a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
-  sput (BasicAnnot_Dflt                 ) = sputWord8 1
-  sget = do
-    t <- sgetWord8
-    case t of
-      0 -> liftM4 BasicAnnot_Size 			sget sget sget sget
-      1 -> return BasicAnnot_Dflt
-
+%%[50 hs
 instance Serialize BasicTy where
   sput = sputEnum8
   sget = sgetEnum8
@@ -426,8 +428,28 @@ instance Serialize BasicTy where
 instance Serialize BasicSize where
   sput = sputEnum8
   sget = sgetEnum8
+%%]
 
+%%[(50 codegen) hs
+instance Serialize BasicAnnot where
+  sput (BasicAnnot_None                 ) = sputWord8 0
+%%[[(8 grin)
+  sput (BasicAnnot_Dflt                 ) = sputWord8 1
+  sput (BasicAnnot_Size          a b c d) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
+%%]]
+  sget = do
+    t <- sgetWord8
+    case t of
+      0 -> return BasicAnnot_None
+%%[[(8 grin)
+      1 -> return BasicAnnot_Dflt
+      2 -> liftM4 BasicAnnot_Size 			sget sget sget sget
+%%]]
+%%]
+
+%%[(50 grin) hs
 instance Serialize BasicAnnotTagging where
   sput = sputEnum8
   sget = sgetEnum8
 %%]
+

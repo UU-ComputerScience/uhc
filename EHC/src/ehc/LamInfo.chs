@@ -141,7 +141,9 @@ data LamInfo
   = LamInfo
       { laminfoArity				:: !Int							-- arity of function
       , laminfoStackTrace  			:: !StackTraceInfo				-- stacktrace
+%%[[(8 grin)
       , laminfoGrinByteCode			:: Maybe GrinByteCodeLamInfo	-- GB specific info
+%%]]
       , laminfoBindAspMp			:: !LamInfoBindAspMp			-- info organized per/keyed on aspect
       }
   deriving ( Show
@@ -151,15 +153,25 @@ data LamInfo
            )
 
 emptyLamInfo' :: LamInfo
-emptyLamInfo' = LamInfo 0 StackTraceInfo_None (Just emptyGrinByteCodeLamInfo) Map.empty
+emptyLamInfo'
+  = LamInfo 0 StackTraceInfo_None
+%%[[(8 grin)
+            (Just emptyGrinByteCodeLamInfo)
+%%]]
+            Map.empty
 
 emptyLamInfo :: LamInfo
-emptyLamInfo = LamInfo 0 StackTraceInfo_None Nothing Map.empty
+emptyLamInfo
+  = LamInfo 0 StackTraceInfo_None
+%%[[(8 grin)
+            Nothing
+%%]]
+            Map.empty
 %%]
 
 %%[(8 codegen)
 instance PP LamInfo where
-  pp (LamInfo ar _ bc m) = ppAssocL $ assocLMapKey ppACBaspKeyS $ Map.toList m
+  pp (LamInfo {laminfoBindAspMp=m}) = ppAssocL $ assocLMapKey ppACBaspKeyS $ Map.toList m
 %%]
 
 %%[(50 codegen) hs export(laminfo1stArgIsStackTrace)
@@ -323,17 +335,19 @@ initLamMp = emptyLamMp
 %%% Instances: ForceEval, Serializable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen grin) hs
+%%[(50 grin) hs
 instance Serialize GrinByteCodeLamInfo where
   sput (GrinByteCodeLamInfo a) = sput a
   sget = liftM  GrinByteCodeLamInfo sget
+%%]
 
-%%[[93
+%%[(93 codegen) hs
 instance Serialize FusionRole where
   sput = sputEnum8
   sget = sgetEnum8
-%%]]
+%%]
 
+%%[(50 codegen) hs
 instance Serialize LamInfoBindAsp where
   sput (LamInfoBindAsp_RelevTy  	a) = sputWord8 0 >> sput a
   sput (LamInfoBindAsp_Ty 			a) = sputWord8 1 >> sput a
@@ -358,8 +372,13 @@ instance Serialize LamInfoBindAsp where
 %%]]
 
 instance Serialize LamInfo where
+%%[[(50 grin)
   sput (LamInfo a b c d) = sput a >> sput b >> sput c >> sput d
   sget = liftM4 LamInfo  sget sget sget sget
+%%][50
+  sput (LamInfo a b c) = sput a >> sput b >> sput c
+  sget = liftM3 LamInfo  sget sget sget
+%%]]
 
 instance Serialize StackTraceInfo where
   sput (StackTraceInfo_None                ) = sputWord8 0

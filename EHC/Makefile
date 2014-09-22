@@ -296,6 +296,13 @@ uhc-install-postprocess-llvm:
 # still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)
 
 ###########################################################################################
+# Target: UHC light, for installation as lib/cabal/package, Core only based subset
+###########################################################################################
+
+uhc-light:
+	$(MAKE) ENABLE_JS=no $(EHC_FOR_UHCLIGHT_BLD_EXEC)
+
+###########################################################################################
 # Target: UHC: binary distribution generation
 ###########################################################################################
 
@@ -362,6 +369,13 @@ uhc-dist: uhc
 install: uhc-install
 
 uninstall: uhc-uninstall
+
+###########################################################################################
+# Target: UHC: partial uhc via cabal
+###########################################################################################
+
+uhc-pkg:
+	$(MAKE) 103/bare
 
 ###########################################################################################
 # Target: UHC: regression test

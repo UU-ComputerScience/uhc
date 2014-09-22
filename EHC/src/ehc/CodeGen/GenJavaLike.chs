@@ -12,13 +12,13 @@ Various Java like code generation utility snippets.
 %%[(8 jazy || javascript) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 
-%%[(8 jazy || javascript) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Builtin2},{%{EH}BuiltinPrims})
+%%[(8 jazy || javascript) hs import({%{EH}Base.HsName.Builtin},{%{EH}CodeGen.BuiltinSizeInfo},{%{EH}CodeGen.BuiltinPrims})
 %%]
 
 %%[(8 jazy || javascript) hs import(UHC.Util.Pretty, UHC.Util.Utils, qualified UHC.Util.FastSeq as Seq)
 %%]
 
-%%[(8 jazy || javascript) hs import({%{EH}Opts.Base},{%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot})
+%%[(8 jazy || javascript) hs import({%{EH}Opts.Base},{%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}CodeGen.BasicAnnot})
 %%]
 
 %%[(8 jazy || javascript) hs import({%{EH}Foreign.Extract})

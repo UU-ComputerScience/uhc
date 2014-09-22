@@ -5,13 +5,13 @@
 %%[(8 codegen grin) hs module {%{EH}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{EH}Config} as Cfg,{%{EH}GrinCode.Pretty})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
+%%[(8 codegen grin) hs import({%{EH}CodeGen.BasicAnnot}) export(module {%{EH}CodeGen.BasicAnnot})
 %%]
 
 %%[(8 codegen grin) hs import(UHC.Util.Utils,UHC.Util.Pretty as Pretty,Data.Bits,Data.Maybe,qualified UHC.Util.FastSeq as Seq,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Builtin2},{%{EH}Opts})
+%%[(8 codegen grin) hs import({%{EH}Base.HsName.Builtin},{%{EH}CodeGen.BuiltinSizeInfo},{%{EH}Opts})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.Bits} as Binary)

@@ -12,13 +12,13 @@ Utils for encoding differences between variable references in generated code
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Bits, Data.List, Data.Char)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Builtin2})
+%%[(8 codegen) hs import({%{EH}Base.HsName.Builtin},{%{EH}CodeGen.BuiltinSizeInfo})
 %%]
 
 %%[(8 codegen) hs import(UHC.Util.Pretty, UHC.Util.Utils, qualified UHC.Util.FastSeq as Seq)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Opts.Base},{%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot})
+%%[(8 codegen) hs import({%{EH}Opts.Base},{%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}CodeGen.BasicAnnot})
 %%]
 
 %%[(8 codegen) hs import({%{EH}Foreign.Extract})

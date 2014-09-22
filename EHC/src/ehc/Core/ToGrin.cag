@@ -7,50 +7,52 @@
 %%% Haskell importable interface for toGrin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
+%%[(8 core) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen grin) hs import(Data.Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(8 core) hs import(Data.Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import(UHC.Util.Utils, UHC.Util.Pretty)
+%%[(8 core) hs import(UHC.Util.Utils, UHC.Util.Pretty)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.TermLike}, {%{EH}Opts}, {%{EH}Base.HsName.Builtin},{%{EH}Base.Builtin2})
+%%[(8 core) hs import({%{EH}Base.Common}, {%{EH}Base.TermLike}, {%{EH}Opts}, {%{EH}Base.HsName.Builtin},{%{EH}CodeGen.BuiltinSizeInfo})
 %%]
-%%[(8 codegen grin) hs import({%{EH}LamInfo}, {%{EH}Core}, {%{EH}Ty}, {%{EH}Gam.Full}, {%{EH}GrinCode})
+%%[(8 core) hs import({%{EH}LamInfo}, {%{EH}Core}, {%{EH}Ty}, {%{EH}Gam.Full})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Core.FFI})
+%%[(8 core grin) hs import({%{EH}GrinCode})
 %%]
-
-%%[(8 codegen grin) hs import(Debug.Trace)
-%%]
-
-%%[(8 codegen grin) hs import(Control.Monad, Control.Monad.State)
+%%[(8 core) hs import({%{EH}Core.FFI})
 %%]
 
-%%[(50 codegen grin) hs import({%{EH}CodeGen.ImportUsedModules})
+%%[(8 core) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Foreign.Extract})
+%%[(8 core) hs import(Control.Monad, Control.Monad.State)
 %%]
 
-%%[(96 codegen grin) hs import({%{EH}BuiltinPrims})
+%%[(50 core) hs import({%{EH}CodeGen.ImportUsedModules})
+%%]
+
+%%[(8 core) hs import({%{EH}Foreign.Extract})
+%%]
+
+%%[(96 core) hs import({%{EH}CodeGen.BuiltinPrims})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonCtxtStrict})
+%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonCtxtStrict})
 WRAPPER CodeAGItf
 %%]
 
-%%[(8 codegen grin) ag import({Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv},{Core/CommonDataGam})
+%%[(8 core) ag import({Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv},{Core/CommonDataGam})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fake AG dependencies to avoid INDUCED cycles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 codegen)
+%%[(99 core)
 SEM CModule
   | Mod         expr        .   gathLamMp           <   expr.gUniq
 %%]
@@ -58,25 +60,14 @@ SEM CBound
   | Bind        lhs         .   opts                <   expr.gUniq
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type signatures
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(99 codegen)
-%%]
-SEM *
-  | *           loc         .   gUniq           : UID
-                loc         .   lUniq           : UID
-                loc         .   lUniq2          : UID
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core)
 ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
-%%[(50 codegen grin)
+%%[(50 core)
 ATTR CModule CodeAGItf [ importUsedModules: ImportUsedModules | | ]
 %%]
 
@@ -84,7 +75,7 @@ ATTR CModule CodeAGItf [ importUsedModules: ImportUsedModules | | ]
 %%% DataGam required for FFI possible tags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core)
 %%]
 ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 
@@ -92,13 +83,13 @@ ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%% Gathering LamInfo, providing hook for Core/CommonLamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CodeAGItf
   | AGItf       loc         .	howUnionGathLamInfo
   												=	Map.union @gathLamMp
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SEM CodeAGItf
   | AGItf       loc         .   howMergeLamInfo	=   (\(LamInfo {laminfoArity=a}) i -> i {laminfoArity=a})
 %%]
@@ -107,7 +98,7 @@ SEM CodeAGItf
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core)
 ATTR AllCodeNT - AllMeta [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
@@ -138,7 +129,7 @@ SEM CPat
 Here we only gather arity info, stack trace info is assumed to be gathered earlier,
 and assumed to propagate correctly when merged with this info.
 
-%%[(8 codegen grin)
+%%[(8 core)
 SEM CBound
   | Bind        lhs         .   bindLamMp
                                             =   Map.singleton @lhs.nm
@@ -149,7 +140,7 @@ SEM CBound
 %%% Variables which are passed as parameter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 SEM CExpr
   | Var         loc         .   mbLam       =   case lamMpLookupLam @nm @lhs.lamMp of
                                                     j@(Just arity) | @lhs.isTopApp
@@ -159,7 +150,7 @@ SEM CExpr
                             .   appArity    =   length @grAppArgL
 %%]
 
-%%[(8888 codegen grin)
+%%[(8888 core)
 ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {Set.empty}: FvS ]
 
 SEM CExpr
@@ -177,7 +168,7 @@ SEM CExpr
 %%% Grin code, top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
 SEM CModule
@@ -192,7 +183,7 @@ SEM CModule
                                                              Map.empty
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core)
 ATTR AllExpr [ modNm: HsName | | ]
 
 SEM CModule
@@ -202,7 +193,7 @@ SEM CModule
 %%]
 
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 
 primNmList2GrTagMap :: [HsName] -> Map.Map HsName [GrTag]
 primNmList2GrTagMap = Map.fromList . map (\tn -> (tn, [tr tn]))
@@ -220,7 +211,7 @@ cTagsMp2GrTagMap = Map.fromList . map (\(tn,ts) -> (tn, tr ts))
 %%% Grin code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 grE2V :: GrExpr -> Maybe GrVal
 grE2V e = case e of {GrExpr_Unit v _ -> Just v; _ -> Nothing}
 
@@ -242,7 +233,7 @@ retStrict :: Bool -> GrVal -> GrExpr
 retStrict isStrict = if isStrict then (\v->GrExpr_Unit v GrType_None) else GrExpr_Store
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 mkNdPApp :: HsName -> Int -> GrValL -> GrVal
 mkNdPApp f nMiss argL = GrVal_Node (GrTag_PApp nMiss f) argL
 
@@ -253,7 +244,7 @@ mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
 mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 -- | Simplify GrVal by pushing the more complex ones in a GrExpr bound to a fresh variable
 type SimplState  = (GrExpr->GrExpr)
 type SimplStateM = StateT SimplState FreshUid
@@ -293,7 +284,7 @@ simplArg modNm uniq lamMp v = (v', mk)
   where ([v'], mk) = simplArgL modNm uniq lamMp [v] 
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 saturateAltL :: UID -> GrExpr -> GrAltL -> GrAltL
 saturateAltL uniq dflt altL
   =  case altL of
@@ -303,7 +294,7 @@ saturateAltL uniq dflt altL
        _   -> altL
 %%]
 
-%%[(10 codegen grin) hs
+%%[(10 core grin) hs
 unboxArg :: EHCOpts -> DataGam -> HsName -> UID -> TagDataInfo -> GrVal -> (GrVal,GrExpr->GrExpr)
 unboxArg opts dataGam modNm uniq ti v
   =  case v of
@@ -324,7 +315,7 @@ unboxArgL opts dataGam modNm uniq ti vL
 %%]
 
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 
 mkHole    (GrBind_Bind nm _ _ _)    rest  = GrExpr_Seq (GrExpr_Store (GrVal_Node GrTag_Hole []))
                                                        (GrPatLam_Var nm)
@@ -348,11 +339,11 @@ mkVarBinds            bindL rest  = foldr mkVarBind           rest bindL
 %%]
 
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 %%]
 
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CExpr CBound
   [ | | grExpr: GrExpr ]
 ATTR CExpr
@@ -488,7 +479,7 @@ SEM CBound
   							-- .	grGlobalL	=	[]
 %%]
 
-%%[(10 codegen grin) hs
+%%[(10 core grin) hs
 type TupAdaptFldL = [(GrVal,GrVal,GrVal->GrVal->GrAdapt)]
 
 mkGrAdapt :: EHCOpts -> DataGam -> HsName -> UID -> LamMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
@@ -502,13 +493,13 @@ mkGrAdapt opts dataGam modNm u lamMp isStrict tupFldL tupRecNm
           . zipWith3 ($) mkAL oL' $ vL'
 %%]
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 mkGrBoxed :: UID -> Bool -> EHCOpts -> HsName -> DataGam -> LamMp -> TagDataInfo -> GrVal -> (GrVal, GrExpr -> GrExpr)
 mkGrBoxed uniq doBox opts modNm dataGam lamMp ti v = runSimpl uniq $ firstMaybeM v1 [simplBoxM modNm]
   where v1 = (if doBox then mkGrBox opts dataGam ti else id) v
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CExpr CBound  [ | | grVal: GrVal ]
 
 SEM CExpr
@@ -548,7 +539,7 @@ SEM CBound
   | * - Val		loc			.	grVal       =   GrVal_Empty
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CExpr CBound [ | | grValWrap: {GrExpr -> GrExpr} ]
 
 SEM CExpr
@@ -571,7 +562,7 @@ SEM CBound
 %%% Do boxing?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR AllExprOnly CBound [ doBox: Bool | | ]
 
 SEM CExpr
@@ -605,7 +596,7 @@ SEM CAlt
 %%% Normal bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 SEM CBound
   | Bind        loc         .   aspectKeyS  =   acbaspkeyNone
                             .   isApply0    =   @bindMeta.isApply0
@@ -614,12 +605,12 @@ SEM CBound
                             .   grBindMeta  =   GrBindAnnNormal
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 SEM CBound
   | Bind Val    loc         .   nmAsp       =   hsnUniqifyACoreBindAspectKeyS @aspectKeyS @lhs.nm
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR AllBind [ | | grBindL   USE {++} {[]}: GrBindL
                    grGlobalL USE {++} {[]}: GrGlobalL
              ]
@@ -642,7 +633,7 @@ SEM CBound
 %%% FFI binding: plain stuff
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(90 codegen grin)
+%%[(90 core grin)
 SEM CBound
   | FFE         lhs         .   grBindL     =   []  -- not implemented yet
 %%]
@@ -651,12 +642,12 @@ SEM CBound
 %%% Case, pattern
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 idGrWrapCaseSel :: GrVal -> (GrVal,GrExpr->GrExpr)
 idGrWrapCaseSel s = (s,id)
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CAlt    [ | | grAlt: GrAlt ]
 ATTR CAltL   [ | | grAltL: GrAltL ]
 
@@ -668,7 +659,7 @@ SEM CAltL
   | Nil         lhs         .   grAltL      =   []
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CPat    [ | | grPat: GrPatAlt ]
 -- ATTR CPatL   [ | | grPatL: GrPatL ]    -- obsolete? (JF)
 
@@ -689,20 +680,20 @@ SEM CPat
 
 %%]
 
-%%[(97 codegen grin)
+%%[(97 core grin)
 SEM CPat
   | BoolExpr    lhs         .   grPat       =   GrPatAlt_Otherwise -- transformed into explicit if-then-else
                                                                    -- TODO: this is unfinished work, matching on literals does not work yet
 %%]
 
-%%[(10 codegen grin)
+%%[(10 core grin)
 ATTR AllPatFld [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
 
 SEM CPatFld
   | Fld         lhs         .   grTupFldL   =   [(@offset.grVal,\o -> GrSplit_Sel @fldNm o)]
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR AllPat AllAlt [ | | grWrapCase USE {`const`} {id}: {GrExpr -> GrExpr} ]
 ATTR AllPat AllAlt [ | | grWrapCaseSel USE {`const`} {idGrWrapCaseSel}: {GrVal -> (GrVal,GrExpr->GrExpr)} ]
 
@@ -712,7 +703,7 @@ SEM CPat
                                                 in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox @lhs.opts @lhs.dataGam tagInfoInt n))
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CPatRest [ | | self: SELF ]
 %%]
 
@@ -720,10 +711,10 @@ ATTR CPatRest [ | | self: SELF ]
 %%% Record fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
+%%[(8 core grin) hs
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CExpr [ | | grTupRec: GrVal]
 
 %%[[10
@@ -750,7 +741,7 @@ SEM CExpr
 %%% Let body
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CExpr [ | | grLetBody: GrExpr ]
 
 SEM CExpr
@@ -763,13 +754,21 @@ SEM CExpr
 %%% Lam arg/body info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
-ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
+%%[(8 core)
+ATTR CExpr [ | | grLamArgL: {[HsName]}  ]
 
 SEM CExpr
   | Lam         lhs         .   grLamArgL   =   @argNm : @body.grLamArgL
   | * - Lam Ann CaseAltFail
                 lhs         .   grLamArgL   =   []
+
+%%]
+
+%%[(8 core grin)
+ATTR CExpr [ | | grLamBody: GrExpr  ]
+
+SEM CExpr
+  | * - Lam Ann CaseAltFail
                 lhs         .   grLamBody   =   @grExpr
 
 %%]
@@ -778,7 +777,7 @@ SEM CExpr
 %%% App func/args info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CExpr [ | | grAppFun: HsName  grAppArgL: GrValL  ]
 
 SEM CExpr
@@ -788,7 +787,7 @@ SEM CExpr
                             .   grAppArgL   =   []
 %%]
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR CExpr [ | | grAppWrap: {GrExpr -> GrExpr} ]
 
 SEM CExpr
@@ -804,7 +803,7 @@ SEM CExpr
 
 
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn}  ]
 
 SEM CMetaVal

@@ -249,15 +249,17 @@ data EHCOpts
 %%]]
 %%[[(8 codegen)
       ,  ehcOptGenTrampoline_ ::  Bool              -- gen trampoline with (tail) calls
+      ,  ehcOptGenTrace       ::  Bool
+%%]]
+%%[[(8 grin)
       ,  ehcOptGenBoxGrin_	  ::  Bool				-- gen simplified grin delaying (un)boxing
 %%]]
 %%[[(8 codegen grin)
-      ,  ehcOptTimeCompile    ::  Bool
+      ,  ehcOptTimeGrinCompile    ::  Bool
 
       ,  ehcOptGenCaseDefault ::  Bool
       ,  ehcOptGenCmt         ::  Bool
       ,  ehcOptGenDebug       ::  Bool              -- generate runtime debug info
-      ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenTrace2      ::  Bool
 
       ,  ehcOptGenRTSInfo     ::  Int               -- flags to tell rts to dump internal info, currently: 1=on
@@ -416,13 +418,15 @@ emptyEHCOpts
 %%]]
 %%[[(8 codegen)
       ,  ehcOptGenTrampoline_  	=	False
+      ,  ehcOptGenTrace         =   False
+%%]]
+%%[[(8 grin)
       ,  ehcOptGenBoxGrin_  	=	False
 %%]]
 %%[[(8 codegen grin)
-      ,  ehcOptTimeCompile      =   False
+      ,  ehcOptTimeGrinCompile      =   False
       ,  ehcOptGenCaseDefault   =   False
       ,  ehcOptGenDebug         =   True
-      ,  ehcOptGenTrace         =   False
       ,  ehcOptGenTrace2        =   False
       ,  ehcOptGenRTSInfo       =   0
 
@@ -559,13 +563,21 @@ ehcOptCoreSysFCheckOnlyVal opts = ehcOptCoreSysFCheck opts
 %%]]
 %%]
 
-%%[(8 codegen grin) export(ehcOptEmitExecBytecode, ehcOptEmitBytecode)
+%%[8 export(ehcOptEmitExecBytecode, ehcOptEmitBytecode)
 -- generate bytecode
 ehcOptEmitExecBytecode :: EHCOpts -> Bool
+%%[[(8 codegen grin)
 ehcOptEmitExecBytecode = targetIsGrinBytecode . ehcOptTarget
+%%][8
+ehcOptEmitExecBytecode _ = False
+%%]]
 
 ehcOptEmitBytecode :: EHCOpts -> Bool
+%%[[(8 codegen grin)
 ehcOptEmitBytecode = ehcOptEmitExecBytecode
+%%][8
+ehcOptEmitBytecode _ = False
+%%]]
 %%]
 
 %%[(8 codegen javascript) export(ehcOptJavaScriptViaCMM)

@@ -17,7 +17,7 @@
 %%[(8 codegen) hs import(Control.Monad, Control.Monad.State)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
+%%[(8 codegen) hs import({%{EH}CodeGen.BasicAnnot}) export(module {%{EH}CodeGen.BasicAnnot})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

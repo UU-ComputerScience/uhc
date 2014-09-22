@@ -29,7 +29,7 @@ Folding over AST to compute semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- Core syntax and semantics
-%%[(8 codegen grin) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%[(8 core) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]

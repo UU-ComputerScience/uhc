@@ -21,7 +21,7 @@ Initial values
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
 %%]
 -- Core semantics
-%%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 -- HI semantics
 %%[5020 import(qualified {%{EH}HI.MainAG} as HISem)
