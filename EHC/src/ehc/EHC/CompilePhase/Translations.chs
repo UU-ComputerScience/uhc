@@ -72,7 +72,7 @@ Translation to another AST
 %%]
 %%[(8 codegen javascript) import({%{EH}Core.ToJavaScript})
 %%]
-%%[(8 codegen java) import({%{EH}Base.Bits},{%{EH}JVMClass.ToBinary})
+%%[(8 codegen java) import({%{EH}CodeGen.Bits},{%{EH}JVMClass.ToBinary})
 %%]
 
 -- Alternative backends

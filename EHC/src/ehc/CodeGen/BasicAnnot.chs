@@ -2,16 +2,16 @@
 %%% Annotation for size info related to builtin types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}CodeGen.BasicAnnot}
+%%[(8 codegen) hs module {%{EH}CodeGen.BasicAnnot}
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,Data.Bits, Data.List)
+%%[(8 codegen) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 
-%%[8 hs import(UHC.Util.Pretty, UHC.Util.Utils)
+%%[(8 codegen) hs import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
-%%[8 hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
+%%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}CodeGen.Bits})
 %%]
 
 %%[(50 codegen) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
@@ -21,7 +21,7 @@
 %%% BasicSize: size of BasicTy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(BasicSize(..))
+%%[(8 codegen) hs export(BasicSize(..))
 data BasicSize
   = -- Word variants, bitsize explicit
     BasicSize_Word8
@@ -41,7 +41,7 @@ data BasicSize
   deriving (Eq,Ord,Enum)
 %%]
 
-%%[50 hs
+%%[(50 codegen) hs
 deriving instance Typeable BasicSize
 deriving instance Data BasicSize
 %%]
@@ -49,7 +49,7 @@ deriving instance Data BasicSize
 The Show of BasicSize should returns strings of which the first letter is unique for the type.
 When used to pass to size encoding for bytecode C calls, only this first letter is used.
 
-%%[8 hs
+%%[(8 codegen) hs
 instance Show BasicSize where
   show BasicSize_Word8   = "w1"
   show BasicSize_Word16  = "w2"
@@ -65,13 +65,13 @@ instance Show BasicSize where
 %%]]
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 instance PP BasicSize where
   pp = pp . show
 %%]
 
 -- only required for parsing, to become obsolete
-%%[8 hs export(basicSizeOf)
+%%[(8 codegen) hs export(basicSizeOf)
 basicSizeOfMp :: Map.Map Int BasicSize
 basicSizeOfMp
   = Map.fromList
@@ -107,7 +107,7 @@ basicSizeIsWord BasicSize_Int64  | Cfg.use64Bits = True
 basicSizeIsWord _                                = False
 %%]
 
-%%[8 hs export(basicSizeIsSigned)
+%%[(8 codegen) hs export(basicSizeIsSigned)
 basicSizeIsSigned :: BasicSize -> Bool
 basicSizeIsSigned BasicSize_Int8  = True
 basicSizeIsSigned BasicSize_Int16 = True
@@ -301,7 +301,7 @@ data BasicTy
   deriving (Eq,Ord,Enum)
 %%]
 
-%%[50 hs
+%%[(50 codegen) hs
 deriving instance Typeable BasicTy
 deriving instance Data BasicTy
 %%]
@@ -309,7 +309,7 @@ deriving instance Data BasicTy
 The Show of BasicTy should returns strings of which the first letter is unique for the type.
 When used to pass to code, only this first letter is used.
 
-%%[8 hs
+%%[(8 codegen) hs
 instance Show BasicTy where
   show BasicTy_Word   			= "word"
   show BasicTy_SWord            = "sword"
@@ -321,7 +321,7 @@ instance Show BasicTy where
 %%]]
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 instance PP BasicTy where
   pp = pp . show
 %%]
@@ -420,7 +420,7 @@ instance PP BasicAnnot where
 %%% Instances: Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 hs
+%%[(50 codegen) hs
 instance Serialize BasicTy where
   sput = sputEnum8
   sget = sgetEnum8

@@ -221,11 +221,12 @@ Post processing involves the following:
 %%[(50 codegen)
 cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
 cpEhcFullProgPostModulePhases opts modNmL modSpl
-%%[[(50 grin)
-  | ehcOptOptimizationScope opts >= OptimizationScope_WholeGrin = cpEhcGrinFullProgPostModulePhases opts modNmL modSpl
-%%]]
   | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore = cpEhcCoreFullProgPostModulePhases opts modNmL modSpl
+%%[[(50 grin)
+  | otherwise                                                   = cpEhcGrinFullProgPostModulePhases opts modNmL modSpl
+%%][50
   | otherwise                                                   = return ()
+%%]]
 %%]
 
 %%[(50 codegen grin)

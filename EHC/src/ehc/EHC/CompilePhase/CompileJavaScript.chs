@@ -33,7 +33,7 @@ JavaScript compilation
 
 %%[(8 codegen javascript) import({%{EH}Core.ToJavaScript})
 %%]
-%%[(8 codegen javascript) import({%{EH}Base.Bits},{%{EH}JavaScript.Pretty})
+%%[(8 codegen javascript) import({%{EH}CodeGen.Bits},{%{EH}JavaScript.Pretty})
 %%]
 %%[(99 codegen javascript) import({%{EH}Base.FileSearchLocation},{%{EH}Base.PackageDatabase})
 %%]

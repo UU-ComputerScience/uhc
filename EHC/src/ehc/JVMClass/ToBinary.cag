@@ -17,7 +17,7 @@
 
 %%[(8 java) hs import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin})
 %%]
-%%[(8 java) hs import({%{EH}Base.Bits})
+%%[(8 java) hs import({%{EH}CodeGen.Bits})
 %%]
 %%[(8 java) hs import({%{EH}JVMClass})
 %%]
