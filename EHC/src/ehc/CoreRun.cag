@@ -1,0 +1,86 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[doesWhat doclatex
+CoreRun AST as Haskell datatype.
+
+CoreRun is a simplified Core intended for running it using an efficient as possible representation.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to CoreRun
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs module {%{EH}CoreRun}
+%%]
+
+%%[(8 corerun) hs import ({%{EH}Base.Common}, {%{EH}Base.Target})
+%%]
+
+%%[(8 corerun) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Utils)
+%%]
+
+%%[(8 corerun) hs import({%{EH}Ty})
+%%]
+
+%%[(8 corerun) hs import(Data.Array)
+%%]
+
+%%[(90 corerun) hs import({%{EH}Foreign})
+%%]
+
+%%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), Alt(..), Pat(..))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CoreRun: AG AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) ag import({CoreRun/AbsSyn})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CoreRun: Supporting types: fast access sequences/array
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(CRArray, mkCRArray, craLength)
+-- | Fast access sequence
+type CRArray x = Array Int x
+
+mkCRArray :: [x] -> CRArray x
+mkCRArray xs = listArray (0,l-1) xs
+  where l = length xs
+
+craLength :: CRArray x -> Int
+craLength a = h + 1
+  where (l,h) = bounds a
+%%]
+
+%%[(8 corerun) hs export(Bind)
+-- | Bind, just an Exp, addressing is left implicit
+type Bind = Exp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Running Core: runtime references
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(CRRef(..), noCRRef)
+-- | Identifier references for use during running CoreRun
+data CRRef
+  = CRRef_Glb			-- ^ global reference to module and its entry
+      { crrefMod		:: !Int		-- ^ module
+      , crrefEntry		:: !Int		-- ^ entry inside module
+      }
+  | CRRef_Loc			-- ^ local reference to on stack value
+      { crrefLev		:: !Int		-- ^ level
+      , crrefEntry		:: !Int		-- ^ entry inside level
+      }
+  deriving Show
+
+noCRRef = CRRef_Loc (-1) (-1)
+%%]
+
+

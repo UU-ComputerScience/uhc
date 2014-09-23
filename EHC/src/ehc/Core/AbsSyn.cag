@@ -434,7 +434,8 @@ SET AllPatFld   =   CPatFld CPatFldL AllBindAnn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-SET AllCodeNT   =   CModule AllExpr
+SET AllCodeNT
+  = CModule AllExpr
 
 SET AllExprOnly
   = CExpr MbCExpr

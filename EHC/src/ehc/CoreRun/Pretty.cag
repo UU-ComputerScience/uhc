@@ -1,0 +1,107 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[doesWhat doclatex
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CoreRun Pretty Printer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs module {%{EH}CoreRun.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Target},{%{EH}Ty},{%{EH}Foreign},{%{EH}CoreRun})
+%%]
+%%[(8 corerun) hs import({%{EH}Ty.Pretty})
+%%]
+
+%%[(8 corerun) hs import(Data.Array)
+%%]
+
+%%[(90 corerun) hs import({%{EH}Foreign.Pretty})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun).WRAPPER ag import({CoreRun/AbsSyn})
+WRAPPER
+  Mod
+  Exp
+  Alt
+%%]
+
+%%[(8 corerun) hs
+instance Show Mod where
+  show _ = "Mod"
+
+instance Show Exp where
+  show _ = "Exp"
+
+instance Show Alt where
+  show _ = "Alt"
+%%]
+
+%%[(8 corerun) hs
+instance PP Mod where
+  pp x = pp_Syn_Mod $ wrap_Mod (sem_Mod x) Inh_Mod
+
+instance PP Exp where
+  pp x = pp_Syn_Exp $ wrap_Exp (sem_Exp x) Inh_Exp
+
+instance PP Alt where
+  pp x = pp_Syn_Alt $ wrap_Alt (sem_Alt x) Inh_Alt
+%%]
+
+%%[(8 corerun) hs
+instance PP CRRef where
+  pp (CRRef_Glb m e) = "#g" >|< ppParensCommas [m,e]
+  pp (CRRef_Loc l e) = "#l" >|< ppParensCommas [l,e]
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+SEM Mod
+  | Mod         lhs         .   pp          =   "module" >#< @moduleNm
+                                                >-< vlist [ i >|< ":" >#< e | (i,e) <- assocs @binds ]
+
+SEM SExp
+  | Int         loc         .   pp          =   pp @int
+  | Char        loc         .   pp          =   pp @char
+  | String      loc         .   pp          =   pp @str
+%%[[97
+  | Integer     loc         .   pp          =   pp @integer
+%%]
+  | Var         loc         .   pp          =   pp @ref
+
+SEM Exp
+  | App         loc         .   pp          =   @func.pp >|< ppParensCommas (elems @args)
+  | LetRec      loc         .   pp          =   "letrec" >#< vlist [ i >|< ":" >#< e | (i,e) <- assocs @binds ] >#< "in" >-< @body.pp
+  | LetStr      loc         .   pp          =   "letstr" >#< "0:" >#< @bind >#< "in" >-< @body.pp
+  | Force       loc         .   pp          =   "eval" >|< ppParens @expr.pp
+  | Thunk       loc         .   pp          =   "thunk" >|< ppParens @expr.pp
+  | Lam         loc         .   pp          =   "\\" >|< @nrArgs >#< "->" >#< @body.pp
+  | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of"
+                                                >-< indent 1 (vlist $ elems @alts)
+  | Tup         loc         .   pp          =   @tag >|< ppParensCommas (elems @args)
+  | FFI         loc         .   pp          =   ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),@ppent,pp @ty])
+%%[[8
+                loc         .   ppent       =   pp (show @impEnt)
+%%][90
+                loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
+%%]]
+
+SEM Alt
+  | Alt         lhs         .   pp          =   @pat.pp >#< "->" >#< @expr.pp
+
+SEM Pat
+  | Con         lhs         .   pp          =   pp @tag
+%%]
+

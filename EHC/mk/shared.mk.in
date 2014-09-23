@@ -212,6 +212,9 @@ BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
 # location for barebones
 BARE_PREFIX			:= $(TOP_PREFIX)bare$(EHC_BUILD_SUFFIX_DASH)/
 
+# location for cabal buildable distributions (in particular uhc light)
+CABALDIST_PREFIX	:= $(TOP_PREFIX)cabaldist$(EHC_BUILD_SUFFIX_DASH)/
+
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
 

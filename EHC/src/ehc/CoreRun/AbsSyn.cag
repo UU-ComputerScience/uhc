@@ -1,0 +1,120 @@
+%%[(0 corerun)
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[doesWhat.CBind doclatex
+AST for CoreRun, a runnable (geared towards efficiency) representation of Core.
+
+It is not the intention to define AG semantics over this AST because non AG supported types (like array) are used.
+
+Global assumptions:
+- everything usually accessed by a key via a map now is done via an array
+- A-normal form, i.e. arguments by name
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+DATA Mod
+  | Mod         moduleNm        : {HsName}
+                binds           : {CRArray Bind}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+DATA SExp
+  -- base cases
+  | Var         ref             : {CRRef}
+  | Int         int             : {Int}
+  | Char        char            : {Char}
+  | String      str             : {String}
+%%[[97
+  | Integer     integer         : {Integer}
+%%]]
+%%]
+
+%%[(8 corerun)
+DATA Exp
+  -- base cases
+  | SExp        sexpr           : SExp
+
+  -- node constructor, tuple or data constructor, determined by tag
+  | Tup         tag             : {CTag}
+                args			: {CRArray Exp}
+
+  -- recursive let bindings
+  | LetRec      binds           : {CRArray Bind}
+                body            : Exp
+
+  -- strict let binding
+  | LetStr      bind            : Bind
+                body            : Exp
+
+  -- application, abstraction
+  | App         func            : Exp
+                args            : {CRArray Exp}
+  | Lam         nrArgs          : {Int}
+                body            : Exp
+
+  -- thunking, forcing
+  | Force		expr			: Exp
+  | Thunk		expr			: Exp
+
+  -- case
+  | Case        expr            : SExp
+                alts            : {CRArray Alt}
+
+  -- FFI call
+  | FFI         callconv        : {FFIWay}
+%%[[8
+                impEnt          : {String}
+%%][90
+                impEnt          : {ForeignEnt}
+%%]]
+                ty              : {Ty}
+
+%%[[9090
+  -- FFE binding (not yet implemented for all backends)
+  | FFE         callconv        : {FFIWay}
+                expEnt          : {ForeignEnt}
+                expr            : Exp
+                ty              : {Ty}
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding: just an Exp in an Array, addressing implicit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case alternative + pattern + pattern binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+DATA Alt
+  | Alt         pat             : Pat
+                expr            : Exp
+%%]
+
+%%[(8 corerun)
+DATA Pat
+  | Con         tag             : {CTag}
+%%[[97
+  | BoolExpr    expr            : Exp
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets of NT's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+SET AllNT
+  = Mod SExp Exp Alt Pat
+%%]

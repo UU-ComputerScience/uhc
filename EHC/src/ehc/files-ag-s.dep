@@ -33,6 +33,7 @@ JavaScript/Pretty.cag
 Error/Pretty.cag
 Core/BindExtract.cag
 Core/ExtractFFE.cag
+Core/ToCoreRun.cag
 Core/ToGrin.cag
 Core/ToJazy.cag
 Core/ToJavaScript.cag
@@ -64,6 +65,7 @@ Core/Trf/EraseExtractTysigCore.cag
 Core/Trf/ElimNonCodegenConstructs.cag
 Core/Trf/FixAfterParse.cag
 Core/SysF/Check.cag
+CoreRun/Pretty.cag
 GrinCode/Pretty.cag
 GrinCode/FreeVars.cag
 GrinCode/PointsToAnalysis.cag

@@ -28,10 +28,10 @@
 %%[(2 hmtyinfer) hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils1})
 %%]
 
-%%[(99 hmtyinfer).LaTeX hs import({%{EH}Base.LaTeX})
+%%[(99 hmtyinfer tyderivtree).LaTeX hs import({%{EH}Base.LaTeX})
 %%]
 
-%%[(100 hmtyinfer) -99.LaTeX
+%%[(100 hmtyinfer tyderivtree) -99.LaTeX
 %%]
 
 %%[(3 hmtyinfer) hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})
