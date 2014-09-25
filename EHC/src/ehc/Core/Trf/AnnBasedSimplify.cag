@@ -24,7 +24,7 @@ Simplifies expressions based on their structure & annotation:
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/Trf/CommonStructureInfo},{Core/CommonBindNm})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonCtxtPred},{Core/Trf/CommonStructureInfo},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 

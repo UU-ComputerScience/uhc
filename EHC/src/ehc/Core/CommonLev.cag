@@ -11,16 +11,17 @@
 %%% Level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Level is not defined for CExpr_Let, as the lexical level is assigned differently for various AGs
+Level is not defined for CExpr_Let, as the lexical level is assigned differently for various AGs, e.g. in:
+  Core/CommonLevLet
 
-%%[(8 codegen)
+Level is not defined for CExpr_Lam, as the lexical level is assigned differently for various AGs, e.g. in:
+  Core/CommonLevLamPer1Lam
+
+%%[(8 core)
 ATTR AllCodeNT [ lev: Int | | ]
 
 SEM CodeAGItf
   | AGItf       module      .   lev         =   cLevModule
-
-SEM CExpr
-  | Lam         loc         .   lev         =   @lhs.lev + 1
 
 SEM CAlt
   | Alt         loc         .   lev         =   @lhs.lev + 1
@@ -30,7 +31,7 @@ SEM CAlt
 %%% Binding global?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllBind [ isGlobal: Bool | | ]
 
 SEM CExpr

@@ -4,6 +4,7 @@
 %%]
 
 %%[doesWhat doclatex
+Pretty printing for CoreRun
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,12 +59,18 @@ instance PP Alt where
 instance PP CRRef where
   pp (CRRef_Glb m e) = "#g" >|< ppParensCommas [m,e]
   pp (CRRef_Loc l e) = "#l" >|< ppParensCommas [l,e]
-
+  pp (CRRef_Fld r e) = r >|< "@" >|< e
+  pp (CRRef_Dbg n  ) = "#n" >|< ppParens n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs
+ppBinds :: CRArray Bind -> PP_Doc
+ppBinds bs = vlist [ i >|< ":" >#< e | (i,e) <- assocs bs ]
+%%]
 
 %%[(8 corerun)
 ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
@@ -73,30 +80,31 @@ SEM Mod
                                                 >-< vlist [ i >|< ":" >#< e | (i,e) <- assocs @binds ]
 
 SEM SExp
-  | Int         loc         .   pp          =   pp @int
-  | Char        loc         .   pp          =   pp @char
-  | String      loc         .   pp          =   pp @str
+  | Int         lhs         .   pp          =   pp @int
+  | Char        lhs         .   pp          =   pp @char
+  | String      lhs         .   pp          =   pp $ show @str
 %%[[97
-  | Integer     loc         .   pp          =   pp @integer
+  | Integer     lhs         .   pp          =   pp @integer
 %%]
-  | Var         loc         .   pp          =   pp @ref
+  | Var         lhs         .   pp          =   pp @ref
 
 SEM Exp
-  | App         loc         .   pp          =   @func.pp >|< ppParensCommas (elems @args)
-  | LetRec      loc         .   pp          =   "letrec" >#< vlist [ i >|< ":" >#< e | (i,e) <- assocs @binds ] >#< "in" >-< @body.pp
-  | LetStr      loc         .   pp          =   "letstr" >#< "0:" >#< @bind >#< "in" >-< @body.pp
-  | Force       loc         .   pp          =   "eval" >|< ppParens @expr.pp
-  | Thunk       loc         .   pp          =   "thunk" >|< ppParens @expr.pp
-  | Lam         loc         .   pp          =   "\\" >|< @nrArgs >#< "->" >#< @body.pp
-  | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of"
+  | App         lhs         .   pp          =   "call" >#< @func.pp >|< ppParensCommas (elems @args)
+  | LetRec      lhs         .   pp          =   "letrec" >#< ppBinds @binds >#< "in" >-< @body.pp
+  | LetStr      lhs         .   pp          =   "letstr" >#< ppBinds @binds >#< "in" >-< @body.pp
+  | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
+  | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp
+  | Lam         lhs         .   pp          =   "\\" >|< @nrArgs >|< "@" >|< @nrAllocs >#< "->" >#< @body.pp
+  | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
                                                 >-< indent 1 (vlist $ elems @alts)
-  | Tup         loc         .   pp          =   @tag >|< ppParensCommas (elems @args)
-  | FFI         loc         .   pp          =   ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),@ppent,pp @ty])
+  | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (elems @args)
+  | FFI         lhs         .   pp          =   ("ffi" >#< ppCurlysCommasBlock [pp (show @callconv),@ppent,pp @ty])
 %%[[8
                 loc         .   ppent       =   pp (show @impEnt)
 %%][90
                 loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
 %%]]
+  | Dbg			lhs			.	pp			=	ppCurly $ "dbg:" >#< @msg
 
 SEM Alt
   | Alt         lhs         .   pp          =   @pat.pp >#< "->" >#< @expr.pp

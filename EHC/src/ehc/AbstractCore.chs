@@ -1475,7 +1475,7 @@ data AppFunKind
 
 %%[(8 codegen) hs export(WhatExpr(..))
 data WhatExpr
-  = ExprIsLam
+  = ExprIsLam   Int			-- arity
   | ExprIsApp   Int         -- arity
   | ExprIsVar   HsName
   | ExprIsInt   Int
@@ -1484,16 +1484,32 @@ data WhatExpr
   deriving Eq
 %%]
 
-%%[(8 codegen) hs export(whatExprMbApp,whatExprAppArity)
+%%[(8 codegen) hs export(whatExprMbVar, whatExprMbApp,whatExprMbLam,whatExprAppArity)
+-- | is an var?
+whatExprMbVar :: WhatExpr -> Maybe HsName
+whatExprMbVar (ExprIsVar a) = Just a
+whatExprMbVar _             = Nothing
+
 -- | is an app?
 whatExprMbApp :: WhatExpr -> Maybe Int
 whatExprMbApp (ExprIsApp a) = Just a
 whatExprMbApp _             = Nothing
 
+-- | is a lam?
+whatExprMbLam :: WhatExpr -> Maybe Int
+whatExprMbLam (ExprIsLam a) = Just a
+whatExprMbLam _             = Nothing
+
 -- | app arity
 whatExprAppArity :: WhatExpr -> Int
 whatExprAppArity (ExprIsApp a) = a
 whatExprAppArity _             = 0
+%%]
+
+%%[(8 codegen) hs export(whatExprIsLam)
+whatExprIsLam :: WhatExpr -> Bool
+whatExprIsLam = isJust . whatExprMbLam
+{-# INLINE whatExprIsLam #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

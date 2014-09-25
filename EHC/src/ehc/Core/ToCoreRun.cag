@@ -7,6 +7,17 @@
 %%% Code generation for jazy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
+Construct a more efficient CoreRun representation assuming a memory model where
+\begin{itemize}
+\item each module has an index, each entry an index into the module
+\item each lambda starts a new frame, holding also let bindings local to it, indexed by level and offset
+\item each case alternative opens a constructor of which fields are referred to by scrutinee + field offset
+\end{itemize}
+
+Offsets start at 0.
+%%]
+
 %%[(8 corerun) hs module {%{EH}Core.ToCoreRun} import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
 %%]
 
@@ -31,41 +42,39 @@
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonBindNm},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
+%%[(8 corerun).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPerTopLam},{Core/CommonBindNm},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
 WRAPPER CodeAGItf
 %%]
 
-%%[(8 corerun) hs export(cmod2CoreRun)
-cmod2CoreRun :: EHCOpts -> CModule -> CR.Mod
-cmod2CoreRun opts cmod
-  =  undefined -- (moduleClassNm_Syn_CodeAGItf t, jazy_Syn_CodeAGItf t)
-  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) (Inh_CodeAGItf {opts_Inh_CodeAGItf = opts})
+%%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRun)
+cmod2CoreRun'
+  :: EHCOpts
+     -> Int			-- sequence nr of module (offset), used to create global per module references
+     -> CModule
+     -> ( CR.Mod	-- generated CoreRun
+        , Nm2RefMp	-- name to ref mapping of toplevel bindings
+        )
+cmod2CoreRun' opts modNr cmod
+  =  ( crm_Syn_CodeAGItf t
+     , nm2refGath_Syn_CodeAGItf t
+     )
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+              (Inh_CodeAGItf
+                 { modNr_Inh_CodeAGItf = modNr
+                 , opts_Inh_CodeAGItf = opts
+                 })
+
+cmod2CoreRun :: CModule -> CR.Mod
+cmod2CoreRun m = m'
+  where (m',_) = cmod2CoreRun' defaultEHCOpts 0 m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instructions
+%%% Debugging
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 corerun) hs
-class JINSTR x where
-  j :: x -> J.JInstr
-
-instance JINSTR J.Instr where
-  j x = Seq.singleton x
-
-instance JINSTR J.JInstr where
-  j x = x
-
-instance JINSTR x => JINSTR [x] where
-  j xs = J.jinstrUnions (map j xs)
-
-infixr 3 ##
-
-(##) :: (JINSTR x, JINSTR y) => x -> y -> J.JInstr
-x ## y = J.jinstrUnions [j x,j y]
-
-emptyJI :: J.JInstr
-emptyJI = Seq.empty
+%%[(8 corerun) hs
+dbg = CR.Exp_Dbg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,125 +82,13 @@ emptyJI = Seq.empty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun)
+-- | Options
 ATTR CodeAGItf AllCodeNT [ opts: EHCOpts | | ]
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Names
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 corerun) hs
-nmFunSuff :: Int -> String
-nmFunSuff n | n >  5    = "N"
-            | n >= 0    = show n
-            | otherwise = ""
-nmInt       = mkHNm "java.lang.Integer"
-nmStr       = mkHNm "java.lang.String"
-nmChar      = mkHNm "java.lang.Character"
-nmObj       = mkHNm "java.lang.Object"
-nmInd       = mkHNm "uu.jazy.core.Indirection"
-nmFun       = nmFunN (-1)
-nmFunN   n  = mkHNm ("uu.jazy.core.Function" ++ nmFunSuff n)
-nmApp       = nmAppN (-1)
-nmAppN   n  = mkHNm ("uu.jazy.core.Apply" ++ nmFunSuff n)
-nmEvl       = mkHNm "uu.jazy.core.Eval"
-nmEval      = nmEvalN (-1)
-nmTag       = "tag"
-nmIndSet    = "set"
-nmEvalN  n  = "eval"  ++ nmFunSuff n
-nmApplyN n  = "apply" ++ nmFunSuff n
-nmRTS       = mkHNm "uu.jazy.ehc.RTS"
-nmPrim      = mkHNm "uu.jazy.ehc.Prim"
-nmData      = mkHNm "uu.jazy.ehc.Data"
-%%]
-
-%%[(9797 corerun) hs
-nmByte      = mkHNm "java.lang.Byte"
-nmShort     = mkHNm "java.lang.Short"
-nmLong      = mkHNm "java.lang.Long"
-nmFloat     = mkHNm "java.lang.Float"
-nmDouble    = mkHNm "java.lang.Double"
-%%]
-
-%%[(9898 corerun) hs
-nmHandle    = mkHNm "uu.jazy.ehc.Handle"
-nmToTuple   = "toTuple"
-%%]
-
-%%[(8888 corerun) hs
-hsnJazyVar :: CVarNmModuleCfg -> HsName -> HsName
-%%[[8
-hsnJazyVar cfg = hsnJavaLikeVar (\_ -> id, id, id) cfg False
-%%][50
-hsnJazyVar cfg = hsnJavaLikeVar (\_ -> hsnQualified, hsnPrefix "_", id) cfg False
-%%]]
-%%]
-
-%%[(8888 corerun) hs
-nmCafOrFunN 0 = nmAppN 0
-nmCafOrFunN n = nmFunN n
-
-nmSetOrEvlN 0 = "evalSet"
-nmSetOrEvlN n = nmEvalN n
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Safe name
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 corerun)
-SEM CBound
-  | *           loc         .   varnm           =   hsnJazyVar @lhs.cvarNmModCfg @lhs.nm
-                loc         .   varnm           :   HsName
-
-SEM CExpr
-  | Var         loc         .   varnm           =   hsnJazyVar @lhs.cvarNmModCfg @nm
-
-SEM CPatFld
-  | Fld         loc         .   varnm           =   hsnJazyVar @lhs.cvarNmModCfg @fldNm
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Known types
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 corerun) hs
-jtyInt  = J.Type_Class nmInt
-jtyChar = J.Type_Class nmChar
-jtyStr  = J.Type_Class nmStr
-jtyObj  = J.Type_Class nmObj
-jtyTup  = J.Type_Array jtyObj
-jtyData = J.Type_Class nmData
-jtyFun  = J.Type_Class nmFun
-jtyApp  = J.Type_Class nmApp
-jtyEvl  = J.Type_Class nmEvl
-jtyInd  = J.Type_Class nmInd
-%%]
-
-%%[(9797 corerun) hs
-jtyByte   = J.Type_Class nmByte
-jtyShort  = J.Type_Class nmShort
-jtyLong   = J.Type_Class nmLong
-jtyFloat  = J.Type_Class nmFloat
-jtyDouble = J.Type_Class nmDouble
-%%]
-
-%%[(9898 corerun) hs
-jtyHandle = J.Type_Class nmHandle
-jtyByteArray = J.Type_Array J.Type_Byte
-jtyInteger = J.Type_Class (mkHNm "java.math.BigInteger")
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Known offsets: arguments to a non static method
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 corerun) hs
-methArgOffset0 :: Int
-methArgOffset0 = 1
-
-methArgOffsets :: Int -> [Int]
-methArgOffsets arity = [methArgOffset0 .. arity - methArgOffset0 + 1]
+%%[(8 corerun)
+-- | Module (sequence)nr, offset
+ATTR CodeAGItf AllCodeNT [ modNr: Int | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -384,41 +281,70 @@ SEM CAlt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type of an expression
+%%% Name mapping: gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 corerun)
-ATTR CExpr [ | | jty: {J.Type} ]
+%%[(8 corerun) hs
+type Nm2RefMp = Map.Map HsName CR.CRRef
 %%]
 
-%%[(8888 corerun)
+%%[(8 corerun)
+-- | Thread offset as state throughout places where bindings are introduced.
+-- Invariant: offset is reset to 0 whenever `lev` is incremented.
+ATTR AllExpr [ | refOffset: Int | ]
+ATTR AllExpr [ nm2ref: Nm2RefMp | | ]
+ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`Map.union`} {Map.empty} : Nm2RefMp ]
+ATTR AllAlt CExpr [ | | refOffsetMax USE {`max`} {0} : Int ]
+SEM CModule
+  | Mod			expr		.	refOffset		=	0
+  							.	nm2ref			=	@expr.nm2refGath
+
 SEM CExpr
-  | Int         lhs         .   jty             =   jtyInt
-  | Char        lhs         .   jty             =   jtyChar
-  | String      lhs         .   jty             =   jtyStr
-  | Lam         lhs         .   jty             =   jtyFun
-  | App         lhs         .   jty             =   jtyApp
-  | * - Int Char String Lam App Ann CaseAltFail
-                loc         .   jty             =   tyDefault
+  | Lam			loc			.	refOffset		=	if @isTopLam
+  													then 0
+  													else @lhs.refOffset + 1
+				  			.	nm2refGath		=	if @isTopLam
+  													then Map.empty
+  													else Map.insert @bind.nm (CR.CRRef_Loc @lev @refOffset) @body.nm2refGath
+  				lhs			.	refOffset		=	@lhs.refOffset
+				loc			.	nm2ref			=	if @isTopLam
+  													then @nm2refGath `Map.union` @lhs.nm2ref
+  													else @lhs.nm2ref
+  				
+SEM CBind
+  | Bind		lhs			.	refOffset		=	@lhs.refOffset + 1
+                loc         .   ref             =   if @lhs.isGlobal
+                                                    then CR.CRRef_Glb @lhs.modNr @lhs.refOffset
+                                                    else CR.CRRef_Loc @lhs.lev   @lhs.refOffset
+  				lhs			.	nm2refGath		=	Map.singleton @nm @ref
+
+SEM CAlt
+  | Alt			expr		.	refOffset		=	@lhs.refOffset
+  							.	nm2ref			=	Map.fromList [ (n, CR.CRRef_Fld @lhs.scrutRef i) | (n,i) <- zip @pat.fldNmL [0..] ] `Map.union` @lhs.nm2ref
+  				lhs			.	refOffset		=	@lhs.refOffset
+  							.	refOffsetMax	=	max @expr.refOffset @expr.refOffsetMax
+
+SEM CExpr
+  | Let			lhs			.	refOffsetMax	=	@body.refOffsetMax
+
+ATTR AllAlt [ scrutRef: {CR.CRRef} | | ]
+
+SEM CExpr
+  | Case		alts		.	scrutRef		=	maybe CR.noCRRef (\n -> maybe (CR.CRRef_Dbg n) id $ Map.lookup n @lhs.nm2ref) $ whatExprMbVar @expr.whatBelow
+%%]
+
+%%[(8 corerun)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: App as args ++ func
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 corerun)
-ATTR CExpr [ | | jiArgFunL: {[J.JInstr]} ]
-
-SEM CExpr
-  | App         loc         .   jiArgFunL   =   @argUnpackWrap @arg.ji : @func.jiArgFunL
-  | * - App Ann lhs         .   jiArgFunL   =   [@ji]
-%%]
-
 %%[(8 corerun)
 ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {Either CTag CR.Exp} ]
 
 SEM CExpr
-  | App         loc         .   creAppArgL  =   @arg.cre : @func.creAppArgL
+  | App         loc         .   creAppArgL  =   (snd $ head @arg.crb) : @func.creAppArgL
                             .   creAppFun   =   @func.creAppFun
   | Tup			loc         .   creAppFun   =   Left @tag
   | * - App Ann Tup
@@ -429,14 +355,6 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: Lam as body + args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 corerun)
-ATTR CExpr [ | | jiBody: {J.JInstr} ]
-
-SEM CExpr
-  | Lam         loc         .   jiBody      =   @body.jiBody
-  | * - Lam Ann lhs         .   jiBody      =   @ji
-%%]
 
 %%[(8 corerun)
 ATTR CExpr [ | | creLamArgL: {[HsName]}  creLamBody: {CR.Exp} ]
@@ -452,85 +370,8 @@ SEM CExpr
 %%% Generation: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 corerun) hs
--- constant
-jiIntConst :: Integral x => x -> J.JInstr
-jiIntConst i = j $ J.Instr_Const $ J.Const_Int $ fromIntegral i
-
-jiStrConst :: String -> J.JInstr
-jiStrConst s = j $ J.Instr_Const $ J.Const_String s
-
--- new something
-jiNew :: HsName -> [(J.JInstr,J.Type)] -> J.JInstr
-jiNew nmCl argL
-  =    J.Instr_New nmCl
-    ## J.Instr_Dup (J.Type_Class nmCl)
-    ## map fst argL
-    ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method nmCl "<init>" (map snd argL) Nothing)
-
--- put into (static) field
-jiPut :: J.ClassRef -> Bool -> J.JInstr -> String -> J.Type -> J.JInstr
-jiPut clNm static e n t
-  = (if static then emptyJI else j $ J.Instr_Load (J.Type_Class clNm) 0 ) ## e ## J.Instr_Put static (J.Const_Field clNm n t)
-
--- new tuple
-jiNewTup :: [J.JInstr] -> J.JInstr
-jiNewTup as
-  =    jiIntConst nArgs
-    ## J.Instr_NewArray jtyObj
-    ## [  J.Instr_Dup jtyObj
-       ## jiIntConst o
-       ## a
-       ## J.Instr_AStore jtyObj
-       | (o,a) <- zip [0..] as
-       ]
-  where nArgs = length as
-
--- cast to type
-jiCast :: J.Type -> J.JInstr -> J.JInstr
-jiCast ty ji
-  =    ji
-    ## J.Instr_CheckCast ty
-
--- apply
-jiApp :: J.JInstr -> [J.JInstr] -> J.JInstr
-jiApp f as
-  =    jiCast jtyEvl f
-    ## as'
-    ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method nmEvl nm (replicate nArgs ty) (Just jtyApp))
-  where (nm,ty,as') = jiArgsPack as
-        nArgs       = length as'
-
--- set an indirection
-jiSetInd :: J.JInstr -> J.JInstr -> J.JInstr
-jiSetInd ind val
-  =    ind ## val
-    ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method nmInd nmIndSet [jtyObj] Nothing)
-
--- either new data constructor or tuple
-jiNewTupOrData :: CVarNmModuleCfg -> CTag -> [J.JInstr] -> J.JInstr
-jiNewTupOrData cfg ctag as
-  = case ctag of
-      CTag _ cn _ _ _ -> jiNew (hsnJavaLikeDataCon cfg cn) [ (a,jtyObj) | a <- as ]
-      CTagRec         -> jiNewTup as
-
--- force evaluation
-jiEvl :: J.JInstr -> J.JInstr
-jiEvl x = x ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmEvl nmEval [jtyObj] (Just jtyObj))
-
-%%]
-
-%%[(8888 corerun) hs
-jiToCd :: J.JInstr -> J.Code
-jiToCd i = J.Code_Code Nothing Nothing (Seq.toList i)
-%%]
-
-%%[(8888 corerun)
-ATTR CExpr CBound [ | | ji USE {##} {emptyJI}: {J.JInstr} ]
-%%]
-
 %%[(8 corerun)
-ATTR CExpr CBound [ | | cre: {CR.Exp} ]
+ATTR CExpr [ | | cre: {CR.Exp} ]
 %%]
 
 %%[(8888 corerun)
@@ -586,7 +427,7 @@ SEM CExpr
   | Int         loc         .   crse            =   CR.SExp_Int @int
   | Char        loc         .   crse            =   CR.SExp_Char @char
   | String      loc         .   crse            =   CR.SExp_String @str
-  | Var         loc         .   crse            =   CR.SExp_Var CR.noCRRef  -- TBD
+  | Var         loc         .   crse            =   CR.SExp_Var $ fromMaybe (CR.CRRef_Dbg @nm) $ Map.lookup @nm @lhs.nm2ref
 %%[[97
   | Integer     loc         .   crse            =   CR.SExp_Integer @integer
 %%]]
@@ -604,21 +445,47 @@ SEM CExpr
     Integer
 %%]]
                 loc         .   cre             =   CR.Exp_SExp @crse
-  | Lam         loc         .   cre             =   CR.Exp_Lam (length @body.creLamArgL) @body.creLamBody
+  | Lam         loc         .   cre             =   if @isTopLam
+   													then CR.Exp_Lam (length @creLamArgL) @body.refOffsetMax @body.creLamBody
+   													else dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
   | App         loc         .   cre             =   if @isTopApp'
-                                                    then either CR.Exp_Tup CR.Exp_App @func.creAppFun $ CR.mkCRArray @func.creAppArgL
-                                                    else panic "Core.ToCoreRun.CExpr.App.cre" -- TBD
+                                                    then either CR.Exp_Tup CR.Exp_App @creAppFun $ CR.mkCRArray @creAppArgL
+                                                    else dbg "Core.ToCoreRun.CExpr.App.cre" -- TBD
+  | Let         loc         .   cre             =   if @isGlobal
+                                                    then @body.cre
+                                                    else (case @categ of {CBindCateg_Strict -> CR.Exp_LetStr; _ -> CR.Exp_LetRec})
+                                                            (CR.mkCRArrayLwb @lhs.refOffset $ map snd @binds.crb) @body.cre
   | Ann         loc         .   cre             =   @expr.cre
   | * - Int Char String Var
-        Lam App Ann
+        Lam App Let
+        Ann
 %%[[97
         Integer
 %%]]
-                loc         .   cre             =   panic "Core.ToCoreRun.CExpr.cre"
+                loc         .   cre             =   dbg "Core.ToCoreRun.CExpr.cre"
 %%]
 
 %%[(8 corerun)
+ATTR AllBind CExpr [ | | crb USE {++} {[]}: {[(HsName, CR.Bind)]} ]
+
 SEM CBound
+  | Bind Val    loc         .   crb             =   [(@lhs.nm, (if @lhs.evalCtx == EvalCtx_Eval then CR.Exp_Force else CR.Exp_Thunk) @expr.cre)]
+
+SEM CBind
+  | Bind		loc			.	crb				=	take 1 @bindAspects.crb -- TBD: multiple, choose?
+
+SEM CExpr
+  | Let         lhs         .   crb             =   if @isGlobal
+                                                    then @binds.crb ++ @body.crb
+                                                    else []
+  | * - Let Ann	lhs			.	crb				=	[]
+%%]
+
+%%[(8 corerun)
+ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
+
+SEM CModule
+  | Mod			lhs			.	crm				=	CR.Mod_Mod @moduleNm $ CR.mkCRArray $ map snd @expr.crb
 %%]
 
 %%[(8888 corerun)
@@ -663,22 +530,6 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Dealing with >5 args
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 corerun) hs
--- pack > 5 args into tuple, otherwise normal
-jiArgsPack :: [J.JInstr] -> (String,J.Type,[J.JInstr])
-jiArgsPack = javalikeArgsPack 5 (jtyTup,jtyObj,jiNewTup,nmApplyN)
-%%]
-
-%%[(8888 corerun) hs
--- unpack > 5 args from tuple, otherwise normal
-jiArgsUnpack :: [HsName] -> ([(J.Local,J.Type)],[(J.JInstr,J.Type)],[(HsName,CVarInfo)])
-jiArgsUnpack = javalikeArgsUnpack 5 (jtyTup,jtyObj,J.Type_Int,\a -> methArgOffsets (length a), jiIntConst,\n _ -> methArgOffsets n, methArgOffsets)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: single binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -695,13 +546,6 @@ jBind = jBind' (tyDefault, hsnJavaLikeVarToFld, \nm -> J.Field_Field [J.Flag_Pub
 %%[(8888 corerun)
 SEM CBound
   | Bind Val    loc         .   jiExpr          =   (if @lhs.evalCtx == EvalCtx_Eval then jiEvl else id) @expr.ji
-%%]
-
-%%[(8 corerun)
-SEM CBound
-  | Bind Val    loc         .   cre             =   (if @lhs.evalCtx == EvalCtx_Eval then CR.Exp_Force else CR.Exp_Thunk) @expr.cre
-  | * - Bind Val
-  				loc         .   cre             =   panic "Core.ToCoreRun.CBound.cre"
 %%]
 
 %%[(8888 corerun)

@@ -118,6 +118,7 @@ data CoreOpt
 %%]]
 %%[[(8 corerun)
   | CoreOpt_Run					-- run after compilation
+  | CoreOpt_DumpRun				-- dump CoreRun
 %%]]
 %%[[(8 coresysf)
   | CoreOpt_SysF				-- 20120419, work in startup/progress: generate System F

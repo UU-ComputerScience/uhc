@@ -70,12 +70,12 @@ SEM CBoundL
 %%[(8 jazy || javascript)
 SEM CExpr
   | Lam         loc         .   (hasFunHere,(lamNm,origLamNm))
-                                                =   if @lhs.whatAbove /= ExprIsLam
+                                                =   if @isTopLam
                                                     then (True,fromJust @lhs.mbLamNm)
                                                     else (False,(hsnUnknown,hsnUnknown))
 
 SEM CBound
-  | Bind Val    loc         .   isCAF           =   @expr.whatBelow /= ExprIsLam
+  | Bind Val    loc         .   isCAF           =   not $ whatExprIsLam @expr.whatBelow
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

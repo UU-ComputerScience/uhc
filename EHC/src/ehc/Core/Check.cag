@@ -29,7 +29,7 @@
 %%[(50 codegen corein) hs import(UHC.Util.Pretty)
 %%]
 
-%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
+%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
 WRAPPER CodeAGItf
 %%]
 
@@ -147,13 +147,13 @@ ATTR CodeAGItf CModule CExpr AllBind [ | | isLamLifted USE {&&} {True} : Bool ]
 
 SEM CExpr
   | Lam         lhs         .   isFreeOfLam         =   False
-                            .   lamBodyIsFreeOfLam  =   if @body.whatBelow == ExprIsLam
+                            .   lamBodyIsFreeOfLam  =   if whatExprIsLam @body.whatBelow
                                                         then @body.lamBodyIsFreeOfLam
                                                         else @body.isFreeOfLam
   | * - Lam     lhs         .   lamBodyIsFreeOfLam  =   False
 
 SEM CBound
-  | Bind Val    loc         .   isLamLifted         =   if @expr.whatBelow == ExprIsLam
+  | Bind Val    loc         .   isLamLifted         =   if whatExprIsLam @expr.whatBelow
                                                         then @lhs.isGlobal && @expr.lamBodyIsFreeOfLam
                                                         else @expr.isFreeOfLam
 

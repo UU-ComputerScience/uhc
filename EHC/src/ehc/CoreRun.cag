@@ -45,16 +45,20 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%% CoreRun: Supporting types: fast access sequences/array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(CRArray, mkCRArray, craLength)
+%%[(8 corerun) hs export(CRArray, mkCRArrayLwb, mkCRArray, craLength)
 -- | Fast access sequence
 type CRArray x = Array Int x
 
-mkCRArray :: [x] -> CRArray x
-mkCRArray xs = listArray (0,l-1) xs
+-- | Make array with lowerbound
+mkCRArrayLwb :: Int -> [x] -> CRArray x
+mkCRArrayLwb lwb xs = listArray (lwb,lwb+l-1) xs
   where l = length xs
 
+mkCRArray :: [x] -> CRArray x
+mkCRArray = mkCRArrayLwb 0
+
 craLength :: CRArray x -> Int
-craLength a = h + 1
+craLength a = h + 1 - l
   where (l,h) = bounds a
 %%]
 
@@ -78,9 +82,16 @@ data CRRef
       { crrefLev		:: !Int		-- ^ level
       , crrefEntry		:: !Int		-- ^ entry inside level
       }
+  | CRRef_Fld			-- ^ fld of memory/constructor node referred to by other ref
+      { crrefRef		:: !CRRef	-- ^ of what this is a field
+      , crrefEntry		:: !Int		-- ^ entry inside level
+      }
+  | CRRef_Dbg			-- ^ debug variant, holding original name
+      { crrefNm			:: !HsName
+      }
   deriving Show
 
-noCRRef = CRRef_Loc (-1) (-1)
+noCRRef = CRRef_Dbg hsnUnknown
 %%]
 
 

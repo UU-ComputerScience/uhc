@@ -1,9 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Level, let also one level higher
+%%% Level, lam also one level higher for toplevel lam only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 core)
+%%[(8 codegen core)
 SEM CExpr
-  | Let         binds       .   lev         =   @lhs.lev + 1
+  | Lam			loc         .   lev         =	if @isTopLam then @lhs.lev + 1 else @lhs.lev
 %%]
 

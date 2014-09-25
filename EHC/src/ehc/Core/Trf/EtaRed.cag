@@ -22,7 +22,7 @@ No special reason except it is the first transformation.
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonPred},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonBindNm})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonPred},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 

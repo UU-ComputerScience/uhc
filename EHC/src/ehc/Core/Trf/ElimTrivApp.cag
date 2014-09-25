@@ -20,7 +20,7 @@ This is done for Prelude functions:
 %%[(8 codegen) hs import(UHC.Util.Utils)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/Trf/CommonStructureInfo},{Core/CommonBindNm})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/Trf/CommonStructureInfo},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 

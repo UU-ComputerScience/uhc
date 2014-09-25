@@ -53,13 +53,14 @@ DATA Exp
                 body            : Exp
 
   -- strict let binding
-  | LetStr      bind            : Bind
+  | LetStr      binds           : {CRArray Bind}
                 body            : Exp
 
   -- application, abstraction
   | App         func            : Exp
                 args            : {CRArray Exp}
-  | Lam         nrArgs          : {Int}
+  | Lam         nrArgs          : {Int}		-- nr of arguments
+                nrAllocs        : {Int}		-- nr stack frame locations to be allocated
                 body            : Exp
 
   -- thunking, forcing
@@ -86,6 +87,8 @@ DATA Exp
                 expr            : Exp
                 ty              : {Ty}
 %%]]
+  -- Debug only
+  | Dbg			msg				: {String}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

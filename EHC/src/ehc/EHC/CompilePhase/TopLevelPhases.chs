@@ -269,7 +269,7 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , cpFlowHILamMp mainModNm
            , cpProcessCoreFold mainModNm -- redo folding for replaced main module
            ]
-           -- ++ (if ehcOptDumpCoreStages opts then [void $ cpOutputCore False "" "full.core" mainModNm] else [])
+           -- ++ (if ehcOptDumpCoreStages opts then [void $ cpOutputCore CPOutputCoreHow_Text "" "full.core" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
               ]
           )
@@ -1158,8 +1158,8 @@ cpProcessCoreBasic modNm
 %%[[50
                , cpFlowHILamMp modNm
 %%]]
-               -- , when (ehcOptEmitCore opts) (void $ cpOutputCore True "" "core" modNm)
-               , void $ cpOutputCore True [] "" Cfg.suffixDotlessBinaryCore modNm
+               -- , when (ehcOptEmitCore opts) (void $ cpOutputCore CPOutputCoreHow_Binary "" "core" modNm)
+               , void $ cpOutputCore CPOutputCoreHow_Binary [] "" Cfg.suffixDotlessBinaryCore modNm
 %%[[(8888 codegen java)
                , when (ehcOptEmitJava opts) (cpOutputJava         "java" modNm)
 %%]]
@@ -1211,10 +1211,15 @@ cpProcessCoreRest modNm
 %%]]
 %%[[(8 coreout)
                 ++ (if CoreOpt_Dump `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore False [] "" Cfg.suffixDotlessOutputTextualCore modNm]
+                    then [void $ cpOutputCore CPOutputCoreHow_Text [] "" Cfg.suffixDotlessOutputTextualCore modNm]
                     else [])
                 ++ (if CoreOpt_DumpBinary `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore True [] "" Cfg.suffixDotlessInputOutputBinaryCore modNm]
+                    then [void $ cpOutputCore CPOutputCoreHow_Binary [] "" Cfg.suffixDotlessInputOutputBinaryCore modNm]
+                    else [])
+%%]]
+%%[[(8 corerun)
+                ++ (if CoreOpt_DumpRun `elem` ehcOptCoreOpts opts
+                    then [void $ cpOutputCore CPOutputCoreHow_Run [] "" Cfg.suffixDotlessInputOutputCoreRun modNm]
                     else [])
 %%]]
 %%[[99

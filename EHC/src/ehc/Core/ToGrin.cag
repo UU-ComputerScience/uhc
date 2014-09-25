@@ -41,7 +41,7 @@
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonCtxtStrict})
+%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonCtxtStrict})
 WRAPPER CodeAGItf
 %%]
 

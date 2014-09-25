@@ -121,7 +121,7 @@ cpTransformCore optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcoreOut
-       ; cpOutputCoreModules False [{- CoreOpt_DumpAlsoNonParseable -}] (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputCoreModules CPOutputCoreHow_Text [{- CoreOpt_DumpAlsoNonParseable -}] (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
 %%]

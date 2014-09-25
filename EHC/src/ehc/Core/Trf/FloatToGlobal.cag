@@ -44,7 +44,7 @@ The following invariants are and must be maintained:
 %%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFloat})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFloat})
 WRAPPER CodeAGItf
 %%]
 

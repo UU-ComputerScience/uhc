@@ -43,7 +43,7 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%[(8 core) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
 %%]
 
-%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonFFI},{Core/CommonBindNm},{Core/Trf/CommonStructureInfo},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
+%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonFFI},{Core/CommonBindNm},{Core/Trf/CommonStructureInfo},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
 WRAPPER CodeAGItf
 %%]
 
@@ -427,8 +427,8 @@ SEM CExpr
                                                       ExprIsApp _ -> RelevCoe_Id
                                                       _           -> @func.coe
   | Lam         loc         .   hereBodyCoe     =   case @body.whatBelow of
-                                                      ExprIsLam -> RelevCoe_Id
-                                                      _         -> @body.coe
+                                                      ExprIsLam _ -> RelevCoe_Id
+                                                      _           -> @body.coe
 
 SEM CBound
   | Bind        loc         .   hereBindCoe     =   @expr.coe <.> maybe RelevCoe_Id (@finalRVarMp `varUpd`) @mbBindCoe

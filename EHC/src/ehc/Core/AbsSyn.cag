@@ -1,4 +1,4 @@
-%%[(0 codegen)
+%%[(0 core)
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -31,7 +31,7 @@ Extensibility at:
 %%% Abstract syntax for Core code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 DATA CodeAGItf
   | AGItf       module          : CModule
 %%]
@@ -40,7 +40,7 @@ DATA CodeAGItf
 %%% Top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 DATA CModule
   | Mod         moduleNm        : {HsName}
                 imports			: CImportL
@@ -53,7 +53,7 @@ DATA CModule
 %%% Imports
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 DATA CImport
   | Import		nm				: {HsName}
 
@@ -66,7 +66,7 @@ SET AllImport	= CImportL CImport
 %%% Decl for various pieces of meta info, for now (20140616) only datatype
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 DATA CDeclMeta
   | Data		tyNm			: {HsName}
   				dataCons		: CDataConL
@@ -92,14 +92,14 @@ SET AllMetaNT 	= AllDeclMeta AllDataCon
 %%% Expression
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 DATA CExpr
   -- base cases
   | Var         ref             : {ACoreBindRef}
   | Int         int             : {Int}
   | Char        char            : {Char}
   | String      str             : {String}
-%%[[(97 codegen)
+%%[[(97 core)
   | Integer     integer         : {Integer}
 %%]]
 
@@ -164,13 +164,13 @@ DATA CExpr
 %%]]
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 -- for debugging
 DATA CExpr
   | Dbg			info			: {String}
 %%]
 
-%%[(9 codegen)
+%%[(9 core)
 DATA CExpr
   -- coercion related
   | Hole        uid             : {UID}
@@ -183,7 +183,7 @@ DATA CExpr
                 body            : CExpr
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 TYPE MbCExpr	= MAYBE CExpr
 %%]
 
@@ -191,7 +191,7 @@ TYPE MbCExpr	= MAYBE CExpr
 %%% SysF specific
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen coresysf)
+%%[(8 core coresysf)
 -- meta (type, kind, ...) level only
 DATA CExpr
   -- arrow type, i.e. the meta info of a Lam
@@ -199,7 +199,7 @@ DATA CExpr
                 body            : CExpr
 %%]
 
-%%[(8 codegen coresysf)
+%%[(8 core coresysf)
 -- Coercion related
 DATA CExpr
   | Cast        expr            : CExpr
@@ -214,7 +214,7 @@ DATA CExpr
 %%% Meta information
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 TYPE CMetas 	= (CMetaBind,CMetaVal)
 
 DATA CMetaBind
@@ -241,14 +241,14 @@ SET AllMeta		= CMetaVal CMetaBind CMetas
 %%% Annotations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 -- | on CExpr
 DATA CExpr
   | Ann         ann             : CExprAnn
                 expr            : CExpr
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 -- | ann for CExpr
 DATA CExprAnn
   | Ty			ty				: {Ty}
@@ -260,11 +260,11 @@ DATA CBindAnn
   | Coe			coe				: {RelevCoe}
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 TYPE CBindAnnL	= [CBindAnn]
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SET AllExprAnn	= CExprAnn
 SET AllBindAnn	= CBindAnn CBindAnnL
 %%]
@@ -273,7 +273,7 @@ SET AllBindAnn	= CBindAnn CBindAnnL
 %%% Let binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 -- | The binder
 DATA CBind
   | Bind        nm              : {HsName}
@@ -315,7 +315,7 @@ TYPE CBindL     	=   [CBind]
 TYPE CBoundL		=	[CBound]
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 SET AllBound        =   CBound CBoundL
 SET AllBindOnly 	=   CBind CBindL
 SET AllBind     	=   AllBindOnly AllBound
@@ -326,7 +326,7 @@ SET AllBind     	=   AllBindOnly AllBound
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- overriding
-%%[(8889 codegen)
+%%[(8889 core)
 DATA CBind
   | Bind        nm              : {HsName}
                 bindAspects     : CBindAspectL
@@ -337,7 +337,7 @@ DATA CExpr
 %%]
 
 -- new
-%%[(8889 codegen)
+%%[(8889 core)
 DATA CBindAspect
   -- the classical binding to a CExpr; transitional
   | Bind		bindMeta        : CMetas
@@ -379,7 +379,7 @@ TYPE CValTyPropS	=	SET CValTyProp
 %%% Case alternative + pattern + pattern binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 DATA CAlt
   | Alt         pat             : CPat
                 expr            : CExpr
@@ -387,7 +387,7 @@ DATA CAlt
 TYPE CAltL      =   [CAlt]
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 DATA CPat
   | Var         pnm             : {HsName}
   | Con         tag             : {CTag}
@@ -397,7 +397,7 @@ DATA CPat
   | Char        char            : {Char}
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 DATA CPatRest
   | Var         nm              : {HsName}
   | Empty
@@ -411,7 +411,7 @@ DATA CPatFld
 TYPE CPatFldL   =   [CPatFld]
 %%]
 
-%%[(97 codegen)
+%%[(97 core)
 DATA CPat
   | BoolExpr    cexpr           : {CExpr}
 %%]
@@ -423,7 +423,7 @@ DATA CPat
                 offset          : CExpr
                 fldPat          : CPat
 
-%%[(8 codegen)
+%%[(8 core)
 SET AllAlt      =   CAlt CAltL
 SET AllPat      =   CPatRest CPat AllPatFld
 SET AllPatFld   =   CPatFld CPatFldL AllBindAnn
@@ -433,7 +433,7 @@ SET AllPatFld   =   CPatFld CPatFldL AllBindAnn
 %%% Sets of NT's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 SET AllCodeNT
   = CModule AllExpr
 

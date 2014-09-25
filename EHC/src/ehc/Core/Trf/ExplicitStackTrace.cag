@@ -31,7 +31,7 @@ However, ideally, this trf should be placed before that, but this currently brea
 %%[(99 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
-%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
 WRAPPER CodeAGItf
 %%]
 

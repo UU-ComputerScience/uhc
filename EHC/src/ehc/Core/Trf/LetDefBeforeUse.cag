@@ -40,7 +40,7 @@ Assumptions:
 %%[(8 codegen) hs import(UHC.Util.Utils(scc))
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLet},{Core/Trf/CommonFv})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/Trf/CommonFv})
 WRAPPER CodeAGItf
 %%]
 

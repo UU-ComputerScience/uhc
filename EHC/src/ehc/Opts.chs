@@ -121,6 +121,9 @@ instance Show CoreOpt where
   show CoreOpt_DumpBinary	      	= "dump-binary"
   show CoreOpt_DumpAlsoNonParseable	= "whendump-alsononparseable"
 %%]]
+%%[[(8 corerun)
+  show CoreOpt_DumpRun            	= "dump-run"
+%%]]
 %%[[(8 coresysf)
   show CoreOpt_SysF             	= "sysf"
   show CoreOpt_SysFCheck        	= "check"

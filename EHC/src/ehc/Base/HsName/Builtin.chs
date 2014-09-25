@@ -29,15 +29,13 @@ strProd :: Int -> String
 %%]
 
 %%[1.HsName.Base.itf
-hsnArrow, hsnUnknown, hsnInt, hsnChar, hsnWild
-                                    ::  HsName
+hsnArrow, hsnInt, hsnChar, hsnWild  ::  HsName
 hsnProd                             ::  Int -> HsName
 hsnProdArity                        ::  HsName -> Int
 %%]
 
 %%[1.HsName.Base.impl
 hsnArrow                            =   hsnFromString "->"
-hsnUnknown                          =   hsnFromString "??"
 hsnInt                              =   hsnFromString "Int"
 hsnChar                             =   hsnFromString "Char"
 hsnWild                             =   hsnFromString "_"

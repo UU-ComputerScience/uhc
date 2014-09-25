@@ -322,6 +322,12 @@ suffixDotlessInputOutputTextualCore = suffixDotlessOutputTextualCore
 
 %%]
 
+%%[(8 corerun) export(suffixDotlessInputOutputCoreRun)
+-- | Suffix (dotless) for CoreRun files
+suffixDotlessInputOutputCoreRun :: String
+suffixDotlessInputOutputCoreRun = "rcr"
+%%]
+
 %%[(8 javascript) export(suffixJavaScriptLib)
 suffixJavaScriptLib :: String
 suffixJavaScriptLib = filter (/= '.') "@SUFFIX_LIBJS@"
