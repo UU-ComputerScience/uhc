@@ -60,7 +60,7 @@ DATA Exp
   | App         func            : Exp
                 args            : {CRArray Exp}
   | Lam         nrArgs          : {Int}		-- nr of arguments
-                nrAllocs        : {Int}		-- nr stack frame locations to be allocated
+                nrAllocs        : {Int}		-- nr stack frame locations to be allocated (excluding arguments) for locals
                 body            : Exp
 
   -- thunking, forcing
@@ -68,7 +68,7 @@ DATA Exp
   | Thunk		expr			: Exp
 
   -- case
-  | Case        expr            : SExp
+  | Case        expr            : Exp		-- SExp
                 alts            : {CRArray Alt}
 
   -- FFI call

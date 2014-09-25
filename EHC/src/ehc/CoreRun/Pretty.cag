@@ -57,10 +57,10 @@ instance PP Alt where
 
 %%[(8 corerun) hs
 instance PP CRRef where
-  pp (CRRef_Glb m e) = "#g" >|< ppParensCommas [m,e]
-  pp (CRRef_Loc l e) = "#l" >|< ppParensCommas [l,e]
-  pp (CRRef_Fld r e) = r >|< "@" >|< e
-  pp (CRRef_Dbg n  ) = "#n" >|< ppParens n
+  pp (CRRef_Glb m e) = "#g" >|< ppDots [m,e]
+  pp (CRRef_Loc l e) = "#l" >|< ppDots [l,e]
+  pp (CRRef_Fld r e) = ppDots [pp r, pp e]
+  pp (CRRef_Dbg n  ) = "##" >|< n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,7 +81,7 @@ SEM Mod
 
 SEM SExp
   | Int         lhs         .   pp          =   pp @int
-  | Char        lhs         .   pp          =   pp @char
+  | Char        lhs         .   pp          =   pp $ show @char
   | String      lhs         .   pp          =   pp $ show @str
 %%[[97
   | Integer     lhs         .   pp          =   pp @integer
@@ -94,7 +94,7 @@ SEM Exp
   | LetStr      lhs         .   pp          =   "letstr" >#< ppBinds @binds >#< "in" >-< @body.pp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
   | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp
-  | Lam         lhs         .   pp          =   "\\" >|< @nrArgs >|< "@" >|< @nrAllocs >#< "->" >#< @body.pp
+  | Lam         lhs         .   pp          =   "\\" >|< @nrArgs >|< "," >|< @nrAllocs >#< "->" >#< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
                                                 >-< indent 1 (vlist $ elems @alts)
   | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (elems @args)
@@ -110,6 +110,6 @@ SEM Alt
   | Alt         lhs         .   pp          =   @pat.pp >#< "->" >#< @expr.pp
 
 SEM Pat
-  | Con         lhs         .   pp          =   pp @tag
+  | Con         lhs         .   pp          =   pp $ ctagTag @tag
 %%]
 

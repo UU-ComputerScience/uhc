@@ -43,7 +43,7 @@ Analyse Core, using relevance analysis, to relate properties (like relevance) of
 %%[(8 core) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
 %%]
 
-%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonFFI},{Core/CommonBindNm},{Core/Trf/CommonStructureInfo},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
+%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonFFI},{Core/CommonBindNm},{Core/Trf/CommonStructureInfo},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/CommonLamInfo},{Core/CommonGathLamInfo})
 WRAPPER CodeAGItf
 %%]
 

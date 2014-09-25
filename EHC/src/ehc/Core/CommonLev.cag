@@ -23,8 +23,6 @@ ATTR AllCodeNT [ lev: Int | | ]
 SEM CodeAGItf
   | AGItf       module      .   lev         =   cLevModule
 
-SEM CAlt
-  | Alt         loc         .   lev         =   @lhs.lev + 1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

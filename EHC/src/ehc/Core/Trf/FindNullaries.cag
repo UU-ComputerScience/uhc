@@ -19,7 +19,7 @@
 %%[(8 codegen wholeprogAnal) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen wholeprogAnal).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonBindNm})
+%%[(8 codegen wholeprogAnal).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonBindNm})
 WRAPPER CodeAGItf
 %%]
 

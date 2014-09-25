@@ -29,7 +29,7 @@
 %%[(50 codegen corein) hs import(UHC.Util.Pretty)
 %%]
 
-%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
+%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
 WRAPPER CodeAGItf
 %%]
 
