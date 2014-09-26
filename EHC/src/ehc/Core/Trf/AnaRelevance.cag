@@ -424,8 +424,8 @@ SEM CExpr
 SEM CExpr
   | App         loc         .   hereArgCoe      =   @arg.coe <.> (@lhs.finalRVarMp `varUpd` @argCoe)
                             .   hereFunCoe      =   case @func.whatBelow of
-                                                      ExprIsApp _ -> RelevCoe_Id
-                                                      _           -> @func.coe
+                                                      ExprIsApp _ _ -> RelevCoe_Id
+                                                      _             -> @func.coe
   | Lam         loc         .   hereBodyCoe     =   case @body.whatBelow of
                                                       ExprIsLam _ -> RelevCoe_Id
                                                       _           -> @body.coe

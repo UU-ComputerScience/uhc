@@ -1474,11 +1474,16 @@ data AppFunKind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(WhatExpr(..))
+
+-- | What kind of Expr?
 data WhatExpr
   = ExprIsLam   Int			-- arity
   | ExprIsApp   Int         -- arity
+  				WhatExpr	-- function
   | ExprIsVar   HsName
   | ExprIsInt   Int
+  | ExprIsTup   CTag
+  | ExprIsOtherWHNF
   | ExprIsOther
   | ExprIsBind
   deriving Eq
@@ -1491,9 +1496,9 @@ whatExprMbVar (ExprIsVar a) = Just a
 whatExprMbVar _             = Nothing
 
 -- | is an app?
-whatExprMbApp :: WhatExpr -> Maybe Int
-whatExprMbApp (ExprIsApp a) = Just a
-whatExprMbApp _             = Nothing
+whatExprMbApp :: WhatExpr -> Maybe (Int,WhatExpr)
+whatExprMbApp (ExprIsApp a w) = Just (a,w)
+whatExprMbApp _               = Nothing
 
 -- | is a lam?
 whatExprMbLam :: WhatExpr -> Maybe Int
@@ -1502,14 +1507,30 @@ whatExprMbLam _             = Nothing
 
 -- | app arity
 whatExprAppArity :: WhatExpr -> Int
-whatExprAppArity (ExprIsApp a) = a
-whatExprAppArity _             = 0
+whatExprAppArity (ExprIsApp a _) = a
+whatExprAppArity _               = 0
 %%]
 
-%%[(8 codegen) hs export(whatExprIsLam)
+%%[(8 codegen) hs export(whatExprIsWHNF)
+whatExprIsWHNF :: WhatExpr -> Bool
+whatExprIsWHNF (ExprIsLam _) 	= True
+whatExprIsWHNF (ExprIsVar _) 	= True
+whatExprIsWHNF (ExprIsInt _) 	= True
+whatExprIsWHNF (ExprIsTup _) 	= True
+whatExprIsWHNF ExprIsOtherWHNF 	= True
+whatExprIsWHNF _ 				= False
+%%]
+
+%%[(8 codegen) hs export(whatExprIsLam, whatExprIsTup)
 whatExprIsLam :: WhatExpr -> Bool
 whatExprIsLam = isJust . whatExprMbLam
 {-# INLINE whatExprIsLam #-}
+
+-- | Is Expr a Tup?
+whatExprIsTup :: WhatExpr -> Bool
+whatExprIsTup (ExprIsTup _) = True
+whatExprIsTup _             = False
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -216,17 +216,19 @@ deriving instance Data CBindCateg
 %%% Context: strictness as required by context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 core) hs export(EvalCtx(..),isStrict)
+%%[(8 core) hs export(EvalCtx(..),evalCtxIsStrict)
 data EvalCtx
-  = EvalCtx_None         -- nothing known, no strictness required
+  = EvalCtx_None         -- nothing known, no strictness required, no thunking
+  | EvalCtx_Thunk        -- lazy/thunked representation required
+  | EvalCtx_PApp0        -- partial app of lam with 0 params
   | EvalCtx_Eval         -- strictness (thus eval) required
   | EvalCtx_EvalUnbox    -- strictness (thus eval) + unboxing required
   deriving Eq
 
-isStrict :: EvalCtx -> Bool
-isStrict EvalCtx_Eval        = True
-isStrict EvalCtx_EvalUnbox   = True
-isStrict _                   = False
+evalCtxIsStrict:: EvalCtx -> Bool
+evalCtxIsStrict EvalCtx_Eval        = True
+evalCtxIsStrict EvalCtx_EvalUnbox   = True
+evalCtxIsStrict _                   = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -76,7 +76,7 @@ ppBinds bs = vlist [ i >|< ":" >#< e | (i,e) <- assocs bs ]
 ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
-  | Mod         lhs         .   pp          =   "module" >#< @moduleNm
+  | Mod         lhs         .   pp          =   "module" >#< @moduleNm >|< ":" >#< @body.pp
                                                 >-< vlist [ i >|< ":" >#< e | (i,e) <- assocs @binds ]
 
 SEM SExp
@@ -89,7 +89,8 @@ SEM SExp
   | Var         lhs         .   pp          =   pp @ref
 
 SEM Exp
-  | App         lhs         .   pp          =   "call" >#< @func.pp >|< ppParensCommas (elems @args)
+  | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (elems @args)
+  -- | PApp        lhs         .   pp          =   "papp" >#< ppParens @func.pp >|< ppParensCommas (elems @args)
   | LetRec      lhs         .   pp          =   "letrec" >#< ppBinds @binds >#< "in" >-< @body.pp
   | LetStr      lhs         .   pp          =   "letstr" >#< ppBinds @binds >#< "in" >-< @body.pp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
@@ -98,7 +99,7 @@ SEM Exp
   | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
                                                 >-< indent 1 (vlist $ elems @alts)
   | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (elems @args)
-  | FFI         lhs         .   pp          =   ("ffi" >#< ppCurlysCommasBlock [pp (show @callconv),@ppent,pp @ty])
+  | FFI         lhs         .   pp          =   "ffi" >#< ppParens (show @callconv >#< @ppent >|< "::" >#< @ty) >|< ppParensCommas (elems @args)
 %%[[8
                 loc         .   ppent       =   pp (show @impEnt)
 %%][90

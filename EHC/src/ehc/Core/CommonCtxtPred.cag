@@ -11,7 +11,7 @@
 %%% Let context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllBind [ letBindingsCateg: CBindCateg | | ]
 
 SEM CExpr
@@ -30,7 +30,7 @@ SEM CPatFld
 %%% Is top App? Is top Tup adapt?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CExpr CBound [ isTopApp: Bool  isTopTup: Bool | | ]
 
 SEM CExpr
@@ -78,33 +78,42 @@ SEM CAlt
 %%% Various contextual info, this should replace the above over time
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CExpr [ | | whatBelow: WhatExpr ]
 
 SEM CExpr
   | Lam         loc         .   whatBelow       =   maybe (ExprIsLam 1) (\a -> ExprIsLam $ a + 1) $ whatExprMbLam @body.whatBelow
   | Var         loc         .   whatBelow       =   ExprIsVar @nm
   | Int         loc         .   whatBelow       =   ExprIsInt @int
-  | App         loc         .   whatBelow       =   maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @func.whatBelow
-  | * - Lam App Var Int Ann CaseAltFail
+  | App         loc         .   whatBelow       =   maybe (ExprIsApp 1 @func.whatBelow) (\(a,w) -> ExprIsApp (a + 1) w) $ whatExprMbApp @func.whatBelow
+  | Tup			loc			.	whatBelow       =   ExprIsTup @tag
+  |	String Char
+%%[[97
+    Integer
+%%]]
+           		loc			.	whatBelow		=	ExprIsOtherWHNF
+  | * - Lam App Var Int Tup
+        String Char
+%%[[97
+        Integer
+%%]]
+        Ann CaseAltFail
                 loc         .   whatBelow       =   ExprIsOther
-
-SEM CExpr
-  | App         loc         .   isTopApp'       =   isNothing $ whatExprMbApp @lhs.whatAbove
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR CExpr [ whatAbove: WhatExpr | | ]
 
 SEM CExpr
   | Lam         loc         .   whatAbove       =   maybe (ExprIsLam 1) (\a -> ExprIsLam $ a + 1) $ whatExprMbLam @lhs.whatAbove
-  | App         loc         .   whatAbove       =   maybe (ExprIsApp 1) (\a -> ExprIsApp $ a + 1) $ whatExprMbApp @lhs.whatAbove
+  | App         loc         .   whatAbove       =   maybe (ExprIsApp 1 ExprIsOther) (\(a,w) -> ExprIsApp (a + 1) w) $ whatExprMbApp @lhs.whatAbove
   | * - Lam App Ann
                 loc         .   whatAbove       =   ExprIsOther
 
 SEM CExpr
   | Let         loc         .   isTopLet        =   @lhs.whatAbove == ExprIsBind
   | Lam         loc         .   isTopLam        =   not $ whatExprIsLam @lhs.whatAbove
+  | App         loc         .   isTopApp'       =   isNothing $ whatExprMbApp @lhs.whatAbove
 
 SEM CBound
   | Bind Val    loc         .   whatAbove       =   ExprIsBind
@@ -133,7 +142,7 @@ SEM *
 %%% Context: rhs of lam yes/no
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 core grin)
 ATTR AllExprOnly AllAlt AllBind [ isLamBody: Bool | | ]
 
 SEM CModule
@@ -150,7 +159,7 @@ SEM CPatFld
 
 not used yet as it seems not to be equivalent to isStrict. Can't find out why...
 
-%%[(8 codegen)
+%%[(8 core)
 ATTR AllExprOnly AllAlt AllBind [ evalCtx: EvalCtx | | ]
 
 SEM CModule
@@ -160,11 +169,22 @@ SEM CPatFld
   | Fld         offset      .   evalCtx         =   EvalCtx_Eval
   				bind		.	evalCtx			=	EvalCtx_None
 
-
 SEM CExpr
   | Let         loc         .   evalCtx         =   if @categ == CBindCateg_Strict
                                                     then EvalCtx_Eval
-                                                    else EvalCtx_None
+                                                    -- else if @isGlobal
+                                                    -- then EvalCtx_Thunk
+                                                    -- else EvalCtx_None
+                                                    else EvalCtx_Thunk
+  | App         arg         .   evalCtx         =   EvalCtx_Thunk
+{-
+SEM CBind
+  | Bind Val	loc			.	evalCtx			=	case @lhs.evalCtx of
+  														EvalCtx_Eval -> EvalCtx_Eval
+  														EvalCtx_Thunk
+  														  | whatExprIsLam @expr.whatBelow
+  														      -> EvalCtx_PApp0
+-}
 %%]
 
 SEM CBound

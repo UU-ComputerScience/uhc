@@ -45,7 +45,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%% CoreRun: Supporting types: fast access sequences/array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(CRArray, mkCRArrayLwb, mkCRArray, craLength)
+%%[(8 corerun) hs export(CRArray, emptyCRArray, mkCRArrayLwb, mkCRArray, craLength)
 -- | Fast access sequence
 type CRArray x = Array Int x
 
@@ -56,6 +56,9 @@ mkCRArrayLwb lwb xs = listArray (lwb,lwb+l-1) xs
 
 mkCRArray :: [x] -> CRArray x
 mkCRArray = mkCRArrayLwb 0
+
+emptyCRArray :: CRArray x
+emptyCRArray = mkCRArray []
 
 craLength :: CRArray x -> Int
 craLength a = h + 1 - l

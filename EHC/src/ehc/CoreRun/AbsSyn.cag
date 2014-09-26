@@ -21,6 +21,7 @@ Global assumptions:
 DATA Mod
   | Mod         moduleNm        : {HsName}
                 binds           : {CRArray Bind}
+                body			: Exp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,9 +64,11 @@ DATA Exp
                 nrAllocs        : {Int}		-- nr stack frame locations to be allocated (excluding arguments) for locals
                 body            : Exp
 
-  -- thunking, forcing
+  -- thunking, forcing, partial applications
   | Force		expr			: Exp
   | Thunk		expr			: Exp
+  -- | PApp		func            : Exp		-- special case of App where @func is known to be Lam
+  --               args            : {CRArray Exp}
 
   -- case
   | Case        expr            : Exp		-- SExp
@@ -79,6 +82,7 @@ DATA Exp
                 impEnt          : {ForeignEnt}
 %%]]
                 ty              : {Ty}
+                args			: {CRArray Exp}
 
 %%[[9090
   -- FFE binding (not yet implemented for all backends)

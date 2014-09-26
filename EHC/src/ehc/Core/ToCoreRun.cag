@@ -347,14 +347,15 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun)
-ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {Either CTag CR.Exp} ]
+ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {CR.CRArray CR.Exp -> CR.Exp} ]
 
 SEM CExpr
   | App         loc         .   creAppArgL  =   (snd $ head @arg.crb) : @func.creAppArgL
                             .   creAppFun   =   @func.creAppFun
-  | Tup			loc         .   creAppFun   =   Left @tag
-  | * - App Ann Tup
-  				loc         .   creAppFun   =   Right @cre
+  | Tup			loc         .   creAppFun   =   CR.Exp_Tup @tag
+  | FFI			loc         .   creAppFun   =   CR.Exp_FFI @callconv @impEnt @ty
+  | * - App Ann Tup FFI
+  				loc         .   creAppFun   =   CR.Exp_App @cre
   | * - App Ann loc         .   creAppArgL  =   []
 %%]
 
@@ -455,17 +456,18 @@ SEM CExpr
    													then CR.Exp_Lam (length @creLamArgL) @refOffsetMax @body.creLamBody
    													else dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
   | App         loc         .   cre             =   if @isTopApp'
-                                                    then either CR.Exp_Tup CR.Exp_App @creAppFun $ CR.mkCRArray $ reverse @creAppArgL
+                                                    then @creAppFun $ CR.mkCRArray $ reverse @creAppArgL
                                                     else dbg "Core.ToCoreRun.CExpr.App.cre" -- TBD
-  | Tup			loc			.	cre				=	CR.Exp_Tup @tag $ CR.mkCRArray []
+  | Tup			loc			.	cre				=	CR.Exp_Tup @tag CR.emptyCRArray
   | Let         loc         .   cre             =   if @isGlobal
                                                     then @body.cre
                                                     else (case @categ of {CBindCateg_Strict -> CR.Exp_LetStr; _ -> CR.Exp_LetRec})
                                                             (CR.mkCRArrayLwb @lhs.refOffset $ map snd @binds.crb) @body.cre
   | Case		loc			.	cre				=	CR.Exp_Case @expr.cre $ CR.mkCRArray @alts.cra
+  | FFI			loc			.	cre				=	CR.Exp_FFI @callconv @impEnt @ty CR.emptyCRArray
   | Ann         loc         .   cre             =   @expr.cre
   | * - Int Char String Var
-        Lam App Let Tup Case
+        Lam App Let Tup Case FFI
         Ann
 %%[[97
         Integer
@@ -477,7 +479,17 @@ SEM CExpr
 ATTR AllBind CExpr [ | | crb USE {++} {[]} : {[(HsName, CR.Bind)]} ]
 
 SEM CBound
-  | Bind Val    loc         .   crb             =   [(@lhs.nm, (if @lhs.evalCtx == EvalCtx_Eval then CR.Exp_Force else id) @expr.cre)]
+  | Bind Val    loc         .   crb             =   [( @lhs.nm
+                                                     , (case @lhs.evalCtx of
+                                                          EvalCtx_Eval -> CR.Exp_Force
+                                                          EvalCtx_Thunk 
+                                                            -- | whatExprIsLam @expr.whatBelow -> flip CR.Exp_PApp CR.emptyCRArray
+                                                            | isJust mba && whatExprIsTup w        -> id
+                                                            | not $ whatExprIsWHNF @expr.whatBelow -> CR.Exp_Thunk
+                                                            where mba@(~(Just (_,w))) = whatExprMbApp @expr.whatBelow
+                                                          _ -> id
+                                                       ) @expr.cre
+                                                     )]
 
 SEM CBind
   | Bind		loc			.	crb				=	take 1 @bindAspects.crb -- TBD: multiple, choose?
@@ -515,7 +527,7 @@ SEM CPat
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
-  | Mod			lhs			.	crm				=	CR.Mod_Mod @moduleNm $ CR.mkCRArray $ map snd @expr.crb
+  | Mod			lhs			.	crm				=	CR.Mod_Mod @moduleNm (CR.mkCRArray $ map snd @expr.crb) @expr.cre
 %%]
 
 %%[(8888 corerun)
