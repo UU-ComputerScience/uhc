@@ -31,7 +31,7 @@ DATA Mod
 %%[(8 corerun)
 DATA SExp
   -- base cases
-  | Var         ref             : {CRRef}
+  | Var         ref             : {RRef}
   | Int         int             : {Int}
   | Char        char            : {Char}
   | String      str             : {String}

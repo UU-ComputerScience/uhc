@@ -7,17 +7,13 @@
 %%% Run Core infrastructure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs module {%{EH}Core.Run}
+%%[(8 corerun) hs module {%{EH}CoreRun.Run}
 %%]
 
 %%[(8 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
-%%[(8 corerun) hs import({%{EH}Core})
-%%]
-%%[(8888 codegen corein) hs import({%{EH}LamInfo})
-%%]
-%%[(8888 codegen corein) hs import({%{EH}Core.BindExtract},qualified {%{EH}Core.SysF.AsTy} as SysF)
+%%[(8 corerun) hs import({%{EH}CoreRun})
 %%]
 
 %%[(8 corerun) hs import(qualified UHC.Util.FastSeq as Seq, qualified Data.Map as Map)
@@ -84,8 +80,8 @@ class (Monad m, MonadIO m) => RunSem m a where
   -- | Empty
   runEmp :: RunT m a
 
-  -- | Lift CExpr
-  runExp :: CExpr -> RunT m a
+  -- | Lift Exp
+  runExp :: Exp -> RunT m a
 
 %%]
 
@@ -104,13 +100,13 @@ type RunT m a = ErrorT Err (RWST RunRd RunWr RunSt m) a
 cmodRun
   :: (RunSem m a)
   => EHCOpts
-     -> CModule
+     -> Mod
      -> RunT m a
-cmodRun opts cmod
-  = rMod cmod
+cmodRun opts mod
+  = rMod mod
   where -- module
         rMod m = case m of
-          CModule_Mod {expr_CModule_Mod=e} -> runMod $ rExp e
+          Mod_Mod {body_Mod_Mod=e} -> runMod $ rExp e
 
         -- expr
         rExp e = case e of

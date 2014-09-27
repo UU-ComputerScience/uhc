@@ -774,7 +774,7 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
 %%% Running Core: runtime references
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(RRef(..))
+%%[(8888 corerun) hs export(RRef(..))
 -- | Identifier references for use during running Core
 data RRef
   = RRef_Glb		-- ^ global reference to module and its entry

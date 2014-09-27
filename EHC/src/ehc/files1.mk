@@ -72,8 +72,9 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
 													$(addprefix CodeGen/,BuiltinPrims BasicAnnot Bits BuiltinSizeInfo GenC Tag CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
 													$(addprefix Foreign/,Boxing) \
-													$(addprefix Core/Run/,Val) \
-													$(addprefix Core/,Utils Run FFI Coercion) \
+													$(addprefix CoreRun/,Run) \
+													$(addprefix CoreRun/Run/,Val) \
+													$(addprefix Core/,Utils Merge FFI Coercion) \
 													$(addprefix Core/SysF/,AsTy) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
 													$(addprefix TyCore/Trf/,Common) \

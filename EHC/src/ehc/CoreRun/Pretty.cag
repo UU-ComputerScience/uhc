@@ -56,11 +56,11 @@ instance PP Alt where
 %%]
 
 %%[(8 corerun) hs
-instance PP CRRef where
-  pp (CRRef_Glb m e) = "#g" >|< ppDots [m,e]
-  pp (CRRef_Loc l e) = "#l" >|< ppDots [l,e]
-  pp (CRRef_Fld r e) = ppDots [pp r, pp e]
-  pp (CRRef_Dbg n  ) = "##" >|< n
+instance PP RRef where
+  pp (RRef_Glb m e) = "#g" >|< ppDots [m,e]
+  pp (RRef_Loc l e) = "#l" >|< ppDots [l,e]
+  pp (RRef_Fld r e) = ppDots [pp r, pp e]
+  pp (RRef_Dbg n  ) = "##" >|< n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

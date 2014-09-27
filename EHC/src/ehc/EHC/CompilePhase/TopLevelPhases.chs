@@ -86,7 +86,7 @@ level 2..6 : with prefix 'cpEhc'
 -- Language syntax: Core
 %%[(50 codegen) import(qualified {%{EH}Core} as Core(cModMerge))
 %%]
-%%[(50 codegen) import({%{EH}Core.Utils} (cModMerge2))
+%%[(50 codegen) import(qualified {%{EH}Core.Merge} as CMerge (cModMerge))
 %%]
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]
@@ -277,7 +277,7 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
           = do { cr <- get
                ; cpUpdCU mainModNm 
                  $ ecuStoreCore 
-                 $ cModMerge2 ([ mOf m cr | m <- impModNmL ], mOf mainModNm cr)
+                 $ CMerge.cModMerge ([ mOf m cr | m <- impModNmL ], mOf mainModNm cr)
 %%[[99
                ; cpCleanupCore impModNmL -- clean up Core and CoreSem (it can still be read through cr in the next statement)
 %%]]
