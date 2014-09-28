@@ -31,7 +31,7 @@
 %%[(50 grin) hs import({%{EH}GrinByteCode})
 %%]
 
-%%[50 hs import({%{EH}Config},{%{EH}Module})
+%%[50 hs import({%{EH}Config},{%{EH}Module.ImportExport})
 %%]
 
 %%[(50 hmtyinfer) hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve},qualified {%{EH}Gam.ClGam} as Pr)

@@ -41,7 +41,7 @@
 %%[9 hs import({%{EH}Gam.ClGam})
 %%]
 
-%%[50 hs import(qualified UHC.Util.Rel as Rel,{%{EH}Module})
+%%[50 hs import(qualified UHC.Util.Rel as Rel,{%{EH}Module.ImportExport})
 %%]
 
 %%[90 hs import({%{EH}Foreign},{%{EH}Foreign.Parser})

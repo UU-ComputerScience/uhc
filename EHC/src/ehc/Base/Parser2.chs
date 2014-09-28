@@ -24,7 +24,7 @@ This should be in Base.Parser, but because of module circularities in an additio
 %%[8 import({%{EH}Base.FileSearchLocation})
 %%]
 
-%%[50 import({%{EH}Module})
+%%[50 import({%{EH}Module.ImportExport})
 %%]
 
 %%[50 import(qualified Data.Set as Set,qualified UHC.Util.Rel as Rel)

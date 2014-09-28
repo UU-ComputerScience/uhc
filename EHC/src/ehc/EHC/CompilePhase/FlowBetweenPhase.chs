@@ -24,7 +24,7 @@ XXX
 %%]
 
 -- module related
-%%[50 import({%{EH}Module}, {%{EH}EHC.CompilePhase.Module})
+%%[50 import({%{EH}Module.ImportExport}, {%{EH}EHC.CompilePhase.Module})
 %%]
 %%[(92 codegen) import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
 %%]

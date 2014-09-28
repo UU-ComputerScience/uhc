@@ -76,7 +76,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(99 codegen) import({%{EH}EHC.CompilePhase.Link})
 %%]
-%%[50 import({%{EH}EHC.CompilePhase.Module},{%{EH}Module})
+%%[50 import({%{EH}EHC.CompilePhase.Module},{%{EH}Module.ImportExport})
 %%]
 %%[99 import({%{EH}Base.Pragma})
 %%]

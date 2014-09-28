@@ -53,7 +53,7 @@ An EHC compile run maintains info for one compilation invocation
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 -- module admin
-%%[50 import({%{EH}Module})
+%%[50 import({%{EH}Module.ImportExport})
 %%]
 
 -- Misc

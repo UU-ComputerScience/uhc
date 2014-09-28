@@ -29,7 +29,7 @@ Module analysis
 %%[50 import({%{EH}EHC.CompileRun})
 %%]
 
-%%[50 import({%{EH}Module})
+%%[50 import({%{EH}Module.ImportExport})
 %%]
 %%[50 import(qualified {%{EH}Config} as Cfg)
 %%]

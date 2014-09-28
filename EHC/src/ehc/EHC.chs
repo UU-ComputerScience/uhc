@@ -65,7 +65,7 @@
 %%]
 
 -- module
-%%[50 import({%{EH}Module}(modBuiltin), {%{EH}Module})
+%%[50 import({%{EH}Module.ImportExport}(modBuiltin), {%{EH}Module.ImportExport})
 %%]
 
 -- packages

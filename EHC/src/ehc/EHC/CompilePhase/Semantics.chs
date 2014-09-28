@@ -44,7 +44,7 @@ Folding over AST to compute semantics
 -- Module
 %%[50 import(qualified UHC.Util.Rel as Rel)
 %%]
-%%[50 import({%{EH}Module})
+%%[50 import({%{EH}Module.ImportExport})
 %%]
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]

@@ -20,7 +20,7 @@ These are used for constructing cached hi files filtered for the names actually 
 %%[(50 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
-%%[(50 hmtyinfer || hmtyast) hs import({%{EH}Module})
+%%[(50 hmtyinfer || hmtyast) hs import({%{EH}Module.ImportExport})
 %%]
 
 %%[(50 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})

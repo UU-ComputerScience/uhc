@@ -49,6 +49,8 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8888 core grin) hs import(qualified {%{EH}CodeGen.ValAccess} as VA)
 %%]
 
+%%[(50 core) hs import({%{EH}Module.Merge})
+%%]
 %%[(50 core) hs import(Data.Array)
 %%]
 %%[(50 core) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
@@ -489,17 +491,15 @@ cModMerge mL
 %%% Map/Database representation of a module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 core) hs export(CDbBindLetInfo, CDbBindLetInfo'2)
+%%[50 hs export(CDbBindLetInfo)
 -- | the binding info required for let bind
-type CDbBindLetInfo'' f cat bind = (cat,f bind)
-type CDbBindLetInfo'  f          = CDbBindLetInfo'' f  CBindCateg CBind
-type CDbBindLetInfo'2   cat bind = CDbBindLetInfo'' [] cat            bind
-type CDbBindLetInfo              = CDbBindLetInfo'  []
+type CDbBindLetInfo'  f            = ModDbBindLetInfo'' f  CBindCateg CBind
+type CDbBindLetInfo                = CDbBindLetInfo'  []
 %%]
 
-%%[(50 core) hs export(CDbBindArray, CDbBindRef, CDbModuleBindMp)
+%%[(50 core) hs export(CDbBindRef, CDbModuleBindMp)
 -- | actual bindings stored in separate array to allow for sharing
-type CDbBindArray = Array Int (CDbBindLetInfo' (Array Int))
+type CDbBindArray = ModDbBindArray' CBindCateg CBind
 
 -- | reference into database of bindings, agnostic of name given to it
 type CDbBindRef = (Int,Int)

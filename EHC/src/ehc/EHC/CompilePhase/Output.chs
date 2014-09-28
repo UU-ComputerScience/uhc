@@ -77,7 +77,7 @@ Output generation, on stdout or file
 %%]
 
 -- module admin
-%%[50 import({%{EH}Module})
+%%[50 import({%{EH}Module.ImportExport})
 %%]
 
 -- gam related utils

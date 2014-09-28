@@ -44,7 +44,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 -- module admin
-%%[50 import({%{EH}Module}, {%{EH}CodeGen.ImportUsedModules})
+%%[50 import({%{EH}Module.ImportExport}, {%{EH}CodeGen.ImportUsedModules})
 %%]
 
 -- timestamps

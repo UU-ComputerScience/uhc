@@ -16,7 +16,7 @@
 %%[(50 hmtyinfer) import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
-%%[(50 hmtyinfer) import({%{EH}Ty.UsedNames},{%{EH}Module},{%{EH}Gam.ValGam})
+%%[(50 hmtyinfer) import({%{EH}Ty.UsedNames},{%{EH}Module.ImportExport},{%{EH}Gam.ValGam})
 %%]
 
 %%[(40 hmtyinfer) import({%{EH}Ty.Trf.ElimEqual})
