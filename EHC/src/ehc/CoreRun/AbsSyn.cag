@@ -19,7 +19,8 @@ Global assumptions:
 
 %%[(8 corerun)
 DATA Mod
-  | Mod         moduleNm        : {HsName}
+  | Mod         ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
+                moduleNm        : {HsName}
                 binds           : {CRArray Bind}
                 body			: Exp
 %%]
@@ -50,11 +51,13 @@ DATA Exp
                 args			: {CRArray Exp}
 
   -- recursive let bindings
-  | LetRec      binds           : {CRArray Bind}
+  | LetRec      ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
+                binds           : {CRArray Bind}
                 body            : Exp
 
   -- strict let binding
-  | LetStr      binds           : {CRArray Bind}
+  | LetStr      ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
+                binds           : {CRArray Bind}
                 body            : Exp
 
   -- application, abstraction
@@ -62,6 +65,7 @@ DATA Exp
                 args            : {CRArray Exp}
   | Lam         nrArgs          : {Int}		-- nr of arguments
                 nrAllocs        : {Int}		-- nr stack frame locations to be allocated (excluding arguments) for locals
+                ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 body            : Exp
 
   -- thunking, forcing, partial applications
@@ -105,7 +109,8 @@ DATA Exp
 
 %%[(8 corerun)
 DATA Alt
-  | Alt         pat             : Pat
+  | Alt         ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
+                pat             : Pat
                 expr            : Exp
 %%]
 

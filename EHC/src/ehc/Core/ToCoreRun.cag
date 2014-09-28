@@ -49,10 +49,10 @@ WRAPPER CodeAGItf
 %%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRun)
 cmod2CoreRun'
   :: EHCOpts
-     -> Int			-- sequence nr of module (offset), used to create global per module references
+     -> Int         -- sequence nr of module (offset), used to create global per module references
      -> CModule
-     -> ( CR.Mod	-- generated CoreRun
-        , Nm2RefMp	-- name to ref mapping of toplevel bindings
+     -> ( CR.Mod    -- generated CoreRun
+        , CR.Nm2RefMp  -- name to ref mapping of toplevel bindings
         )
 cmod2CoreRun' opts modNr cmod
   =  ( crm_Syn_CodeAGItf t
@@ -95,46 +95,48 @@ ATTR CodeAGItf AllCodeNT [ modNr: Int | | ]
 %%% Name mapping: gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs
-type Nm2RefMp = Map.Map HsName CR.RRef
-%%]
-
 %%[(8 corerun)
 -- | Thread offset as state throughout places where bindings are introduced.
 -- Invariant: offset is reset to 0 whenever `lev` is incremented.
 ATTR AllExpr [ | refOffset: Int | ]
-ATTR AllExpr [ nm2ref: Nm2RefMp | | ]
-ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`Map.union`} {Map.empty} : Nm2RefMp ]
+ATTR AllExpr [ nm2ref: {CR.Nm2RefMp} | | ]
+ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`Map.union`} {Map.empty} : {CR.Nm2RefMp} ]
 ATTR AllAlt CExpr [ | | refOffsetMax USE {`max`} {0} : Int ]
+
 SEM CModule
-  | Mod			expr		.	refOffset		=	0
-  							.	nm2ref			=	@expr.nm2refGath
+  | Mod         expr        .   refOffset       =   0
+                            .   nm2ref          =   @expr.nm2refGath
 
 SEM CExpr
-  | Lam			(loc.refOffset, body.refOffset)	=	if @isTopLam
-  													then (0,1)
-  													else (@lhs.refOffset, @lhs.refOffset + 1)
-				loc			.	nm2refGath		=	Map.insert @bind.nm (CR.RRef_Loc @lev @refOffset) @body.nm2refGath
-  				lhs			.	refOffset		=	@lhs.refOffset
-				loc			.	nm2ref			=	if @isTopLam
-  													then @nm2refGath `Map.union` @lhs.nm2ref
-  													else @lhs.nm2ref
-  				
+  | Lam         (loc.refOffset, body.refOffset) =   if @isTopLam
+                                                    then (0,1)
+                                                    else (@lhs.refOffset, @lhs.refOffset + 1)
+                loc         .   nm2refNew       =   Map.insert @bind.nm (CR.RRef_Loc @lev @refOffset) @body.nm2refGath
+                lhs         .   refOffset       =   @lhs.refOffset
+                loc         .   nm2ref          =   if @isTopLam
+                                                    then @nm2refNew `Map.union` @lhs.nm2ref
+                                                    else @lhs.nm2ref
+                lhs         .   nm2refGath      =   if @isTopLam
+                                                    then Map.empty
+                                                    else @nm2refNew
+                
 SEM CBind
-  | Bind		lhs			.	refOffset		=	@lhs.refOffset + 1
+  | Bind        lhs         .   refOffset       =   @lhs.refOffset + 1
                 loc         .   ref             =   if @lhs.isGlobal
                                                     then CR.RRef_Glb @lhs.modNr @lhs.refOffset
                                                     else CR.RRef_Loc @lhs.lev   @lhs.refOffset
-  				lhs			.	nm2refGath		=	Map.singleton @nm @ref
+                            .   nm2refGath      =   Map.singleton @nm @ref
 
 SEM CAlt
-  | Alt			expr		.	refOffset		=	@lhs.refOffset
-  							.	nm2ref			=	Map.fromList [ (n, CR.RRef_Fld @lhs.scrutRef i) | (n,i) <- zip @pat.fldNmL [0..] ] `Map.union` @lhs.nm2ref
-  				lhs			.	refOffset		=	@lhs.refOffset
-  							.	refOffsetMax	=	max @expr.refOffset @expr.refOffsetMax
+  | Alt         loc         .   nm2refNew       =   Map.fromList [ (n, CR.RRef_Fld @lhs.scrutRef i) | (n,i) <- zip @pat.fldNmL [0..] ]
+                lhs         .   nm2refGath      =   Map.empty
+                expr        .   refOffset       =   @lhs.refOffset
+                            .   nm2ref          =   @nm2refNew `Map.union` @lhs.nm2ref
+                lhs         .   refOffset       =   @lhs.refOffset
+                            .   refOffsetMax    =   max @expr.refOffset @expr.refOffsetMax
 
 SEM CExpr
-  | Let			loc			.	refOffsetMax	=	@body.refOffsetMax	-- TBD: take strict binds into account
+  | Let         loc         .   refOffsetMax    =   @body.refOffsetMax  -- TBD: take strict binds into account
                 (binds.nm2ref, body.nm2ref)     =   if @isGlobal
                                                     then (@lhs.nm2ref, @lhs.nm2ref)
                                                     else ( case @categ of
@@ -142,12 +144,15 @@ SEM CExpr
                                                              _              -> @lhs.nm2ref `Map.union` @binds.nm2refGath
                                                          , @binds.nm2refGath `Map.union` @lhs.nm2ref
                                                          )
-  | Lam			loc			.	refOffsetMax	=	max @body.refOffset @body.refOffsetMax
+                (loc.nm2refNew, lhs.nm2refGath) =   if @isGlobal
+                                                    then (Map.empty, @binds.nm2refGath `Map.union` @body.nm2refGath)
+                                                    else (@binds.nm2refGath, Map.empty)
+  | Lam         loc         .   refOffsetMax    =   max @body.refOffset @body.refOffsetMax
 
 ATTR AllAlt [ scrutRef: {CR.RRef} | | ]
 
 SEM CExpr
-  | Case		alts		.	scrutRef		=	maybe CR.noRRef (\n -> maybe (CR.RRef_Dbg n) id $ Map.lookup n @lhs.nm2ref) $ whatExprMbVar @expr.whatBelow
+  | Case        alts        .   scrutRef        =   maybe CR.noRRef (\n -> maybe (CR.RRef_Dbg n) id $ Map.lookup n @lhs.nm2ref) $ whatExprMbVar @expr.whatBelow
 %%]
 
 %%[(8 corerun)
@@ -163,10 +168,10 @@ ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {CR.CRArray CR.Exp -> CR.Exp
 SEM CExpr
   | App         loc         .   creAppArgL  =   (snd $ head @arg.crb) : @func.creAppArgL
                             .   creAppFun   =   @func.creAppFun
-  | Tup			loc         .   creAppFun   =   CR.Exp_Tup @tag
-  | FFI			loc         .   creAppFun   =   CR.Exp_FFI @callconv @impEnt @ty
+  | Tup         loc         .   creAppFun   =   CR.Exp_Tup @tag
+  | FFI         loc         .   creAppFun   =   CR.Exp_FFI @callconv @impEnt @ty
   | * - App Ann Tup FFI
-  				loc         .   creAppFun   =   CR.Exp_App @cre
+                loc         .   creAppFun   =   CR.Exp_App @cre
   | * - App Ann loc         .   creAppArgL  =   []
 %%]
 
@@ -216,18 +221,20 @@ SEM CExpr
 %%]]
                 loc         .   cre             =   CR.Exp_SExp @crse
   | Lam         loc         .   cre             =   if @isTopLam
-   													then CR.Exp_Lam (length @creLamArgL) @refOffsetMax @body.creLamBody
-   													else dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
+                                                    then CR.Exp_Lam (length @creLamArgL) @refOffsetMax (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
+                                                    else dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
   | App         loc         .   cre             =   if @isTopApp'
                                                     then @creAppFun $ CR.mkCRArray $ reverse @creAppArgL
                                                     else dbg "Core.ToCoreRun.CExpr.App.cre" -- TBD
-  | Tup			loc			.	cre				=	CR.Exp_Tup @tag CR.emptyCRArray
+  | Tup         loc         .   cre             =   CR.Exp_Tup @tag CR.emptyCRArray
   | Let         loc         .   cre             =   if @isGlobal
                                                     then @body.cre
                                                     else (case @categ of {CBindCateg_Strict -> CR.Exp_LetStr; _ -> CR.Exp_LetRec})
-                                                            (CR.mkCRArrayLwb @lhs.refOffset $ map snd @binds.crb) @body.cre
-  | Case		loc			.	cre				=	CR.Exp_Case @expr.cre $ CR.mkCRArray @alts.cra
-  | FFI			loc			.	cre				=	CR.Exp_FFI @callconv @impEnt @ty CR.emptyCRArray
+                                                            (CR.nm2RefMpInverse @nm2refNew)
+                                                            (CR.mkCRArrayLwb @lhs.refOffset $ map snd @binds.crb)
+                                                            @body.cre
+  | Case        loc         .   cre             =   CR.Exp_Case @expr.cre $ CR.mkCRArray @alts.cra
+  | FFI         loc         .   cre             =   CR.Exp_FFI @callconv @impEnt @ty CR.emptyCRArray
   | Ann         loc         .   cre             =   @expr.cre
   | * - Int Char String Var
         Lam App Let Tup Case FFI
@@ -255,49 +262,42 @@ SEM CBound
                                                      )]
 
 SEM CBind
-  | Bind		loc			.	crb				=	take 1 @bindAspects.crb -- TBD: multiple, choose?
+  | Bind        loc         .   crb             =   take 1 @bindAspects.crb -- TBD: multiple, choose?
 
 SEM CExpr
   | Let         lhs         .   crb             =   if @isGlobal
                                                     then @binds.crb ++ @body.crb
                                                     else []
-  | * - Let Ann	lhs			.	crb				=	[]
+  | * - Let Ann lhs         .   crb             =   []
 %%]
 
 %%[(8 corerun)
 ATTR AllAlt [ | | cra USE {++} {[]} : {[CR.Alt]} ]
 
 SEM CAlt
-  | Alt			lhs			.	cra				=	[CR.Alt_Alt @pat.crp @expr.cre]
+  | Alt         lhs         .   cra             =   [CR.Alt_Alt (CR.nm2RefMpInverse @nm2refNew) @pat.crp @expr.cre]
 %%]
 
 %%[(8 corerun)
 ATTR CPat [ | | crp: {CR.Pat} ]
 
 SEM CPat
-  | Con			lhs			.	crp				=	CR.Pat_Con @tag
+  | Con         lhs         .   crp             =   CR.Pat_Con @tag
 %%[[97
-  -- | BoolExpr	lhs			.	crp				=	CR.Pat_BoolExpr @cexpr.cre
+  -- | BoolExpr lhs         .   crp             =   CR.Pat_BoolExpr @cexpr.cre
 %%]]
   | * - Con
 %%[[97
        --  BoolExpr
 %%]]
-  				lhs			.	crp				=	CR.Pat_Con CTagRec	-- TBD
+                lhs         .   crp             =   CR.Pat_Con CTagRec  -- TBD
 %%]
 
 %%[(8 corerun)
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
-  | Mod			lhs			.	crm				=	CR.Mod_Mod @moduleNm (CR.mkCRArray $ map snd @expr.crb) @expr.cre
-%%]
-
-%%[(8888 corerun)
-ATTR AllAlt [ | | altsJiL USE {++} {[]} : {[(Int,J.Label,J.JInstr)]} ]
-
-SEM CAlt
-  | Alt         loc         .   altsJiL         =   [(@scrutineeTag,@lblAlt,@scrutineeAltJI ## @offsetsJI ## @expr.ji)]
+  | Mod         lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @expr.nm2refGath) @moduleNm (CR.mkCRArray $ map snd @expr.crb) @expr.cre
 %%]
 
 

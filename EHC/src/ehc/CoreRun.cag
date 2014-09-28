@@ -19,13 +19,16 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%[(8 corerun) hs import ({%{EH}Base.Common}, {%{EH}Base.Target})
 %%]
 
-%%[(8 corerun) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Utils)
+%%[(8 corerun) hs import(UHC.Util.Utils)
 %%]
 
 %%[(8 corerun) hs import({%{EH}Ty})
 %%]
 
-%%[(8 corerun) hs import(Data.Array)
+%%[(8 corerun) hs import(Data.Array, qualified Data.Map as Map, Data.Maybe, Data.Char, Data.List)
+%%]
+
+%%[(8 corerun) hs import(Control.Applicative)
 %%]
 
 %%[(90 corerun) hs import({%{EH}Foreign})
@@ -92,9 +95,38 @@ data RRef
   | RRef_Dbg				-- ^ debug variant, holding original name
       { rrefNm			:: !HsName
       }
-  deriving Show
+  deriving (Eq,Ord)
+
+instance Show RRef where
+  show _ = "RRef"
 
 noRRef = RRef_Dbg hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name mapping: to & from RRef
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(Ref2Nm)
+-- | RRef to HsName mapping for use during running when a more informative name is required.
+-- The representation is lazily via function
+type Ref2Nm = RRef -> Maybe HsName
+%%]
+
+%%[(8 corerun) hs export(Nm2RefMp, nm2RefMpInverse, ref2nmUnion)
+-- | HsName to RRef mapping for resolving references during translation to CoreRun
+type Nm2RefMp = Map.Map HsName RRef
+
+-- | Inverse of a `Nm2RefMp`
+nm2RefMpInverse :: Nm2RefMp -> Ref2Nm
+nm2RefMpInverse m
+  | Map.null m = const Nothing
+  | otherwise  = flip Map.lookup inv
+  where inv = Map.fromList [ (r,n) | (n,r) <- Map.toList m ]
+
+-- | Union, left-biased
+ref2nmUnion :: Ref2Nm -> Ref2Nm -> Ref2Nm
+ref2nmUnion m1 m2 = \r -> m1 r <|> m2 r
 %%]
 
 

@@ -18,7 +18,7 @@
 %%[(50 codegen) import(UHC.Util.Utils)
 %%]
 
-%%[(50 codegen) import(Control.Monad.State, Data.Array)
+%%[(50 codegen) import(Control.Monad.Identity, Control.Monad.State, Data.Array)
 %%]
 %%[(50 codegen) import(qualified UHC.Util.FastSeq as Seq)
 %%]
@@ -56,10 +56,10 @@ class ModPuller modFr modsDb modsRem modTo expr cat bind
     , modTo -> modFr
   where
     -- | Split main + imported into (1) root expr, (2) root bindings also visible and to be included, (3) part on which merging takes place and (4) a remainder
-    mpullSplit :: modFr -> [modFr] -> (expr,(cat,[(bind,HsNameS)]),modsDb, modsRem)
+    mpullSplit :: modFr -> [modFr] -> (expr, Maybe (cat,[(bind,HsNameS)]), modsDb, modsRem)
 
     -- | Extract bindings for a name, consisting of a category, set of bindings, and the bound names (including the one asked for) pulled in.
-    mpullUsedBindings :: HsName -> modsDb -> Maybe (cat, [bind], HsNameS)
+    mpullUsedBindings :: Monad m => HsName -> modsDb -> m (Maybe (cat, [bind], HsNameS))
     
     -- | Extract expr's relevant for inducing further pullins
     mpullRelevantExprs :: bind -> [expr]
@@ -98,16 +98,17 @@ modMergeByPullingInM
      , Monad m
      )
   => (modFr, [modFr])			    -- ^ main and imported
-     -> ModMergeT
-          cat bind m
+     -> ModMergeT cat bind m
           ( (modTo -> modTo)        -- ^ conversion of resulting module
           , HsNameS                 -- ^ modules from which something was taken
           )
 modMergeByPullingInM (modMain,modImpL) = do
-    let (rootExpr,(exportCateg,rootExports),modDb,modRem) = mpullSplit modMain modImpL
-    put $ emptyPullState {pullstToDo = Set.toList $ Set.unions $ mpullFreeVars rootExpr : map snd rootExports}
+    let (rootExpr,mbExports,modDb,modRem) = mpullSplit modMain modImpL
+    put $ emptyPullState {pullstToDo = Set.toList $ Set.unions $ mpullFreeVars rootExpr : (maybe [] (map snd . snd) mbExports)}
     pull modDb
-    modify $ \st -> st {pullstBinds = pullstBinds st `Seq.union` Seq.fromList [ (exportCateg,[b]) | (b,_) <- rootExports ]}
+    when (isJust mbExports) $
+      let (Just (exportCateg,rootExports)) = mbExports
+      in  modify $ \st -> st {pullstBinds = pullstBinds st `Seq.union` Seq.fromList [ (exportCateg,[b]) | (b,_) <- rootExports ]}
     final <- get
     return
       ( mpullBindingsAddToMod modRem rootExpr (Seq.toList $ pullstBinds final)
@@ -119,7 +120,7 @@ modMergeByPullingInM (modMain,modImpL) = do
       case pullstToDo s of
         (nm:nmRest)
           | nm `Set.notMember` pullstPulledNmS s {- && isJust mbPull -} -> do
-              mbPull@(~(Just (cat,binds,pulled))) <- return $ mpullUsedBindings nm modDb -- lift $ pullIn nm
+              mbPull@(~(Just (cat,binds,pulled))) <- lift $ mpullUsedBindings nm modDb
               if isJust mbPull
                 then do
                   let pulledNms = pullstPulledNmS s `Set.union` pulled

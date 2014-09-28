@@ -24,7 +24,7 @@
 %%[(50 core) import(UHC.Util.Utils)
 %%]
 
-%%[(50 core) import(Control.Monad.State, Data.Array)
+%%[(50 core) import(Control.Monad.Identity, Control.Monad.State, Data.Array)
 %%]
 %%[(50 core) import(qualified UHC.Util.FastSeq as Seq)
 %%]
@@ -52,9 +52,9 @@ instance ModPuller
         ( cmoddbMainExpr modDbMain
         , 
 %%[[50
-          (CBindCateg_Rec, [])
+          Nothing
 %%][90
-          (CBindCateg_FFE, [ (effeBind e, effeFvS e) | m <- mmain : mimpL, e <- cmodExtractFFE m ])
+          Just (CBindCateg_FFE, [ (effeBind e, effeFvS e) | m <- mmain : mimpL, e <- cmodExtractFFE m ])
 %%]]
         , ( modDbMain
           , Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
@@ -67,7 +67,7 @@ instance ModPuller
             modDbImp  = map cexprModAsDatabase mimpL
             modDbMp   = Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
 
-    mpullUsedBindings n (modDbMain,modDbMp) = do
+    mpullUsedBindings n (modDbMain,modDbMp) = return $ do
         db <- maybe (Just modDbMain) (\m -> Map.lookup m modDbMp) $ hsnQualifier n
         (bi,_) <- cmoddbLookup n db
         let (cat,bsarr) = cmoddbBindArr db ! bi
