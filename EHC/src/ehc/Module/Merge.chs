@@ -124,8 +124,7 @@ modMergeByPullingInM (modMain,modImpL) = do
                 then do
                   let pulledNms = pullstPulledNmS s `Set.union` pulled
                       newNms
-                        = -- (\x -> tr "modMergeByPullingInM.pulledNms" (nm >#< show x) x) $
-                          (Set.unions $ map (Set.unions . map mpullFreeVars . mpullRelevantExprs) binds)
+                        = (Set.unions $ map (Set.unions . map mpullFreeVars . mpullRelevantExprs) binds)
                           `Set.difference` pulledNms
                   put $
                     s { pullstToDo = Set.toList newNms ++ nmRest

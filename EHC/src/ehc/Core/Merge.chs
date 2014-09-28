@@ -42,47 +42,53 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 core) hs
-instance ModPuller CModule (CModuleDatabase, Map.Map HsName CModuleDatabase) (HsName,CImportL,CDeclMetaL) CModule CExpr CBindCateg CBind where
-  mpullSplit mmain@(CModule_Mod modNm _ _ _) mimpL =
-      ( cmoddbMainExpr modDbMain
+instance ModPuller
+           CModule
+           (CModuleDatabase, Map.Map HsName CModuleDatabase)
+           (HsName,CImportL,CDeclMetaL)
+           CModule CExpr CBindCateg CBind
+  where
+    mpullSplit mmain@(CModule_Mod modNm _ _ _) mimpL =
+        ( cmoddbMainExpr modDbMain
+        , 
 %%[[50
-      , (CBindCateg_Rec,[])
+          (CBindCateg_Rec, [])
 %%][90
-      , (CBindCateg_FFE, [ (effeBind e, effeFvS e) | m <- mmain : mimpL, e <- cmodExtractFFE m ])
+          (CBindCateg_FFE, [ (effeBind e, effeFvS e) | m <- mmain : mimpL, e <- cmodExtractFFE m ])
 %%]]
-      , ( modDbMain
-        , Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
-        )
-      , ( modNm
-        , Set.toList $ Set.fromList $ concatMap cmoddbImports $ modDbMain : modDbImp
-        , concatMap cmoddbMeta $ modDbMain : modDbImp
-      ) )
-    where modDbMain =     cexprModAsDatabase mmain
-          modDbImp  = map cexprModAsDatabase mimpL
-          modDbMp   = Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
+        , ( modDbMain
+          , Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
+          )
+        , ( modNm
+          , Set.toList $ Set.fromList $ concatMap cmoddbImports $ modDbMain : modDbImp
+          , concatMap cmoddbMeta $ modDbMain : modDbImp
+        ) )
+      where modDbMain =     cexprModAsDatabase mmain
+            modDbImp  = map cexprModAsDatabase mimpL
+            modDbMp   = Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
 
-  mpullUsedBindings n (modDbMain,modDbMp) = do
-      db <- maybe (Just modDbMain) (\m -> Map.lookup m modDbMp) $ hsnQualifier n
-      (bi,_) <- cmoddbLookup n db
-      let (cat,bsarr) = cmoddbBindArr db ! bi
-          bs = elems bsarr
-      return ( cat, bs
-             , -- (\x -> tr "ModPuller CModule.mpullUsedBindings" (n >#< show x) x) $
-               Set.fromList $ map cbindNm bs
-             )
+    mpullUsedBindings n (modDbMain,modDbMp) = do
+        db <- maybe (Just modDbMain) (\m -> Map.lookup m modDbMp) $ hsnQualifier n
+        (bi,_) <- cmoddbLookup n db
+        let (cat,bsarr) = cmoddbBindArr db ! bi
+            bs = elems bsarr
+        return
+          ( cat, bs
+          , Set.fromList $ map cbindNm bs
+          )
 
-  mpullRelevantExprs = cbindExprs
-  
-  mpullFreeVars = cexprFvS
+    mpullRelevantExprs = cbindExprs
+    
+    mpullFreeVars = cexprFvS
 
-  mpullBindingsAddToMod (modNm,allImports,allMeta) rootExpr bs _ = CModule_Mod modNm allImports allMeta (acoreLetN bs $ rootExpr)
+    mpullBindingsAddToMod (modNm,allImports,allMeta) rootExpr bs _ = CModule_Mod modNm allImports allMeta (acoreLetN bs $ rootExpr)
 %%]
 
 %%[(50 core) hs export(cModMerge)
 -- | merge by pulling
-cModMerge :: ([CModule],CModule) -> CModule
-cModMerge (mimpL,mmain)
+cModMerge :: (CModule,[CModule]) -> CModule
+cModMerge mods@(mmain,mimpL)
   = mkM mmain
-  where (mkM,_) = modMergeByPullingIn (mmain,mimpL)
+  where (mkM,_) = modMergeByPullingIn mods
 %%]
 

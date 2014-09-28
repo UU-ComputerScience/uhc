@@ -277,7 +277,7 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
           = do { cr <- get
                ; cpUpdCU mainModNm 
                  $ ecuStoreCore 
-                 $ CMerge.cModMerge ([ mOf m cr | m <- impModNmL ], mOf mainModNm cr)
+                 $ CMerge.cModMerge (mOf mainModNm cr, [ mOf m cr | m <- impModNmL ])
 %%[[99
                ; cpCleanupCore impModNmL -- clean up Core and CoreSem (it can still be read through cr in the next statement)
 %%]]
