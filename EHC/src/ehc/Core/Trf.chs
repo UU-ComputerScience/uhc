@@ -122,6 +122,7 @@ trfCore opts optimScope dataGam modNm trfcore
   where isFromCoreSrc = ecuStateIsCore $ trfcoreECUState    $ trfstExtra trfcore
         isLamLifted   =                  trfcoreIsLamLifted $ trfstExtra trfcore
         noOptims      = ehcOptOptimizationLevel opts <= OptimizationLevel_Off
+        isCoreTarget  = targetIsCore $ ehcOptTarget opts
         trf
           = do { -- initial is just to obtain Core for dumping stages
                  t_initial
@@ -154,14 +155,15 @@ trfCore opts optimScope dataGam modNm trfcore
 
                      -- erase type signatures, extract the core + ty combi at this stage
                    ; unless (ehcOptCoreSysF opts)
-                            t_erase_ty
+                       t_erase_ty
                    }
 
 
                ; unless isLamLifted $ do
                    {
 					 -- make names unique
-				   ; t_ren_uniq emptyRenUniqOpts
+				   ; unless isCoreTarget $
+				       t_ren_uniq emptyRenUniqOpts
 					 -- from now on INVARIANT: keep all names globally unique
 					 --             ASSUME   : no need to shadow identifiers
 
@@ -206,7 +208,7 @@ trfCore opts optimScope dataGam modNm trfcore
                    ; t_elim_trivapp
                    }
 
-               ; unless isLamLifted $ do
+               ; when (isCoreTarget || not isLamLifted) $ do
                    {
 					 -- put in A-normal form, where args to app only may be identifiers
 				   ; u1 <- freshInfUID
@@ -218,7 +220,7 @@ trfCore opts optimScope dataGam modNm trfcore
                       t_fix_dictfld
 %%]]
                
-               ; unless isLamLifted $ do
+               ; when (not isLamLifted && not isCoreTarget) $ do
                    {
 					 -- pass all globals used in lambda explicit as argument
 				   ; t_lam_asarg
@@ -228,7 +230,7 @@ trfCore opts optimScope dataGam modNm trfcore
 				   ; t_let_unrec
 				   ; u2 <- freshInfUID
 				   ; t_anormal u2
-			   
+
 					 -- float lam/CAF to global level
 				   ; t_float_glob
 					 -- from now on INVARIANT: no local lambdas
@@ -248,7 +250,7 @@ trfCore opts optimScope dataGam modNm trfcore
                       (do { {- t_let_flatstr
                           ; -} t_ren_uniq (emptyRenUniqOpts {renuniqOptResetOnlyInLam = True})
                           })
-               ; when True {- isFromCoreSrc -} $ do
+               ; when (not isCoreTarget) {- isFromCoreSrc -} $ do
                    { -- ensure def before use ordering
                      t_let_defbefuse' osmw
 

@@ -123,6 +123,7 @@ instance Show CoreOpt where
 %%]]
 %%[[(8 corerun)
   show CoreOpt_DumpRun            	= "dump-run"
+  show CoreOpt_Run            	    = "run"
 %%]]
 %%[[(8 coresysf)
   show CoreOpt_SysF             	= "sysf"

@@ -21,6 +21,7 @@ Global assumptions:
 DATA Mod
   | Mod         ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 moduleNm        : {HsName}
+                moduleNr        : {Int}			-- sequence nr, index later into global table of modules
                 binds           : {CRArray Bind}
                 body			: Exp
 %%]
@@ -51,28 +52,29 @@ DATA Exp
                 args			: {CRArray Exp}
 
   -- recursive let bindings
-  | LetRec      ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
+  | LetRec      firstOff		: {Int}			-- offset of first binding
+  				ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 binds           : {CRArray Bind}
                 body            : Exp
 
   -- strict let binding
-  | LetStr      ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
+  | LetStr      firstOff		: {Int}			-- offset of first binding
+  				ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 binds           : {CRArray Bind}
                 body            : Exp
 
   -- application, abstraction
   | App         func            : Exp
                 args            : {CRArray Exp}
-  | Lam         nrArgs          : {Int}		-- nr of arguments
-                nrAllocs        : {Int}		-- nr stack frame locations to be allocated (excluding arguments) for locals
+  | Lam         lev				: {Int}			-- lexical level
+  				nrArgs          : {Int}			-- nr of arguments, 0 means it is a thunk
+                nrAllocs        : {Int}			-- nr stack frame locations to be allocated (excluding arguments) for locals
                 ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 body            : Exp
 
   -- thunking, forcing, partial applications
   | Force		expr			: Exp
-  | Thunk		expr			: Exp
-  -- | PApp		func            : Exp		-- special case of App where @func is known to be Lam
-  --               args            : {CRArray Exp}
+  -- | Thunk		expr			: Exp		-- expressed as parameterless Lam
 
   -- case
   | Case        expr            : Exp		-- SExp

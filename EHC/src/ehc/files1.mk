@@ -81,7 +81,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix TyCore/Trf/,Common) \
 													$(addprefix GrinCode/,Common SolveEqs) \
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
-														$(addprefix CompilePhase/,Parsers Output Translations Transformations \
+														$(addprefix CompilePhase/,Run Parsers Output Translations Transformations \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM CompileJavaScript Link \
 															Cleanup Module TopLevelPhases \

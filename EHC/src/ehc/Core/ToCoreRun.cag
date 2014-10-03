@@ -49,12 +49,13 @@ WRAPPER CodeAGItf
 %%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRun)
 cmod2CoreRun'
   :: EHCOpts
-     -> Int         -- sequence nr of module (offset), used to create global per module references
+     -> Int         	-- sequence nr of module (offset), used to create global per module references
+     -> CR.Nm2RefMp		-- outer bindings
      -> CModule
-     -> ( CR.Mod    -- generated CoreRun
-        , CR.Nm2RefMp  -- name to ref mapping of toplevel bindings
+     -> ( CR.Mod    	-- generated CoreRun
+        , CR.Nm2RefMp  	-- name to ref mapping of toplevel bindings
         )
-cmod2CoreRun' opts modNr cmod
+cmod2CoreRun' opts modNr nm2ref cmod
   =  ( crm_Syn_CodeAGItf t
      , nm2refGath_Syn_CodeAGItf t
      )
@@ -62,11 +63,12 @@ cmod2CoreRun' opts modNr cmod
               (Inh_CodeAGItf
                  { modNr_Inh_CodeAGItf = modNr
                  , opts_Inh_CodeAGItf = opts
+                 , nm2ref_Inh_CodeAGItf = nm2ref
                  })
 
 cmod2CoreRun :: CModule -> CR.Mod
 cmod2CoreRun m = m'
-  where (m',_) = cmod2CoreRun' defaultEHCOpts 0 m
+  where (m',_) = cmod2CoreRun' defaultEHCOpts 0 Map.empty m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,6 +76,7 @@ cmod2CoreRun m = m'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun) hs
+-- | Debug info is embedded in Exp
 dbg = CR.Exp_Dbg
 %%]
 
@@ -92,63 +95,140 @@ ATTR CodeAGItf AllCodeNT [ modNr: Int | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name mapping: gathering
+%%% Binding requires thunking?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs
+-- | What to do with binding in terms of thunking/forcing?
+data ToBe
+  = ToBe_Thunked
+  | ToBe_Forced
+  | ToBe_LeftAsIs
+  deriving Eq
+%%]
+
+%%[(8 corerun)
+SEM CBound
+  | Bind Val    loc         .   toBe            =   let mba@(~(Just (_,w))) = whatExprMbApp @expr.whatBelow
+                                                        isVar     = isJust $ whatExprMbVar @expr.whatBelow
+                                                        isApp     = isJust mba
+                                                        isTup     = isApp && whatExprIsTup w
+                                                        isWHNF    = whatExprIsWHNF @expr.whatBelow
+                                                        isNotWHNF = not isWHNF
+                                                    in  case @lhs.evalCtx of
+                                                          EvalCtx_Eval
+                                                            | isApp      -> ToBe_LeftAsIs
+                                                            | isVar      -> ToBe_Forced
+                                                            | isNotWHNF  -> ToBe_Forced
+                                                          EvalCtx_Thunk 
+                                                            | isTup      -> ToBe_LeftAsIs
+                                                            | isNotWHNF  -> ToBe_Thunked
+                                                          _              -> ToBe_LeftAsIs
+                            .   isToBeThunked   =   @toBe == ToBe_Thunked
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level, see also Core/CommonLev
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+-- A thunk runs in its own environment, equivalent to a parameterless Lam, hence the lev increase
+SEM CBound
+  | Bind Val    loc         .   lev             =   if @isToBeThunked then @lhs.lev + 1 else @lhs.lev
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name mapping: references, gathering, and distribution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun)
 -- | Thread offset as state throughout places where bindings are introduced.
 -- Invariant: offset is reset to 0 whenever `lev` is incremented.
+-- Local offset for reference
 ATTR AllExpr [ | refOffset: Int | ]
-ATTR AllExpr [ nm2ref: {CR.Nm2RefMp} | | ]
-ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`Map.union`} {Map.empty} : {CR.Nm2RefMp} ]
-ATTR AllAlt CExpr [ | | refOffsetMax USE {`max`} {0} : Int ]
 
 SEM CModule
   | Mod         expr        .   refOffset       =   0
-                            .   nm2ref          =   @expr.nm2refGath
 
 SEM CExpr
   | Lam         (loc.refOffset, body.refOffset) =   if @isTopLam
                                                     then (0,1)
                                                     else (@lhs.refOffset, @lhs.refOffset + 1)
-                loc         .   nm2refNew       =   Map.insert @bind.nm (CR.RRef_Loc @lev @refOffset) @body.nm2refGath
                 lhs         .   refOffset       =   @lhs.refOffset
-                loc         .   nm2ref          =   if @isTopLam
-                                                    then @nm2refNew `Map.union` @lhs.nm2ref
-                                                    else @lhs.nm2ref
-                lhs         .   nm2refGath      =   if @isTopLam
-                                                    then Map.empty
-                                                    else @nm2refNew
-                
+
 SEM CBind
   | Bind        lhs         .   refOffset       =   @lhs.refOffset + 1
                 loc         .   ref             =   if @lhs.isGlobal
                                                     then CR.RRef_Glb @lhs.modNr @lhs.refOffset
                                                     else CR.RRef_Loc @lhs.lev   @lhs.refOffset
-                            .   nm2refGath      =   Map.singleton @nm @ref
+
+SEM CBound
+  | Bind Val    expr        .   refOffset       =   if @isToBeThunked then 0              else @lhs.refOffset
+                lhs         .   refOffset       =   if @isToBeThunked then @lhs.refOffset else @expr.refOffset
+
+SEM CAlt
+  | Alt         expr        .   refOffset       =   @lhs.refOffset
+                lhs         .   refOffset       =   @lhs.refOffset
+
+-- Max offset encountered
+ATTR AllAlt CExpr AllBind [ | | refOffsetMax USE {`max`} {0} : Int ]
+
+SEM CExpr
+  | Let         loc         .   refOffsetMax    =   max @binds.refOffsetMax @body.refOffsetMax
+  | Lam         loc         .   refOffsetMax    =   max @body.refOffset @body.refOffsetMax
+
+SEM CAlt
+  | Alt         lhs         .   refOffsetMax    =   max @expr.refOffset @expr.refOffsetMax
+
+SEM CBound
+  | Bind Val    lhs         .   refOffsetMax    =   if @isToBeThunked then @lhs.refOffset else max @expr.refOffset @expr.refOffsetMax
+
+-- Name gathering
+ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`Map.union`} {Map.empty} : {CR.Nm2RefMp} ]
+
+SEM CModule
+  | Mod         loc         .   nm2refNew       =   @expr.nm2refGath
+
+SEM CExpr
+  | Lam         loc         .   nm2refNew       =   Map.insert @bind.nm (CR.RRef_Loc @lev @refOffset) @body.nm2refGath
+                lhs         .   nm2refGath      =   if @isTopLam
+                                                    then Map.empty
+                                                    else @nm2refNew
+  | Let         (loc.nm2refNew, lhs.nm2refGath) =   if @isGlobal
+                                                    then (Map.empty, @binds.nm2refGath `Map.union` @body.nm2refGath)        -- TBD: shadowing not dealt with properly for inverse
+                                                    else (@binds.nm2refGath, Map.empty)
+
+SEM CBind
+  | Bind        loc         .   nm2refGath      =   Map.singleton @nm @ref
+
+SEM CBound
+  | Bind Val    loc         .   nm2refNew       =   if @isToBeThunked then @expr.nm2refGath else Map.empty      -- TBD: shadowing not dealt with properly for inverse
 
 SEM CAlt
   | Alt         loc         .   nm2refNew       =   Map.fromList [ (n, CR.RRef_Fld @lhs.scrutRef i) | (n,i) <- zip @pat.fldNmL [0..] ]
-                lhs         .   nm2refGath      =   Map.empty
-                expr        .   refOffset       =   @lhs.refOffset
-                            .   nm2ref          =   @nm2refNew `Map.union` @lhs.nm2ref
-                lhs         .   refOffset       =   @lhs.refOffset
-                            .   refOffsetMax    =   max @expr.refOffset @expr.refOffsetMax
+
+-- Name distribution
+ATTR CodeAGItf CModule AllExpr [ nm2ref: {CR.Nm2RefMp} | | ]
+
+SEM CModule
+  | Mod         expr        .   nm2ref          =   @nm2refNew `Map.union` @lhs.nm2ref
 
 SEM CExpr
-  | Let         loc         .   refOffsetMax    =   @body.refOffsetMax  -- TBD: take strict binds into account
-                (binds.nm2ref, body.nm2ref)     =   if @isGlobal
+  | Lam         loc         .   nm2ref          =   if @isTopLam
+                                                    then @nm2refNew `Map.union` @lhs.nm2ref
+                                                    else @lhs.nm2ref
+  | Let         (binds.nm2ref, body.nm2ref)     =   if @isGlobal
                                                     then (@lhs.nm2ref, @lhs.nm2ref)
                                                     else ( case @categ of
                                                              CBindCateg_Rec -> @binds.nm2refGath `Map.union` @lhs.nm2ref
                                                              _              -> @lhs.nm2ref `Map.union` @binds.nm2refGath
                                                          , @binds.nm2refGath `Map.union` @lhs.nm2ref
                                                          )
-                (loc.nm2refNew, lhs.nm2refGath) =   if @isGlobal
-                                                    then (Map.empty, @binds.nm2refGath `Map.union` @body.nm2refGath)
-                                                    else (@binds.nm2refGath, Map.empty)
-  | Lam         loc         .   refOffsetMax    =   max @body.refOffset @body.refOffsetMax
+                
+SEM CAlt
+  | Alt         expr        .   nm2ref          =   @nm2refNew `Map.union` @lhs.nm2ref
 
+-- Ref to scrutinee
 ATTR AllAlt [ scrutRef: {CR.RRef} | | ]
 
 SEM CExpr
@@ -221,7 +301,7 @@ SEM CExpr
 %%]]
                 loc         .   cre             =   CR.Exp_SExp @crse
   | Lam         loc         .   cre             =   if @isTopLam
-                                                    then CR.Exp_Lam (length @creLamArgL) @refOffsetMax (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
+                                                    then CR.Exp_Lam @lev (length @creLamArgL) @refOffsetMax (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
                                                     else dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
   | App         loc         .   cre             =   if @isTopApp'
                                                     then @creAppFun $ CR.mkCRArray $ reverse @creAppArgL
@@ -230,8 +310,9 @@ SEM CExpr
   | Let         loc         .   cre             =   if @isGlobal
                                                     then @body.cre
                                                     else (case @categ of {CBindCateg_Strict -> CR.Exp_LetStr; _ -> CR.Exp_LetRec})
+                                                            @lhs.refOffset
                                                             (CR.nm2RefMpInverse @nm2refNew)
-                                                            (CR.mkCRArrayLwb @lhs.refOffset $ map snd @binds.crb)
+                                                            (CR.mkCRArray $ map snd @binds.crb)
                                                             @body.cre
   | Case        loc         .   cre             =   CR.Exp_Case @expr.cre $ CR.mkCRArray @alts.cra
   | FFI         loc         .   cre             =   CR.Exp_FFI @callconv @impEnt @ty CR.emptyCRArray
@@ -249,17 +330,11 @@ SEM CExpr
 ATTR AllBind CExpr [ | | crb USE {++} {[]} : {[(HsName, CR.Bind)]} ]
 
 SEM CBound
-  | Bind Val    loc         .   crb             =   [( @lhs.nm
-                                                     , (case @lhs.evalCtx of
-                                                          EvalCtx_Eval -> CR.Exp_Force
-                                                          EvalCtx_Thunk 
-                                                            -- | whatExprIsLam @expr.whatBelow -> flip CR.Exp_PApp CR.emptyCRArray
-                                                            | isJust mba && whatExprIsTup w        -> id
-                                                            | not $ whatExprIsWHNF @expr.whatBelow -> CR.Exp_Thunk
-                                                            where mba@(~(Just (_,w))) = whatExprMbApp @expr.whatBelow
-                                                          _ -> id
-                                                       ) @expr.cre
-                                                     )]
+  | Bind Val    loc         .   creBind         =   case @toBe of
+                                                        ToBe_Forced   -> CR.Exp_Force @expr.cre
+                                                        ToBe_Thunked  -> CR.Exp_Lam @lev 0 @expr.refOffsetMax (CR.nm2RefMpInverse @nm2refNew) @expr.cre
+                                                        ToBe_LeftAsIs -> @expr.cre
+                loc         .   crb             =   [( @lhs.nm, @creBind )]
 
 SEM CBind
   | Bind        loc         .   crb             =   take 1 @bindAspects.crb -- TBD: multiple, choose?
@@ -297,7 +372,7 @@ SEM CPat
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
-  | Mod         lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @expr.nm2refGath) @moduleNm (CR.mkCRArray $ map snd @expr.crb) @expr.cre
+  | Mod         lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (CR.mkCRArray $ map snd @expr.crb) @expr.cre
 %%]
 
 

@@ -1,5 +1,5 @@
 ### Process this file with autoconf to produce a configure script.
-AC_INIT([UHC],[1.1.5],[uhc-developers@lists.science.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])
+AC_INIT([UHC],[1.1.7],[uhc-developers@lists.science.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])
 
 ### version of autoconf used (and required)
 #AC_PREREQ(2.64)
@@ -457,9 +457,10 @@ AC_PATH_PROG(hsc2hsCmd,hsc2hs)
 AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
-ghcLibsRequired="fgl syb uulib network binary hashable uhc-util"
+ghcLibsRequired="fgl vector syb uulib network binary hashable uhc-util base mtl directory containers array process"
 # gather for some libraries version info
 ghcLibsRequiredWithVersion=""
+ghcLibsRequiredWithoutVersion=""
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
@@ -473,6 +474,12 @@ then
         pkgVersionNoDot=`echo ${pkgVersion} | sed -E -e 's/\.//'g`
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
+          uhc-util)
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.3.7"
+            ;;
+          hashable)
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} hashable>=1.1&&<1.3"
+            ;;
           fgl)
             # with uhc-util >= 0.1.3.7 no longer necessary
             if test ${pkgVersionNoDot} -ge 5500
@@ -485,6 +492,7 @@ then
             fi
             ;;
           *)
+            ghcLibsRequiredWithoutVersion="${ghcLibsRequiredWithoutVersion} ${pkgBase}"
             ;;
         esac
       else
@@ -495,7 +503,7 @@ then
 fi
 
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="${ghcLibsRequiredWithVersion} base mtl directory hashable>=1.1&&<1.3 uhc-util>=0.1.3.7"
+cabal_base_lib_depends="${ghcLibsRequiredWithVersion} ${ghcLibsRequiredWithoutVersion}"
 if test x$enableClr = "xyes"
 then
   cabal_base_lib_depends="$cabal_base_lib_depends language-cil"
@@ -512,15 +520,6 @@ case $ghcVersion in
     ;;
   6.4.2)
     optStandardGHCPackages="-package util -package lang -package data"
-    ;;
-  6.8*)
-    cabal_base_lib_depends="$cabal_base_lib_depends containers array process"
-    ;;
-  6.10*)
-    cabal_base_lib_depends="$cabal_base_lib_depends containers array process"
-    ;;
-  *)
-    cabal_base_lib_depends="$cabal_base_lib_depends containers array process"
     ;;
 esac
 

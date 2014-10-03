@@ -25,7 +25,13 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%[(8 corerun) hs import({%{EH}Ty})
 %%]
 
-%%[(8 corerun) hs import(Data.Array, qualified Data.Map as Map, Data.Maybe, Data.Char, Data.List)
+%%[(8 corerun) hs import(qualified Data.Map as Map, Data.Maybe, Data.Char, Data.List)
+%%]
+
+%%[(8888 corerun) hs import(Data.Array)
+%%]
+
+%%[(8 corerun) hs import(qualified Data.Vector as V)
 %%]
 
 %%[(8 corerun) hs import(Control.Applicative)
@@ -48,24 +54,31 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%% CoreRun: Supporting types: fast access sequences/array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(CRArray, emptyCRArray, mkCRArrayLwb, mkCRArray, craLength)
+%%[(8 corerun) hs export(CRArray, emptyCRArray, mkCRArray, craLength, craAssocs)
 -- | Fast access sequence
-type CRArray x = Array Int x
+-- type CRArray x = Array Int x
+type CRArray x = V.Vector x
 
+{-
 -- | Make array with lowerbound
 mkCRArrayLwb :: Int -> [x] -> CRArray x
 mkCRArrayLwb lwb xs = listArray (lwb,lwb+l-1) xs
   where l = length xs
+-}
 
 mkCRArray :: [x] -> CRArray x
-mkCRArray = mkCRArrayLwb 0
+-- mkCRArray = mkCRArrayLwb 0
+mkCRArray = V.fromList
 
 emptyCRArray :: CRArray x
-emptyCRArray = mkCRArray []
+emptyCRArray = V.empty -- mkCRArray []
 
 craLength :: CRArray x -> Int
-craLength a = h + 1 - l
-  where (l,h) = bounds a
+craLength = V.length -- a = h + 1 - l
+--  where (l,h) = bounds a
+
+craAssocs :: CRArray x -> [(Int,x)]
+craAssocs = zip [0 ..] . V.toList
 %%]
 
 %%[(8 corerun) hs export(Bind)
@@ -87,6 +100,9 @@ data RRef
   | RRef_Loc				-- ^ local reference to on stack value
       { rrefLev			:: !Int		-- ^ level
       , rrefEntry		:: !Int		-- ^ entry inside level
+      }
+  | RRef_Tag				-- ^ tag of memory/constructor node referred to by other ref (not yet used)
+      { rrefRef			:: !RRef	-- ^ of what this is the tag
       }
   | RRef_Fld				-- ^ fld of memory/constructor node referred to by other ref
       { rrefRef			:: !RRef	-- ^ of what this is a field

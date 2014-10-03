@@ -16,7 +16,9 @@ Pretty printing for CoreRun
 %%[(8 corerun) hs import({%{EH}Ty.Pretty})
 %%]
 
-%%[(8 corerun) hs import(Data.Array)
+%%[(8888 corerun) hs import(Data.Array)
+%%]
+%%[(8 corerun) hs import(qualified Data.Vector as V)
 %%]
 
 %%[(90 corerun) hs import({%{EH}Foreign.Pretty})
@@ -40,6 +42,9 @@ instance Show Mod where
 instance Show Exp where
   show _ = "Exp"
 
+instance Show SExp where
+  show _ = "SExp"
+
 instance Show Alt where
   show _ = "Alt"
 %%]
@@ -51,6 +56,9 @@ instance PP Mod where
 instance PP Exp where
   pp x = pp_Syn_Exp $ wrap_Exp (sem_Exp x) Inh_Exp
 
+instance PP SExp where
+  pp = pp . Exp_SExp
+
 instance PP Alt where
   pp x = pp_Syn_Alt $ wrap_Alt (sem_Alt x) Inh_Alt
 %%]
@@ -59,6 +67,7 @@ instance PP Alt where
 instance PP RRef where
   pp (RRef_Glb m e) = "#g" >|< ppDots [m,e]
   pp (RRef_Loc l e) = "#l" >|< ppDots [l,e]
+  pp (RRef_Tag r  ) = ppDots [pp r, pp "tg"]
   pp (RRef_Fld r e) = ppDots [pp r, pp e]
   pp (RRef_Dbg n  ) = "##" >|< n
 %%]
@@ -68,8 +77,11 @@ instance PP RRef where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun) hs
+ppBinds' :: Int -> CRArray Bind -> PP_Doc
+ppBinds' off bs = vlist [ off+i >|< ":" >#< e | (i,e) <- craAssocs bs ]
+
 ppBinds :: CRArray Bind -> PP_Doc
-ppBinds bs = vlist [ i >|< ":" >#< e | (i,e) <- assocs bs ]
+ppBinds = ppBinds' 0
 %%]
 
 %%[(8 corerun)
@@ -77,7 +89,7 @@ ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
   | Mod         lhs         .   pp          =   "module" >#< @moduleNm >|< ":" >#< @body.pp
-                                                >-< vlist [ i >|< ":" >#< e | (i,e) <- assocs @binds ]
+                                                >-< vlist [ i >|< ":" >#< e | (i,e) <- craAssocs @binds ]
 
 SEM SExp
   | Int         lhs         .   pp          =   pp @int
@@ -89,23 +101,23 @@ SEM SExp
   | Var         lhs         .   pp          =   pp @ref
 
 SEM Exp
-  | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (elems @args)
-  -- | PApp        lhs         .   pp          =   "papp" >#< ppParens @func.pp >|< ppParensCommas (elems @args)
-  | LetRec      lhs         .   pp          =   "letrec" >#< ppBinds @binds >#< "in" >-< @body.pp
-  | LetStr      lhs         .   pp          =   "letstr" >#< ppBinds @binds >#< "in" >-< @body.pp
+  | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (V.toList @args)
+  -- | PApp        lhs         .   pp          =   "papp" >#< ppParens @func.pp >|< ppParensCommas (V.toList @args)
+  | LetRec      lhs         .   pp          =   "letrec" >#< ppBinds' @firstOff @binds >#< "in" >-< @body.pp
+  | LetStr      lhs         .   pp          =   "letstr" >#< ppBinds' @firstOff @binds >#< "in" >-< @body.pp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
-  | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp
-  | Lam         lhs         .   pp          =   "\\" >|< @nrArgs >|< "," >|< @nrAllocs >#< "->" >#< @body.pp
+  -- | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp
+  | Lam         lhs         .   pp          =   "\\" >|< "@" >|< @lev >#< (if @nrArgs > 0 then pp @nrArgs else pp "thk") >|< "," >|< @nrAllocs >#< "->" >#< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
-                                                >-< indent 1 (vlist $ elems @alts)
-  | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (elems @args)
-  | FFI         lhs         .   pp          =   "ffi" >#< ppParens (show @callconv >#< @ppent >|< "::" >#< @ty) >|< ppParensCommas (elems @args)
+                                                >-< indent 1 (vlist $ V.toList @alts)
+  | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (V.toList @args)
+  | FFI         lhs         .   pp          =   "ffi" >#< ppParens (show @callconv >#< @ppent >|< "::" >#< @ty) >|< ppParensCommas (V.toList @args)
 %%[[8
                 loc         .   ppent       =   pp (show @impEnt)
 %%][90
                 loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
 %%]]
-  | Dbg			lhs			.	pp			=	ppCurly $ "dbg:" >#< @msg
+  | Dbg         lhs         .   pp          =   ppCurly $ "dbg:" >#< @msg
 
 SEM Alt
   | Alt         lhs         .   pp          =   @pat.pp >#< "->" >#< @expr.pp

@@ -90,6 +90,9 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]
+-- CoreRun
+%%[(8 corerun) import({%{EH}EHC.CompilePhase.Run})
+%%]
 -- Language syntax: TyCore
 %%[(8 codegen tycore) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
@@ -1220,6 +1223,9 @@ cpProcessCoreRest modNm
 %%[[(8 corerun)
                 ++ (if CoreOpt_DumpRun `elem` ehcOptCoreOpts opts
                     then [void $ cpOutputCore CPOutputCoreHow_Run [] "" Cfg.suffixDotlessInputOutputCoreRun modNm]
+                    else [])
+                ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
+                    then [cpRunCoreRun modNm]
                     else [])
 %%]]
 %%[[99
