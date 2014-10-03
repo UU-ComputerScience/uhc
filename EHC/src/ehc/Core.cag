@@ -491,7 +491,7 @@ cModMerge mL
 %%% Map/Database representation of a module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 hs export(CDbBindLetInfo)
+%%[(50 core) hs export(CDbBindLetInfo)
 -- | the binding info required for let bind
 type CDbBindLetInfo'  f            = ModDbBindLetInfo'' f  CBindCateg CBind
 type CDbBindLetInfo                = CDbBindLetInfo'  []
