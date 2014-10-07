@@ -842,6 +842,7 @@ pLABEL          ,
     pLETSTRICT  ,
     pSAFE       ,
     pFOREIGN    ,
+    pDEFAULT    ,
     pIMPORT     ,
     pEXPORT
   :: IsParser p Token => p Token
@@ -852,6 +853,7 @@ pLABEL           = pKeyTk "label"
 pLETSTRICT       = pKeyTk "letstrict"
 pSAFE            = pKeyTk "safe"
 pFOREIGN         = pKeyTk "foreign"
+pDEFAULT         = pKeyTk "default"
 pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
 
@@ -860,7 +862,7 @@ tokKeywStrsEH8
 %%[[(8 codegen)
   ++ map show allFFIWays
 %%]]
-tokKeywStrsHS8 = [ "export", "label", "safe" ]
+tokKeywStrsHS8 = [ "default", "export", "label", "safe" ]
 %%]
 
 %%[8
@@ -871,13 +873,15 @@ pFFIWay
 %%]
 
 %%[9
+%%]
+
+%%[9
 pDARROW         ,
     pLTCOLON    ,
     pOIMPL      ,
     pCIMPL      ,
     pCLASS      ,
     pINSTANCE   ,
-    pDEFAULT    ,
     pDO
   :: IsParser p Token => p Token
 %%]
@@ -889,11 +893,10 @@ pOIMPL           = pKeyTk (show hsnOImpl)
 pCIMPL           = pKeyTk (show hsnCImpl)
 pCLASS           = pKeyTk "class"
 pINSTANCE        = pKeyTk "instance"
-pDEFAULT         = pKeyTk "default"
 pDO              = pKeyTk "do"
 
 tokKeywStrsEH9 = [ "class", "instance" ]
-tokKeywStrsHS9 = [ "default", "do" ]
+tokKeywStrsHS9 = [ "do" ]
 tokOpStrsEH9   = [ show hsnPrArrow, "<:" ]
 tokOpStrsHS9   = [  ]
 %%]

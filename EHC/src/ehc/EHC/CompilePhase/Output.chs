@@ -150,7 +150,9 @@ cpOutputTyCore suff modNm
 %%[(8 codegen) export(CPOutputCoreHow(..), cpOutputCoreModules)
 data CPOutputCoreHow
   = CPOutputCoreHow_Text
+%%[[50
   | CPOutputCoreHow_Binary
+%%]]
 %%[[(8 corerun)
   | CPOutputCoreHow_Run
 %%]]

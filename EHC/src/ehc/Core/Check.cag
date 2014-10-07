@@ -7,29 +7,29 @@
 %%% Check core module when provided as source
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs module {%{EH}Core.Check}
+%%[(8 codegen corein) hs module {%{EH}Core.Check}
 %%]
 
-%%[(50 codegen corein) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
+%%[(8 codegen corein) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
-%%[(50 codegen corein) hs import({%{EH}Base.TermLike},{%{EH}AbstractCore},{%{EH}Core})
+%%[(8 codegen corein) hs import({%{EH}Base.TermLike},{%{EH}AbstractCore},{%{EH}Core})
 %%]
 %%[(8888 codegen corein) hs import({%{EH}LamInfo})
 %%]
 %%[(8888 codegen corein) hs import({%{EH}Core.BindExtract},qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
 
-%%[(50 codegen corein) hs import(qualified UHC.Util.FastSeq as Seq)
+%%[(8 codegen corein) hs import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
-%%[(50 codegen corein) hs import(Data.Maybe, qualified Data.Map as Map, Control.Applicative)
+%%[(8 codegen corein) hs import(Data.Maybe, qualified Data.Map as Map, Control.Applicative)
 %%]
 
-%%[(50 codegen corein) hs import(UHC.Util.Pretty)
+%%[(8 codegen corein) hs import(UHC.Util.Pretty)
 %%]
 
-%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
+%%[(8 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
 WRAPPER CodeAGItf
 %%]
 
@@ -42,7 +42,7 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs
+%%[(8 codegen corein) hs
 %%]
 data CheckEnv
   = CheckEnv
@@ -54,7 +54,7 @@ emptyCheckEnv
       -- emptyLamMp
 
 
-%%[(50 codegen corein) hs export(cmodCheck', Inh_CodeAGItf(..), Syn_CodeAGItf(..))
+%%[(8 codegen corein) hs export(cmodCheck', Inh_CodeAGItf(..), Syn_CodeAGItf(..))
 cmodCheck'
   :: Inh_CodeAGItf
      -> CModule
@@ -86,7 +86,7 @@ cmodCheck opts env cmod
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR
   AllCodeNT CodeAGItf
     [ opts: EHCOpts
@@ -106,7 +106,7 @@ ATTR AllCodeNT [ | | self: SELF ]
 %%% Module name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR CodeAGItf CModule [ | | realModuleNm: HsName ]
 
 SEM CModule
@@ -117,7 +117,7 @@ SEM CModule
 %%% Imported modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR CodeAGItf CModule AllImport [ | | impModNmL USE {++} {[]} : {[HsName]} ]
 
 SEM CImport
@@ -128,7 +128,7 @@ SEM CImport
 %%% Module has 'main'?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR CodeAGItf CModule CExpr AllBindOnly [ | | hasMain USE {||} {False} : Bool ]
 
 SEM CBind
@@ -140,7 +140,7 @@ SEM CBind
 %%% Module is already lambda lifted?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR AllCodeNT [ | | isFreeOfLam USE {&&} {True} : Bool ]
 ATTR CExpr [ | | lamBodyIsFreeOfLam: Bool ]
 ATTR CodeAGItf CModule CExpr AllBind [ | | isLamLifted USE {&&} {True} : Bool ]
@@ -179,18 +179,18 @@ SEM CAltL
 
 No errors == ok
 
-%%[(50 codegen corein) hs
+%%[(8 codegen corein) hs
 type UndefNmMp = Map.Map MetaLev [ACoreBindRef]
 
 undefmpUnion :: UndefNmMp -> UndefNmMp -> UndefNmMp
 undefmpUnion = Map.unionWith (++)
 %%]
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR AllNT [ | | undefNmMp USE {`undefmpUnion`} {Map.empty} : UndefNmMp ]
 %%]
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR AllNT CodeAGItf [ | | errs USE {`Seq.union`} {Seq.empty} : ErrSq ]
 %%]
 

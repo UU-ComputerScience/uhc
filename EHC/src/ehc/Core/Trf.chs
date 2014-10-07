@@ -58,7 +58,7 @@
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
 %%]
-%%[(50 codegen corein) import({%{EH}Core.Trf.FixAfterParse})
+%%[(8 codegen corein) import({%{EH}Core.Trf.FixAfterParse})
 %%]
 
 -- Misc
@@ -263,7 +263,7 @@ trfCore opts optimScope dataGam modNm trfcore
 
         -- actual transformations
         t_initial       = liftTrfModPlain  osmw "initial"           $ id
-%%[[(50 corein)
+%%[[(8 corein)
         t_fix_postparse	= liftTrfModPlain  osm "fix-postparse"  	$ cmodTrfFixAfterParse dataGam
 %%]]
 %%[[(8 coresysf)

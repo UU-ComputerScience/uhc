@@ -132,7 +132,9 @@ ppTrack t = text (show t)
 
 ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
+%%]
 
+%%[(8 coreout) hs
 ppSemi :: PP x => x -> PP_Doc
 ppSemi = (>|< ";")
 %%]

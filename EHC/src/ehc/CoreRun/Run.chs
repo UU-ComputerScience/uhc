@@ -77,6 +77,10 @@ class (Monad m, MonadIO m, Functor m) => RunSem s m a | s -> a where
   -- | Setup whatever needs to be setup
   rsemSetup :: [Mod] -> Mod -> RunT' s m ()
 
+  -- | Set tracing on/off
+  rsemSetTrace :: Bool -> RunT' s m ()
+  rsemSetTrace _ = return ()
+
   -- | Exp
   rsemExp :: Exp -> RunT' s m a
 

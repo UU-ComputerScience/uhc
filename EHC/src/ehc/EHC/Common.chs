@@ -120,7 +120,7 @@ data OState
 
 The state Core compilation can be in
 
-%%[(50 corein) export(CRState(..))
+%%[(8 corein) export(CRState(..))
 data CRState
   = CRStartText
   | CRStartBinary
@@ -140,7 +140,7 @@ data EHCompileUnitState
   | ECUS_C       !CState
   | ECUS_O       !OState
 %%]]
-%%[[(50 corein)
+%%[[(8 corein)
   | ECUS_Core    !CRState
 %%]]
   | ECUS_Grin
@@ -165,11 +165,11 @@ ecuStateFinalDestination postModf
         n _                = ECUS_Fail
 %%]
 
-%%[50 export(ecuStateIsCore)
+%%[8 export(ecuStateIsCore)
 -- | Is compilation from Core source
 ecuStateIsCore :: EHCompileUnitState -> Bool
 ecuStateIsCore st = case st of
-%%[[(50 corein)
+%%[[(8 corein)
   ECUS_Core _ -> True
 %%]]
   _           -> False

@@ -111,6 +111,7 @@ data ToBe
 SEM CBound
   | Bind Val    loc         .   toBe            =   let mba@(~(Just (_,w))) = whatExprMbApp @expr.whatBelow
                                                         isVar     = isJust $ whatExprMbVar @expr.whatBelow
+                                                        isGlbVar  = isVar && @lhs.isGlobal
                                                         isApp     = isJust mba
                                                         isTup     = isApp && whatExprIsTup w
                                                         isWHNF    = whatExprIsWHNF @expr.whatBelow
@@ -122,6 +123,7 @@ SEM CBound
                                                             | isNotWHNF  -> ToBe_Forced
                                                           EvalCtx_Thunk 
                                                             | isTup      -> ToBe_LeftAsIs
+                                                            | isGlbVar   -> ToBe_Thunked
                                                             | isNotWHNF  -> ToBe_Thunked
                                                           _              -> ToBe_LeftAsIs
                             .   isToBeThunked   =   @toBe == ToBe_Thunked

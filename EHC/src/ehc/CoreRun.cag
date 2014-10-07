@@ -54,7 +54,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%% CoreRun: Supporting types: fast access sequences/array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(CRArray, emptyCRArray, mkCRArray, craLength, craAssocs)
+%%[(8 corerun) hs export(CRArray, emptyCRArray, mkCRArray, craLength, craAssocs, craAssocs')
 -- | Fast access sequence
 -- type CRArray x = Array Int x
 type CRArray x = V.Vector x
@@ -69,16 +69,26 @@ mkCRArrayLwb lwb xs = listArray (lwb,lwb+l-1) xs
 mkCRArray :: [x] -> CRArray x
 -- mkCRArray = mkCRArrayLwb 0
 mkCRArray = V.fromList
+{-# INLINE mkCRArray #-}
 
 emptyCRArray :: CRArray x
 emptyCRArray = V.empty -- mkCRArray []
+{-# INLINE emptyCRArray #-}
 
 craLength :: CRArray x -> Int
 craLength = V.length -- a = h + 1 - l
 --  where (l,h) = bounds a
+{-# INLINE craLength #-}
 
+-- | Content of array as association list, starting index at 'lwb'
+craAssocs' :: Int -> CRArray x -> [(Int,x)]
+craAssocs' lwb = zip [lwb ..] . V.toList
+{-# INLINE craAssocs' #-}
+
+-- | Content of array as association list, starting index at 0
 craAssocs :: CRArray x -> [(Int,x)]
-craAssocs = zip [0 ..] . V.toList
+craAssocs = craAssocs' 0
+{-# INLINE craAssocs #-}
 %%]
 
 %%[(8 corerun) hs export(Bind)

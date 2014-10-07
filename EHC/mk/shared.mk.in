@@ -390,7 +390,7 @@ SHUFFLE_OPTS_WHEN_UHC					:= --agmodheader=yes
 
 # UUAGC options
 UUAGC_OPTS_WHEN_EHC						:= @UUAGC_OPTIONS@
-UUAGC_OPTS_WHEN_EHC_AST_DATA			:= @UUAGC_EHC_AST_OPTIONS@
+UUAGC_OPTS_WHEN_EHC_AST_DATA			:= @UUAGC_EHC_AST_OPTIONS@ --datarecords
 UUAGC_OPTS_WHEN_EHC_AST_SEM				:= @UUAGC_EHC_SEM_OPTIONS@
 
 # UUAGC options for production version (i.e. uhc, ehc variant >= $(EHC_PREL_VARIANT))

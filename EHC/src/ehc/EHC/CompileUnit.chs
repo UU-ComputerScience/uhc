@@ -437,9 +437,12 @@ instance PP EHCompileUnit where
 -- | The final state to be reached
 ecuFinalDestinationState :: EHCompileUnit -> EHCompileUnitState
 ecuFinalDestinationState ecu = ecuStateFinalDestination upd $ ecuState ecu
-  where upd (ECUS_Haskell _)
+  where 
+%%[[50
+        upd (ECUS_Haskell _)
           | ecuNeedsCompile ecu = ECUS_Haskell HSAllSem
           | otherwise           = ECUS_Haskell HIAllSem
+%%]]
         upd s                   = s
 %%]
 

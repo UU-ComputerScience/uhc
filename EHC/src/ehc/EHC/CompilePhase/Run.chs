@@ -43,7 +43,7 @@ cpRunCoreRun modNm = do
     when (isJust mbCore) $ do
       let mod = cmod2CoreRun $ fromJust mbCore
       res <- liftIO $ runCoreRun opts [] mod $ cmodRun mod
-      either (\e -> cpSetLimitErrsWhen 1 "Core running" [e]) (liftIO . putStrLn . show . pp) res
+      either (\e -> cpSetLimitErrsWhen 1 "Run Core(Run) errors" [e]) (liftIO . putStrLn . show . pp) res
 %%]
 
 

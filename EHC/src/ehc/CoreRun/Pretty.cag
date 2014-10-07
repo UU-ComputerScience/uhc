@@ -11,7 +11,7 @@ Pretty printing for CoreRun
 %%% CoreRun Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs module {%{EH}CoreRun.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Target},{%{EH}Ty},{%{EH}Foreign},{%{EH}CoreRun})
+%%[(8 corerun) hs module {%{EH}CoreRun.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Target},{%{EH}Ty},{%{EH}CoreRun})
 %%]
 %%[(8 corerun) hs import({%{EH}Ty.Pretty})
 %%]
@@ -21,7 +21,7 @@ Pretty printing for CoreRun
 %%[(8 corerun) hs import(qualified Data.Vector as V)
 %%]
 
-%%[(90 corerun) hs import({%{EH}Foreign.Pretty})
+%%[(90 corerun) hs import({%{EH}Foreign},{%{EH}Foreign.Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

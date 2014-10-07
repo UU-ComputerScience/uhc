@@ -27,14 +27,14 @@
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 corein)
+%%[(8 corein)
 type CParser       hp     =    PlainParser Token hp
 
 pS :: CParser String
 pS = pStr
 %%]
 
-%%[(50 corein)
+%%[(8 corein)
 pINT		,
 %%[[97
   pINTEGER  ,
@@ -56,7 +56,7 @@ pCTy
          )
 %%]
 
-%%[(50 corein) export(pCModule,pCExpr)
+%%[(8 corein) export(pCModule,pCExpr)
 pCModule :: CParser CModule
 pCModule
   = (\m mt e -> CModule_Mod m mt e)

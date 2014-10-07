@@ -7,21 +7,21 @@
 %%% Ty parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, UHC.Util.ParseUtils, {%{EH}Base.Parser}, UHC.Util.ScanUtils, {%{EH}Base.Common},{%{EH}Base.TermLike}, {%{EH}Base.HsName.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
+%%[(8 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, UHC.Util.ParseUtils, {%{EH}Base.Parser}, UHC.Util.ScanUtils, {%{EH}Base.Common},{%{EH}Base.TermLike}, {%{EH}Base.HsName.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
-%%[(50 hmtyinfer || hmtyast)
+%%[(8 hmtyinfer || hmtyast)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 hmtyinfer || hmtyast)
+%%[(8 hmtyinfer || hmtyast)
 -- type P p = PlainParser Token p
 %%]
 
-%%[(50 hmtyinfer || hmtyast) export(pTy', pTy)
+%%[(8 hmtyinfer || hmtyast) export(pTy', pTy)
 pTy :: P Ty
 pTy = pTy' pDollNm
 

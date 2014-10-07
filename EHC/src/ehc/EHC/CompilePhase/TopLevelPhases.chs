@@ -1160,9 +1160,9 @@ cpProcessCoreBasic modNm
        ; cpSeq [ cpTransformCore OptimizationScope_PerModule modNm
 %%[[50
                , cpFlowHILamMp modNm
-%%]]
                -- , when (ehcOptEmitCore opts) (void $ cpOutputCore CPOutputCoreHow_Binary "" "core" modNm)
                , void $ cpOutputCore CPOutputCoreHow_Binary [] "" Cfg.suffixDotlessBinaryCore modNm
+%%]]
 %%[[(8888 codegen java)
                , when (ehcOptEmitJava opts) (cpOutputJava         "java" modNm)
 %%]]
@@ -1216,9 +1216,11 @@ cpProcessCoreRest modNm
                 ++ (if CoreOpt_Dump `elem` ehcOptCoreOpts opts
                     then [void $ cpOutputCore CPOutputCoreHow_Text [] "" Cfg.suffixDotlessOutputTextualCore modNm]
                     else [])
+%%[[50
                 ++ (if CoreOpt_DumpBinary `elem` ehcOptCoreOpts opts
                     then [void $ cpOutputCore CPOutputCoreHow_Binary [] "" Cfg.suffixDotlessInputOutputBinaryCore modNm]
                     else [])
+%%]]
 %%]]
 %%[[(8 corerun)
                 ++ (if CoreOpt_DumpRun `elem` ehcOptCoreOpts opts
