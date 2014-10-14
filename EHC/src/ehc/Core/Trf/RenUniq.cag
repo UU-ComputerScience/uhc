@@ -289,14 +289,14 @@ SEM CModule
   | Mod         expr        .   accumARenMp =   @lhs.aRenMp
                 loc         .   aRenMp      =   @expr.accumARenMp
 
-SEM MbCExpr
-  | Just        just        .   accumARenMp =   @lhs.aRenMp
-                loc         .   aRenMp      =   @just.accumARenMp
 
 SEM CPatFld
   | Fld         offset      .   accumARenMp =   @lhs.aRenMp
                 loc         .   aRenMp      =   @offset.accumARenMp
 %%]
+SEM MbCExpr
+  | Just        just        .   accumARenMp =   @lhs.aRenMp
+                loc         .   aRenMp      =   @just.accumARenMp
 
 
 %%[(8 codegen)

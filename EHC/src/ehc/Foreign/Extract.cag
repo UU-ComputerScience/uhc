@@ -55,6 +55,11 @@ data ForeignExtraction
   | ForeignExtraction_Wrapper
   | ForeignExtraction_Dynamic
 
+instance Show ForeignExtraction where
+  show (ForeignExtraction_Plain {forextractEnt=e}) 	= show e
+  show ForeignExtraction_Wrapper 					= "wrapper"
+  show ForeignExtraction_Dynamic 					= "dynamic"
+
 emptyForeignExtraction = ForeignExtraction_Plain [] "??" Nothing Nothing Nothing False False (ForeignExpr_Call ForeignExpr_Ent)
 
 forextractMbEnt :: ForeignExtraction -> Maybe String

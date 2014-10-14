@@ -45,9 +45,6 @@ SEM CExpr
 
   | *           loc         .   isTopApp    :   Bool
 
-SEM MbCExpr
-  | Just        just        .   isTopApp    =   True
-                            .   isTopTup    =   True
 
 SEM CModule
   | Mod         expr        .   isTopApp    =   True
@@ -73,6 +70,9 @@ SEM CAlt
   | Alt         expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 %%]
+SEM MbCExpr
+  | Just        just        .   isTopApp    =   True
+                            .   isTopTup    =   True
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Various contextual info, this should replace the above over time
@@ -130,12 +130,12 @@ SEM CAlt
 SEM CModule
   | Mod         loc         .   whatAbove       =   ExprIsOther
 
-SEM MbCExpr
-  | Just        loc         .   whatAbove       =   ExprIsOther
 
 SEM *
   | *           loc         .   whatAbove       :   WhatExpr
 %%]
+SEM MbCExpr
+  | Just        loc         .   whatAbove       =   ExprIsOther
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

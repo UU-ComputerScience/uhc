@@ -1223,7 +1223,7 @@ cpProcessCoreRest modNm
 %%]]
 %%]]
 %%[[(8 corerun)
-                ++ (if CoreOpt_DumpRun `elem` ehcOptCoreOpts opts
+                ++ (if CoreOpt_RunDump `elem` ehcOptCoreOpts opts
                     then [void $ cpOutputCore CPOutputCoreHow_Run [] "" Cfg.suffixDotlessInputOutputCoreRun modNm]
                     else [])
                 ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it

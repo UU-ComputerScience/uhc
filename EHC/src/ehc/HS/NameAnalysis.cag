@@ -643,6 +643,8 @@ litNames opts lit isPat sign
 mkUseOccGam' :: EHCOpts -> IdDefOccGam -> [([HsName],IdOccKind,IdAspect)] -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam' _ _ [] _
   = (hsnUnknown,[],emptyGam,[])
+mkUseOccGam' _ _ (([],_,_):_) _
+  = (hsnUnknown,[],emptyGam,[])
 mkUseOccGam' _ idGam names@((fstName:_,_,_):_) rng
   = (fstName,concat [ns | (ns,_,_) <- names],gamUnions [ mkUse idGam n kind asp rng | (ns,kind,asp) <- names, n <- ns ],[])
   where mkUse idGam name kind asp rng

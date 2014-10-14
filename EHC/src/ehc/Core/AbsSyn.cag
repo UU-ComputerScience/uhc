@@ -183,7 +183,7 @@ DATA CExpr
                 body            : CExpr
 %%]
 
-%%[(8 core)
+%%[(8888 core)
 TYPE MbCExpr	= MAYBE CExpr
 %%]
 
@@ -438,7 +438,7 @@ SET AllCodeNT
   = CModule AllExpr
 
 SET AllExprOnly
-  = CExpr MbCExpr
+  = CExpr -- MbCExpr
 
 SET AllExprBase
   = AllExprOnly AllExprAnn AllBind AllAlt AllPat

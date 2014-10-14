@@ -40,6 +40,8 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%[(90 corerun) hs import({%{EH}Foreign})
 %%]
 
+%%[(8 corerun) hs import({%{EH}CoreRun.Prim}(RunPrim)) export(module {%{EH}CoreRun.Prim})
+%%]
 %%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), Alt(..), Pat(..))
 %%]
 
@@ -139,7 +141,7 @@ noRRef = RRef_Dbg hsnUnknown
 type Ref2Nm = RRef -> Maybe HsName
 %%]
 
-%%[(8 corerun) hs export(Nm2RefMp, nm2RefMpInverse, ref2nmUnion)
+%%[(8 corerun) hs export(Nm2RefMp, nm2RefMpInverse, ref2nmEmpty, ref2nmUnion)
 -- | HsName to RRef mapping for resolving references during translation to CoreRun
 type Nm2RefMp = Map.Map HsName RRef
 
@@ -149,6 +151,10 @@ nm2RefMpInverse m
   | Map.null m = const Nothing
   | otherwise  = flip Map.lookup inv
   where inv = Map.fromList [ (r,n) | (n,r) <- Map.toList m ]
+
+-- | Empty Ref2Nm
+ref2nmEmpty :: Ref2Nm
+ref2nmEmpty = const Nothing
 
 -- | Union, left-biased
 ref2nmUnion :: Ref2Nm -> Ref2Nm -> Ref2Nm

@@ -11,6 +11,8 @@ It is not the intention to define AG semantics over this AST because non AG supp
 Global assumptions:
 - everything usually accessed by a key via a map now is done via an array
 - A-normal form, i.e. arguments by name
+- Operational semantics: once a lam is entered is computes to WHNF
+- All is tail recursive except when wrapped in Exp_Ret
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,20 +53,16 @@ DATA Exp
   | Tup         tag             : {CTag}
                 args			: {CRArray Exp}
 
-  -- recursive let bindings
-  | LetRec      firstOff		: {Int}			-- offset of first binding
-  				ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
-                binds           : {CRArray Bind}
-                body            : Exp
-
-  -- strict let binding
-  | LetStr      firstOff		: {Int}			-- offset of first binding
+  -- let bindings, recursiveness allowed, yes/no eval made explicit in rhs of binding
+  | Let         lev				: {Int}
+  				firstOff		: {Int}			-- offset of first binding
   				ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 binds           : {CRArray Bind}
                 body            : Exp
 
   -- application, abstraction
-  | App         func            : Exp
+  | App         -- isTailRec		: {Bool}
+  				func            : Exp
                 args            : {CRArray Exp}
   | Lam         lev				: {Int}			-- lexical level
   				nrArgs          : {Int}			-- nr of arguments, 0 means it is a thunk
@@ -76,11 +74,16 @@ DATA Exp
   | Force		expr			: Exp
   -- | Thunk		expr			: Exp		-- expressed as parameterless Lam
 
+  | Ret			expr			: Exp		-- expr in a context to which must be returned (i.e. no tail rec)
+
   -- case
-  | Case        expr            : Exp		-- SExp
+  | Case        expr            : SExp
                 alts            : {CRArray Alt}
 
   -- FFI call
+  | FFI         prim        	: {RunPrim}
+                args			: {CRArray Exp}
+{-
   | FFI         callconv        : {FFIWay}
 %%[[8
                 impEnt          : {String}
@@ -89,6 +92,7 @@ DATA Exp
 %%]]
                 ty              : {Ty}
                 args			: {CRArray Exp}
+-}
 
 %%[[9090
   -- FFE binding (not yet implemented for all backends)

@@ -120,7 +120,8 @@ data CoreOpt
 %%]]
 %%[[(8 corerun)
   | CoreOpt_Run					-- run after compilation
-  | CoreOpt_DumpRun				-- dump CoreRun
+  | CoreOpt_RunDump				-- dump CoreRun
+  | CoreOpt_RunPPNames			-- when dump/run CoreRun print names instead of
 %%]]
 %%[[(8 coresysf)
   | CoreOpt_SysF				-- 20120419, work in startup/progress: generate System F

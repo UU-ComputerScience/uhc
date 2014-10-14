@@ -179,7 +179,7 @@ cpOutputCoreModules how coreOpts mknmsuff suff modNm cMods
 %%[[(8 corerun)
           CPOutputCoreHow_Run -> do
             let cMod' = cmod2CoreRun cMod
-            putPPFPath fpC (pp cMod') 100
+            putPPFPath fpC (ppMod' opts cMod') 100
 %%]]
 %%]
 

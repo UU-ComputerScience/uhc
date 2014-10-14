@@ -28,7 +28,9 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 core) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Utils,Control.Applicative((<|>)))
 %%]
 
-%%[(8 core) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
+%%[(8 core) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
+%%]
+%%[(8888 core) hs export(MbCExpr) 
 %%]
 
 %%[(8 core) hs export(CBindAnn(..), CBindAnnL, CExprAnn(..))

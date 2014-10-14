@@ -11,7 +11,7 @@ Pretty printing for CoreRun
 %%% CoreRun Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs module {%{EH}CoreRun.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Target},{%{EH}Ty},{%{EH}CoreRun})
+%%[(8 corerun) hs module {%{EH}CoreRun.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Target},{%{EH}Ty},{%{EH}CoreRun})
 %%]
 %%[(8 corerun) hs import({%{EH}Ty.Pretty})
 %%]
@@ -36,6 +36,56 @@ WRAPPER
 %%]
 
 %%[(8 corerun) hs
+-- | Not all AST datatypes are expressed as AG, inherited info therefore implemented manually
+data InhPP
+  = InhPP
+      { r2nInhPP	:: Ref2Nm
+      , optsInhPP	:: EHCOpts
+      }
+
+mkEmptyInhPP :: EHCOpts -> InhPP
+mkEmptyInhPP opts = InhPP ref2nmEmpty opts
+
+-- | Add new 
+r2nAdd :: Ref2Nm -> InhPP -> InhPP
+r2nAdd r2n i@(InhPP {r2nInhPP=r2n', optsInhPP=opts})
+  | CoreOpt_RunPPNames `elem` ehcOptCoreOpts opts = i {r2nInhPP = ref2nmUnion r2n r2n'}
+  | otherwise                                     = i
+
+-- | PP using InhPP
+ppRRef :: InhPP -> RRef -> PP_Doc
+ppRRef inhpp r = ppMbPost ppCurly (r2nInhPP inhpp r) r
+%%]
+
+%%[(8 corerun) hs
+ppMod'' :: InhPP -> Mod -> PP_Doc
+ppMod'' inhpp x = pp_Syn_Mod $ wrap_Mod (sem_Mod x) (Inh_Mod {inhpp_Inh_Mod=inhpp})
+
+ppExp'' :: InhPP -> Exp -> PP_Doc
+ppExp'' inhpp x = pp_Syn_Exp $ wrap_Exp (sem_Exp x) (Inh_Exp {inhpp_Inh_Exp=inhpp})
+
+ppSExp'' :: InhPP -> SExp -> PP_Doc
+ppSExp'' inhpp x = ppExp'' inhpp (Exp_SExp x)
+
+ppAlt'' :: InhPP -> Alt -> PP_Doc
+ppAlt'' inhpp x = pp_Syn_Alt $ wrap_Alt (sem_Alt x) (Inh_Alt {inhpp_Inh_Alt=inhpp})
+%%]
+
+%%[(8 corerun) hs export(ppMod', ppExp')
+ppMod' :: EHCOpts -> Mod -> PP_Doc
+ppMod' opts = ppMod'' (mkEmptyInhPP opts)
+
+ppExp' :: EHCOpts -> Exp -> PP_Doc
+ppExp' opts = ppExp'' (mkEmptyInhPP opts)
+
+ppSExp' :: EHCOpts -> SExp -> PP_Doc
+ppSExp' opts = ppSExp'' (mkEmptyInhPP opts)
+
+ppAlt' :: EHCOpts -> Alt -> PP_Doc
+ppAlt' opts = ppAlt'' (mkEmptyInhPP opts)
+%%]
+
+%%[(8 corerun) hs
 instance Show Mod where
   show _ = "Mod"
 
@@ -51,16 +101,16 @@ instance Show Alt where
 
 %%[(8 corerun) hs
 instance PP Mod where
-  pp x = pp_Syn_Mod $ wrap_Mod (sem_Mod x) Inh_Mod
+  pp = ppMod' defaultEHCOpts
 
 instance PP Exp where
-  pp x = pp_Syn_Exp $ wrap_Exp (sem_Exp x) Inh_Exp
+  pp = ppExp' defaultEHCOpts
 
 instance PP SExp where
-  pp = pp . Exp_SExp
+  pp = ppSExp' defaultEHCOpts
 
 instance PP Alt where
-  pp x = pp_Syn_Alt $ wrap_Alt (sem_Alt x) Inh_Alt
+  pp = ppAlt' defaultEHCOpts
 %%]
 
 %%[(8 corerun) hs
@@ -73,23 +123,50 @@ instance PP RRef where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info, inherited attrs modelled half manually
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+ATTR AllNT [ inhpp: InhPP | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name mapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+SEM Mod
+  | Mod			loc			.	inhpp		=	r2nAdd @ref2nm @lhs.inhpp
+
+SEM Exp
+  | Let Lam  	loc			.	inhpp		=	r2nAdd @ref2nm @lhs.inhpp
+
+SEM Alt
+  | Alt			loc			.	inhpp		=	r2nAdd @ref2nm @lhs.inhpp
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun) hs
+ppBinds'' :: InhPP -> (Int -> RRef) -> Int -> CRArray Bind -> PP_Doc
+ppBinds'' inhpp mkr off bs = vlist [ (ppRRef inhpp $ mkr $ off+i) >|< ":" >#< ppExp'' inhpp e | (i,e) <- craAssocs bs ]
+%%]
+
 ppBinds' :: Int -> CRArray Bind -> PP_Doc
 ppBinds' off bs = vlist [ off+i >|< ":" >#< e | (i,e) <- craAssocs bs ]
 
 ppBinds :: CRArray Bind -> PP_Doc
 ppBinds = ppBinds' 0
-%%]
 
 %%[(8 corerun)
 ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
   | Mod         lhs         .   pp          =   "module" >#< @moduleNm >|< ":" >#< @body.pp
-                                                >-< vlist [ i >|< ":" >#< e | (i,e) <- craAssocs @binds ]
+                                                >-< ppBinds'' @inhpp (RRef_Glb @moduleNr) 0 @binds
 
 SEM SExp
   | Int         lhs         .   pp          =   pp @int
@@ -98,25 +175,19 @@ SEM SExp
 %%[[97
   | Integer     lhs         .   pp          =   pp @integer
 %%]
-  | Var         lhs         .   pp          =   pp @ref
+  | Var         lhs         .   pp          =   ppRRef @lhs.inhpp @ref
 
 SEM Exp
-  | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (V.toList @args)
-  -- | PApp        lhs         .   pp          =   "papp" >#< ppParens @func.pp >|< ppParensCommas (V.toList @args)
-  | LetRec      lhs         .   pp          =   "letrec" >#< ppBinds' @firstOff @binds >#< "in" >-< @body.pp
-  | LetStr      lhs         .   pp          =   "letstr" >#< ppBinds' @firstOff @binds >#< "in" >-< @body.pp
+  | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (map (ppExp'' @lhs.inhpp) $ V.toList @args)
+  | Let         lhs         .   pp          =   "let" >#< ppBinds'' @inhpp (RRef_Loc @lev) @firstOff @binds >#< "in" >-< @body.pp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
+  | Ret         lhs         .   pp          =   "ret" >|< ppParens @expr.pp
   -- | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp
   | Lam         lhs         .   pp          =   "\\" >|< "@" >|< @lev >#< (if @nrArgs > 0 then pp @nrArgs else pp "thk") >|< "," >|< @nrAllocs >#< "->" >#< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
-                                                >-< indent 1 (vlist $ V.toList @alts)
-  | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (V.toList @args)
-  | FFI         lhs         .   pp          =   "ffi" >#< ppParens (show @callconv >#< @ppent >|< "::" >#< @ty) >|< ppParensCommas (V.toList @args)
-%%[[8
-                loc         .   ppent       =   pp (show @impEnt)
-%%][90
-                loc         .   ppent       =   "\"" >|< @impEnt >|< "\""
-%%]]
+                                                >-< indent 1 (vlist $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
+  | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (map (ppExp'' @lhs.inhpp) $ V.toList @args)
+  | FFI         lhs         .   pp          =   "ffi" >#< show @prim >|< ppParensCommas (map (ppExp'' @lhs.inhpp) $ V.toList @args)
   | Dbg         lhs         .   pp          =   ppCurly $ "dbg:" >#< @msg
 
 SEM Alt

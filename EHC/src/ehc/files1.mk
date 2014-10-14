@@ -73,7 +73,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix CodeGen/,BuiltinPrims BasicAnnot Bits BuiltinSizeInfo GenC Tag CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
 													$(addprefix Module/,Merge ImportExport) \
 													$(addprefix Foreign/,Boxing) \
-													$(addprefix CoreRun/,Run) \
+													$(addprefix CoreRun/,Run Prim) \
 													$(addprefix CoreRun/Run/,Val) \
 													$(addprefix Core/,Utils Merge FFI Coercion) \
 													$(addprefix Core/SysF/,AsTy) \

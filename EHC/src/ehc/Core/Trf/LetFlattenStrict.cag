@@ -77,7 +77,7 @@ SEM CExpr
                 lhs         .   isStrictChain   =   @isStrictChain && @body.isStrictChain
   | * - Let Ann lhs         .   isStrictChain   =   @lhs.isStrictChain
 
-SEM CModule CAlt MbCExpr CPatFld
+SEM CModule CAlt CPatFld -- MbCExpr
   | *           loc         .   isStrictChain   =   False
 %%]
 

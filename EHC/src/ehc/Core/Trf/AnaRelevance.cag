@@ -401,7 +401,7 @@ SEM CBound
   | Bind        lhs         .   altMbScrutTy    =   do v <- @expr.mbVar
                                                        renvLookup v @lhs.env Map.empty -- @lhs.lamMp
 
-SEM CAlt CBound CModule MbCExpr CPatFld
+SEM CAlt CBound CModule CPatFld -- MbCExpr
   | *           loc         .   altMbScrutTy    =   Nothing
 %%]
 
