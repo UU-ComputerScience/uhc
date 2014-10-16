@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 

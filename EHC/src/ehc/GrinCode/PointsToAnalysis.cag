@@ -7,7 +7,7 @@ As an additional Int result, return the number of iterations that it took to sol
 This is not a transformation, but a phase that establishes the HPT table.
 %%]
 
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]

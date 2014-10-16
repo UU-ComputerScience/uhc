@@ -487,7 +487,7 @@ FUN_GEN_CABAL		= \
 					echo   "Author:				UHC Team" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC" ; \
 					echo   "Category:			Testing" ; \
-					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(3)))" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "Build-Tools:		" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \

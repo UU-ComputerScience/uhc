@@ -1,5 +1,5 @@
 
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -126,6 +126,7 @@ instance Show CoreOpt where
 %%[[(8 corerun)
   show CoreOpt_Run            	    = "run"
   show CoreOpt_RunDump            	= "dump-run"
+  show CoreOpt_RunTrace            	= "run-trace"
   show CoreOpt_RunPPNames           = "run-ppnames"
 %%]]
 %%[[(8 coresysf)

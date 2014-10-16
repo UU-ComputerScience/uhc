@@ -260,7 +260,7 @@ foreign import prim primByteArrayToString :: ByteArray -> String
 
 #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 foreign import prim packedStringToInteger :: PackedString -> Integer
-#elif defined(__UHC_TARGET_JS__)
+#elif defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
 foreign import prim "primPackedStringToInteger" packedStringToInteger :: PackedString -> Integer
 #else
 foreign import prim "primCStringToInteger" packedStringToInteger :: PackedString -> Integer

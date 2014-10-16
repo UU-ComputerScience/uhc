@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -67,7 +67,9 @@
 %%[(8 codegen || hmtyinfer || hmtyast) import({%{EH}Base.Strictness}) export(module {%{EH}Base.Strictness})
 %%]
 
-%%[8 import(Control.Monad, qualified Control.Monad.State as ST)
+%%[1 import(Control.Monad)
+%%]
+%%[8 import(qualified Control.Monad.State as ST)
 %%]
 %%[50 import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
@@ -873,6 +875,26 @@ data SrcConst
 %%[8 export(fmap2Tuple)
 fmap2Tuple :: Functor f => snd -> f x -> f (x,snd)
 fmap2Tuple snd = fmap (\x -> (x,snd))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Monad abbreviations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(whenM, unlessM)
+-- | Variation of `when` where Boolean condition is computed in a monad
+whenM :: Monad m => m Bool -> m () -> m ()
+whenM c m = do
+  c' <- c
+  when c' m
+{-# INLINE whenM #-}
+
+-- | Variation of `unless` where Boolean condition is computed in a monad
+unlessM :: Monad m => m Bool -> m () -> m ()
+unlessM c m = do
+  c' <- c
+  unless c' m
+{-# INLINE unlessM #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

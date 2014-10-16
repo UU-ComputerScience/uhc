@@ -30,6 +30,16 @@ EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)
 EHC_ASPECTS_SUFFIX2						:= $(subst -,,$(EHC_ASPECTS_SUFFIX))
 
 ###########################################################################################
+# Additional packages depending on aspects
+###########################################################################################
+
+ifeq ($(filter corerun,$(EHC_ASPECTS)),corerun)
+CABAL_ENABLEDASPECT_LIB_DEPENDS		:= primitive
+else
+CABAL_ENABLEDASPECT_LIB_DEPENDS		:= 
+endif
+
+###########################################################################################
 # variant, EHC_VARIANT to be configured at top level, by a recursive make invocation
 ###########################################################################################
 

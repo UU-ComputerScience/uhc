@@ -1,10 +1,10 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Code generation for jazy
+%%% Code generation for CoreRun
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[doesWhat doclatex
@@ -34,7 +34,7 @@ Offsets start at 0.
 %%[(8 corerun) hs import(qualified {%{EH}CoreRun.Prim} as CR)
 %%]
 
-%%[(8 corerun) hs import({%{EH}CodeGen.CVar})
+%%[(8888 corerun) hs import({%{EH}CodeGen.CVar})
 %%]
 
 %%[(8 corerun) hs import({%{EH}Foreign.Extract})
@@ -274,7 +274,7 @@ SEM CExpr
   | App         loc         .   creAppArgL  =   (snd $ head @arg.crb) : @func.creAppArgL
                             .   creAppFun   =   @func.creAppFun
   | Tup         loc         .   creAppFun   =   \_ -> CR.Exp_Tup @tag
-  | FFI         loc         .   creAppFun   =   \_ -> CR.Exp_FFI @creEnt
+  | FFI         loc         .   creAppFun   =   \_ -> @creMk
   | * - App Ann Tup FFI
                 loc         .   creAppFun   =   \isTailRec -> tailrec isTailRec . CR.Exp_App @cre
   | * - App Ann loc         .   creAppArgL  =   []
@@ -353,15 +353,11 @@ SEM CExpr
   | Tup         loc         .   cre             =   CR.Exp_Tup @tag CR.emptyCRArray
   | Let         loc         .   cre             =   if @isGlobal
                                                     then @body.cre
-                                                    else CR.Exp_Let
-                                                            @lhs.lev
-                                                            @lhs.refOffset
-                                                            (CR.nm2RefMpInverse @nm2refNew)
-                                                            (CR.mkCRArray $ map snd @binds.crb)
-                                                            @body.cre
+                                                    else CR.Exp_Let @lhs.lev @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.mkCRArray $ map snd @binds.crb) @body.cre
   | Case        loc         .   cre             =   CR.Exp_Case @expr.crse $ CR.mkCRArray @alts.cra
-  | FFI         loc         .	creEnt			=	panicJust ("Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) $ forextractMbEnt @foreignEntInfo >>= flip Map.lookup CR.allRunPrimMp
-  							.   cre             =   CR.Exp_FFI @creEnt CR.emptyCRArray
+  | FFI         loc         .	creEntMb		=	forextractMbEnt @foreignEntInfo >>= flip Map.lookup CR.allRunPrimMp
+  							.	creMk			=	\as -> maybe (dbg $ "Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) (\ent -> CR.Exp_FFI ent as) @creEntMb
+  							.   cre             =   @creMk CR.emptyCRArray
   | Ann         loc         .   cre             =   @expr.cre
   | * - Int Char String Var
         Lam App Let Tup Case FFI
@@ -370,6 +366,15 @@ SEM CExpr
         Integer
 %%]]
                 loc         .   cre             =   dbg "Core.ToCoreRun.CExpr.cre"
+%%]
+
+%%[(8 corerun)
+SEM CModule
+%%[[8
+  | Mod         loc         .   creMod          =   @expr.cre
+%%][99
+  | Mod         loc         .   creMod          =   CR.Exp_App @expr.cre $ CR.mkCRArray [CR.unit]
+%%]]
 %%]
 
 %%[(8 corerun)
@@ -418,7 +423,7 @@ SEM CPat
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
-  | Mod         lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (CR.mkCRArray $ map snd @expr.crb) (CR.Exp_Ret $ CR.Exp_Force @expr.cre)
+  | Mod         lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (CR.mkCRArray $ map snd @expr.crb) (CR.Exp_Ret $ CR.Exp_Force @creMod)
 %%]
 
 

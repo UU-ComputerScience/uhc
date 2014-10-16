@@ -49,7 +49,7 @@ module UHC.IOBase
     try,
 
         -- Exception related: catch, throw
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__) || defined (__UHC_TARGET_JS__)
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__) || defined (__UHC_TARGET_JS__) || defined (__UHC_TARGET_CR__)
 #else
     catchTracedException,
 #endif
@@ -379,6 +379,9 @@ data IOMode             -- alphabetical order of constructors required, assumed 
 data FHandle    -- opaque, contains FILE*
 #elif defined( __UHC_TARGET_JS__ )
 data JSHandle = JSHandle String
+#elif defined( __UHC_TARGET_CR__ )
+-- delegated to GHC
+data HSHandle
 #else
 data GBHandle   -- opaque, contains GB_Chan
 #endif
@@ -398,6 +401,21 @@ instance Eq JSHandle where
 
 instance Show JSHandle where
     showsPrec _ h = showString "<handle>"
+
+#elif defined( __UHC_TARGET_CR__ )
+
+foreign import prim primEqHSHandleFileno  :: HSHandle -> Int -> Bool
+foreign import prim primEqHSHandle  :: HSHandle -> HSHandle -> Bool
+
+instance Eq HSHandle where
+    (==) = primEqHSHandle
+
+instance Show HSHandle where
+    showsPrec _ h
+      = if      primEqHSHandleFileno h 0 then showString "<stdin>"
+        else if primEqHSHandleFileno h 1 then showString "<stdout>"
+        else if primEqHSHandleFileno h 2 then showString "<stderr>"
+        else                showString ("<handle:" ++ {- show n ++ -} ">")
 
 #else
 
@@ -435,6 +453,9 @@ data Handle
         FHandle                        
 #elif defined( __UHC_TARGET_JS__ )
         JSHandle                        
+#elif defined( __UHC_TARGET_CR__ )
+-- delegated to GHC
+        HSHandle
 #else
         GBHandle                        
 #endif
@@ -656,7 +677,7 @@ catchException m k = m
 
 #else
 
-#if defined (__UHC_TARGET_JS__)
+#if defined (__UHC_TARGET_JS__) || defined (__UHC_TARGET_CR__)
 foreign import prim primCatchException :: forall a . a -> (SomeException -> a) -> a
 
 catchException :: IO a -> (SomeException -> IO a) -> IO a

@@ -5,7 +5,7 @@ either through direct calls, or through deferred (F) or partially applied (P) or
 
 %%]
 
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]

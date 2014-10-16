@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -96,6 +96,16 @@ craAssocs = craAssocs' 0
 %%[(8 corerun) hs export(Bind)
 -- | Bind, just an Exp, addressing is left implicit
 type Bind = Exp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(unit)
+-- | Equivalent of '()'
+unit :: Exp
+unit = Exp_Tup CTagRec emptyCRArray
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

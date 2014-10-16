@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -17,6 +17,9 @@
 %%]
 
 %%[(8 corerun) hs import(qualified UHC.Util.FastSeq as Seq, qualified Data.Map as Map)
+%%]
+
+%%[(8 corerun) hs import(UHC.Util.Pretty)
 %%]
 
 %%[(8 corerun) hs import(Data.Maybe, Data.Monoid)
@@ -76,7 +79,7 @@ class (Monad m, MonadIO m, Functor m) => RunSem r s m a | s -> a r, r -> a s whe
   rsemInitReader :: m r
 
   -- | Setup whatever needs to be setup
-  rsemSetup :: [Mod] -> Mod -> RunT' r s m ()
+  rsemSetup :: EHCOpts -> [Mod] -> Mod -> RunT' r s m ()
 
   -- | Set tracing on/off
   rsemSetTrace :: Bool -> RunT' r s m ()
@@ -125,6 +128,15 @@ type RunT      m a = RunT' RunRd RunSt m a
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(err)
+err :: (RunSem r s m a, PP msg) => msg -> RunT' r s m b
+err msg = throwError $ rngLift emptyRange Err_PP $ pp msg
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Running
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -142,7 +154,7 @@ runCoreRun opts modImpL mod m = do
   r <- rsemInitReader
   (e,_,_) <-
     runRWST (runErrorT $ do
-              rsemSetup modImpL mod
+              rsemSetup opts modImpL mod
               m)
             r s
   return e

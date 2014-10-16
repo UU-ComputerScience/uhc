@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -38,7 +38,26 @@
 -- | Primitives.
 -- Assumption: name of primitive starts with 3 choosable char + exact name of prim
 data RunPrim
-  = RP_primAddInt
+  = 
+    -- Int arithmetic
+    RP_primAddInt
+  | RP_primSubInt
+  | RP_primMulInt
+  | RP_primDivInt
+  | RP_primEqInt
+  
+    -- UHC.IOBase: Exception handling
+  | RP_primCatchException
+  
+    -- UHC.MutVar
+  | RP_primNewMutVar
+  | RP_primReadMutVar
+  | RP_primWriteMutVar
+  | RP_primSameMutVar
+  
+    -- UHC.Base
+  | RP_primPackedStringToInteger
+
   deriving (Show, Eq, Ord, Enum, Bounded)
 %%]
 

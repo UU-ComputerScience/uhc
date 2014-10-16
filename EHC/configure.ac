@@ -458,6 +458,11 @@ AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibsRequired="fgl vector syb uulib network binary hashable uhc-util base mtl directory containers array process"
+#if test x$enableClr = "xyes"
+#then
+#  ghcLibsRequired="${ghcLibsRequired} primitive"
+#fi
+
 # gather for some libraries version info
 ghcLibsRequiredWithVersion=""
 ghcLibsRequiredWithoutVersion=""

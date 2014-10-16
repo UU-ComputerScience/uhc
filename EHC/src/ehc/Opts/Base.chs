@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -121,6 +121,7 @@ data CoreOpt
 %%[[(8 corerun)
   | CoreOpt_Run					-- run after compilation
   | CoreOpt_RunDump				-- dump CoreRun
+  | CoreOpt_RunTrace			-- trace during running CoreRun
   | CoreOpt_RunPPNames			-- when dump/run CoreRun print names instead of
 %%]]
 %%[[(8 coresysf)

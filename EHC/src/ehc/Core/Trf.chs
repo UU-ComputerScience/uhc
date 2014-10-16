@@ -123,6 +123,7 @@ trfCore opts optimScope dataGam modNm trfcore
         isLamLifted   =                  trfcoreIsLamLifted $ trfstExtra trfcore
         noOptims      = ehcOptOptimizationLevel opts <= OptimizationLevel_Off
         isCoreTarget  = targetIsCore $ ehcOptTarget opts
+        isUnOptimCoreTarget = isCoreTarget && noOptims
         trf
           = do { -- initial is just to obtain Core for dumping stages
                  t_initial
@@ -162,7 +163,7 @@ trfCore opts optimScope dataGam modNm trfcore
                ; unless isLamLifted $ do
                    {
 					 -- make names unique
-				   ; unless isCoreTarget $
+				   ; unless isUnOptimCoreTarget $
 				       t_ren_uniq emptyRenUniqOpts
 					 -- from now on INVARIANT: keep all names globally unique
 					 --             ASSUME   : no need to shadow identifiers
@@ -208,7 +209,7 @@ trfCore opts optimScope dataGam modNm trfcore
                    ; t_elim_trivapp
                    }
 
-               ; when (isCoreTarget || not isLamLifted) $ do
+               ; when (isUnOptimCoreTarget || not isLamLifted) $ do
                    {
 					 -- put in A-normal form, where args to app only may be identifiers
 				   ; u1 <- freshInfUID
@@ -220,7 +221,7 @@ trfCore opts optimScope dataGam modNm trfcore
                       t_fix_dictfld
 %%]]
                
-               ; when (not isLamLifted && not isCoreTarget) $ do
+               ; when (not isLamLifted && not isUnOptimCoreTarget) $ do
                    {
 					 -- pass all globals used in lambda explicit as argument
 				   ; t_lam_asarg
