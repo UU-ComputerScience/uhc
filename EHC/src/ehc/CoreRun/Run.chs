@@ -94,8 +94,11 @@ class (Monad m, MonadIO m, Functor m) => RunSem r s m a | s -> a r, r -> a s whe
   -- | Alt
   rsemAlt :: Alt -> RunT' r s m a
 
-  -- | Force evaluation
+  -- | Force evaluation, subsumes rsemDeref
   rsemEvl :: a -> RunT' r s m a
+
+  -- | Dereference: get rid of intermediate indirections
+  rsemDeref :: a -> RunT' r s m a
 
   -- | Apply primitive to arguments
   rsemPrim :: RunPrim -> CRArray a -> RunT' r s m a

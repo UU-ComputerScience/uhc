@@ -22,8 +22,10 @@ module UHC.Prims
 import UHC.Base
 import UHC.Types
 
+#ifndef __UHC_TARGET_CR__
 #include "MachDeps.h"
 #include "IntLikeInstance.h"
+#endif
 
 %%]
 

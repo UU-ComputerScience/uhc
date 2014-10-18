@@ -90,6 +90,22 @@ instance PP CTag where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hardcoded tag nrs, this should ideally be dependent on datatype defs themselves
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tagBoolTrue, tagBoolFalse)
+tagBoolTrue, tagBoolFalse :: Int
+tagBoolTrue  = 1 		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+tagBoolFalse = 0 		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+%%]
+
+%%[(8 codegen) hs export(tagListCons, tagListNil)
+tagListCons, tagListNil :: Int
+tagListCons = 0 		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+tagListNil  = 1 		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tags abstraction/interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

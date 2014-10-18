@@ -34,9 +34,17 @@
 %%[(8 corerun) hs import(qualified Data.Vector as V, qualified Data.Vector.Mutable as MV)
 %%]
 
-%%[(8 corerun) hs import(Data.IORef)
+-- For use of underlying (Haskell) impl
+%%[(8 corerun) hs import(System.IO) export(module System.IO)
+%%]
+%%[(8 corerun) hs import(Data.IORef) export(module Data.IORef)
+%%]
+%%[(8 corerun) hs import(Data.Int, Data.Word) export(module Data.Int, module Data.Word)
+%%]
+%%[(8 corerun) hs import(qualified Data.ByteString.Char8 as BSC8)
 %%]
 
+-- old
 %%[(8888 corerun) hs import(Data.Primitive.MutVar)
 %%]
 
@@ -55,11 +63,21 @@ data RVal
     RVal_Lit
       { rvalSExp		:: !SExp					-- ^ a simple literal
       }
-  | RVal_Int			   {-# UNPACK #-} !Int
+  | RVal_Char  			   {-# UNPACK #-} !Char   
+  | RVal_Int   			   {-# UNPACK #-} !Int   
+  | RVal_Int8  			   {-# UNPACK #-} !Int8  
+  | RVal_Int16 			   {-# UNPACK #-} !Int16 
+  | RVal_Int32 			   {-# UNPACK #-} !Int32 
+  | RVal_Int64 			   {-# UNPACK #-} !Int64 
+  | RVal_Word  			   {-# UNPACK #-} !Word  
+  | RVal_Word8 			   {-# UNPACK #-} !Word8 
+  | RVal_Word16			   {-# UNPACK #-} !Word16
+  | RVal_Word32			   {-# UNPACK #-} !Word32
+  | RVal_Word64			   {-# UNPACK #-} !Word64
   | RVal_Integer		   !Integer
   | RVal_Float			   {-# UNPACK #-} !Float
   | RVal_Double			   {-# UNPACK #-} !Double
-  | RVal_PackedString 	   !String					-- ^ packed string, equivalent of low level C string (could be replaced by something more efficient)
+  | RVal_PackedString 	   !BSC8.ByteString					-- ^ packed string, equivalent of low level C string (could be replaced by something more efficient)
 
     -- Value representations for running itself: function, application, etc
   | RVal_Lam
@@ -96,6 +114,7 @@ data RVal
   
     -- Value representations for library or runtime env (not Core specific)
   | RVal_MutVar			   !(IORef RVal)			-- ^ mutable var
+  | RVal_Handle			   !Handle					-- ^ IO handle
 
 instance Show RVal where
   show _ = "RVal"
@@ -103,7 +122,17 @@ instance Show RVal where
 instance PP RVal where
   pp rval = case rval of
     RVal_Lit   			e     		-> pp e
+    RVal_Char   		v     		-> pp $ show v
     RVal_Int   			v     		-> pp v
+    RVal_Int8   		v     		-> pp $ show v
+    RVal_Int16   		v     		-> pp $ show v
+    RVal_Int32  		v     		-> pp $ show v
+    RVal_Int64 			v     		-> pp $ show v
+    RVal_Word   		v     		-> pp $ show v
+    RVal_Word8   		v     		-> pp $ show v
+    RVal_Word16   		v     		-> pp $ show v
+    RVal_Word32  		v     		-> pp $ show v
+    RVal_Word64 		v     		-> pp $ show v
     RVal_Integer   		v     		-> pp v
     RVal_Float   		v     		-> pp v
     RVal_Double   		v     		-> pp $ show v
@@ -118,16 +147,53 @@ instance PP RVal where
     RVal_BlackHole  				-> pp "Hole"
     RVal_None       				-> pp "None"
     RVal_MutVar   		v    		-> pp "MutVar"
+    RVal_Handle   		h    		-> pp $ show h
 %%]
 
-%%[(8 corerun) hs export(mkBool, mkTuple)
+%%[(8 corerun) hs export(mkBool, mkTuple, mkUnit)
 mkBool :: Bool -> RVal
-mkBool b = RVal_Node (if b then 1 else 0) emptyCRArray
+mkBool b = RVal_Node (if b then tagBoolTrue else tagBoolFalse) emptyCRArray
 {-# INLINE mkBool #-}
 
 mkTuple :: [RVal] -> RVal
 mkTuple = RVal_Node 0 . mkCRArray
 {-# INLINE mkTuple #-}
+
+mkUnit :: RVal
+mkUnit = mkTuple []
+{-# INLINE mkUnit #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Marshalling from/to Haskell values which should be visible/usable/correspond in both the RVal and Haskell world
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(HSMarshall(..))
+-- | Marshalling from/to Haskell values
+class HSMarshall hs where
+  -- | Marshall to Haskell value, also parameterized by evaluator
+  hsMarshall :: (RunSem RValCxt RValEnv m RVal) => (RVal -> RValT m RVal) -> RVal -> RValT m hs
+
+  -- | Unmarshall from Haskell value
+  hsUnmarshall :: hs -> RVal
+
+instance HSMarshall Int where
+  hsMarshall _ (RVal_Int v) = return v
+  hsUnmarshall v = RVal_Int v
+
+instance HSMarshall Char where
+  hsMarshall _ (RVal_Char v) = return v
+  hsMarshall _ v             = err $ "CoreRun.Run.Val.HSMarshall Char:" >#< v
+  hsUnmarshall v = RVal_Char v
+
+instance HSMarshall [RVal] where
+  hsMarshall evl (RVal_Node t as)
+    | t == tagListCons = (evl $ as V.! 1) >>= hsMarshall evl >>= (return . ((as V.! 0) :))
+    | otherwise        = return []
+  hsMarshall _   v     = err $ "CoreRun.Run.Val.HSMarshall [RVal]:" >#< v
+
+  hsUnmarshall []      = RVal_Node tagListNil emptyCRArray
+  hsUnmarshall (h:t)   = RVal_Node tagListCons $ mkCRArray [h, hsUnmarshall t]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

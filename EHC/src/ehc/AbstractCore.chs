@@ -1412,8 +1412,8 @@ In the following, note the hardcodedness!!!!!
 
 %%[(8 codegen) hs export(ctagTrue, ctagFalse)
 ctagTrue, ctagFalse :: EHCOpts -> CTag
-ctagTrue  opts = CTag (ehcOptBuiltin opts ehbnDataBool) (ehcOptBuiltin opts ehbnBoolTrue)  1 0 0        -- this makes it hardcoded, ideally dependent on datatype def itself !!
-ctagFalse opts = CTag (ehcOptBuiltin opts ehbnDataBool) (ehcOptBuiltin opts ehbnBoolFalse) 0 0 0        -- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagTrue  opts = CTag (ehcOptBuiltin opts ehbnDataBool) (ehcOptBuiltin opts ehbnBoolTrue)  tagBoolTrue  0 0        -- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagFalse opts = CTag (ehcOptBuiltin opts ehbnDataBool) (ehcOptBuiltin opts ehbnBoolFalse) tagBoolFalse 0 0        -- this makes it hardcoded, ideally dependent on datatype def itself !!
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1424,8 +1424,8 @@ In the following, note the hardcodedness!!!!!
 
 %%[(8 codegen) hs export(ctagCons,ctagNil)
 ctagCons, ctagNil :: EHCOpts -> CTag
-ctagCons opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnDataListAltCons) 0 2 2       -- this makes it hardcoded, ideally dependent on datatype def itself !!
-ctagNil  opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnDataListAltNil ) 1 0 2       -- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagCons opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnDataListAltCons) tagListCons 2 2       -- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagNil  opts = CTag (ehcOptBuiltin opts ehbnDataList) (ehcOptBuiltin opts ehbnDataListAltNil ) tagListNil  0 2       -- this makes it hardcoded, ideally dependent on datatype def itself !!
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -34,9 +34,7 @@
 %%[(8 corerun) hs import(qualified Data.Vector as V, qualified Data.Vector.Mutable as MV)
 %%]
 
-%%[(8 corerun) hs import(Data.IORef)
-%%]
-%%[(8888 corerun) hs import(GHC.Exts)
+%%[(8 corerun) hs import(qualified Data.ByteString.Char8 as BSC8)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,7 +72,7 @@ ref2valM r = do
         access v                                                        = 
           err $ "CoreRun.Run.Val.ref2valM.RRef_Loc.access:" >#< r >#< "in" >#< v
     RRef_Fld r e -> do
-        v <- ref2valM r >>= ptr2valM
+        v <- ref2valM r >>= rsemDeref
         case v of
           RVal_Node _ vs -> return $ vs V.! e
           _              -> err $ "CoreRun.Run.Val.ref2valM.RRef_Fld:" >#< e >#< "in" >#< v
@@ -194,7 +192,6 @@ rvalApp f as = do
             rvalApp ap (V.drop narg as)
     RVal_App appf appas
       | V.length as > 0 -> do
-           -- appf' <- rsemEvl appf
            -- rsemTr $ "V app app"
            rvalApp appf (appas V.++ as)
     _   -> err $ "CoreRun.Run.Val.rvalApp:" >#< f
@@ -223,8 +220,8 @@ instance
       env {renvDoTrace = doTrace}
     
     rsemExp e = do
-      rsemTr $ "E:" >#< e
-      case e of
+      -- rsemTr $ "E:" >#< e
+      e' <- case e of
         -- app, call
         Exp_App f as -> do
             f' <- mustReturn $ rsemExp f >>= rsemEvl
@@ -234,8 +231,12 @@ instance
         -- heap node
         Exp_Tup t as -> do
             as' <- V.mapM rsemExp as
+            return $ RVal_Node (ctagTag t) as'
+{-
+            as' <- V.mapM rsemExp as
             p <- heapAllocM $ RVal_Node (ctagTag t) as'
             return $ RVal_Ptr p
+-}
 
         -- lam as is, being a heap allocated thunk when 0 args are required
         Exp_Lam {nrArgs_Exp_Lam=na}
@@ -246,13 +247,13 @@ instance
         -- let
         Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
             bs' <- V.forM bs rsemExp
-            fr <- renvTopFrameM >>= heapGetM >>= ptr2valM
+            fr <- renvTopFrameM >>= heapGetM >>= rsemDeref
             fillFrameM fillFrom bs' fr
             rsemExp b
 
         -- case, scrutinee already evaluated
         Exp_Case e as -> do
-          (RVal_Node {rvalTag=tg}) <- rsemSExp e >>= ptr2valM
+          (RVal_Node {rvalTag=tg}) <- rsemDeref =<< rsemSExp e
           rsemAlt $ as V.! tg
         
         -- force evaluation immediately
@@ -265,17 +266,21 @@ instance
         Exp_SExp se -> rsemSExp se
 
         -- FFI
-        Exp_FFI pr as -> do
-            as' <- V.mapM rsemExp as
-            rsemPrim pr as'
+        Exp_FFI pr as -> V.mapM rsemExp as >>= rsemPrim pr
 
         e -> err $ "CoreRun.Run.Val.cmodRun.rsemExp:" >#< e
+
+      -- rsemTr $ "E->:" >#< (e >-< e')
+      return e'
 
     rsemSExp se = do
       case se of
         SExp_Int 	v -> return $ RVal_Int v
-        SExp_Var 	r -> ref2valM r
-        SExp_String v -> return $ RVal_PackedString v
+        SExp_Char 	v -> return $ RVal_Char v
+        SExp_Var    r -> do v <- ref2valM r
+                            -- rsemTr $ "R->V:" >#< v
+                            return v
+        SExp_String v -> return $ RVal_PackedString $ BSC8.pack v
         _ -> return (RVal_Lit se)
     {-# INLINE rsemSExp #-}
 
@@ -286,23 +291,37 @@ instance
 
 	-- TBD
     rsemEvl v = case v of
-      RVal_Thunk {rvalSL=sl, rvalBody=e} ->
-        rvalAppLam sl e V.empty $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
+        RVal_Ptr {rvalPtr=p} -> evlPtr p
+        RVal_BlackHole       -> err $ "CoreRun.Run.Val.rsemEvl.RVal_BlackHole:" >#< "Black hole"
+        _                    -> return v
+      where
+        evlPtr p = do
+          hp <- gets renvHeap
+          v <- heapGetM' hp p
+          -- rsemTr $ "Evl: *" >|< p >|< ":" >#< v
+          v' <- case v of
+            RVal_Thunk {rvalSL=sl, rvalBody=e} -> do
+              heapSetM' hp p RVal_BlackHole
+              v' <- rvalAppLam sl e V.empty $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
+              heapSetM' hp p v'
+              return v'
+            RVal_Ptr {rvalPtr=p} -> do
+              v' <- evlPtr p
+              heapSetM' hp p v'
+              return v'
+            v -> return v
+          -- rsemTr $ "Evl->: *" >|< p >|< ":" >#< (v >-< v')
+          return v'
 
-      RVal_Ptr {rvalPtr=p} -> do
-        hp <- gets renvHeap
-        v <- heapGetM' hp p
-        heapSetM' hp p RVal_BlackHole
-        v' <- rsemEvl v
-        heapSetM' hp p v'
-        return v'
-
-      RVal_BlackHole -> err $ "CoreRun.Run.Val.rsemEvl.RVal_BlackHole:" >#< "Black hole"
-        
-      _ -> return v
-
+    rsemDeref v = do
+      v' <- ptr2valM v
+      -- rsemTr $ "Deref:" >#< (v >-< v')
+      return v'
+    {-# INLINE rsemDeref #-}
+    
     -- apply a known primitive
     rsemPrim = rvalPrim
+    {-# INLINE rsemPrim #-}
 %%]
 
 
