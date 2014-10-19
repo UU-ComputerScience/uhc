@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 {-# EXCLUDE_IF_TARGET js #-}
+{-# EXCLUDE_IF_TARGET cr #-}
 
 -----------------------------------------------------------------------------
 -- |

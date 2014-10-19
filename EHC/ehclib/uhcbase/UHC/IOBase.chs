@@ -17,16 +17,21 @@ module UHC.IOBase
     -- IOArray(..), newIOArray, readIOArray, writeIOArray, unsafeReadIOArray, unsafeWriteIOArray,
     -- MVar(..),
 
+#ifndef __UHC_TARGET_CR__
         -- Buffers
     Buffer(..), RawBuffer, BufferState(..), BufferList(..), BufferMode(..),
     bufferIsWritable, bufferEmpty, bufferFull, 
     -- extra:
     -- rawBufferContents,
+#endif
 
         -- Handles, file descriptors,
     FilePath,  
-    Handle(..), Handle__(..), HandleType(..), IOMode(..), FD,
+    IOMode(..), 
+#ifndef __UHC_TARGET_CR__
+    Handle(..), Handle__(..), HandleType(..), FD,
     isReadableHandleType, isWritableHandleType, isReadWriteHandleType, {- showHandle, -}
+#endif
     
     Handle,
     
@@ -68,7 +73,9 @@ import UHC.ST
 import UHC.STRef
 import UHC.Types
 import UHC.MutVar
+#ifndef __UHC_TARGET_CR__
 import UHC.ByteArray
+#endif
 import UHC.StackTrace
 
 %%]
@@ -193,6 +200,7 @@ unsafePerformIO (IO m)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- Buffers
 
@@ -349,6 +357,7 @@ data BufferMode
                 -- The size of the buffer is @n@ items if the argument
                 -- is 'Just' @n@ and is otherwise implementation-dependent.
    deriving (Eq, Ord, Read, Show)
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -374,6 +383,8 @@ data IOMode             -- alphabetical order of constructors required, assumed 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+#ifndef __UHC_TARGET_CR__
+
 #if defined( __UHC_TARGET_C__ ) || defined (__UHC_TARGET_LLVM__)
 
 data FHandle    -- opaque, contains FILE*
@@ -402,21 +413,6 @@ instance Eq JSHandle where
 instance Show JSHandle where
     showsPrec _ h = showString "<handle>"
 
-#elif defined( __UHC_TARGET_CR__ )
-
-foreign import prim primEqHSHandleFileno  :: HSHandle -> Int -> Bool
-foreign import prim primEqHSHandle  :: HSHandle -> HSHandle -> Bool
-
-instance Eq HSHandle where
-    (==) = primEqHSHandle
-
-instance Show HSHandle where
-    showsPrec _ h
-      = if      primEqHSHandleFileno h 0 then showString "<stdin>"
-        else if primEqHSHandleFileno h 1 then showString "<stdout>"
-        else if primEqHSHandleFileno h 2 then showString "<stderr>"
-        else                showString ("<handle:" ++ {- show n ++ -} ">")
-
 #else
 
 foreign import prim primEqGBHandleFileno  :: GBHandle -> Int -> Bool
@@ -434,9 +430,20 @@ instance Show GBHandle where
       -- where n = primGBHandleEqFileno h
 
 #endif
+
+#endif /* __UHC_TARGET_CR__ */
 %%]
 
 %%[99
+#ifdef __UHC_TARGET_CR__
+data Handle
+
+foreign import prim primEqHandle :: Handle -> Handle -> Bool
+
+instance Eq Handle where
+  (==) = primEqHandle
+
+#else
 data Handle 
   = FileHandle                          -- A normal handle to a file
         FilePath                        -- the file (invariant)
@@ -453,9 +460,6 @@ data Handle
         FHandle                        
 #elif defined( __UHC_TARGET_JS__ )
         JSHandle                        
-#elif defined( __UHC_TARGET_CR__ )
--- delegated to GHC
-        HSHandle
 #else
         GBHandle                        
 #endif
@@ -481,6 +485,9 @@ data Handle__
       haOtherSide   :: Maybe (MVar Handle__) -- ptr to the write side of a 
                                              -- duplex handle.
     }
+
+#endif /* __UHC_TARGET_CR__ */
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -488,6 +495,12 @@ data Handle__
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+#ifdef __UHC_TARGET_CR__
+foreign import prim primShowHandle :: Handle -> String
+
+instance Show Handle where
+  show = primShowHandle
+#else
 -- ---------------------------------------------------------------------------
 -- Show instance for Handles
 
@@ -512,6 +525,8 @@ instance Show Handle where
 
 showHandle :: FilePath -> String -> String
 showHandle file = showString "{handle: " . showString file . showString "}"
+
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

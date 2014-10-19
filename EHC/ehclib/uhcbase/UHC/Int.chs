@@ -1,6 +1,7 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# EXCLUDE_IF_TARGET js #-}
+{-# EXCLUDE_IF_TARGET cr #-}
 
 -- Compiler knows the Int types of this module are defined here
 

@@ -53,9 +53,9 @@ rvalPrim pr as = do
       (RP_primCatchException, [x, hdl]) -> rsemEvl x -- err $ "Not impl: RP_primCatchException" -- TBD
       
       -- MutVar
-      (RP_primNewMutVar, [x, s]) -> liftIO $ newIORef x >>= \mv -> return $ mkTuple [s, RVal_MutVar mv]
-      (RP_primReadMutVar, [RVal_MutVar mv, s]) -> liftIO $ readIORef mv >>= \v -> return $ mkTuple [s, v]
-      (RP_primWriteMutVar, [RVal_MutVar mv, v, s]) -> liftIO $ writeIORef mv v >> return s
+      (RP_primNewMutVar, [x, s]) -> liftIO $ newIORef x >>= \mv -> return $ mkTuple [s, RHsV_MutVar mv]
+      (RP_primReadMutVar, [RHsV_MutVar mv, s]) -> liftIO $ readIORef mv >>= \v -> return $ mkTuple [s, v]
+      (RP_primWriteMutVar, [RHsV_MutVar mv, v, s]) -> liftIO $ writeIORef mv v >> return s
       (RP_primSameMutVar, _) -> err $ "Not impl: RP_primSameMutVar" -- TBD
       
       -- Base
@@ -85,12 +85,12 @@ rvalPrim pr as = do
 		-- | Three handles are allocated during program initialisation,
 		-- and are initially open.
 
-	  | RP_stdin
 -}
-	  -- | RP_stdout
-      (RP_stdout, _) -> return $ RVal_Handle stdout
+	  -- | RP_stdin, RP_stdout, RP_stderr -- :: Handle
+      (RP_stdin , _) -> return $ RHsV_Handle stdin
+      (RP_stdout, _) -> return $ RHsV_Handle stdout
+      (RP_stderr, _) -> return $ RHsV_Handle stderr
 {-
-	  | RP_stderr   -- :: Handle
 
 		-- * Opening and closing files
 
@@ -100,10 +100,13 @@ rvalPrim pr as = do
 	  | RP_openFile                  -- :: FilePath -> IOMode -> IO Handle
 	  -- IOMode(ReadMode,WriteMode,AppendMode,ReadWriteMode),
 
+-}
 		-- ** Closing files
 
-	  | RP_hClose                    -- :: Handle -> IO ()
+	  -- | RP_hClose                    -- :: Handle -> IO ()
+      (RP_hClose, [RHsV_Handle h]) -> primIO (hClose h)
 
+{-
 		-- ** Special cases
 
 		-- | These functions are also exported by the "Prelude".
@@ -115,28 +118,38 @@ rvalPrim pr as = do
 		-- ** File locking
 
 		-- $locking
+-}
 
 		-- * Operations on handles
 
 		-- ** Determining and changing the size of a file
 
-	  | RP_hFileSize                 -- :: Handle -> IO Integer
+	  -- | RP_hFileSize                 -- :: Handle -> IO Integer
+      (RP_hFileSize, [RHsV_Handle h]) -> primInputIO (hFileSize h)
 	-- #ifdef __GLASGOW_HASKELL__
-	  | RP_hSetFileSize              -- :: Handle -> Integer -> IO ()
+	  -- | RP_hSetFileSize              -- :: Handle -> Integer -> IO ()
+      (RP_hSetFileSize, [RHsV_Handle h, RVal_Integer i]) -> primIO (hSetFileSize h i)
 	-- #endif
 
 		-- ** Detecting the end of input
 
-	  | RP_hIsEOF                    -- :: Handle -> IO Bool
+	  -- | RP_hIsEOF                    -- :: Handle -> IO Bool
+      (RP_hIsEOF, [RHsV_Handle h]) -> primInputIO (hIsEOF h)
+{-
 	  | RP_isEOF                     -- :: IO Bool
-
+-}
 		-- ** Buffering operations
 
+{-
 	  -- BufferMode(NoBuffering,LineBuffering,BlockBuffering),
-	  | RP_hSetBuffering             -- :: Handle -> BufferMode -> IO ()
+	  -- | RP_hSetBuffering             -- :: Handle -> BufferMode -> IO ()
+      (RP_hSetBuffering, [RHsV_Handle h, RVal_Int m]) -> primInputIO (hSetBuffering h m)
 	  | RP_hGetBuffering             -- :: Handle -> IO BufferMode
-	  | RP_hFlush                    -- :: Handle -> IO ()
+-}
+	  -- | RP_hFlush                    -- :: Handle -> IO ()
+      (RP_hFlush, [RHsV_Handle h]) -> primIO (hFlush h)
 
+{-
 		-- ** Repositioning handles
 
 	  | RP_hGetPosn                  -- :: Handle -> IO HandlePosn
@@ -169,25 +182,37 @@ rvalPrim pr as = do
 		-- ** Showing handle state (not portable: GHC only)
 
 	-- #ifdef __GLASGOW_HASKELL__
-	  | RP_hShow                      -- :: Handle -> IO String
+-}
+	  -- | RP_hShow                      -- :: Handle -> IO String
+      (RP_hShow, [RHsV_Handle h]) -> primInputIO (hShow h)
+{-
 	-- #endif
 
 		-- * Text input and output
 
 		-- ** Text input
-	  | RP_hWaitForInput             -- :: Handle -> Int -> IO Bool
+-}
+	  -- | RP_hWaitForInput             -- :: Handle -> Int -> IO Bool
+      (RP_hWaitForInput, [RHsV_Handle h, RVal_Int i]) -> primInputIO (hWaitForInput h i)
+{-
 	  | RP_hReady                    -- :: Handle -> IO Bool
-	  | RP_hGetChar                  -- :: Handle -> IO Char
-	  | RP_hGetLine                  -- :: Handle -> IO [Char]
-	  | RP_hLookAhead                -- :: Handle -> IO Char
-	  | RP_hGetContents              -- :: Handle -> IO [Char]
+-}
+	  -- | RP_hGetChar                  -- :: Handle -> IO Char
+      (RP_hGetChar, [RHsV_Handle h]) -> primInputIO (hGetChar h)
+	  -- | RP_hGetLine                  -- :: Handle -> IO [Char]
+      (RP_hGetLine, [RHsV_Handle h]) -> primInputIO (hGetLine h)
+	  -- | RP_hLookAhead                -- :: Handle -> IO Char
+      (RP_hLookAhead, [RHsV_Handle h]) -> primInputIO (hLookAhead h)
+	  -- | RP_hGetContents              -- :: Handle -> IO [Char]
+      (RP_hGetContents, [RHsV_Handle h]) -> primInputIO (hGetContents h)
+{-
 		-- ** Text output
 
-	  | RP_hPutChar                  -- :: Handle -> Char -> IO ()
 -}
+	  -- | RP_hPutChar                  -- :: Handle -> Char -> IO ()
+      (RP_hPutChar, [RHsV_Handle h, x]) -> primOutputIO (hPutChar h) x
 	  -- | RP_hPutStr                   -- :: Handle -> [Char] -> IO ()
-      (RP_hPutStr, [RVal_Handle h, s]) -> hsMarshall ev s >>= mapM (\v -> ev v >>= hsMarshall ev) >>= (liftIO . hPutStr h) >> return mkUnit
-        where ev x = mustReturn $ rsemEvl x
+      (RP_hPutStr, [RHsV_Handle h, x]) -> primOutputIO (hPutStr h) x
 {-
 	  | RP_hPutStrLn                 -- :: Handle -> [Char] -> IO ()
 	  | RP_hPrint                    -- :: Show a => Handle -> a -> IO ()
@@ -210,18 +235,61 @@ rvalPrim pr as = do
 		-- * Binary input and output
 	  | RP_withBinaryFile
 	  | RP_openBinaryFile            -- :: FilePath -> IOMode -> IO Handle
-	  | RP_hSetBinaryMode            -- :: Handle -> Bool -> IO ()
-	  | RP_hPutBuf                   -- :: Handle -> Ptr a -> Int -> IO ()
-	  | RP_hGetBuf                   -- :: Handle -> Ptr a -> Int -> IO Int
+-}
+	  -- | RP_hSetBinaryMode            -- :: Handle -> Bool -> IO ()
+      (RP_hSetBinaryMode, [RHsV_Handle h, b]) -> primOutputIO (hSetBinaryMode h) b
+	  -- | RP_hPutBuf                   -- :: Handle -> Ptr a -> Int -> IO ()
+      (RP_hPutBuf, [RHsV_Handle h, RHsV_Addr a, RVal_Int i]) -> primIO (hPutBuf h (Ptr a) i)
+	  -- | RP_hGetBuf                   -- :: Handle -> Ptr a -> Int -> IO Int
+      (RP_hGetBuf, [RHsV_Handle h, RHsV_Addr a, RVal_Int i]) -> primInputIO (hGetBuf h (Ptr a) i)
+{-
 	-- #if !defined(__NHC__) && !defined(__HUGS__)
-	  | RP_hPutBufNonBlocking        -- :: Handle -> Ptr a -> Int -> IO Int
-	  | RP_hGetBufNonBlocking        -- :: Handle -> Ptr a -> Int -> IO Int
+-}
+	  -- | RP_hPutBufNonBlocking        -- :: Handle -> Ptr a -> Int -> IO Int
+      (RP_hPutBufNonBlocking, [RHsV_Handle h, RHsV_Addr a, RVal_Int i]) -> primIO (hPutBufNonBlocking h (Ptr a) i)
+	  -- | RP_hGetBufNonBlocking        -- :: Handle -> Ptr a -> Int -> IO Int
+      (RP_hGetBufNonBlocking, [RHsV_Handle h, RHsV_Addr a, RVal_Int i]) -> primInputIO (hGetBufNonBlocking h (Ptr a) i)
+{-
 	-- #endif
 		-- * Temporary files
 
 	  | RP_openTempFile
 	  | RP_openBinaryTempFile
 -}
+        -- * Additional ones
+      -- | RP_primShowHandle               -- :: Handle -> String
+      (RP_primShowHandle, [RHsV_Handle h]) -> return $ hsUnmarshall $ show h
+      -- | RP_primEqHandle                 -- :: Handle -> Handle -> Bool
+      (RP_primEqHandle, [RHsV_Handle h1, RHsV_Handle h2]) -> return $ mkBool $ h1 == h2
+
+      (pr, _) -> err $ "CoreRun.Run.Val.Prim:" >#< show pr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs
+-- | Voidify IO on RVal level, i.e. make IO ()
+-- rvalVoid :: Monad m => RValT m a -> RValT m RVal
+rvalVoid :: Monad m => m a -> m RVal
+rvalVoid m = m >> return mkUnit
+{-# INLINE rvalVoid #-}
+
+-- | IO, no result
+primIO :: (RunSem RValCxt RValEnv m RVal) => IO x -> RValT m RVal
+primIO io = rvalVoid $ liftIO $ io
+-- {-# INLINE primIO #-}
+
+-- | Input like IO
+primInputIO :: (RunSem RValCxt RValEnv m RVal, HSMarshall x) => IO x -> RValT m RVal
+primInputIO io = (liftIO $ io) >>= (return . hsUnmarshall)
+-- {-# INLINE primInputIO #-}
+
+-- | Output like IO
+primOutputIO :: (RunSem RValCxt RValEnv m RVal, HSMarshall x) => (x -> IO ()) -> RVal -> RValT m RVal
+primOutputIO io x = rvalVoid $ hsMarshall rvalRetEvl x >>= (liftIO . io)
+-- {-# INLINE primOutputIO #-}
 %%]
 
 

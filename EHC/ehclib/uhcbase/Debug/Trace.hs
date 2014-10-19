@@ -22,11 +22,15 @@ module Debug.Trace (
   ) where
 
 import UHC.Base
+#ifndef __UHC_TARGET_CR__
 import UHC.OldIO
+#endif
 import System.IO.Unsafe
 
 #ifdef __GLASGOW_HASKELL__
 import Foreign.C.String
+#elif __UHC_TARGET_CR__
+import System.IO (hPutStrLn,stderr)
 #elif __UHC__
 -- import System.IO (hPutStrLn,stderr)
 #else

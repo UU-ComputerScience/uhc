@@ -23,19 +23,19 @@
 module UHC.Ptr
   ( 
     Addr,
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
     nullAddr,
 #endif
 
     Ptr,
     castPtr,
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
     nullPtr, plusPtr, alignPtr, minusPtr,
 #endif
 
     FunPtr,
     castFunPtr, castPtrToFunPtr, castFunPtrToPtr,
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
     nullFunPtr,
 #endif
   
@@ -46,7 +46,7 @@ module UHC.Ptr
 import UHC.Base
 import UHC.Types
 
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
 import UHC.Prims
 import UHC.Show          ( showHex )
 
@@ -56,7 +56,7 @@ import UHC.Show          ( showHex )
 ------------------------------------------------------------------------
 -- Address
 
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
 
 #if __UHC_TARGET_JAZY__
 foreign import prim "primAddWord" primAddAddr :: Addr -> Int  -> Addr
@@ -103,7 +103,7 @@ newtype Ptr a		= Ptr Addr
 -- to access the pointer.  For example you might write small foreign
 -- functions to get or set the fields of a C @struct@.
 
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
 
 -- |The constant 'nullPtr' contains a distinguished value of 'Ptr'
 -- that is not associated with a valid memory location.
@@ -116,7 +116,7 @@ nullPtr = Ptr nullAddr
 castPtr :: forall a b . Ptr a -> Ptr b
 castPtr (Ptr addr) = Ptr addr
 
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
 
 -- |Advances the given address by the given offset in bytes.
 plusPtr :: forall a b . Ptr a -> Int -> Ptr b
@@ -186,7 +186,7 @@ newtype FunPtr a		= FunPtr Addr
 -- > foreign import ccall "dynamic" 
 -- >   mkFun :: FunPtr IntFunction -> IntFunction
 
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
 
 -- |The constant 'nullFunPtr' contains a
 -- distinguished value of 'FunPtr' that is not
@@ -218,7 +218,7 @@ castFunPtrToPtr (FunPtr addr) = Ptr addr
 castPtrToFunPtr :: forall a b . Ptr a -> FunPtr b
 castPtrToFunPtr (Ptr addr) = FunPtr addr
 
-#if ! defined(__UHC_TARGET_JS__)
+#if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
 
 ------------------------------------------------------------------------
 -- Eq, Ord instances for Ptr.

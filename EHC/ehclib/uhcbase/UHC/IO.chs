@@ -26,18 +26,36 @@
 -- #hide
 module UHC.IO ( 
    hWaitForInput, hGetChar, hGetLine, hGetContents, hPutChar, hPutStr, 
+#ifndef __UHC__
    commitBuffer',       -- hack, see below
    hGetcBuffered,       -- needed by ghc/compiler/utils/StringBuffer.lhs
-   hGetBuf, hGetBufNonBlocking, hPutBuf, hPutBufNonBlocking, slurpFile,
+#endif
+   hGetBuf, hGetBufNonBlocking, hPutBuf, hPutBufNonBlocking,
+#ifndef __UHC__
+   slurpFile,
+#endif
 
+#ifndef __UHC_TARGET_CR__
    memcpy_ba_baoff,
    memcpy_ptr_baoff,
    memcpy_baoff_ba,
    memcpy_baoff_ptr,
+#endif
  ) where
 
+import UHC.Base
+import UHC.IOBase
+
+#ifdef __UHC_TARGET_CR__
+import Foreign.Ptr
+#else
 import Foreign
 import Foreign.C
+
+import UHC.Handle
+#ifndef __UHC_TARGET_CR__
+import UHC.ByteArray
+#endif
 
 import System.IO.Error
 import System.IO.Unsafe (unsafeInterleaveIO)
@@ -47,13 +65,9 @@ import Control.Monad
 import System.Posix.Internals
 #endif
 
-import UHC.Base
-import UHC.IOBase
-import UHC.Handle
-import UHC.ByteArray
-
 #ifdef mingw32_HOST_OS
 import UHC.Conc
+#endif
 #endif
 
 %%]
@@ -83,6 +97,9 @@ import UHC.Conc
 -- threads for the duration of the call.  It behaves like a
 -- @safe@ foreign call in this respect.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hWaitForInput :: Handle -> Int -> IO Bool
+#else
 hWaitForInput :: Handle -> Int -> IO Bool
 hWaitForInput h msecs = do
   wantReadableHandle "hWaitForInput" h $ \ handle_ -> do
@@ -107,7 +124,7 @@ hWaitForInput h msecs = do
                                   hLookAhead' handle_
                                   return True
                           else return False
-
+#endif
 %%]
 
 %%[99
@@ -121,6 +138,9 @@ hWaitForInput h msecs = do
 --
 --  * 'isEOFError' if the end of file has been reached.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hGetChar :: Handle -> IO Char
+#else
 hGetChar :: Handle -> IO Char
 hGetChar handle =
   wantReadableHandle "hGetChar" handle $ \handle_ -> do
@@ -159,6 +179,7 @@ hGetcBuffered _ ref buf@Buffer{ bufBuf=b, bufRPtr=r0, bufWPtr=w }
                   | otherwise = buf{ bufRPtr=r }
       writeIORef ref new_buf
       return c
+#endif
 %%]
 
 %%[99
@@ -181,6 +202,9 @@ hGetcBuffered _ ref buf@Buffer{ bufBuf=b, bufRPtr=r0, bufWPtr=w }
 -- in a line, it is treated as a line terminator and the (partial)
 -- line is returned.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hGetLine :: Handle -> IO String
+#else
 hGetLine :: Handle -> IO String
 hGetLine h = do
   m <- wantReadableHandle "hGetLine" h $ \ handle_ -> do
@@ -290,6 +314,7 @@ hGetLineUnBuffered h = do
      else do
        s <- getRest
        return (c:s)
+#endif
 %%]
 
 %%[99
@@ -340,6 +365,9 @@ I adapted the lazyRead not to use the synchronization mechanism of withHandle
 and to return directly the result. For this the Hande__ must be passed 
 manually.
 -}
+#ifdef __UHC_TARGET_CR__
+foreign import prim hGetContents :: Handle -> IO String
+#else
 hGetContents :: Handle -> IO String
 hGetContents handle = 
     withHandle "hGetContents" handle $ \handle_ ->
@@ -422,6 +450,7 @@ unpackAcc buf r len acc0 = IO $ \s -> unpackRB acc0 (len - 1) s
      | otherwise = 
           case readCharArray buf i s of
           (s', ch) -> unpackRB (ch : acc) (i - 1) s'
+#endif
 %%]
 
 %%[99
@@ -438,6 +467,9 @@ unpackAcc buf r len acc0 = IO $ \s -> unpackRB acc0 (len - 1) s
 --
 --  * 'isPermissionError' if another system resource limit would be exceeded.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hPutChar :: Handle -> Char -> IO () 
+#else
 hPutChar :: Handle -> Char -> IO ()
 hPutChar handle c = do
     c `seq` return ()
@@ -465,10 +497,10 @@ hPutcBuffered handle_ is_line c = do
      else do 
         writeIORef ref new_buf
 
-
 hPutChars :: Handle -> [Char] -> IO ()
 hPutChars _      [] = return ()
 hPutChars handle (c:cs) = hPutChar handle c >> hPutChars handle cs
+#endif
 %%]
 
 %%[99
@@ -501,6 +533,9 @@ hPutChars handle (c:cs) = hPutChar handle c >> hPutChars handle cs
 --
 --  * 'isPermissionError' if another system resource limit would be exceeded.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hPutStr :: Handle -> String -> IO () 
+#else
 hPutStr :: Handle -> String -> IO ()
 hPutStr handle str = do
     buffer_mode <- wantWritableHandle "hPutStr" handle 
@@ -569,9 +604,11 @@ writeBlocks hdl Buffer{ bufBuf=raw, bufSize=len } s =
         shoveString n' cs
   in
   shoveString 0 s
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- commitBuffer handle buf sz count flush release
 -- 
@@ -683,6 +720,7 @@ commitBuffer' raw sz count flush release
               return buf_ret
             else
               return buf_ret
+#endif
 %%]
 
 %%[99 
@@ -702,6 +740,10 @@ commitBuffer' raw sz count flush release
 --    has not asked to ignore SIGPIPE, then a SIGPIPE may be delivered
 --    instead, whose default action is to terminate the program).
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hPutBuf            :: Handle -> Ptr a -> Int -> IO ()
+foreign import prim hPutBufNonBlocking :: Handle -> Ptr a -> Int -> IO ()
+#else
 hPutBuf :: Handle                       -- handle to write to
         -> Ptr a                        -- address of buffer
         -> Int                          -- number of bytes of data in buffer
@@ -797,6 +839,7 @@ writeChunkNonBlocking fd
       then ioError (errnoToIOError "hPutBufNonBlocking" (Errno (fromIntegral rc)) Nothing Nothing)
       else loop (off + r) (bytes - r)
 #endif
+#endif
 %%]
 
 %%[99 
@@ -815,6 +858,9 @@ writeChunkNonBlocking fd
 -- If the handle is a pipe or socket, and the writing end
 -- is closed, 'hGetBuf' will behave as if EOF was reached.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hGetBuf :: Handle -> Ptr a -> Int -> IO Int
+#else
 hGetBuf :: Handle -> Ptr a -> Int -> IO Int
 hGetBuf h ptr count
   | count == 0 = return 0
@@ -881,6 +927,7 @@ readChunk fd is_stream ptr bytes0 = loop 0 bytes0
     if r == 0
         then return off
         else loop (off + r) (bytes - r)
+#endif
 
 
 -- | 'hGetBufNonBlocking' @hdl buf count@ reads data from the handle @hdl@
@@ -896,6 +943,9 @@ readChunk fd is_stream ptr bytes0 = loop 0 bytes0
 -- If the handle is a pipe or socket, and the writing end
 -- is closed, 'hGetBufNonBlocking' will behave as if EOF was reached.
 --
+#ifdef __UHC_TARGET_CR__
+foreign import prim hGetBufNonBlocking :: Handle -> Ptr a -> Int -> IO Int
+#else
 hGetBufNonBlocking :: Handle -> Ptr a -> Int -> IO Int
 hGetBufNonBlocking h ptr count
   | count == 0 = return 0
@@ -961,7 +1011,9 @@ readChunkNonBlocking fd is_stream ptr bytes = do
     fromIntegral `liftM`
         readRawBufferPtrNoBlock "readChunkNonBlocking" fd is_stream 
                             (castPtr ptr) 0 (fromIntegral bytes)
+#endif
 
+#ifndef __UHC__
     -- we don't have non-blocking read support on Windows, so just invoke
     -- the ordinary low-level read which will block until data is available,
     -- but won't wait for the whole buffer to fill.
@@ -978,6 +1030,7 @@ slurpFile fname = do
     r <- hGetBuf handle chunk sz_i
     hClose handle
     return (chunk :: Ptr (), r)
+#endif
 %%]
 
 %%[99
@@ -986,6 +1039,7 @@ slurpFile fname = do
 
 #ifdef __UHC__
 
+#ifndef __UHC_TARGET_CR__
 foreign import ccall unsafe
    memcpy :: Ptr a -> Ptr b -> CSize -> IO (Ptr ())
 
@@ -1000,6 +1054,7 @@ memcpy_baoff_ba b1 off b2 sz = memcpy (mutableByteArrayPtr b1 `plusPtr` toInt of
 
 memcpy_baoff_ptr :: RawBuffer -> CInt -> Ptr a -> CSize -> IO (Ptr ())
 memcpy_baoff_ptr b1 off p2 sz = memcpy (mutableByteArrayPtr b1 `plusPtr` toInt off) p2 sz
+#endif
 
 #else
 

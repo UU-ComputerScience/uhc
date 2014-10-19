@@ -1,5 +1,5 @@
 %%[0 hs
--- {-# LANGUAGE MagicHash #-}
+{-# LANGUAGE MagicHash #-}
 -- {-# OPTIONS_GHC -O2 #-}
 %%]
 
@@ -42,6 +42,8 @@
 %%[(8 corerun) hs import(Data.Int, Data.Word) export(module Data.Int, module Data.Word)
 %%]
 %%[(8 corerun) hs import(qualified Data.ByteString.Char8 as BSC8)
+%%]
+%%[(8 corerun) hs import(GHC.Ptr(Ptr(..)), GHC.Exts({Addr#})) export(module GHC.Ptr)
 %%]
 
 -- old
@@ -113,8 +115,10 @@ data RVal
   | RVal_None
   
     -- Value representations for library or runtime env (not Core specific)
-  | RVal_MutVar			   !(IORef RVal)			-- ^ mutable var
-  | RVal_Handle			   !Handle					-- ^ IO handle
+  | RHsV_MutVar			   !(IORef RVal)			-- ^ mutable var
+  | RHsV_Handle			   !Handle					-- ^ IO handle
+  -- | RHsV_BufferMode		   !BufferMode				-- ^ buffer mode
+  | RHsV_Addr			   Addr#					-- ^ Addr inside Ptr
 
 instance Show RVal where
   show _ = "RVal"
@@ -146,8 +150,10 @@ instance PP RVal where
     RVal_Frame 			_ sl lv vs 	-> ppBracketsCommas $ ["sl=" >|< sl, "lev=" >|< lv, "sz=" >|< MV.length vs] -- ++ (map pp $ take 3 $ V.toList vs)
     RVal_BlackHole  				-> pp "Hole"
     RVal_None       				-> pp "None"
-    RVal_MutVar   		v    		-> pp "MutVar"
-    RVal_Handle   		h    		-> pp $ show h
+    RHsV_MutVar   		v    		-> pp "MutVar"
+    RHsV_Handle   		h    		-> pp $ show h
+    -- RHsV_BufferMode		m    		-> pp $ show m
+    RHsV_Addr	   		p    		-> pp $ show (Ptr p)
 %%]
 
 %%[(8 corerun) hs export(mkBool, mkTuple, mkUnit)
@@ -180,11 +186,30 @@ class HSMarshall hs where
 instance HSMarshall Int where
   hsMarshall _ (RVal_Int v) = return v
   hsUnmarshall v = RVal_Int v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Integer where
+  hsMarshall _ (RVal_Integer v) = return v
+  hsUnmarshall v = RVal_Integer v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Bool where
+  hsMarshall _ (RVal_Node t _) = return $ t == tagBoolTrue
+  hsMarshall _ v               = err $ "CoreRun.Run.Val.HSMarshall Bool:" >#< v
+  hsUnmarshall = mkBool
+  {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall Char where
   hsMarshall _ (RVal_Char v) = return v
   hsMarshall _ v             = err $ "CoreRun.Run.Val.HSMarshall Char:" >#< v
   hsUnmarshall v = RVal_Char v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall (Ptr a) where
+  hsMarshall _ (RHsV_Addr v) = return $ Ptr v
+  hsMarshall _ v             = err $ "CoreRun.Run.Val.HSMarshall (Ptr a):" >#< v
+  hsUnmarshall (Ptr v) = RHsV_Addr v
+  {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall [RVal] where
   hsMarshall evl (RVal_Node t as)
@@ -194,6 +219,13 @@ instance HSMarshall [RVal] where
 
   hsUnmarshall []      = RVal_Node tagListNil emptyCRArray
   hsUnmarshall (h:t)   = RVal_Node tagListCons $ mkCRArray [h, hsUnmarshall t]
+
+instance HSMarshall x => HSMarshall [x] where
+  hsMarshall evl x = hsMarshall evl x >>= mapM (\v -> evl v >>= hsMarshall evl)
+  {-# INLINE hsMarshall #-}
+
+  hsUnmarshall         = hsUnmarshall . map hsUnmarshall
+  {-# INLINE hsUnmarshall #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -290,7 +322,7 @@ emptyRValCxt :: RValCxt
 emptyRValCxt = RValCxt False -- False
 %%]
 
-%%[(8 corerun) hs export(mustReturn, needNotReturn)
+%%[(8 corerun) hs export(mustReturn, needNotReturn, rvalRetEvl)
 -- | Set return context to True
 mustReturn :: RunSem RValCxt RValEnv m RVal => RValT m a -> RValT m a
 mustReturn = local (\r -> r {rcxtInRet = True})
@@ -300,6 +332,11 @@ mustReturn = local (\r -> r {rcxtInRet = True})
 needNotReturn :: RunSem RValCxt RValEnv m RVal => RValT m a -> RValT m a
 needNotReturn = local (\r -> r {rcxtInRet = False})
 {-# INLINE needNotReturn #-}
+
+-- | Variation of `rsemEvl` in return context
+rvalRetEvl :: RunSem RValCxt RValEnv m RVal => RVal -> RValT m RVal
+rvalRetEvl = mustReturn . rsemEvl
+{-# INLINE rvalRetEvl #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

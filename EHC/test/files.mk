@@ -70,28 +70,6 @@ test-expect test-regress: test-lists
 	nerrorsPlatformDpd=0; \
 	nwarnings=0; \
 	ehcOpts="--target=$(EHC_VARIANT_TARGET)" ; \
-    case $(EHC_VARIANT_TARGET) in \
-      C) \
-        texeInvoke="" ; \
-        texeSuffix="$(EXEC_SUFFIX)" ; \
-        ehcTargetOpts="" ; \
-        ;; \
-      bc) \
-        texeInvoke="" ; \
-        texeSuffix="$(EXEC_SUFFIX)" ; \
-        ehcTargetOpts="" ; \
-        ;; \
-      jazy) \
-        texeInvoke="java -jar" ; \
-        texeSuffix=".jar" ; \
-        ehcTargetOpts="" ; \
-        ;; \
-      js) \
-        texeInvoke="js" ; \
-        texeSuffix=".js" ; \
-        ehcTargetOpts="-O,2" ; \
-        ;; \
-    esac ; \
 	cd $(TEST_REGRESS_SRC_PREFIX) ; \
 	for v in $(TEST_VARIANTS) ; \
 	do \
@@ -106,6 +84,33 @@ test-expect test-regress: test-lists
 	    gri=$(call FUN_INSTALLABS_VARIANT_BIN_PREFIX,$${v})$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
 	    optPreludePath="" ; \
 	  fi ; \
+      case $(EHC_VARIANT_TARGET) in \
+        C) \
+          texeInvoke="" ; \
+          texeSuffix="$(EXEC_SUFFIX)" ; \
+          ehcTargetOpts="" ; \
+          ;; \
+        bc) \
+          texeInvoke="" ; \
+          texeSuffix="$(EXEC_SUFFIX)" ; \
+          ehcTargetOpts="" ; \
+          ;; \
+        jazy) \
+          texeInvoke="java -jar" ; \
+          texeSuffix=".jar" ; \
+          ehcTargetOpts="" ; \
+          ;; \
+        js) \
+          texeInvoke="js" ; \
+          texeSuffix=".js" ; \
+          ehcTargetOpts="-O,2" ; \
+          ;; \
+        cr) \
+          texeInvoke="$${ehc} --coreopt=run -Operwholecore" ; \
+          texeSuffix=".bcr" ; \
+          ehcTargetOpts="-Operwholecore" ; \
+          ;; \
+      esac ; \
       echo "== testing with cmd: $${ehc} $${ehcOpts} $${ehcTargetOpts} ==" ; \
 	  echo "== version $${v} ==" ; \
 	  if test -x $${ehc} ; \

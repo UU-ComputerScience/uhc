@@ -140,8 +140,11 @@ updTopFrameM f = renvTopFrameM >>= flip heapUpdM f
 cmodRun :: (RunSem RValCxt RValEnv m RVal) => EHCOpts -> Mod -> RValT m RVal
 cmodRun opts (Mod_Mod {body_Mod_Mod=e}) = do
   -- dumpEnvM True
-  v <- rsemExp e -- >>= rsemEvl
+  v <- rsemExp e
+%%[[99
   dumpEnvM False
+%%][100
+%%]]
   return v
 %%]
 

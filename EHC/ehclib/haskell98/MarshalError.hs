@@ -1,4 +1,5 @@
 {-# EXCLUDE_IF_TARGET js #-}
+{-# EXCLUDE_IF_TARGET cr #-}
 module MarshalError (
   	module Foreign.Marshal.Error,
 	IOErrorType,

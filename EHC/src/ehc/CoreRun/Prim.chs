@@ -211,6 +211,9 @@ data RunPrim
   | RP_openTempFile
   | RP_openBinaryTempFile
 
+    -- * Additional ones
+  | RP_primShowHandle 				-- :: Handle -> String
+  | RP_primEqHandle 				-- :: Handle -> Handle -> Bool
 
   deriving (Show, Eq, Ord, Enum, Bounded)
 %%]
