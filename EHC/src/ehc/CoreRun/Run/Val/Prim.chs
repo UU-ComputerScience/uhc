@@ -40,32 +40,41 @@ rvalPrim :: (RunSem RValCxt RValEnv m RVal) => RunPrim -> CRArray RVal -> RValT 
 rvalPrim pr as = do 
     -- as' <- forM (V.toList as) rsemDeref
     let as' = V.toList as
-    rsemTr $ "Prim:" >#< show pr >|< ppParensCommas as'
+    -- rsemTr $ "Prim:" >#< show pr >|< ppParensCommas as'
     case (pr, as') of
       -- Int arithmetic
       (RP_primAddInt, [RVal_Int i1, RVal_Int i2]) -> return $ RVal_Int $ i1 + i2
       (RP_primSubInt, [RVal_Int i1, RVal_Int i2]) -> return $ RVal_Int $ i1 - i2
       (RP_primMulInt, [RVal_Int i1, RVal_Int i2]) -> return $ RVal_Int $ i1 * i2
       (RP_primDivInt, [RVal_Int i1, RVal_Int i2]) -> return $ RVal_Int $ i1 `div` i2
-      (RP_primEqInt, [RVal_Int i1, RVal_Int i2]) -> return $ mkBool $ i1 == i2
+      (RP_primEqInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 == i2
+      (RP_primLeInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 <= i2
+      (RP_primNeInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 /= i2
       
       -- Exception handling
       (RP_primCatchException, [x, hdl]) -> rsemEvl x -- err $ "Not impl: RP_primCatchException" -- TBD
       
       -- MutVar
-      (RP_primNewMutVar, [x, s]) -> liftIO $ newIORef x >>= \mv -> return $ mkTuple [s, RHsV_MutVar mv]
-      (RP_primReadMutVar, [RHsV_MutVar mv, s]) -> liftIO $ readIORef mv >>= \v -> return $ mkTuple [s, v]
+      (RP_primNewMutVar, [x, s]) -> (liftIO $ newIORef x) >>= \mv -> mkTuple [s, RHsV_MutVar mv]
+      (RP_primReadMutVar, [RHsV_MutVar mv, s]) -> (liftIO $ readIORef mv) >>= \v -> mkTuple [s, v]
       (RP_primWriteMutVar, [RHsV_MutVar mv, v, s]) -> liftIO $ writeIORef mv v >> return s
       (RP_primSameMutVar, _) -> err $ "Not impl: RP_primSameMutVar" -- TBD
       
       -- Base
       (RP_primPackedStringToInteger, [RVal_PackedString x]) -> return $ RVal_Integer $ read $ BSC8.unpack x
-      (RP_primPackedStringNull, [RVal_PackedString x]) -> return $ mkBool $ BSC8.null x
+      (RP_primPackedStringNull, [RVal_PackedString x]) -> hsUnmarshall $ BSC8.null x
       (RP_primPackedStringHead, [RVal_PackedString x]) -> return $ RVal_Char $ BSC8.head x
       (RP_primPackedStringTail, [RVal_PackedString x]) -> return $ RVal_PackedString $ BSC8.tail x
+      (RP_primShowInteger, [RVal_Integer x]) -> hsUnmarshall $ show x
       
-      -- Prims
+      -- Base: Bounded
+      (RP_primMaxInt, _) -> return $ RVal_Int $ maxBound
+      (RP_primMinInt, _) -> return $ RVal_Int $ minBound
+  
+      -- Prims: conversion
       (RP_primIntegerToInt32, [RVal_Integer x]) -> return $ RVal_Int32 $ fromIntegral x
+      (RP_primIntToInteger  , [RVal_Int x]) -> return $ RVal_Integer $ fromIntegral x
+      (RP_primIntegerToInt  , [RVal_Integer x]) -> return $ RVal_Int $ fromIntegral x
       
       -- IO
 {-
@@ -258,9 +267,9 @@ rvalPrim pr as = do
 -}
         -- * Additional ones
       -- | RP_primShowHandle               -- :: Handle -> String
-      (RP_primShowHandle, [RHsV_Handle h]) -> return $ hsUnmarshall $ show h
+      (RP_primShowHandle, [RHsV_Handle h]) -> hsUnmarshall $ show h
       -- | RP_primEqHandle                 -- :: Handle -> Handle -> Bool
-      (RP_primEqHandle, [RHsV_Handle h1, RHsV_Handle h2]) -> return $ mkBool $ h1 == h2
+      (RP_primEqHandle, [RHsV_Handle h1, RHsV_Handle h2]) -> hsUnmarshall $ h1 == h2
 
       (pr, _) -> err $ "CoreRun.Run.Val.Prim:" >#< show pr
 %%]
@@ -271,9 +280,9 @@ rvalPrim pr as = do
 
 %%[(8 corerun) hs
 -- | Voidify IO on RVal level, i.e. make IO ()
--- rvalVoid :: Monad m => RValT m a -> RValT m RVal
-rvalVoid :: Monad m => m a -> m RVal
-rvalVoid m = m >> return mkUnit
+-- rvalVoid :: (RunSem RValCxt RValEnv m RVal) => RValT m a -> RValT m RVal
+rvalVoid :: (RunSem RValCxt RValEnv m RVal) => RValT m a -> RValT m RVal
+rvalVoid m = m >> mkUnit
 {-# INLINE rvalVoid #-}
 
 -- | IO, no result
@@ -283,7 +292,7 @@ primIO io = rvalVoid $ liftIO $ io
 
 -- | Input like IO
 primInputIO :: (RunSem RValCxt RValEnv m RVal, HSMarshall x) => IO x -> RValT m RVal
-primInputIO io = (liftIO $ io) >>= (return . hsUnmarshall)
+primInputIO io = (liftIO $ io) >>= hsUnmarshall
 -- {-# INLINE primInputIO #-}
 
 -- | Output like IO

@@ -28,6 +28,9 @@
 %%[(8 corerun) hs import(Control.Monad, Control.Monad.Error)
 %%]
 
+%%[(8 corerun) hs import(Data.IORef)
+%%]
+
 %%[(8 corerun) hs import(Control.Monad.RWS.Strict)
 %%]
 %%[(8888 corerun) hs import(Control.Monad.State.Strict)
@@ -163,4 +166,12 @@ runCoreRun opts modImpL mod m = do
   return e
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils: monad, IORef
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 corerun) hs export(modifyIORefM)
+modifyIORefM :: IORef a -> (a -> IO a) -> IO ()
+modifyIORefM r m = readIORef r >>= m >>= writeIORef r
+{-# INLINE modifyIORefM #-}
+%%]

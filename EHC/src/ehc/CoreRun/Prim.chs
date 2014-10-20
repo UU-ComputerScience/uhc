@@ -45,6 +45,8 @@ data RunPrim
   | RP_primMulInt
   | RP_primDivInt
   | RP_primEqInt
+  | RP_primLeInt
+  | RP_primNeInt
   
     -- UHC.IOBase: Exception handling
   | RP_primCatchException
@@ -60,9 +62,16 @@ data RunPrim
   | RP_primPackedStringNull -- :: PackedString -> Bool
   | RP_primPackedStringHead -- :: PackedString -> Char
   | RP_primPackedStringTail -- :: PackedString -> PackedString
+  | RP_primShowInteger
+
+    -- UHC.Base: Bounded
+  | RP_primMaxInt
+  | RP_primMinInt
   
-    -- UHC.Prims
+    -- UHC.Prims: conversion
   | RP_primIntegerToInt32
+  | RP_primIntToInteger
+  | RP_primIntegerToInt
   
     -- System.IO
     -- * The IO monad
