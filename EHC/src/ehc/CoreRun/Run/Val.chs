@@ -419,12 +419,12 @@ heapUpdM p f = do
 -- | Environment: context/reader
 data RValCxt
   = RValCxt
-      { rcxtInRet		:: !Bool						-- ^ in returning context
+      { rcxtInRet		:: !Bool						-- ^ in returning context, True by default
       -- , rcxtDoTrace		:: !Bool						-- ^ tracing
       }
 
 emptyRValCxt :: RValCxt
-emptyRValCxt = RValCxt False -- False
+emptyRValCxt = RValCxt True -- False
 %%]
 
 %%[(8 corerun) hs export(mustReturn, needNotReturn, rvalRetEvl)

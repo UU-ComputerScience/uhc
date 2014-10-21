@@ -87,12 +87,13 @@ SEM CExpr
   | Int         loc         .   whatBelow       =   ExprIsInt @int
   | App         loc         .   whatBelow       =   maybe (ExprIsApp 1 @func.whatBelow) (\(a,w) -> ExprIsApp (a + 1) w) $ whatExprMbApp @func.whatBelow
   | Tup			loc			.	whatBelow       =   ExprIsTup @tag
+  | FFI			loc			.	whatBelow       =   ExprIsFFI
   |	String Char
 %%[[97
     Integer
 %%]]
            		loc			.	whatBelow		=	ExprIsOtherWHNF
-  | * - Lam App Var Int Tup
+  | * - Lam App Var Int Tup FFI
         String Char
 %%[[97
         Integer

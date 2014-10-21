@@ -1483,6 +1483,7 @@ data WhatExpr
   | ExprIsVar   HsName
   | ExprIsInt   Int
   | ExprIsTup   CTag
+  | ExprIsFFI
   | ExprIsOtherWHNF
   | ExprIsOther
   | ExprIsBind
@@ -1530,6 +1531,14 @@ whatExprIsLam = isJust . whatExprMbLam
 whatExprIsTup :: WhatExpr -> Bool
 whatExprIsTup (ExprIsTup _) = True
 whatExprIsTup _             = False
+
+%%]
+
+%%[(8 codegen) hs export(whatExprIsFFI)
+-- | Is Expr a FFI?
+whatExprIsFFI :: WhatExpr -> Bool
+whatExprIsFFI (ExprIsFFI  ) = True
+whatExprIsFFI _             = False
 
 %%]
 

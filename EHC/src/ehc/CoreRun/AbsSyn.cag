@@ -12,7 +12,8 @@ Global assumptions:
 - everything usually accessed by a key via a map now is done via an array
 - A-normal form, i.e. arguments by name
 - Operational semantics: once a lam is entered is computes to WHNF
-- All is tail recursive except when wrapped in Exp_Ret
+- All is tail recursive except when wrapped in Exp_Ret (no longer)
+- All is non tail recursive except when wrapped in Exp_Tail
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,7 +67,8 @@ DATA Exp
                 args            : {CRArray Exp}
   | Lam         lev				: {Int}			-- lexical level
   				nrArgs          : {Int}			-- nr of arguments, 0 means it is a thunk
-                nrAllocs        : {Int}			-- nr stack frame locations to be allocated (excluding arguments) for locals
+                nrBinds         : {Int}			-- nr stack frame locations to be allocated (excluding arguments) for locals
+                stkDepth        : {Int}			-- max depth of stack
                 ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 body            : Exp
 
@@ -74,7 +76,13 @@ DATA Exp
   | Force		expr			: Exp
   -- | Thunk		expr			: Exp		-- expressed as parameterless Lam
 
-  | Ret			expr			: Exp		-- expr in a context to which must be returned (i.e. no tail rec)
+  -- expr in a context to which must be returned (i.e. no tail rec)
+  -- | Ret			expr			: Exp
+  -- expr in a case alternative result context (with local bindings to be removed)
+  | RetCase		nrBinds			: {Int}
+  				expr			: Exp
+  -- Tail context
+  | Tail		expr			: Exp
 
   -- case
   | Case        expr            : SExp

@@ -73,7 +73,7 @@ ref2valM r = do
         access v                                                        = 
           err $ "CoreRun.Run.Val.ref2valM.RRef_Loc.access:" >#< r >#< "in" >#< v
     RRef_Fld r e -> do
-        v <- ref2valM r >>= rsemDeref
+        v <- ref2valM r -- >>= rsemDeref
         case v of
           RVal_Node _ vs -> liftIO $ MV.read vs e
           _              -> err $ "CoreRun.Run.Val.ref2valM.RRef_Fld:" >#< e >#< "in" >#< v
@@ -164,19 +164,19 @@ err = throwError . rngLift emptyRange Err_PP
 rvalAppLam :: RunSem RValCxt RValEnv m RVal => HpPtr -> Exp -> MV.IOVector RVal -> (Int -> RValT m RVal) -> RValT m RVal
 rvalAppLam sl f as failcont = do
   case f of
-    Exp_Lam {lev_Exp_Lam=l, nrArgs_Exp_Lam=narg, nrAllocs_Exp_Lam=sz, ref2nm_Exp_Lam=r2n, body_Exp_Lam=b}
+    Exp_Lam {lev_Exp_Lam=l, nrArgs_Exp_Lam=narg, stkDepth_Exp_Lam=sz, ref2nm_Exp_Lam=r2n, body_Exp_Lam=b}
       | MV.length as == narg -> do
            -- rsemTr $ "V app lam =="
            needRet <- asks rcxtInRet
            if needRet
              then do
                (liftIO $ V.freeze as) >>= pushAllocFrameM r2n sl l sz
-               v <- needNotReturn $ rsemExp b
+               v <- rsemExp b
                popFrameM
                return v
              else do
                (liftIO $ V.freeze as) >>= replaceAllocFrameM r2n sl l sz
-               needNotReturn $ rsemExp b
+               mustReturn $ rsemExp b
       | otherwise -> failcont narg
     _   -> err $ "CoreRun.Run.Val.rvalAppLam:" >#< f
 
@@ -194,7 +194,7 @@ rvalApp f as = do
             return $ RVal_App f as
           else do
             -- rsemTr $ "V app lam >"
-            ap <- mustReturn $ rvalApp f (MV.take narg as)
+            ap <- {- mustReturn $ -} rvalApp f (MV.take narg as)
             rvalApp ap (MV.drop narg as)
     RVal_App appf appas
       | MV.length as > 0 -> do
@@ -228,7 +228,8 @@ instance
     
     rsemExp e = do
       -- rsemTr $ "E:" >#< e
-      e' <- case e of
+      -- e' <- case e of
+      case e of
         -- app, call
         Exp_App f as -> do
             f' <- mustReturn $ rsemExp f >>= rsemEvl
@@ -251,20 +252,26 @@ instance
         -- let
         Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
             bs' <- V.forM bs rsemExp
-            fr <- renvTopFrameM >>= heapGetM >>= rsemDeref
+            fr <- renvTopFrameM >>= heapGetM -- >>= rsemDeref
             fillFrameM fillFrom bs' fr
             rsemExp b
 
         -- case, scrutinee already evaluated
         Exp_Case e as -> do
-          (RVal_Node {rvalTag=tg}) <- rsemDeref =<< rsemSExp e
+          (RVal_Node {rvalTag=tg}) <- {- rsemDeref =<< -} rsemSExp e
           rsemAlt $ as V.! tg
         
         -- force evaluation immediately
         Exp_Force e -> rsemExp e >>= rsemEvl
 
         -- setup for context requiring a return (TBD: should be done via CPS style, but is other issue)
-        Exp_Ret e -> mustReturn $ rsemExp e
+        -- Exp_Ret e -> mustReturn $ rsemExp e
+
+        -- setup for context requiring a return from case alternative
+        Exp_RetCase _ e -> rsemExp e
+
+        -- setup for context requiring a return from case alternative
+        Exp_Tail e -> needNotReturn $ rsemExp e
 
         -- simple expressions
         Exp_SExp se -> rsemSExp se
@@ -275,7 +282,7 @@ instance
         e -> err $ "CoreRun.Run.Val.cmodRun.rsemExp:" >#< e
 
       -- rsemTr $ "E->:" >#< (e >-< e')
-      return e'
+      -- return e'
 
     rsemSExp se = do
       case se of
