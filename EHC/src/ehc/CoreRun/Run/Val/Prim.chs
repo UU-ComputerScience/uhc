@@ -21,9 +21,6 @@
 %%[(8 corerun) hs import(UHC.Util.Pretty)
 %%]
 
-%%[(8 corerun) hs import(Control.Monad, Control.Monad.RWS.Strict, Control.Monad.Error)
-%%]
-
 %%[(8 corerun) hs import(qualified Data.Vector as V, qualified Data.Vector.Mutable as MV)
 %%]
 
@@ -36,17 +33,17 @@
 
 %%[(8 corerun) hs export(rvalPrim)
 -- | Apply primitive to arguments
-rvalPrim :: (RunSem RValCxt RValEnv m RVal) => RunPrim -> CRArray RVal -> RValT m RVal
+rvalPrim :: (RunSem RValCxt RValEnv RVal m a) => RunPrim -> RValV -> RValT m a
 rvalPrim pr as = do 
     -- as' <- forM (V.toList as) rsemDeref
     let as' = V.toList as
     -- rsemTr $ "Prim:" >#< show pr >|< ppParensCommas as'
     case (pr, as') of
       -- Int arithmetic
-      (RP_primAddInt, [RVal_Int i1, RVal_Int i2]) -> return $ RVal_Int $ i1 + i2
-      (RP_primSubInt, [RVal_Int i1, RVal_Int i2]) -> return $ RVal_Int $ i1 - i2
-      (RP_primMulInt, [RVal_Int i1, RVal_Int i2]) -> return $ RVal_Int $ i1 * i2
-      (RP_primDivInt, [RVal_Int i1, RVal_Int i2]) -> return $ RVal_Int $ i1 `div` i2
+      (RP_primAddInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 + i2
+      (RP_primSubInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 - i2
+      (RP_primMulInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 * i2
+      (RP_primDivInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `div` i2
       (RP_primEqInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 == i2
       (RP_primLeInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 <= i2
       (RP_primNeInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 /= i2
@@ -57,24 +54,24 @@ rvalPrim pr as = do
       -- MutVar
       (RP_primNewMutVar, [x, s]) -> (liftIO $ newIORef x) >>= \mv -> mkTuple [s, RHsV_MutVar mv]
       (RP_primReadMutVar, [RHsV_MutVar mv, s]) -> (liftIO $ readIORef mv) >>= \v -> mkTuple [s, v]
-      (RP_primWriteMutVar, [RHsV_MutVar mv, v, s]) -> liftIO $ writeIORef mv v >> return s
+      (RP_primWriteMutVar, [RHsV_MutVar mv, v, s]) -> (liftIO $ writeIORef mv v) >> rsemPush s
       (RP_primSameMutVar, _) -> err $ "Not impl: RP_primSameMutVar" -- TBD
       
       -- Base
-      (RP_primPackedStringToInteger, [RVal_PackedString x]) -> return $ RVal_Integer $ read $ BSC8.unpack x
+      (RP_primPackedStringToInteger, [RVal_PackedString x]) -> rsemPush $ RVal_Integer $ read $ BSC8.unpack x
       (RP_primPackedStringNull, [RVal_PackedString x]) -> hsUnmarshall $ BSC8.null x
-      (RP_primPackedStringHead, [RVal_PackedString x]) -> return $ RVal_Char $ BSC8.head x
-      (RP_primPackedStringTail, [RVal_PackedString x]) -> return $ RVal_PackedString $ BSC8.tail x
+      (RP_primPackedStringHead, [RVal_PackedString x]) -> rsemPush $ RVal_Char $ BSC8.head x
+      (RP_primPackedStringTail, [RVal_PackedString x]) -> rsemPush $ RVal_PackedString $ BSC8.tail x
       (RP_primShowInteger, [RVal_Integer x]) -> hsUnmarshall $ show x
       
       -- Base: Bounded
-      (RP_primMaxInt, _) -> return $ RVal_Int $ maxBound
-      (RP_primMinInt, _) -> return $ RVal_Int $ minBound
+      (RP_primMaxInt, _) -> rsemPush $ RVal_Int $ maxBound
+      (RP_primMinInt, _) -> rsemPush $ RVal_Int $ minBound
   
       -- Prims: conversion
-      (RP_primIntegerToInt32, [RVal_Integer x]) -> return $ RVal_Int32 $ fromIntegral x
-      (RP_primIntToInteger  , [RVal_Int x]) -> return $ RVal_Integer $ fromIntegral x
-      (RP_primIntegerToInt  , [RVal_Integer x]) -> return $ RVal_Int $ fromIntegral x
+      (RP_primIntegerToInt32, [RVal_Integer x]) -> rsemPush $ RVal_Int32 $ fromIntegral x
+      (RP_primIntToInteger  , [RVal_Int x]) -> rsemPush $ RVal_Integer $ fromIntegral x
+      (RP_primIntegerToInt  , [RVal_Integer x]) -> rsemPush $ RVal_Int $ fromIntegral x
       
       -- IO
 {-
@@ -96,9 +93,9 @@ rvalPrim pr as = do
 
 -}
 	  -- | RP_stdin, RP_stdout, RP_stderr -- :: Handle
-      (RP_stdin , _) -> return $ RHsV_Handle stdin
-      (RP_stdout, _) -> return $ RHsV_Handle stdout
-      (RP_stderr, _) -> return $ RHsV_Handle stderr
+      (RP_stdin , _) -> rsemPush $ RHsV_Handle stdin
+      (RP_stdout, _) -> rsemPush $ RHsV_Handle stdout
+      (RP_stderr, _) -> rsemPush $ RHsV_Handle stderr
 {-
 
 		-- * Opening and closing files
@@ -280,23 +277,23 @@ rvalPrim pr as = do
 
 %%[(8 corerun) hs
 -- | Voidify IO on RVal level, i.e. make IO ()
--- rvalVoid :: (RunSem RValCxt RValEnv m RVal) => RValT m a -> RValT m RVal
-rvalVoid :: (RunSem RValCxt RValEnv m RVal) => RValT m a -> RValT m RVal
+-- rvalVoid :: (RunSem RValCxt RValEnv RVal m RVal) => RValT m a -> RValT m RVal
+rvalVoid :: (RunSem RValCxt RValEnv RVal m a) => RValT m b -> RValT m a
 rvalVoid m = m >> mkUnit
 {-# INLINE rvalVoid #-}
 
 -- | IO, no result
-primIO :: (RunSem RValCxt RValEnv m RVal) => IO x -> RValT m RVal
+primIO :: (RunSem RValCxt RValEnv RVal m a) => IO x -> RValT m a
 primIO io = rvalVoid $ liftIO $ io
 -- {-# INLINE primIO #-}
 
--- | Input like IO
-primInputIO :: (RunSem RValCxt RValEnv m RVal, HSMarshall x) => IO x -> RValT m RVal
+-- | Input-like IO
+primInputIO :: (RunSem RValCxt RValEnv RVal m a, HSMarshall x) => IO x -> RValT m a
 primInputIO io = (liftIO $ io) >>= hsUnmarshall
 -- {-# INLINE primInputIO #-}
 
--- | Output like IO
-primOutputIO :: (RunSem RValCxt RValEnv m RVal, HSMarshall x) => (x -> IO ()) -> RVal -> RValT m RVal
+-- | Output-like IO
+primOutputIO :: (RunSem RValCxt RValEnv RVal m a, HSMarshall x) => (x -> IO ()) -> RVal -> RValT m a
 primOutputIO io x = rvalVoid $ hsMarshall rvalRetEvl x >>= (liftIO . io)
 -- {-# INLINE primOutputIO #-}
 %%]

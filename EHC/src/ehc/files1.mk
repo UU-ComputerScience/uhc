@@ -75,7 +75,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Foreign/,Boxing) \
 													$(addprefix CoreRun/,Run Prim) \
 													$(addprefix CoreRun/Run/,Val) \
-													$(addprefix CoreRun/Run/Val/,Run Prim) \
+													$(addprefix CoreRun/Run/Val/,RunImplStk RunExplStk Prim) \
 													$(addprefix Core/,Utils Merge FFI Coercion) \
 													$(addprefix Core/SysF/,AsTy) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \

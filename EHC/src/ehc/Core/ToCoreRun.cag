@@ -377,6 +377,12 @@ SEM CExpr
 %%% Generation: App as args ++ func
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 corerun) hs
+-- | Construct application
+mkApp :: CR.Exp -> CR.CRArray CR.Exp -> CR.Exp
+mkApp f as = CR.Exp_App (CR.Exp_Ret $ CR.Exp_Force f) as
+%%]
+
 %%[(8 corerun)
 ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {TailCtx -> CR.CRArray CR.Exp -> CR.Exp} ]
 
@@ -386,7 +392,7 @@ SEM CExpr
   | Tup         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . CR.Exp_Tup @tag
   | FFI         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . @creMk
   | * - App Ann Tup FFI
-                loc         .   creAppFun   =   \tailCtx -> cseCtxWrap tailCtx . tailrec tailCtx . CR.Exp_App @cre
+                loc         .   creAppFun   =   \tailCtx -> cseCtxWrap tailCtx . tailrec tailCtx . mkApp @cre
   | * - App Ann loc         .   creAppArgL  =   []
 %%]
 
@@ -491,7 +497,7 @@ SEM CModule
 %%[[8
   | Mod         loc         .   creMod          =   @expr.cre
 %%][99
-  | Mod         loc         .   creMod          =   CR.Exp_App @expr.cre $ CR.mkCRArray [CR.unit]
+  | Mod         loc         .   creMod          =   mkApp @expr.cre $ CR.mkCRArray [CR.unit]
 %%]]
 %%]
 

@@ -10,24 +10,7 @@
 %%[(8 corerun) hs module {%{EH}CoreRun.Prim}
 %%]
 
-%%[(8888 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
-%%]
-
-%%[(8888 corerun) hs import({%{EH}CoreRun})
-%%]
-
 %%[(8 corerun) hs import(qualified Data.Map as Map)
-%%]
-
-%%[(8888 corerun) hs import(Data.Maybe, Data.Monoid)
-%%]
-
-%%[(8888 corerun) hs import(Control.Monad, Control.Monad.Error)
-%%]
-
-%%[(8888 corerun) hs import(Control.Monad.RWS.Strict)
-%%]
-%%[(8888 corerun) hs import(Control.Monad.State.Strict)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

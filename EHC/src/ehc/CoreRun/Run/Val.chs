@@ -1,6 +1,6 @@
 %%[0 hs
 {-# LANGUAGE MagicHash #-}
--- {-# OPTIONS_GHC -O2 #-}
+-- {-# OPTIONS_GHC -O3 #-}
 %%]
 
 %%[0 lhs2tex
@@ -24,8 +24,6 @@
 %%[(8 corerun) hs import({%{EH}CoreRun.Pretty}, UHC.Util.Pretty)
 %%]
 
-%%[(8 corerun) hs import(Control.Monad, Control.Monad.RWS.Strict, Control.Monad.Error)
-%%]
 %%[(8 corerun) hs import(Control.Monad.Primitive)
 %%]
 
@@ -71,15 +69,19 @@ data RVal
       }
   | RVal_Char  			   {-# UNPACK #-} !Char   
   | RVal_Int   			   {-# UNPACK #-} !Int   
+{-
   | RVal_Int8  			   {-# UNPACK #-} !Int8  
-  | RVal_Int16 			   {-# UNPACK #-} !Int16 
+  | RVal_Int16 			   {-# UNPACK #-} !Int16
+-}
   | RVal_Int32 			   {-# UNPACK #-} !Int32 
+{-
   | RVal_Int64 			   {-# UNPACK #-} !Int64 
   | RVal_Word  			   {-# UNPACK #-} !Word  
   | RVal_Word8 			   {-# UNPACK #-} !Word8 
   | RVal_Word16			   {-# UNPACK #-} !Word16
   | RVal_Word32			   {-# UNPACK #-} !Word32
   | RVal_Word64			   {-# UNPACK #-} !Word64
+-}
   | RVal_Integer		   !Integer
   | RVal_Float			   {-# UNPACK #-} !Float
   | RVal_Double			   {-# UNPACK #-} !Double
@@ -96,17 +98,18 @@ data RVal
       }
   | RVal_Node
       { rvalTag			:: !Int						-- ^ node tag
-      , rvalNdVals		:: !(MV.IOVector RVal)		-- ^ fields
+      , rvalNdVals		:: !RValMV					-- ^ fields
       }
   | RVal_App
       { rvalFun			:: !RVal					-- ^ a RVal_App or RVal_PApp
-      , rvalArgs		:: !(MV.IOVector RVal)		-- ^ already applied args
+      , rvalArgs		:: !RValMV					-- ^ already applied args
       }
   | RVal_Frame
       { rvalRef2Nm		:: Ref2Nm					-- ^ ref to name mapping
       , rvalSLRef		:: !(IORef HpPtr)			-- ^ immediately outer lexical level frame
       , rvalLev			:: !Int						-- ^ the lexical level this frame is on
-      , rvalFrVals		:: !(MV.IOVector RVal)		-- ^ actual frame values, either literals or pointers to heap locations (so we can update them, share them)
+      , rvalFrVals		:: !RValMV					-- ^ actual frame values, either literals or pointers to heap locations (so we can update them, share them)
+      , rvalFrSP		:: !(IORef Int)				-- ^ top of expr stack embedded in higher end of top frame
       }
   | RVal_Ptr
       { rvalPtrRef		:: !(IORef HpPtr)			-- ^ ptr/index into heap
@@ -130,15 +133,19 @@ ppRVal rval = case rval of
     RVal_Lit   			e     		-> dfltpp e
     RVal_Char   		v     		-> dfltpp $ show v
     RVal_Int   			v     		-> dfltpp v
+{-
     RVal_Int8   		v     		-> dfltpp $ show v
     RVal_Int16   		v     		-> dfltpp $ show v
+-}
     RVal_Int32  		v     		-> dfltpp $ show v
+{-
     RVal_Int64 			v     		-> dfltpp $ show v
     RVal_Word   		v     		-> dfltpp $ show v
     RVal_Word8   		v     		-> dfltpp $ show v
     RVal_Word16   		v     		-> dfltpp $ show v
     RVal_Word32  		v     		-> dfltpp $ show v
     RVal_Word64 		v     		-> dfltpp $ show v
+-}
     RVal_Integer   		v     		-> dfltpp v
     RVal_Float   		v     		-> dfltpp v
     RVal_Double   		v     		-> dfltpp $ show v
@@ -149,7 +156,7 @@ ppRVal rval = case rval of
     RVal_App   			f as 		-> dfltpp f -- return $ ppBrackets $ f >|< "@"  >|< (ppParensCommas $ V.toList as)
     RVal_Ptr   			pref    	-> readIORef pref >>= \p -> return $ "*"  >|< p
     RVal_Fwd   			p    		-> return $ "f*" >|< p
-    RVal_Frame 			_ slref lv vs -> do
+    RVal_Frame 			_ slref lv vs _ -> do
                                        sl <- readIORef slref
                                        return $ ppBracketsCommas $ ["sl=" >|< sl, "lev=" >|< lv, "sz=" >|< MV.length vs] -- ++ (map pp $ take 3 $ V.toList vs)
     RVal_BlackHole  				-> dfltpp "Hole"
@@ -166,17 +173,22 @@ instance PP RVal where
 %%]
 
 %%[(8 corerun) hs export(mkTuple, mkUnit)
-mkTuple :: (RunSem RValCxt RValEnv m RVal) => [RVal] -> RValT m RVal
-mkTuple vs = liftIO (mvecAllocFill $ mkCRArray vs) >>= \v -> return $ RVal_Node 0 v
+mkTuple :: (RunSem RValCxt RValEnv RVal m a) => [RVal] -> RValT m a
+mkTuple vs = liftIO (mvecAllocFillFromV $ mkCRArray vs) >>= \v -> rsemPush $ RVal_Node 0 v
 {-# INLINE mkTuple #-}
 
-mkUnit :: (RunSem RValCxt RValEnv m RVal) => RValT m RVal
+mkUnit :: (RunSem RValCxt RValEnv RVal m a) => RValT m a
 mkUnit = mkTuple []
 {-# INLINE mkUnit #-}
 %%]
-mkBool :: Bool -> RVal
-mkBool b = RVal_Node (if b then tagBoolTrue else tagBoolFalse) emptyCRArray
-{-# INLINE mkBool #-}
+
+%%[(8 corerun) hs export(RValV, RValMV)
+-- Vector of RVal
+type RValV = CRArray RVal
+
+-- Mutable vector of RVal
+type RValMV = MV.IOVector RVal
+%%]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -187,56 +199,55 @@ mkBool b = RVal_Node (if b then tagBoolTrue else tagBoolFalse) emptyCRArray
 -- | Marshalling from/to Haskell values
 class HSMarshall hs where
   -- | Marshall to Haskell value, also parameterized by evaluator
-  hsMarshall :: (RunSem RValCxt RValEnv m RVal) => (RVal -> RValT m RVal) -> RVal -> RValT m hs
+  hsMarshall :: (RunSem RValCxt RValEnv RVal m a) => (RVal -> RValT m a) -> RVal -> RValT m hs
 
   -- | Unmarshall from Haskell value
-  hsUnmarshall :: (RunSem RValCxt RValEnv m RVal) => hs -> RValT m RVal
+  hsUnmarshall :: (RunSem RValCxt RValEnv RVal m a) => hs -> RValT m a
 %%]
 
 %%[(8 corerun) hs
 instance HSMarshall Int where
   hsMarshall _ (RVal_Int v) = return v
-  hsUnmarshall v = return $ RVal_Int v
+  hsUnmarshall v = rsemPush $ RVal_Int v
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall Integer where
   hsMarshall _ (RVal_Integer v) = return v
-  hsUnmarshall v = return $ RVal_Integer v
+  hsUnmarshall v = rsemPush $ RVal_Integer v
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall Bool where
   hsMarshall _ (RVal_Node t _) = return $ t == tagBoolTrue
   hsMarshall _ v               = err $ "CoreRun.Run.Val.HSMarshall Bool:" >#< v
-  hsUnmarshall b = liftIO (mvecAllocFill emptyCRArray) >>= \v -> return $ RVal_Node (if b then tagBoolTrue else tagBoolFalse) v
+  hsUnmarshall b = liftIO (mvecAllocFillFromV emptyCRArray) >>= \v -> rsemPush $ RVal_Node (if b then tagBoolTrue else tagBoolFalse) v
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall Char where
   hsMarshall _ (RVal_Char v) = return v
   hsMarshall _ v             = err $ "CoreRun.Run.Val.HSMarshall Char:" >#< v
-  hsUnmarshall v = return $ RVal_Char v
+  hsUnmarshall v = rsemPush $ RVal_Char v
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall (Ptr a) where
   hsMarshall _ (RHsV_Addr v) = return $ Ptr v
   hsMarshall _ v             = err $ "CoreRun.Run.Val.HSMarshall (Ptr a):" >#< v
-  hsUnmarshall (Ptr v) = return $ RHsV_Addr v
+  hsUnmarshall (Ptr v) = rsemPush $ RHsV_Addr v
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall [RVal] where
   hsMarshall evl (RVal_Node t as)
-    -- | t == tagListCons = (evl $ as V.! 1) >>= hsMarshall evl >>= (return . ((as V.! 0) :))
-    | t == tagListCons = liftIO (MV.read as 1) >>= evl >>= hsMarshall evl >>= \tl -> liftIO (MV.read as 0) >>= \hd -> return (hd : tl)
+    | t == tagListCons = liftIO (MV.read as 1) >>= evl >>= rsemPop >>= hsMarshall evl >>= \tl -> liftIO (MV.read as 0) >>= \hd -> return (hd : tl)
     | otherwise        = return []
   hsMarshall _   v     = err $ "CoreRun.Run.Val.HSMarshall [RVal]:" >#< v
 
-  hsUnmarshall []      = liftIO (mvecAllocFill emptyCRArray) >>= \v -> return $ RVal_Node tagListNil v
-  hsUnmarshall (h:t)   = hsUnmarshall t >>= \t' -> (liftIO $ mvecAllocFill $ mkCRArray [h, t']) >>= \v -> return $ RVal_Node tagListCons v
+  hsUnmarshall []      = liftIO (mvecAllocFillFromV emptyCRArray) >>= \v -> rsemPush $ RVal_Node tagListNil v
+  hsUnmarshall (h:t)   = hsUnmarshall t >>= rsemPop >>= \t' -> (liftIO $ mvecAllocFillFromV $ mkCRArray [h, t']) >>= \v -> rsemPush $ RVal_Node tagListCons v
 
 instance HSMarshall x => HSMarshall [x] where
-  hsMarshall evl x = hsMarshall evl x >>= mapM (\v -> evl v >>= hsMarshall evl)
+  hsMarshall evl x = hsMarshall evl x >>= mapM (\v -> evl v >>= rsemPop >>= hsMarshall evl)
   {-# INLINE hsMarshall #-}
 
-  hsUnmarshall v       = forM v hsUnmarshall >>= hsUnmarshall
+  hsUnmarshall v       = forM v (\e -> hsUnmarshall e >>= rsemPop) >>= hsUnmarshall
   {-# INLINE hsUnmarshall #-}
 %%]
 
@@ -271,7 +282,7 @@ isNullPtr = (== nullPtr)
 
 data Heap
   = Heap
-      { hpVals					:: {-# UNPACK #-} !(MV.IOVector RVal)
+      { hpVals					:: {-# UNPACK #-} !RValMV
       , hpFree					:: {-# UNPACK #-} !(IORef HpPtr)
       , hpSemispaceMultiplier	:: {-# UNPACK #-} !(IORef Rational)				-- multiplier by which to enlarge/shrink subsequent semispace
       }
@@ -286,7 +297,7 @@ newHeap sz = do
 
 %%[(8 corerun) hs
 -- | Garbage collect heap (TBD)
-heapGcM :: (RunSem RValCxt RValEnv m RVal) => RVal -> RValT m RVal
+heapGcM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m RVal
 -- heapGcM = err $ "CoreRun.Run.Val.heapGcM: GC not yet implemented"
 heapGcM curV = do
     rsemTr $ "GC starts"
@@ -314,7 +325,8 @@ heapGcM curV = do
           copyv v = do
             case v of
               RVal_Ptr pref                               	-> modifyIORefM pref copyp
-              RVal_Frame {rvalSLRef=slref, rvalFrVals=vs} 	-> modifyIORefM slref copyp >> mvecForM_ vs copyv
+              RVal_Frame {rvalSLRef=slref, rvalFrVals=vs, rvalFrSP=spref}
+              												-> readIORef spref >>= \sp -> modifyIORefM slref copyp >> mvecForM_' 0 sp vs copyv
               RVal_Node {rvalNdVals=vs} 					-> mvecForM_ vs copyv
               RVal_App {rvalArgs=vs} 						-> mvecForM_ vs copyv
               RVal_Thunk {rvalSLRef=slref}					-> modifyIORefM slref copyp
@@ -360,7 +372,7 @@ heapGcM curV = do
 
 %%[(8 corerun) hs export(heapGetM, heapGetM', heapAllocM, heapUpdM, heapSetM, heapSetM')
 -- | Allocate on the heap, filling it with a RVal_Node
-heapAllocM :: (RunSem RValCxt RValEnv m RVal) => RVal -> RValT m HpPtr
+heapAllocM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m HpPtr
 heapAllocM v = do
   hp@(Heap {hpVals=vs, hpFree=fr}) <- gets renvHeap
   p <- liftIO $ readIORef fr
@@ -371,32 +383,40 @@ heapAllocM v = do
       writeIORef fr (p + 1)
       return p
 
+{-
+-}
 -- | Get a value from the heap
-heapGetM' :: (RunSem RValCxt RValEnv m RVal) => Heap -> HpPtr -> RValT m RVal
-heapGetM' hp p = liftIO $ MV.read (hpVals hp) p
+-- heapGetM'' :: PrimMonad m => Heap -> HpPtr -> m RVal
+heapGetM'' :: Heap -> HpPtr -> IO RVal
+heapGetM'' hp p = MV.read (hpVals hp) p
+{-# INLINE heapGetM'' #-}
+
+-- | Get a value from the heap
+heapGetM' :: (RunSem RValCxt RValEnv RVal m x) => Heap -> HpPtr -> RValT m RVal
+heapGetM' hp p = liftIO $ heapGetM'' hp p
 {-# INLINE heapGetM' #-}
 
 -- | Get a value from the heap
-heapGetM :: (RunSem RValCxt RValEnv m RVal) => HpPtr -> RValT m RVal
+heapGetM :: (RunSem RValCxt RValEnv RVal m x) => HpPtr -> RValT m RVal
 heapGetM p = do
   hp <- gets renvHeap
   heapGetM' hp p
 {-# INLINE heapGetM #-}
 
 -- | Set a value in the heap
-heapSetM' :: (RunSem RValCxt RValEnv m RVal) => Heap -> HpPtr -> RVal -> RValT m ()
+heapSetM' :: (RunSem RValCxt RValEnv RVal m x) => Heap -> HpPtr -> RVal -> RValT m ()
 heapSetM' hp p v = liftIO $ MV.write (hpVals hp) p v
 {-# INLINE heapSetM' #-}
 
 -- | Set a value in the heap
-heapSetM :: (RunSem RValCxt RValEnv m RVal) => HpPtr -> RVal -> RValT m ()
+heapSetM :: (RunSem RValCxt RValEnv RVal m x) => HpPtr -> RVal -> RValT m ()
 heapSetM p v = do
   hp <- gets renvHeap
   heapSetM' hp p v
 {-# INLINE heapSetM #-}
 
 -- | Update a value in the heap
-heapUpdM' :: (RunSem RValCxt RValEnv m RVal) => Heap -> HpPtr -> (RVal -> RValT m RVal) -> RValT m ()
+heapUpdM' :: (RunSem RValCxt RValEnv RVal m x) => Heap -> HpPtr -> (RVal -> RValT m RVal) -> RValT m ()
 heapUpdM' hp@(Heap {hpVals=vs}) p f = do
   v <- liftIO $ MV.read vs p
   v' <- f v
@@ -404,7 +424,7 @@ heapUpdM' hp@(Heap {hpVals=vs}) p f = do
 {-# INLINE heapUpdM' #-}
 
 -- | Update a value in the heap
-heapUpdM :: (RunSem RValCxt RValEnv m RVal) => HpPtr -> (RVal -> RValT m RVal) -> RValT m ()
+heapUpdM :: (RunSem RValCxt RValEnv RVal m x) => HpPtr -> (RVal -> RValT m RVal) -> RValT m ()
 heapUpdM p f = do
   hp <- gets renvHeap
   heapUpdM' hp p f
@@ -429,20 +449,196 @@ emptyRValCxt = RValCxt True -- False
 
 %%[(8 corerun) hs export(mustReturn, needNotReturn, rvalRetEvl)
 -- | Set return context to True
-mustReturn :: RunSem RValCxt RValEnv m RVal => RValT m a -> RValT m a
+mustReturn :: RunSem RValCxt RValEnv RVal m x => RValT m a -> RValT m a
 mustReturn = local (\r -> r {rcxtInRet = True})
 {-# INLINE mustReturn #-}
 
 -- | Set return context to False
-needNotReturn :: RunSem RValCxt RValEnv m RVal => RValT m a -> RValT m a
+needNotReturn :: RunSem RValCxt RValEnv RVal m x => RValT m a -> RValT m a
 needNotReturn = local (\r -> r {rcxtInRet = False})
 {-# INLINE needNotReturn #-}
 
 -- | Variation of `rsemEvl` in return context
-rvalRetEvl :: RunSem RValCxt RValEnv m RVal => RVal -> RValT m RVal
+rvalRetEvl :: RunSem RValCxt RValEnv RVal m x => RVal -> RValT m x
 rvalRetEvl = mustReturn . rsemEvl
 {-# INLINE rvalRetEvl #-}
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Vector utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs
+{-
+-- | Loop over a vector, starting at lower bound 'l', ending before 'h'
+vecLoop :: Monad m => Int -> Int -> (V.Vector a -> Int -> m b) -> V.Vector a -> m ()
+vecLoop l h m v = loop l
+  where loop l | l < h     = m v l >> loop (l+1)
+               | otherwise = return ()
+{-# INLINE vecLoop #-}
+-}
+
+-- | Loop over a vector from upb to lwb, starting before 'h', ending at lower bound 'l'
+vecLoopReverse :: Monad m => Int -> Int -> (V.Vector a -> Int -> m b) -> V.Vector a -> m ()
+vecLoopReverse l h m v = loop (h-1)
+  where loop h | l <= h    = m v h >> loop (h-1)
+               | otherwise = return ()
+{-# INLINE vecLoopReverse #-}
+
+%%]
+
+%%[(8 corerun) hs export(vecReverseForM_)
+-- | Right to left forM_
+vecReverseForM_ :: Monad m => V.Vector a -> (a -> m x) -> m ()
+vecReverseForM_ v m = vecLoopReverse 0 (V.length v) (\_ i -> m (v V.! i)) v
+{-# INLINE vecReverseForM_ #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mutable Vector utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(mvecAllocInit, mvecAlloc, mvecFillFromV, mvecFillFromMV, mvecAllocFillFromV, mvecAppend)
+-- | Allocate a mutable vector of given size
+mvecAllocWith :: PrimMonad m => Int -> a -> m (MV.MVector (PrimState m) a)
+mvecAllocWith = MV.replicate
+{-# INLINE mvecAllocWith #-}
+
+-- | Allocate a mutable vector of given size, init to default value
+mvecAllocInit :: Int -> IO RValMV
+mvecAllocInit sz = mvecAllocWith sz RVal_None
+{-# INLINE mvecAllocInit #-}
+
+-- | Allocate a mutable vector of given size
+mvecAlloc :: PrimMonad m => Int -> m (MV.MVector (PrimState m) a)
+mvecAlloc = MV.new
+{-# INLINE mvecAlloc #-}
+
+-- | Loop over a mutable vector, updating the vector as a side effect, starting at lower bound 'l', ending before 'h'
+mvecLoop :: PrimMonad m => Int -> Int -> (MV.MVector (PrimState m) a -> Int -> m b) -> MV.MVector (PrimState m) a -> m (MV.MVector (PrimState m) a)
+mvecLoop l h m v = loop l
+  where loop l | l < h     = m v l >> loop (l+1)
+               | otherwise = return v
+{-# INLINE mvecLoop #-}
+
+-- | Loop over a mutable vector from upb to lwb, updating the vector as a side effect, starting before 'h', ending at lower bound 'l'
+mvecLoopReverse :: PrimMonad m => Int -> Int -> (MV.MVector (PrimState m) a -> Int -> m b) -> MV.MVector (PrimState m) a -> m (MV.MVector (PrimState m) a)
+mvecLoopReverse l h m v = loop (h-1)
+  where loop h | l <= h    = m v h >> loop (h-1)
+               | otherwise = return v
+{-# INLINE mvecLoopReverse #-}
+
+-- | Fill a mutable vector from a unmutable vector, starting with filling at the given lowerbound
+mvecFillFromV :: PrimMonad m => Int -> MV.MVector (PrimState m) a -> CRArray a -> m ()
+mvecFillFromV lwb toarr frarr = forM_ (craAssocs' lwb frarr) $ \(i,e) -> MV.write toarr i e
+{-# INLINE mvecFillFromV #-}
+
+-- | Fill a mutable vector from another mutable vector, starting with copying at the given lowerbounds, copying size elements
+mvecFillFromMV' :: PrimMonad m => Int -> Int -> Int -> MV.MVector (PrimState m) a -> MV.MVector (PrimState m) a -> m ()
+mvecFillFromMV' lwbTo lwbFr sz toarr frarr = mvecLoop lwbFr (lwbFr+sz) (\v i -> MV.read v i >>= MV.write toarr (i+lwbDiff)) frarr >> return ()
+  where lwbDiff = lwbTo - lwbFr
+{-# INLINE mvecFillFromMV' #-}
+
+-- | Fill a mutable vector from another mutable vector, starting with copying at the given lowerbounds, copying size elements, but reversing the given vector
+mvecReverseFillFromMV' :: PrimMonad m => Int -> Int -> Int -> MV.MVector (PrimState m) a -> MV.MVector (PrimState m) a -> m ()
+mvecReverseFillFromMV' lwbTo lwbFr sz toarr frarr = mvecLoop lwbFr (lwbFr+sz) (\v i -> MV.read v (upbFr1-i) >>= MV.write toarr (i+lwbDiff)) frarr >> return ()
+  where lwbDiff = lwbTo - lwbFr
+        upbFr1  = lwbFr + sz - 1
+{-# INLINE mvecReverseFillFromMV' #-}
+
+-- | Fill a mutable vector from another mutable vector, starting with filling at the given lowerbound
+mvecFillFromMV :: PrimMonad m => Int -> MV.MVector (PrimState m) a -> MV.MVector (PrimState m) a -> m ()
+-- mvecFillFromMV lwb toarr frarr = mvecLoop 0 (MV.length frarr) (\v i -> MV.read frarr i >>= MV.write toarr (i+lwb)) frarr >> return ()
+mvecFillFromMV lwb toarr frarr = mvecFillFromMV' lwb 0 (MV.length frarr) toarr frarr
+{-# INLINE mvecFillFromMV #-}
+-- {-# SPECIALIZE mvecFillFromMV :: Int -> MV.MVector (PrimState IO) a -> MV.MVector (PrimState IO) a -> IO () #-}
+
+-- | Fill a mutable vector from another mutable vector, starting with filling at the given lowerbound, but reversing the given vector
+mvecReverseFillFromMV :: PrimMonad m => Int -> MV.MVector (PrimState m) a -> MV.MVector (PrimState m) a -> m ()
+mvecReverseFillFromMV lwb toarr frarr = mvecReverseFillFromMV' lwb 0 (MV.length frarr) toarr frarr
+{-
+mvecReverseFillFromMV lwb toarr frarr = mvecLoop 0 l (\v i -> MV.read frarr (l1-i) >>= MV.write toarr (i+lwb)) frarr >> return ()
+  where l  = MV.length frarr
+        l1 = l - 1
+-}
+{-# INLINE mvecReverseFillFromMV #-}
+
+-- | Alloc and fill vector of size taken from fixed vec
+mvecAllocFillFromV :: PrimMonad m => CRArray a -> m (MV.MVector (PrimState m) a)
+mvecAllocFillFromV frarr = mvecAlloc (V.length frarr) >>= \toarr -> mvecFillFromV 0 toarr frarr >> return toarr
+{-# INLINE mvecAllocFillFromV #-}
+
+-- | Loop over a mutable vector, updating the vector as a side effect, with explicit range
+mvecForM_' :: PrimMonad m => Int -> Int -> MV.MVector (PrimState m) a -> (a -> m b) -> m ()
+mvecForM_' lwb upb v m = mvecLoop lwb upb (\v i -> MV.read v i >>= m) v >> return ()
+{-# INLINE mvecForM_' #-}
+
+-- | Loop over a mutable vector, updating the vector as a side effect
+mvecForM_ :: PrimMonad m => MV.MVector (PrimState m) a -> (a -> m b) -> m ()
+mvecForM_ v m = mvecForM_' 0 (MV.length v) v m
+{-# INLINE mvecForM_ #-}
+
+-- | Append mutable 2 vectors
+mvecAppend :: PrimMonad m => MV.MVector (PrimState m) a -> MV.MVector (PrimState m) a -> m (MV.MVector (PrimState m) a)
+mvecAppend v1 v2 =
+    mvecAlloc l12 >>= mvecLoop 0 l1 (\v i -> MV.read v1 i >>= MV.write v i) >>= mvecLoop l1 l12 (\v i -> MV.read v2 (i-l1) >>= MV.write v i)
+  where
+    l1 = MV.length v1
+    l2 = MV.length v2
+    l12 = l1 + l2
+%%]
+
+%%[(8 corerun) hs export(mvecReverseForM_)
+-- | Right to left forM_
+mvecReverseForM_ :: PrimMonad m => MV.MVector (PrimState m) a -> (a -> m x) -> m ()
+mvecReverseForM_ v m = mvecLoopReverse 0 (MV.length v) (\v i -> MV.read v i >>= m) v >> return ()
+{-# INLINE mvecReverseForM_ #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dereferencing: ptr, RRef
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(ptr2valM, ref2valM)
+-- | Dereference a possibly RVal_Ptr
+ptr2valM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m RVal
+ptr2valM v = case v of
+  RVal_Ptr pref -> liftIO (readIORef pref) >>= heapGetM >>= ptr2valM
+  _             -> return v
+{-# INLINE ptr2valM #-}
+
+-- | Dereference a RRef
+ref2valM :: (RunSem RValCxt RValEnv RVal m x) => RRef -> RValT m RVal
+ref2valM r = do
+  -- rsemTr $ "R: " ++ show (pp r)
+  env <- get
+  case r of
+    RRef_Glb m e -> do
+        modFrame <- heapGetM (renvGlobals env V.! m)
+        liftIO $ MV.read (rvalFrVals modFrame) e
+    RRef_Loc l o -> do
+        topfrp <- renvTopFrameM
+        topfr <- heapGetM topfrp
+        access topfr
+      where
+        access (RVal_Frame {rvalLev=frlev, rvalFrVals=vs}) | l == frlev = do
+          -- rsemTr $ "R o=" ++ show o ++ " len(vs)=" ++ show (MV.length vs)
+          liftIO $ MV.read vs o 
+        access (RVal_Frame {rvalLev=frlev, rvalSLRef=slref})				  = do
+          sl <- liftIO $ readIORef slref
+          -- rsemTr $ "R sl=" ++ show sl ++ " frlev=" ++ show frlev ++ " l=" ++ show l
+          heapGetM sl >>= access
+        access v                                                        = 
+          err $ "CoreRun.Run.Val.ref2valM.RRef_Loc.access:" >#< r >#< "in" >#< v
+    RRef_Fld r e -> do
+        v <- ref2valM r -- >>= rsemDeref
+        case v of
+          RVal_Node _ vs -> liftIO $ MV.read vs e
+          _              -> err $ "CoreRun.Run.Val.ref2valM.RRef_Fld:" >#< e >#< "in" >#< v
+    _ -> err $ "CoreRun.Run.Val.ref2valM.r:" >#< r
+{-# INLINE ref2valM #-}
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Environment: state
@@ -461,6 +657,7 @@ data RValEnv
       { renvGlobals		:: !(CRArray RValFrame)			-- ^ per module frame of globals
       , renvStack		:: !(IORef RValStack)			-- ^ stack of frames, except for the top
       , renvTopFrame	:: !(IORef RValFrame)			-- ^ current frame, the actual top of the stack
+      -- , renvFrSP		:: !(IORef Int)					-- ^ top of expr stack embedded in higher end of top frame
       , renvHeap		:: !Heap						-- ^ heap
       , renvDoTrace		:: !Bool
       }
@@ -470,62 +667,13 @@ newRValEnv hpSz = do
   st <- newIORef []
   tp <- newIORef nullPtr
   hp <- newHeap hpSz
+  -- sp <- newIORef 0
   return $ RValEnv V.empty st tp hp False
-%%]
-
-%%[(8 corerun) hs export(mvecAllocInit, mvecAlloc, mvecFillFrom, mvecAllocFill, mvecForM_, mvecAppend)
--- | Allocate a mutable vector of given size
-mvecAllocWith :: Int -> a -> IO (MV.IOVector a)
-mvecAllocWith sz v = MV.replicate sz v
-{-# INLINE mvecAllocWith #-}
-
--- | Allocate a mutable vector of given size, init to default value
-mvecAllocInit :: Int -> IO (MV.IOVector RVal)
-mvecAllocInit sz = mvecAllocWith sz RVal_None
-{-# INLINE mvecAllocInit #-}
-
--- | Allocate a mutable vector of given size
-mvecAlloc :: PrimMonad m => Int -> m (MV.MVector (PrimState m) a)
-mvecAlloc sz = MV.new sz
-{-# INLINE mvecAlloc #-}
-
--- | Fill a mutable vector from a unmutable vector, starting with filling at the given lowerbound
-mvecFillFrom :: Int -> MV.IOVector RVal -> CRArray RVal -> IO ()
-mvecFillFrom lwb toarr frarr = forM_ (craAssocs' lwb frarr) $ \(i,e) -> MV.unsafeWrite toarr i e
-{-# INLINE mvecFillFrom #-}
-
--- | Alloc and fill vector of size taken from fixed vec
-mvecAllocFill :: CRArray RVal -> IO (MV.IOVector RVal)
-mvecAllocFill frarr = mvecAlloc (V.length frarr) >>= \toarr -> mvecFillFrom 0 toarr frarr >> return toarr
-{-# INLINE mvecAllocFill #-}
-
--- | Loop over a mutable vector, updating the vector as a side effect
-mvecLoop :: PrimMonad m => Int -> Int -> (MV.MVector (PrimState m) a -> Int -> m b) -> MV.MVector (PrimState m) a -> m (MV.MVector (PrimState m) a)
-mvecLoop l h m v = loop l
-  where loop l | l < h     = m v l >> loop (l+1)
-               | otherwise = return v
-{-# INLINE mvecLoop #-}
-
--- | Loop over a mutable vector, updating the vector as a side effect
-mvecForM_ :: PrimMonad m => MV.MVector (PrimState m) a -> (a -> m b) -> m ()
-mvecForM_ v m = loop 0
-  where loop i | i < MV.length v = MV.read v i >>= m {- >>= MV.write v i -} >> loop (i+1)
-               | otherwise       = return ()
-{-# INLINE mvecForM_ #-}
-
--- | Append mutable 2 vectors
-mvecAppend :: PrimMonad m => MV.MVector (PrimState m) a -> MV.MVector (PrimState m) a -> m (MV.MVector (PrimState m) a)
-mvecAppend v1 v2 =
-    mvecAlloc l12 >>= mvecLoop 0 l1 (\v i -> MV.read v1 i >>= MV.write v i) >>= mvecLoop l1 l12 (\v i -> MV.read v2 (i-l1) >>= MV.write v i)
-  where
-    l1 = MV.length v1
-    l2 = MV.length v2
-    l12 = l1 + l2
 %%]
 
 %%[(8 corerun) hs export(renvTopFrameM)
 -- | Get the top most frame from the stack, 'nullPtr' if absent
-renvTopFrameM :: (RunSem RValCxt RValEnv m RVal) => RValT m HpPtr
+renvTopFrameM :: (RunSem RValCxt RValEnv RVal m x) => RValT m HpPtr
 renvTopFrameM = do
   (RValEnv {renvTopFrame=tf}) <- get
   liftIO $ readIORef tf
@@ -534,7 +682,7 @@ renvTopFrameM = do
 
 %%[(8 corerun) hs
 -- | Get all non empty stack frames, still split up in (possibly null) top frame and rest of stack
-renvAllFrameM' :: (RunSem RValCxt RValEnv m RVal) => RValT m (Maybe HpPtr,[HpPtr])
+renvAllFrameM' :: (RunSem RValCxt RValEnv RVal m x) => RValT m (Maybe HpPtr,[HpPtr])
 renvAllFrameM' = do
   topfrp <- renvTopFrameM
   env <- get
@@ -542,7 +690,7 @@ renvAllFrameM' = do
   return (if isNullPtr topfrp then Nothing else Just topfrp, st)
 
 -- | Get all non empty stack frames
-renvAllFrameM :: (RunSem RValCxt RValEnv m RVal) => RValT m [HpPtr]
+renvAllFrameM :: (RunSem RValCxt RValEnv RVal m x) => RValT m [HpPtr]
 renvAllFrameM = do
   (mbtop,st) <- renvAllFrameM'
   return $ maybe [] (:[]) mbtop ++ st
@@ -550,7 +698,7 @@ renvAllFrameM = do
 
 %%[(8 corerun) hs
 -- | Dump environment
-dumpPpEnvM :: (RunSem RValCxt RValEnv m RVal) => Bool -> RValT m PP_Doc
+dumpPpEnvM :: (RunSem RValCxt RValEnv RVal m x) => Bool -> RValT m PP_Doc
 dumpPpEnvM extensive = do
     stkfrs <- renvAllFrameM
     env <- get
@@ -591,8 +739,96 @@ dumpPpEnvM extensive = do
 
 %%[(8 corerun) hs export(dumpEnvM)
 -- | Dump environment
-dumpEnvM :: (RunSem RValCxt RValEnv m RVal) => Bool -> RValT m ()
+dumpEnvM :: (RunSem RValCxt RValEnv RVal m x) => Bool -> RValT m ()
 dumpEnvM extensive = dumpPpEnvM extensive >>= (liftIO . putPPLn)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Frame
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(updTopFrameM)
+-- | Update top frame
+updTopFrameM :: (RunSem RValCxt RValEnv RVal m x) => (RVal -> RValT m RVal) -> RValT m ()
+updTopFrameM f = renvTopFrameM >>= flip heapUpdM f
+{-# INLINE updTopFrameM #-}
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expr stack inside frame: push, pop, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(renvFrStkPush1, renvFrStkReversePushMV)
+-- | Push on the stack embedded in the top frame
+renvFrStkPush' :: RunSem RValCxt RValEnv RVal m x => (Int -> RValMV -> v -> IO Int) -> v -> RValT m ()
+renvFrStkPush' pushvOn v = do
+  (RValEnv {renvTopFrame=frref, renvHeap=hp}) <- get
+  liftIO $ do
+    (RVal_Frame {rvalFrVals=frvs, rvalFrSP=spref}) <- heapGetM'' hp =<< readIORef frref
+    sp <- readIORef spref
+    sp' <- pushvOn sp frvs v
+    writeIORef spref sp'
+
+-- | Push on the stack embedded in the top frame
+renvFrStkPush1 :: RunSem RValCxt RValEnv RVal m x => RVal -> RValT m ()
+renvFrStkPush1 = renvFrStkPush' (\sp frvs v -> MV.write frvs sp v >> return (sp + 1))
+{-# INLINE renvFrStkPush1 #-}
+
+-- | Push on the stack embedded in the top frame
+renvFrStkPushMV :: RunSem RValCxt RValEnv RVal m x => RValMV -> RValT m ()
+renvFrStkPushMV = renvFrStkPush' (\sp frvs vs -> mvecFillFromMV sp frvs vs >> return (sp + MV.length vs))
+{-# INLINE renvFrStkPushMV #-}
+
+-- | Push reversed on the stack embedded in the top frame
+renvFrStkReversePushMV :: RunSem RValCxt RValEnv RVal m x => RValMV -> RValT m ()
+renvFrStkReversePushMV = renvFrStkPush' (\sp frvs vs -> mvecReverseFillFromMV sp frvs vs >> return (sp + MV.length vs))
+{-# INLINE renvFrStkReversePushMV #-}
+%%]
+
+%%[(8 corerun) hs export(renvFrStkPop1, renvFrStkPopMV, renvFrStkReversePopMV, renvFrStkReversePopInMV)
+-- | Pop from the stack embedded in the top frame
+renvFrStkPop' :: RunSem RValCxt RValEnv RVal m x => (RValMV -> Int -> IO v) -> Int -> RValT m v
+renvFrStkPop' popvFrom sz = do
+  (RValEnv {renvTopFrame=frref, renvHeap=hp}) <- get
+  liftIO $ do
+    (RVal_Frame {rvalFrVals=frvs, rvalFrSP=spref}) <- heapGetM'' hp =<< readIORef frref
+    sp <- readIORef spref
+    let sp' = sp - sz
+    writeIORef spref sp'
+    popvFrom frvs sp'
+
+-- | Pop from the stack embedded in the top frame
+renvFrStkPop :: RunSem RValCxt RValEnv RVal m x => Int -> RValT m ()
+renvFrStkPop = renvFrStkPop' (\_ _ -> return ())
+{-# INLINE renvFrStkPop #-}
+
+-- | Pop from the stack embedded in the top frame
+renvFrStkPop1 :: RunSem RValCxt RValEnv RVal m x => RValT m RVal
+renvFrStkPop1 = renvFrStkPop' MV.read 1
+{-# INLINE renvFrStkPop1 #-}
+
+-- | Pop from the stack embedded in the top frame
+renvFrStkPopInMV :: RunSem RValCxt RValEnv RVal m x => Int -> Int -> RValMV -> RValT m ()
+renvFrStkPopInMV lwbTo sz vs = renvFrStkPop' (\frvs sp -> mvecFillFromMV' lwbTo sp sz vs frvs) sz
+{-# INLINE renvFrStkPopInMV #-}
+
+-- | Pop from the stack embedded in the top frame
+renvFrStkPopMV :: RunSem RValCxt RValEnv RVal m x => Int -> RValT m RValMV
+-- renvFrStkPopMV sz = renvFrStkPop' (\frvs sp -> mvecAlloc sz >>= \vs -> mvecFillFromMV' 0 sp sz vs frvs >> return vs) sz
+renvFrStkPopMV sz = (liftIO $ mvecAlloc sz) >>= \vs -> renvFrStkPopInMV 0 sz vs >> return vs
+{-# INLINE renvFrStkPopMV #-}
+
+-- | Pop from the stack embedded in the top frame
+renvFrStkReversePopInMV :: RunSem RValCxt RValEnv RVal m x => Int -> Int -> RValMV -> RValT m ()
+renvFrStkReversePopInMV lwbTo sz vs = renvFrStkPop' (\frvs sp -> mvecReverseFillFromMV' lwbTo sp sz vs frvs) sz
+{-# INLINE renvFrStkReversePopInMV #-}
+
+-- | Pop from the stack embedded in the top frame
+renvFrStkReversePopMV :: RunSem RValCxt RValEnv RVal m x => Int -> RValT m RValMV
+-- renvFrStkReversePopMV sz = renvFrStkPop' (\frvs sp -> mvecAlloc sz >>= \vs -> mvecReverseFillFromMV' 0 sp sz vs frvs >> return vs) sz
+renvFrStkReversePopMV sz = (liftIO $ mvecAlloc sz) >>= \vs -> renvFrStkReversePopInMV 0 sz vs >> return vs
+{-# INLINE renvFrStkReversePopMV #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -601,7 +837,7 @@ dumpEnvM extensive = dumpPpEnvM extensive >>= (liftIO . putPPLn)
 
 %%[(8 corerun) hs export(rsemTr)
 -- | Trace
-rsemTr :: (PP msg, RunSem RValCxt RValEnv m RVal) => msg -> RValT m ()
+rsemTr :: (PP msg, RunSem RValCxt RValEnv RVal m x) => msg -> RValT m ()
 rsemTr msg = whenM (gets renvDoTrace) $ do
     liftIO $ putStrLn $ show $ pp msg
     dumpEnvM False
@@ -613,7 +849,7 @@ rsemTr msg = whenM (gets renvDoTrace) $ do
 
 %%[(8 corerun) hs export(RValT)
 -- | RunT' variant for Val
-type RValT m a = RunT' RValCxt RValEnv m a
+type RValT m a = RunT' RValCxt RValEnv RVal m a
 -- type RValT m a = RunT' () () RValEnv m a
 
 %%]

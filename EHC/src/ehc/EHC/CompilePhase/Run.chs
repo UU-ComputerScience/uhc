@@ -24,7 +24,11 @@
 %%]
 
 -- Running CoreRun
-%%[(8 corerun) import({%{EH}CoreRun.Run}, {%{EH}CoreRun.Run.Val.Run})
+%%[(8 corerun) import({%{EH}CoreRun.Run})
+%%]
+%%[(8 corerun) import({%{EH}CoreRun.Run.Val.RunImplStk} as RI)
+%%]
+%%[(8888 corerun) import({%{EH}CoreRun.Run.Val.RunExplStk} as RE)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

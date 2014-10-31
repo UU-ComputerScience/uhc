@@ -77,7 +77,7 @@ DATA Exp
   -- | Thunk		expr			: Exp		-- expressed as parameterless Lam
 
   -- expr in a context to which must be returned (i.e. no tail rec)
-  -- | Ret			expr			: Exp
+  | Ret			expr			: Exp
   -- expr in a case alternative result context (with local bindings to be removed)
   | RetCase		nrBinds			: {Int}
   				expr			: Exp
