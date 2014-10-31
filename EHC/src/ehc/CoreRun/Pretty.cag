@@ -165,7 +165,7 @@ ppBinds = ppBinds' 0
 ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
-  | Mod         lhs         .   pp          =   "module" >#< @moduleNm >|< ":" >#< @body.pp
+  | Mod         lhs         .   pp          =   "module" >#< @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >|< ":" >#< @body.pp
                                                 >-< ppBinds'' @inhpp (RRef_Glb @moduleNr) 0 @binds
 
 SEM SExp
@@ -185,7 +185,7 @@ SEM Exp
   | RetCase     lhs         .   pp          =   "retcase" >|< @nrBinds >|< ppParens @expr.pp
   | Tail        lhs         .   pp          =   "tail" >|< ppParens @expr.pp
   -- | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp
-  | Lam         lhs         .   pp          =   "\\" >|< "@" >|< @lev >#< (if @nrArgs > 0 then pp @nrArgs else pp "thk") >|< "," >|< @nrBinds >|< "," >|< @stkDepth >#< "->" >#< @body.pp
+  | Lam         lhs         .   pp          =   "\\" >|< "@" >|< @lev >#< ppCommas [if @nrArgs > 0 then pp @nrArgs else pp "thk", pp @nrBinds, pp @stkDepth] >#< "->" >#< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
                                                 >-< indent 1 (vlist $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
   | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (map (ppExp'' @lhs.inhpp) $ V.toList @args)

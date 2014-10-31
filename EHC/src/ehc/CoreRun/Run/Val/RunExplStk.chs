@@ -38,11 +38,18 @@
 -- | Allocate a new frame
 explStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> Int -> Int -> Int -> RValT m HpPtr
 explStkAllocFrameM r2n sl lev sz nrArgs = do
+  rsemTr' True $ "explStkAllocFrameM 1 sz=" ++ show sz ++ " nrArgs=" ++ show nrArgs
   a <- liftIO $ mvecAllocInit sz
+  rsemTr' True $ "explStkAllocFrameM 2"
   renvFrStkReversePopInMV 0 nrArgs a
+  rsemTr' True $ "explStkAllocFrameM 3"
   slref <- liftIO $ newIORef sl
+  rsemTr' True $ "explStkAllocFrameM 4"
   spref <- liftIO $ newIORef nrArgs
-  heapAllocM $ RVal_Frame r2n slref lev a spref
+  rsemTr' True $ "explStkAllocFrameM 5"
+  p <- heapAllocM $ RVal_Frame r2n slref lev a spref
+  rsemTr' True $ "explStkAllocFrameM 6"
+  return p
 
 -- | Allocate and push a new stack frame
 explStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> Int -> Int -> Int -> RValT m ()
@@ -64,18 +71,18 @@ explStkReplaceAllocFrameM r2n sl lev sz nrArgs = do
 {-# INLINE explStkReplaceAllocFrameM #-}
 
 -- | Pop a stack frame, copying the top of the stack embedded in the frame
-explStkPopFrameM :: (RunSem RValCxt RValEnv RVal m x) => RValT m ()
+explStkPopFrameM :: (RunSem RValCxt RValEnv RVal m x) => RValT m HpPtr
 explStkPopFrameM = do
-  v <- renvFrStkPop1
-  (RValEnv {renvStack=st, renvTopFrame=tf}) <- get
+  (RValEnv {renvStack=stref, renvTopFrame=tfref}) <- get
   liftIO $ do
-    stk <- readIORef st
+    tf  <- readIORef tfref
+    stk <- readIORef stref
     case stk of
-      [] -> writeIORef tf nullPtr
+      [] -> writeIORef tfref nullPtr
       (h:t) -> do
-        writeIORef tf h
-        writeIORef st t
-  renvFrStkPush1 v
+        writeIORef tfref h
+        writeIORef stref t
+    return tf
 {-# INLINE explStkPopFrameM #-}
 %%]
 
@@ -113,7 +120,9 @@ rvalExplStkAppLam sl f nrActualArgs failcont = do
              then do
                explStkPushAllocFrameM r2n sl l sz nrActualArgs
                rsemExp b
+               v <- renvFrStkPop1
                explStkPopFrameM
+               renvFrStkPush1 v
              else do
                explStkReplaceAllocFrameM r2n sl l sz nrActualArgs
                mustReturn $ rsemExp b
@@ -155,7 +164,7 @@ rvalExplStkExp :: RunSem RValCxt RValEnv RVal m () => Exp -> RValT m ()
 {-# SPECIALIZE rvalExplStkExp :: RunSem RValCxt RValEnv RVal IO () => Exp -> RValT IO () #-}
 -- {-# INLINE rvalExplStkExp #-}
 rvalExplStkExp e = do
-  -- rsemTr $ "E:" >#< e
+  rsemTr' True $ "E:" >#< e
   -- e' <- case e of
   case e of
     -- app, call
@@ -216,24 +225,33 @@ instance
     ) => RunSem RValCxt RValEnv RVal m ()
   where
     -- {-# SPECIALIZE instance RunSem RValCxt RValEnv RVal IO () #-}
-{-
     rsemInitial = do
       s <- liftIO $ newRValEnv 100000
       return (emptyRValCxt, s, undefined)
   
-    rsemSetup opts modImpL mod = {- local (const emptyRValCxt) $ -} do
-        -- (liftIO $ newRValEnv 100000) >>= put
-        let modAllL = mod : modImpL
+    rsemSetup opts modImpL mod = do
+        rsemSetTrace True
+        rsemTr' True $ "Setup 1"
+        let modAllL = modImpL ++ [mod]
+        rsemTr' True $ "Setup 2"
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
-        forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs}) -> do
-          bs' <- (liftIO . V.thaw) =<< V.forM bs rsemExp
-          p <- implStkAllocFrameM r2n nullPtr 0 (MV.length bs') bs'
+        rsemTr' True $ "Setup 3"
+        forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz}) -> do
+          rsemTr' True $ "Setup 4"
+          explStkPushAllocFrameM r2n nullPtr 0 sz 0
+          rsemTr' True $ "Setup 5"
+          V.forM_ bs rsemExp
+          rsemTr' True $ "Setup 6"
+          p <- explStkPopFrameM
+          rsemTr' True $ "Setup 7"
           liftIO $ MV.write ms nr p
+          rsemTr' True $ "Setup 8"
+        rsemTr' True $ "Setup 9"
         ms' <- liftIO $ V.freeze ms
+        rsemTr' True $ "Setup 10"
         modify $ \env -> env {renvGlobals = ms'}
+        rsemTr' True $ "Setup 11"
         rsemSetTrace $ CoreOpt_RunTrace `elem` ehcOptCoreOpts opts
-        -- return RVal_None
--}
 
     rsemSetTrace doTrace = modify $ \env ->
       env {renvDoTrace = doTrace}

@@ -25,6 +25,7 @@ DATA Mod
   | Mod         ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 moduleNm        : {HsName}
                 moduleNr        : {Int}			-- sequence nr, index later into global table of modules
+                stkDepth        : {Int}			-- max depth of stack for setting up globals
                 binds           : {CRArray Bind}
                 body			: Exp
 %%]

@@ -717,9 +717,10 @@ dumpPpEnvM extensive = do
       else return $ header2
   where
     dumpFrame fp = do
-      fr@(RVal_Frame {rvalFrVals=vs}) <- heapGetM fp
-      pps <- ppa (MV.length vs) vs
-      return $ "Frame ptr=" >|< fp >-< (indent 2 $ fr >-< (indent 2 $ vlist pps))
+      fr@(RVal_Frame {rvalFrVals=vs, rvalFrSP=spref}) <- heapGetM fp
+      sp  <- liftIO $ readIORef spref
+      pps <- ppa sp vs
+      return $ "Frame ptr=" >|< fp >|< " sp=" >|< sp >-< (indent 2 $ fr >-< (indent 2 $ vlist pps))
     dumpGlobals glbls = do
       pps <- forM [0 .. V.length glbls - 1] $ \i -> do
         dumpFrame (glbls V.! i)
@@ -835,12 +836,16 @@ renvFrStkReversePopMV sz = (liftIO $ mvecAlloc sz) >>= \vs -> renvFrStkReversePo
 %%% Tracing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(rsemTr)
+%%[(8 corerun) hs export(rsemTr', rsemTr)
+-- | Trace
+rsemTr' :: (PP msg, RunSem RValCxt RValEnv RVal m x) => Bool -> msg -> RValT m ()
+rsemTr' dumpExtensive msg = whenM (gets renvDoTrace) $ do
+    liftIO $ putStrLn $ show $ pp msg
+    dumpEnvM dumpExtensive
+
 -- | Trace
 rsemTr :: (PP msg, RunSem RValCxt RValEnv RVal m x) => msg -> RValT m ()
-rsemTr msg = whenM (gets renvDoTrace) $ do
-    liftIO $ putStrLn $ show $ pp msg
-    dumpEnvM False
+rsemTr = rsemTr' False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

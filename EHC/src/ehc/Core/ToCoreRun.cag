@@ -129,6 +129,7 @@ SEM CBound
                                                             | isNotWHNF  -> ToBe_Thunked
                                                           _              -> ToBe_LeftAsIs
                             .   isToBeThunked   =   @toBe == ToBe_Thunked
+                            .	isToBeALam		=	@isToBeThunked || whatExprIsLam @expr.whatBelow
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -181,24 +182,6 @@ SEM CExpr
 
 SEM CPatFld
   | Fld         loc         .   tailCtx         =   TailCtx_Plain
-%%]
-
-%%[(8888 corerun)
-ATTR CExpr AllAlt [ isTailRec: Bool | | ]
-
-SEM CModule
-  | Mod         loc         .   isTailRec       =   False
-
-SEM CBound
-  | Bind Val    loc         .   isTailRec       =   @isToBeThunked
-  | FFE         loc         .   isTailRec       =   False
-
-SEM CExpr
-  | Lam         body        .   isTailRec       =   True
-  | App         loc         .   isTailRec       =   False
-
-SEM CPatFld
-  | Fld         loc         .   isTailRec       =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -269,8 +252,8 @@ SEM CModule
   | Mod         expr        .   stackDepth      =   0
 
 SEM CBound
-  | Bind Val    expr        .   stackDepth      =   if @isToBeThunked then 0                 else @lhs.stackDepth
-                loc         .   stackDepthExpr  =   if @isToBeThunked then @lhs.stackDepth+1 else @expr.stackDepth
+  | Bind Val    expr        .   stackDepth      =   if @isToBeALam then 0                 else @lhs.stackDepth
+                loc         .   stackDepthExpr  =   if @isToBeALam then @lhs.stackDepth+1 else @expr.stackDepth
                 lhs         .   stackDepth      =   @stackDepthExpr
 
 {-
@@ -310,7 +293,7 @@ SEM CAlt
 SEM CBound
   | Bind Val    loc         .   stackDepthMaxThunked
                                                 =   max @expr.stackDepth @expr.stackDepthMax
-                lhs         .   stackDepthMax   =   if @isToBeThunked then @stackDepthExpr else @stackDepthMaxThunked
+                lhs         .   stackDepthMax   =   if @isToBeALam then @stackDepthExpr else @stackDepthMaxThunked
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -547,7 +530,8 @@ SEM CPat
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
-  | Mod         lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (CR.mkCRArray $ map snd @expr.crb) ({- CR.Exp_Ret $ -} CR.Exp_Force @creMod)
+  | Mod         loc			.	crmBinds		=	CR.mkCRArray $ map snd @expr.crb
+  				lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (@expr.stackDepthMax {- - CR.craLength @crmBinds -}) @crmBinds (CR.Exp_Force @creMod)
 %%]
 
 
