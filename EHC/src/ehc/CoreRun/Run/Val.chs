@@ -152,7 +152,9 @@ ppRVal rval = case rval of
     RVal_PackedString	v    		-> dfltpp $ show v
     RVal_Lam   			b slref		-> dfltpp b
     RVal_Thunk 			e slref 	-> return $ ppBrackets e
-    RVal_Node  			t vs 		-> dfltpp t -- r >|< (ppBracketsCommas $ V.toList vs)
+    RVal_Node  			t vs 		-> do
+                                       vl <- mvecToList vs
+                                       return $ t >|< ppBracketsCommas vl
     RVal_App   			f as 		-> dfltpp f -- return $ ppBrackets $ f >|< "@"  >|< (ppParensCommas $ V.toList as)
     RVal_Ptr   			pref    	-> readIORef pref >>= \p -> return $ "*"  >|< p
     RVal_Fwd   			p    		-> return $ "f*" >|< p
@@ -498,7 +500,7 @@ vecReverseForM_ v m = vecLoopReverse 0 (V.length v) (\_ i -> m (v V.! i)) v
 %%% Mutable Vector utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(mvecAllocInit, mvecAlloc, mvecFillFromV, mvecFillFromMV, mvecAllocFillFromV, mvecAppend)
+%%[(8 corerun) hs export(mvecAllocInit, mvecAlloc, mvecFillFromV, mvecFillFromMV, mvecAllocFillFromV, mvecAppend, mvecToList)
 -- | Allocate a mutable vector of given size
 mvecAllocWith :: PrimMonad m => Int -> a -> m (MV.MVector (PrimState m) a)
 mvecAllocWith = MV.replicate
@@ -528,6 +530,17 @@ mvecLoopReverse l h m v = loop (h-1)
                | otherwise = return v
 {-# INLINE mvecLoopReverse #-}
 
+-- | Loop over a mutable vector from upb to lwb, updating the vector as a side effect, starting before 'h', ending at lower bound 'l'
+mvecLoopReverseAccum :: PrimMonad m => acc -> Int -> Int -> (acc -> Int -> m acc) -> MV.MVector (PrimState m) a -> m acc
+mvecLoopReverseAccum a l h m v = loop (h-1) a
+  where loop h a | l <= h    = m a h >>= loop (h-1)
+                 | otherwise = return a
+{-# INLINE mvecLoopReverseAccum #-}
+
+-- | Convert to a list
+mvecToList :: PrimMonad m => MV.MVector (PrimState m) a -> m [a]
+mvecToList v = mvecLoopReverseAccum [] 0 (MV.length v) (\l i -> MV.read v i >>= \a -> return (a:l)) v 
+
 -- | Fill a mutable vector from a unmutable vector, starting with filling at the given lowerbound
 mvecFillFromV :: PrimMonad m => Int -> MV.MVector (PrimState m) a -> CRArray a -> m ()
 mvecFillFromV lwb toarr frarr = forM_ (craAssocs' lwb frarr) $ \(i,e) -> MV.write toarr i e
@@ -541,7 +554,8 @@ mvecFillFromMV' lwbTo lwbFr sz toarr frarr = mvecLoop lwbFr (lwbFr+sz) (\v i -> 
 
 -- | Fill a mutable vector from another mutable vector, starting with copying at the given lowerbounds, copying size elements, but reversing the given vector
 mvecReverseFillFromMV' :: PrimMonad m => Int -> Int -> Int -> MV.MVector (PrimState m) a -> MV.MVector (PrimState m) a -> m ()
-mvecReverseFillFromMV' lwbTo lwbFr sz toarr frarr = mvecLoop lwbFr (lwbFr+sz) (\v i -> MV.read v (upbFr1-i) >>= MV.write toarr (i+lwbDiff)) frarr >> return ()
+-- mvecReverseFillFromMV' lwbTo lwbFr sz toarr frarr = mvecLoop lwbFr (lwbFr+sz) (\v i -> MV.read v (upbFr1-i) >>= MV.write toarr (i+lwbDiff)) frarr >> return ()
+mvecReverseFillFromMV' lwbTo lwbFr sz toarr frarr = mvecLoopReverse lwbFr (lwbFr+sz) (\v i -> MV.read v i >>= MV.write toarr (upbFr1 - i + lwbTo)) frarr >> return ()
   where lwbDiff = lwbTo - lwbFr
         upbFr1  = lwbFr + sz - 1
 {-# INLINE mvecReverseFillFromMV' #-}

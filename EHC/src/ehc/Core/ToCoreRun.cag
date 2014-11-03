@@ -129,7 +129,10 @@ SEM CBound
                                                             | isNotWHNF  -> ToBe_Thunked
                                                           _              -> ToBe_LeftAsIs
                             .   isToBeThunked   =   @toBe == ToBe_Thunked
-                            .	isToBeALam		=	@isToBeThunked || whatExprIsLam @expr.whatBelow
+                            .   isToBeALam      =   @isToBeThunked || whatExprIsLam @expr.whatBelow
+                            .   isToBeReturned  =   case @lhs.evalCtx of
+                                                          EvalCtx_Eval -> True
+                                                          _            -> False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,7 +158,7 @@ data TailCtx
 
 tailCtxIsTailRec :: TailCtx -> Bool
 tailCtxIsTailRec TailCtx_TailCall = True
-tailCtxIsTailRec _ 				  = False
+tailCtxIsTailRec _                = False
 
 -- | Wrap according to tail context
 cseCtxWrap :: TailCtx -> CR.Exp -> CR.Exp
@@ -267,7 +270,7 @@ SEM CExpr
                 loc         .   stackDepthFunc  =   if whatExprIsTup @func.whatBelow || whatExprIsFFI @func.whatBelow then @lhs.stackDepth else @func.stackDepth
                 arg         .   stackDepth      =   @stackDepthFunc
                 lhs         .   stackDepth      =   if @isTopApp' then @lhs.stackDepth + 1 else @arg.stackDepth
-  | Case		alts		.	stackDepth		=	@lhs.stackDepth
+  | Case        alts        .   stackDepth      =   @lhs.stackDepth
   | * - Lam App Ann Let
                 loc         .   stackDepthHere  =   @lhs.stackDepth + 1
                 lhs         .   stackDepth      =   @stackDepthHere
@@ -438,9 +441,9 @@ ATTR CExpr [ | | cre: {CR.Exp} ]
 %%[(8 corerun)
 SEM CExpr
   | Let Case App FFI Tup
-  				loc			.	cre				=	@creBase
+                loc         .   cre             =   @creBase
   | * - Let Case App FFI Tup Ann
-  				loc			.	cre				=	cseCtxWrap @lhs.tailCtx @creBase
+                loc         .   cre             =   cseCtxWrap @lhs.tailCtx @creBase
 %%]
 
 %%[(8 corerun)
@@ -488,10 +491,12 @@ SEM CModule
 ATTR AllBind CExpr [ | | crb USE {++} {[]} : {[(HsName, CR.Bind)]} ]
 
 SEM CBound
-  | Bind Val    loc         .   creBind         =   case @toBe of
-                                                        ToBe_Forced   -> tailrec @tailCtx $ CR.Exp_Force @expr.cre
-                                                        ToBe_Thunked  -> CR.Exp_Lam @lev 0 (@expr.refOffsetMax) (@stackDepthMaxThunked) (CR.nm2RefMpInverse @nm2refNew) @expr.cre
-                                                        ToBe_LeftAsIs -> @expr.cre
+  | Bind Val    loc         .   creMkForce      =   case @toBe of
+                                                        ToBe_Forced   -> tailrec @tailCtx . CR.Exp_Force
+                                                        ToBe_Thunked  -> CR.Exp_Lam @lev 0 (@expr.refOffsetMax) (@stackDepthMaxThunked) (CR.nm2RefMpInverse @nm2refNew)
+                                                        ToBe_LeftAsIs -> id
+                            .   creMkReturned   =   if @isToBeReturned then CR.Exp_Ret else id
+                            .   creBind         =   @creMkReturned $ @creMkForce @expr.cre
                 loc         .   crb             =   [( @lhs.nm, @creBind )]
 
 SEM CBind
@@ -530,8 +535,8 @@ SEM CPat
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
-  | Mod         loc			.	crmBinds		=	CR.mkCRArray $ map snd @expr.crb
-  				lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (@expr.stackDepthMax {- - CR.craLength @crmBinds -}) @crmBinds (CR.Exp_Force @creMod)
+  | Mod         loc         .   crmBinds        =   CR.mkCRArray $ map snd @expr.crb
+                lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (@expr.stackDepthMax {- - CR.craLength @crmBinds -}) @crmBinds (CR.Exp_Force @creMod)
 %%]
 
 

@@ -38,28 +38,35 @@
 -- | Allocate a new frame
 explStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> Int -> Int -> Int -> RValT m HpPtr
 explStkAllocFrameM r2n sl lev sz nrArgs = do
-  rsemTr' True $ "explStkAllocFrameM 1 sz=" ++ show sz ++ " nrArgs=" ++ show nrArgs
   a <- liftIO $ mvecAllocInit sz
-  rsemTr' True $ "explStkAllocFrameM 2"
-  renvFrStkReversePopInMV 0 nrArgs a
-  rsemTr' True $ "explStkAllocFrameM 3"
+  when (nrArgs > 0) $ renvFrStkReversePopInMV 0 nrArgs a
   slref <- liftIO $ newIORef sl
-  rsemTr' True $ "explStkAllocFrameM 4"
   spref <- liftIO $ newIORef nrArgs
-  rsemTr' True $ "explStkAllocFrameM 5"
   p <- heapAllocM $ RVal_Frame r2n slref lev a spref
-  rsemTr' True $ "explStkAllocFrameM 6"
   return p
+
+-- | Push a new stack frame
+explStkPushFrameM :: (RunSem RValCxt RValEnv RVal m x) => HpPtr -> RValT m ()
+explStkPushFrameM frptr = do
+  (RValEnv {renvStack=st, renvTopFrame=tf}) <- get
+  liftIO $ do
+    t <- readIORef tf
+    unless (isNullPtr t) $ modifyIORef st (t:)
+    writeIORef tf frptr
+{-# INLINE explStkPushFrameM #-}
 
 -- | Allocate and push a new stack frame
 explStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> Int -> Int -> Int -> RValT m ()
 explStkPushAllocFrameM r2n sl lev sz nrArgs = do
   p <- explStkAllocFrameM r2n sl lev sz nrArgs
+  explStkPushFrameM p
+{-
   (RValEnv {renvStack=st, renvTopFrame=tf}) <- get
   liftIO $ do
     t <- readIORef tf
     unless (isNullPtr t) $ modifyIORef st (t:)
     writeIORef tf p
+-}
 {-# INLINE explStkPushAllocFrameM #-}
 
 -- | Allocate and replace top stack frame
@@ -164,7 +171,7 @@ rvalExplStkExp :: RunSem RValCxt RValEnv RVal m () => Exp -> RValT m ()
 {-# SPECIALIZE rvalExplStkExp :: RunSem RValCxt RValEnv RVal IO () => Exp -> RValT IO () #-}
 -- {-# INLINE rvalExplStkExp #-}
 rvalExplStkExp e = do
-  rsemTr' True $ "E:" >#< e
+  -- rsemTr' True $ "E:" >#< e
   -- e' <- case e of
   case e of
     -- app, call
@@ -189,6 +196,7 @@ rvalExplStkExp e = do
     -- let
     Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
         V.forM_ bs rsemExp
+        rsemExp b
 
     -- case, scrutinee already evaluated
     Exp_Case e as -> do
@@ -215,7 +223,7 @@ rvalExplStkExp e = do
 
     e -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp:" >#< e
 
-  -- rsemTr $ "E->:" >#< (e >-< e')
+  -- rsemTr' True $ "E->:" >#< (e) -- >-< e')
   -- return e'
 %%]
 
@@ -229,28 +237,18 @@ instance
       s <- liftIO $ newRValEnv 100000
       return (emptyRValCxt, s, undefined)
   
-    rsemSetup opts modImpL mod = do
+    rsemSetup opts modImpL mod@(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) = do
         rsemSetTrace True
-        rsemTr' True $ "Setup 1"
         let modAllL = modImpL ++ [mod]
-        rsemTr' True $ "Setup 2"
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
-        rsemTr' True $ "Setup 3"
         forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz}) -> do
-          rsemTr' True $ "Setup 4"
           explStkPushAllocFrameM r2n nullPtr 0 sz 0
-          rsemTr' True $ "Setup 5"
           V.forM_ bs rsemExp
-          rsemTr' True $ "Setup 6"
           p <- explStkPopFrameM
-          rsemTr' True $ "Setup 7"
           liftIO $ MV.write ms nr p
-          rsemTr' True $ "Setup 8"
-        rsemTr' True $ "Setup 9"
         ms' <- liftIO $ V.freeze ms
-        rsemTr' True $ "Setup 10"
         modify $ \env -> env {renvGlobals = ms'}
-        rsemTr' True $ "Setup 11"
+        explStkPushFrameM $ ms' V.! mainModNr
         rsemSetTrace $ CoreOpt_RunTrace `elem` ehcOptCoreOpts opts
 
     rsemSetTrace doTrace = modify $ \env ->
