@@ -52,10 +52,12 @@ rvalPrim pr as = do
       (RP_primCatchException, [x, hdl]) -> rsemEvl x -- err $ "Not impl: RP_primCatchException" -- TBD
       
       -- MutVar
+      {-
       (RP_primNewMutVar, [x, s]) -> (liftIO $ newIORef x) >>= \mv -> mkTuple [s, RHsV_MutVar mv]
       (RP_primReadMutVar, [RHsV_MutVar mv, s]) -> (liftIO $ readIORef mv) >>= \v -> mkTuple [s, v]
       (RP_primWriteMutVar, [RHsV_MutVar mv, v, s]) -> (liftIO $ writeIORef mv v) >> rsemPush s
       (RP_primSameMutVar, _) -> err $ "Not impl: RP_primSameMutVar" -- TBD
+      -}
       
       -- Base
       (RP_primPackedStringToInteger, [RVal_PackedString x]) -> rsemPush $ RVal_Integer $ read $ BSC8.unpack x

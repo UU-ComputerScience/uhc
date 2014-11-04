@@ -302,7 +302,8 @@ newHeap sz = do
 heapGcM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m RVal
 -- heapGcM = err $ "CoreRun.Run.Val.heapGcM: GC not yet implemented"
 heapGcM curV = do
-    rsemTr $ "GC starts"
+    -- rsemSetTrace True
+    -- rsemTr' True $ "GC starts"
     env@(RValEnv {renvHeap=hp@(Heap {hpVals=vsOld, hpSemispaceMultiplier=mlRef, hpFree=hpFrRef}), renvTopFrame=topFrRef, renvStack=stkRef, renvGlobals=globals}) <- get
     env' <- liftIO $ do
       ml <- readIORef mlRef
@@ -311,29 +312,33 @@ heapGcM curV = do
       let -- copy content of ptr to new loc, leaving a forwarding on to the old location
           copyp p
             | p >= 0 = do
-                -- putStrLn $ "GC copyp p=" ++ show p
                 v <- MV.read vsOld p
                 case v of
-                  RVal_Fwd p' -> return p'
+                  RVal_Fwd p' -> do
+                    -- putStrLn $ "GC copyp Fwd p=" ++ show p ++ ", p'=" ++ show p'
+                    return p'
                   v -> do
                     p' <- readIORef greyref
                     MV.write vsNew p' v
                     MV.write vsOld p  (RVal_Fwd p')
                     writeIORef greyref (p'+1)
+                    -- putStrLn $ "GC copyp Val p=" ++ show p ++ ", p'=" ++ show p' ++ ", v=" ++ show (pp v)
                     return p'
             | otherwise = return p
           
           -- inspect, possibly copy internal part of a RVal, stops with a ptr which later is dealt with (to prevent too deep stack growth), exploiting the in between grey/black area as queue
           copyv v = do
+            -- putStrLn $ "GC copyv 1 v=" ++ show (pp v)
             case v of
               RVal_Ptr pref                               	-> modifyIORefM pref copyp
               RVal_Frame {rvalSLRef=slref, rvalFrVals=vs, rvalFrSP=spref}
-              												-> readIORef spref >>= \sp -> modifyIORefM slref copyp >> mvecForM_' 0 sp vs copyv
+              												-> modifyIORefM slref copyp >> readIORef spref >>= \sp -> mvecForM_' 0 sp vs copyv
               RVal_Node {rvalNdVals=vs} 					-> mvecForM_ vs copyv
-              RVal_App {rvalArgs=vs} 						-> mvecForM_ vs copyv
+              RVal_App {rvalFun=f, rvalArgs=as} 			-> copyv f >> mvecForM_ as copyv
               RVal_Thunk {rvalSLRef=slref}					-> modifyIORefM slref copyp
               RVal_Lam {rvalSLRef=slref}					-> modifyIORefM slref copyp
               _  											-> return ()
+            -- putStrLn $ "GC copyv 2 v=" ++ show (pp v)
 
           -- inspect, follow, copy content of RVal
           follow bl gr
@@ -343,7 +348,7 @@ heapGcM curV = do
                 if bl < gr' then follow bl gr' else return bl
       
       -- initial copy: top frame
-      modifyIORefM topFrRef $ \topFr -> if isNullPtr topFr then return topFr else copyp topFr
+      modifyIORefM topFrRef copyp -- $ \topFr -> {- if isNullPtr topFr then return topFr else -} copyp topFr
 
       -- initial copy: stack
       modifyIORefM stkRef $ mapM copyp
@@ -361,19 +366,12 @@ heapGcM curV = do
       return $ env {renvGlobals = globals', renvHeap = hp {hpVals=vsNew}}
 
     put env'
-    rsemTr $ "GC done"
+    -- rsemTr' True $ "GC done"
     return curV
 %%]
 
-{-
-              RVal_Ptr pref -> do
-                p <- liftIO (readIORef pref)
-                copyp p
--}
-
-
-%%[(8 corerun) hs export(heapGetM, heapGetM', heapAllocM, heapUpdM, heapSetM, heapSetM')
--- | Allocate on the heap, filling it with a RVal_Node
+%%[(8 corerun) hs export(heapGetM, heapGetM', heapAllocM, heapAllocAsPtrM, heapUpdM, heapSetM, heapSetM')
+-- | Allocate on the heap
 heapAllocM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m HpPtr
 heapAllocM v = do
   hp@(Heap {hpVals=vs, hpFree=fr}) <- gets renvHeap
@@ -384,6 +382,12 @@ heapAllocM v = do
       MV.write vs p v
       writeIORef fr (p + 1)
       return p
+
+-- | Allocate on the heap, packing as RVal_Ptr
+heapAllocAsPtrM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m RVal
+heapAllocAsPtrM v = do
+  p <- heapAllocM v
+  liftIO (newIORef p) >>= (return . RVal_Ptr)
 
 {-
 -}
@@ -645,7 +649,7 @@ ref2valM r = do
         access v                                                        = 
           err $ "CoreRun.Run.Val.ref2valM.RRef_Loc.access:" >#< r >#< "in" >#< v
     RRef_Fld r e -> do
-        v <- ref2valM r -- >>= rsemDeref
+        v <- ptr2valM =<< ref2valM r -- >>= rsemDeref
         case v of
           RVal_Node _ vs -> liftIO $ MV.read vs e
           _              -> err $ "CoreRun.Run.Val.ref2valM.RRef_Fld:" >#< e >#< "in" >#< v

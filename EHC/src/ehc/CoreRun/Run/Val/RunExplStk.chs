@@ -151,7 +151,7 @@ rvalExplStkApp f nrActualArgs = do
         if nrActualArgs < narg 
           then do
             -- rsemTr $ "V app lam <"
-            renvFrStkReversePopMV nrActualArgs >>= (renvFrStkPush1 . RVal_App f)
+            renvFrStkReversePopMV nrActualArgs >>= \as -> heapAllocAsPtrM (RVal_App f as) >>= renvFrStkPush1
           else do
             -- rsemTr $ "V app lam >"
             ap <- rvalExplStkApp f narg >> renvFrStkPop1
@@ -177,17 +177,17 @@ rvalExplStkExp e = do
     -- app, call
     Exp_App f as -> do
         vecReverseForM_ as rsemExp
-        rsemExp f >>= rsemPop >>= \f' -> rvalExplStkApp f' (V.length as)
+        rsemExp f >>= rsemPop >>= ptr2valM >>= \f' -> rvalExplStkApp f' (V.length as)
     
     -- heap node
     Exp_Tup t as -> do
         V.forM_ as rsemExp
-        renvFrStkPopMV (V.length as) >>= (rsemPush . RVal_Node (ctagTag t))
+        renvFrStkPopMV (V.length as) >>= (heapAllocAsPtrM . RVal_Node (ctagTag t)) >>= rsemPush
 
     -- lam as is, being a heap allocated thunk when 0 args are required
     Exp_Lam {nrArgs_Exp_Lam=na}
-      | na == 0   -> mk RVal_Thunk >>= heapAllocM >>= (liftIO . newIORef) >>= (rsemPush . RVal_Ptr)
-      | otherwise -> mk RVal_Lam >>= rsemPush
+      | na == 0   -> mk RVal_Thunk >>= heapAllocAsPtrM >>= rsemPush
+      | otherwise -> mk RVal_Lam >>= heapAllocAsPtrM >>= rsemPush
       where mk rv = do
              sl <- renvTopFrameM
              slref <- liftIO $ newIORef sl
@@ -200,7 +200,7 @@ rvalExplStkExp e = do
 
     -- case, scrutinee already evaluated
     Exp_Case e as -> do
-      (RVal_Node {rvalTag=tg}) <- rsemPop =<< rsemSExp e
+      (RVal_Node {rvalTag=tg}) <- ptr2valM =<< rsemPop =<< rsemSExp e
       rsemAlt $ as V.! tg
     
     -- force evaluation immediately
@@ -234,7 +234,7 @@ instance
   where
     -- {-# SPECIALIZE instance RunSem RValCxt RValEnv RVal IO () #-}
     rsemInitial = do
-      s <- liftIO $ newRValEnv 100000
+      s <- liftIO $ newRValEnv 100000 -- 1000 -- 
       return (emptyRValCxt, s, undefined)
   
     rsemSetup opts modImpL mod@(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) = do
