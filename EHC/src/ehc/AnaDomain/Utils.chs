@@ -181,7 +181,7 @@ assSolve bound qualS
           (\ass -> ( Set.map (qual $ assQm ass) $ (Set.unions $ Map.elems (assWl ass)) `Set.difference` assSolved ass
                    , assVm ass
           )        )
-    -- $ tr "assSolve" (pp (show bound))
+    --- $ tr "assSolve" (pp (show bound))
     $ solve (ASS wlInit Map.empty initQualM emptyRVarMp False Set.empty Set.empty (Map.size wlInit) 0)
   where -- solver
         solve ass@(ASS {assWl=wl, assQm=qualM, assWlPos=wlPos, assWlSize=wlSize})

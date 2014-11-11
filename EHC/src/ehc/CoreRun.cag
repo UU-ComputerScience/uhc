@@ -93,23 +93,28 @@ type Bind = Exp
 %%[(8 corerun) hs export(RRef(..), noRRef)
 -- | Identifier references for use during running CoreRun
 data RRef
-  = RRef_Glb				-- ^ global reference to module and its entry
-      { rrefMod			:: !Int		-- ^ module
-      , rrefEntry		:: !Int		-- ^ entry inside module
+  -- | global reference to module and its entry
+  = RRef_Glb
+      { rrefMod         :: !Int     -- ^ module
+      , rrefEntry       :: !Int     -- ^ entry inside module
       }
-  | RRef_Loc				-- ^ local reference to on stack value
-      { rrefLev			:: !Int		-- ^ level
-      , rrefEntry		:: !Int		-- ^ entry inside level
+  -- | local reference to on stack value
+  | RRef_Loc
+      { rrefLev         :: !Int     -- ^ level
+      , rrefEntry       :: !Int     -- ^ entry inside level
       }
-  | RRef_Tag				-- ^ tag of memory/constructor node referred to by other ref (not yet used)
-      { rrefRef			:: !RRef	-- ^ of what this is the tag
+  -- | tag of memory/constructor node referred to by other ref (not yet used)
+  | RRef_Tag
+      { rrefRef         :: !RRef    -- ^ of what this is the tag
       }
-  | RRef_Fld				-- ^ fld of memory/constructor node referred to by other ref
-      { rrefRef			:: !RRef	-- ^ of what this is a field
-      , rrefEntry		:: !Int		-- ^ entry inside level
+  -- | fld of memory/constructor node referred to by other ref
+  | RRef_Fld
+      { rrefRef         :: !RRef    -- ^ of what this is a field
+      , rrefEntry       :: !Int     -- ^ entry inside level
       }
-  | RRef_Dbg				-- ^ debug variant, holding original name
-      { rrefNm			:: !HsName
+  -- | debug variant, holding original name
+  | RRef_Dbg
+      { rrefNm          :: !HsName
       }
   deriving (Eq,Ord)
 
