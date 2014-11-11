@@ -182,7 +182,7 @@ rvalExplStkExp e = do
     -- heap node
     Exp_Tup t as -> do
         V.forM_ as rsemExp
-        renvFrStkPopMV (V.length as) >>= (heapAllocAsPtrM . RVal_Node (ctagTag t)) >>= rsemPush
+        renvFrStkPopMV (V.length as) >>= rsemNode (ctagTag t) >>= rsemPush
 
     -- lam as is, being a heap allocated thunk when 0 args are required
     Exp_Lam {nrArgs_Exp_Lam=na}
@@ -200,8 +200,10 @@ rvalExplStkExp e = do
 
     -- case, scrutinee already evaluated
     Exp_Case e as -> do
-      (RVal_Node {rvalTag=tg}) <- ptr2valM =<< rsemPop =<< rsemSExp e
-      rsemAlt $ as V.! tg
+      v <- ptr2valM =<< rsemPop =<< rsemSExp e
+      case v of
+        RVal_Node {rvalTag=tg} -> rsemAlt $ as V.! tg
+        _ -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp.Case: scrutinee:" >#< v
     
     -- force evaluation immediately
     Exp_Force e -> rsemExp e >>= rsemPop >>= rsemEvl
@@ -234,7 +236,7 @@ instance
   where
     -- {-# SPECIALIZE instance RunSem RValCxt RValEnv RVal IO () #-}
     rsemInitial = do
-      s <- liftIO $ newRValEnv 100000 -- 1000 -- 
+      s <- liftIO $ newRValEnv 100000 --  
       return (emptyRValCxt, s, undefined)
   
     rsemSetup opts modImpL mod@(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) = do
@@ -267,27 +269,38 @@ instance
         _ -> rsemPush (RVal_Lit se)
     {-# INLINE rsemSExp #-}
 
-	-- TBD
-    rsemEvl v = case v of
-        RVal_Ptr {rvalPtrRef=pref} -> liftIO (readIORef pref) >>= evlPtr
-        RVal_BlackHole             -> err $ "CoreRun.Run.Val.rsemEvl.RVal_BlackHole:" >#< "Black hole"
-        _                          -> rsemPush v
+    rsemEvl v = do
+        -- rsemGcEnterRootLevel
+        -- rsemGcPushRoot v
+        case v of
+          RVal_Ptr {rvalPtrRef=pref} -> do
+            rsemGcEnterRootLevel
+            rsemGcPushRoot v
+            liftIO (readIORef pref) >>= evlPtr pref
+            rsemGcLeaveRootLevel
+          RVal_BlackHole             -> err $ "CoreRun.Run.Val.rsemEvl.RVal_BlackHole:" >#< "Black hole"
+          _                          -> return () -- rsemPush v
+        -- rsemGcLeaveRootLevel
+        rsemPush v
       where
-        evlPtr p = do
+        evlPtr pref p = do
           hp <- gets renvHeap
           v <- heapGetM' hp p
-          -- rsemTr $ "Evl: *" >|< p >|< ":" >#< v
           case v of
             RVal_Thunk {rvalSLRef=slref, rvalBody=e} -> do
+              -- rsemGcPushRoot v
               sl <- liftIO $ readIORef slref
               heapSetM' hp p RVal_BlackHole
               v' <- rvalExplStkAppLam sl e 0 $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
-              rsemPop v' >>= \v'' -> heapSetM' hp p v'' >> rsemPush v''
+              hp <- gets renvHeap
+              p <- liftIO (readIORef pref)
+              rsemPop v' >>= \v'' -> heapSetM' hp p v''
+              return ()
             RVal_Ptr {rvalPtrRef=pref} -> do
-              v' <- rsemPop =<< evlPtr =<< liftIO (readIORef pref)
-              heapSetM' hp p v' >> rsemPush v'
-            v -> rsemPush v
-          -- rsemTr $ "Evl->: *" >|< p >|< ":" >#< (v >-< v')
+              v' <- evlPtr pref =<< liftIO (readIORef pref)
+              return ()
+            v -> do
+              return ()
 
     rsemDeref v = do
       v' <- ptr2valM v
@@ -303,6 +316,18 @@ instance
     {-# INLINE rsemPush #-}
     rsemPop  = \_ -> renvFrStkPop1
     {-# INLINE rsemPop #-}
+    rsemNode t vs = heapAllocAsPtrM $ RVal_Node t vs
+    {-# INLINE rsemNode #-}
+
+    
+    rsemGcEnterRootLevel = gets renvGcRootStack >>= \r -> liftIO $ modifyIORef r $ ([]:)
+    {-# INLINE rsemGcEnterRootLevel #-}
+    
+    rsemGcPushRoot v = gets renvGcRootStack >>= \r -> liftIO $ modifyIORef r $ \(h:t) -> (v:h) : t
+    {-# INLINE rsemGcPushRoot #-}
+    
+    rsemGcLeaveRootLevel = gets renvGcRootStack >>= \r -> liftIO $ modifyIORef r tail
+    {-# INLINE rsemGcLeaveRootLevel #-}
 %%]
 
 

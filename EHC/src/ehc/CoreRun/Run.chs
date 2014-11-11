@@ -112,6 +112,21 @@ class (Monad m, MonadIO m, Functor m) => RunSem r s v m a
   rsemPush :: v -> RunT' r s v m a
   -- | Pop, i.e. lift/get from internal machinery to v
   rsemPop :: a -> RunT' r s v m v
+  -- | Construct a data constr/tuple
+  rsemNode :: Int -> CRMArray v -> RunT' r s v m v
+  
+  -- | GC new level of roots (followed by multiple pushes followed by single pop for all)
+  rsemGcEnterRootLevel :: RunT' r s v m ()
+  rsemGcEnterRootLevel = return ()
+  {-# INLINE rsemGcEnterRootLevel #-}
+  -- | GC push as root
+  rsemGcPushRoot :: v -> RunT' r s v m ()
+  rsemGcPushRoot _ = return ()
+  {-# INLINE rsemGcPushRoot #-}
+  -- | GC pop as root
+  rsemGcLeaveRootLevel :: RunT' r s v m ()
+  rsemGcLeaveRootLevel = return ()
+  {-# INLINE rsemGcLeaveRootLevel #-}
 %%]
 
 %%[(8 corerun) hs
@@ -155,7 +170,7 @@ runCoreRun opts modImpL mod m = do
   (e, _, _) <-
     runRWST (runErrorT $ do
               rsemSetup opts modImpL mod
-              (m >>= rsemPop))
+              (m >>= rsemPop >>= rsemDeref >>= rsemPop))
             r s
   return e
 %%]

@@ -128,8 +128,8 @@ data RVal
 instance Show RVal where
   show _ = "RVal"
 
-ppRVal :: RVal -> IO PP_Doc
-ppRVal rval = case rval of
+ppRVal' :: (HpPtr -> IO (Maybe RVal)) -> RVal -> IO PP_Doc
+ppRVal' lkptr rval = case rval of
     RVal_Lit   			e     		-> dfltpp e
     RVal_Char   		v     		-> dfltpp $ show v
     RVal_Int   			v     		-> dfltpp v
@@ -156,11 +156,18 @@ ppRVal rval = case rval of
                                        vl <- mvecToList vs
                                        return $ t >|< ppBracketsCommas vl
     RVal_App   			f as 		-> dfltpp f -- return $ ppBrackets $ f >|< "@"  >|< (ppParensCommas $ V.toList as)
-    RVal_Ptr   			pref    	-> readIORef pref >>= \p -> return $ "*"  >|< p
+    RVal_Ptr   			pref    	-> do
+                                       p <- readIORef pref
+                                       vpp <- lkptr p >>= maybe (return empty) (\v -> ppRVal' lkptr v >>= \vpp -> return $ " -> " >|< vpp)
+                                       return $ "*"  >|< p >|< vpp
     RVal_Fwd   			p    		-> return $ "f*" >|< p
-    RVal_Frame 			_ slref lv vs _ -> do
+    RVal_Frame 			_ slref lv vs spref -> do
                                        sl <- readIORef slref
-                                       return $ ppBracketsCommas $ ["sl=" >|< sl, "lev=" >|< lv, "sz=" >|< MV.length vs] -- ++ (map pp $ take 3 $ V.toList vs)
+                                       sp <- readIORef spref
+                                       vl <- mvecToList vs
+                                       vlpp <- forM (zip [0..(sp-1)] vl) $ \(i,v) -> ppRVal' lkptr v >>= \vpp -> return $ i >|< ":" >#< vpp
+                                       return $ (ppBracketsCommas $ ["sl=" >|< sl, "lev=" >|< lv, "sz=" >|< MV.length vs, "sp=" >|< sp])
+                                                >-< vlist vlpp
     RVal_BlackHole  				-> dfltpp "Hole"
     RVal_None       				-> dfltpp "None"
     RHsV_MutVar   		v    		-> dfltpp "MutVar"
@@ -170,13 +177,19 @@ ppRVal rval = case rval of
     dfltpp :: PP x => x -> IO PP_Doc
     dfltpp = return . pp
 
+ppRValWithHp :: Heap -> RVal -> IO PP_Doc
+ppRValWithHp hp = ppRVal' (\p -> heapGetM'' hp p >>= (return . Just))
+
+ppRVal :: RVal -> IO PP_Doc
+ppRVal = ppRVal' (\_ -> return Nothing)
+
 instance PP RVal where
   pp rval = unsafePerformIO (ppRVal rval)
 %%]
 
 %%[(8 corerun) hs export(mkTuple, mkUnit)
 mkTuple :: (RunSem RValCxt RValEnv RVal m a) => [RVal] -> RValT m a
-mkTuple vs = liftIO (mvecAllocFillFromV $ mkCRArray vs) >>= \v -> rsemPush $ RVal_Node 0 v
+mkTuple vs = liftIO (mvecAllocFillFromV $ mkCRArray vs) >>= rsemNode 0 >>= rsemPush
 {-# INLINE mkTuple #-}
 
 mkUnit :: (RunSem RValCxt RValEnv RVal m a) => RValT m a
@@ -189,7 +202,7 @@ mkUnit = mkTuple []
 type RValV = CRArray RVal
 
 -- Mutable vector of RVal
-type RValMV = MV.IOVector RVal
+type RValMV = CRMArray RVal
 %%]
 
 
@@ -221,7 +234,7 @@ instance HSMarshall Integer where
 instance HSMarshall Bool where
   hsMarshall _ (RVal_Node t _) = return $ t == tagBoolTrue
   hsMarshall _ v               = err $ "CoreRun.Run.Val.HSMarshall Bool:" >#< v
-  hsUnmarshall b = liftIO (mvecAllocFillFromV emptyCRArray) >>= \v -> rsemPush $ RVal_Node (if b then tagBoolTrue else tagBoolFalse) v
+  hsUnmarshall b = liftIO (mvecAllocFillFromV emptyCRArray) >>= rsemNode (if b then tagBoolTrue else tagBoolFalse) >>= rsemPush
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall Char where
@@ -242,8 +255,8 @@ instance HSMarshall [RVal] where
     | otherwise        = return []
   hsMarshall _   v     = err $ "CoreRun.Run.Val.HSMarshall [RVal]:" >#< v
 
-  hsUnmarshall []      = liftIO (mvecAllocFillFromV emptyCRArray) >>= \v -> rsemPush $ RVal_Node tagListNil v
-  hsUnmarshall (h:t)   = hsUnmarshall t >>= rsemPop >>= \t' -> (liftIO $ mvecAllocFillFromV $ mkCRArray [h, t']) >>= \v -> rsemPush $ RVal_Node tagListCons v
+  hsUnmarshall []      = liftIO (mvecAllocFillFromV emptyCRArray) >>= rsemNode tagListNil >>= rsemPush
+  hsUnmarshall (h:t)   = hsUnmarshall t >>= rsemPop >>= \t' -> (liftIO $ mvecAllocFillFromV $ mkCRArray [h, t']) >>= rsemNode tagListCons >>= rsemPush
 
 instance HSMarshall x => HSMarshall [x] where
   hsMarshall evl x = hsMarshall evl x >>= mapM (\v -> evl v >>= rsemPop >>= hsMarshall evl)
@@ -284,9 +297,10 @@ isNullPtr = (== nullPtr)
 
 data Heap
   = Heap
-      { hpVals					:: {-# UNPACK #-} !RValMV
-      , hpFree					:: {-# UNPACK #-} !(IORef HpPtr)
-      , hpSemispaceMultiplier	:: {-# UNPACK #-} !(IORef Rational)				-- multiplier by which to enlarge/shrink subsequent semispace
+      { hpVals					:: {-# UNPACK #-} !RValMV						-- ^ value array
+      , hpFirst					:: {-# UNPACK #-} !HpPtr						-- ^ the ptr of hpVals ! 0
+      , hpFree					:: {-# UNPACK #-} !(IORef HpPtr)				-- ^ first array location free for alloc
+      , hpSemispaceMultiplier	:: {-# UNPACK #-} !(IORef Rational)				-- ^ multiplier by which to enlarge/shrink subsequent semispace
       }
 
 newHeap :: Int -> IO Heap
@@ -294,7 +308,7 @@ newHeap sz = do
   vs <- mvecAllocInit sz
   fr <- newIORef 0
   ml <- newIORef 1.5
-  return $ Heap vs fr ml
+  return $ Heap vs 0 fr ml
 %%]
 
 %%[(8 corerun) hs
@@ -303,29 +317,47 @@ heapGcM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m RVal
 -- heapGcM = err $ "CoreRun.Run.Val.heapGcM: GC not yet implemented"
 heapGcM curV = do
     -- rsemSetTrace True
-    -- rsemTr' True $ "GC starts"
-    env@(RValEnv {renvHeap=hp@(Heap {hpVals=vsOld, hpSemispaceMultiplier=mlRef, hpFree=hpFrRef}), renvTopFrame=topFrRef, renvStack=stkRef, renvGlobals=globals}) <- get
+    -- rsemTr' True $ "GC starts, curV=" >#< curV
+    -- rsemTr $ "GC starts"
+    env@(RValEnv {renvHeap=hp@(Heap {hpVals=vsOld, hpSemispaceMultiplier=mlRef, hpFirst=offOld, hpFree=hpFrRef}), renvGcRootStack=rootStkRef, renvTopFrame=topFrRef, renvStack=stkRef, renvGlobals=globals}) <- get
     env' <- liftIO $ do
       ml <- readIORef mlRef
-      vsNew <- mvecAllocInit $ round $ fromIntegral (MV.length vsOld) * ml
-      greyref <- newIORef 0
-      let -- copy content of ptr to new loc, leaving a forwarding on to the old location
+      let szOld  = MV.length vsOld
+          szNew  = (round $ fromIntegral szOld * ml) :: Int
+          offNew = offOld + szOld
+          lwbOld = offOld
+          upbOld = offNew
+      vsNew <- mvecAllocInit szNew
+      greyref <- newIORef offNew
+      let -- copy content of old ptr to new loc, leaving a forwarding on to the old location
           copyp p
-            | p >= 0 = do
-                v <- MV.read vsOld p
+            -- is this indeed an old ptr?
+            | p >= lwbOld && p < upbOld = do
+                let pOld = p
+                    iOld = pOld - offOld
+                v <- MV.read vsOld iOld
                 case v of
-                  RVal_Fwd p' -> do
-                    -- putStrLn $ "GC copyp Fwd p=" ++ show p ++ ", p'=" ++ show p'
-                    return p'
+                  RVal_Fwd pNew -> do
+                    -- putStrLn $ "GC copyp Fwd p=" ++ show pOld ++ ", pNew=" ++ show pNew
+                    return pNew
                   v -> do
-                    p' <- readIORef greyref
-                    MV.write vsNew p' v
-                    MV.write vsOld p  (RVal_Fwd p')
-                    writeIORef greyref (p'+1)
-                    -- putStrLn $ "GC copyp Val p=" ++ show p ++ ", p'=" ++ show p' ++ ", v=" ++ show (pp v)
-                    return p'
-            | otherwise = return p
+                    pNew <- readIORef greyref
+                    let iNew = pNew - offNew
+                    MV.write vsNew iNew v
+                    MV.write vsOld iOld (RVal_Fwd pNew)
+                    writeIORef greyref (pNew+1)
+                    -- putStrLn $ "GC copyp Val p=" ++ show pOld ++ ", pNew=" ++ show pNew ++ ", v=" ++ show (pp v)
+                    return pNew
+            | otherwise = do
+                    -- putStrLn $ "GC copyp None p=" ++ show p
+                    return p
           
+          -- inspect RVal_Ptr only
+          copypv v = do
+            case v of
+              RVal_Ptr pref                               	-> modifyIORefM pref copyp
+              _  											-> return ()
+
           -- inspect, possibly copy internal part of a RVal, stops with a ptr which later is dealt with (to prevent too deep stack growth), exploiting the in between grey/black area as queue
           copyv v = do
             -- putStrLn $ "GC copyv 1 v=" ++ show (pp v)
@@ -341,11 +373,11 @@ heapGcM curV = do
             -- putStrLn $ "GC copyv 2 v=" ++ show (pp v)
 
           -- inspect, follow, copy content of RVal
-          follow bl gr
-            | bl < gr   = MV.read vsNew bl >>= copyv >> follow (bl+1) gr
-            | otherwise = do
-                gr' <- readIORef greyref
-                if bl < gr' then follow bl gr' else return bl
+          follow pBlk pGry
+            | pBlk < pGry = MV.read vsNew (pBlk-offNew) >>= copyv >> follow (pBlk+1) pGry
+            | otherwise   = do
+                pGry' <- readIORef greyref
+                if pBlk < pGry' then follow pBlk pGry' else return pBlk
       
       -- initial copy: top frame
       modifyIORefM topFrRef copyp -- $ \topFr -> {- if isNullPtr topFr then return topFr else -} copyp topFr
@@ -359,14 +391,19 @@ heapGcM curV = do
       -- initial copy: the RVal to be put on the heap
       copyv curV
       
+      -- initial copy: additional roots
+      readIORef rootStkRef >>= mapM_ (mapM_ copyv)
+      
       -- follow with initial values of grey and black (0)
-      readIORef greyref >>= follow 0 >>= writeIORef hpFrRef
+      readIORef greyref >>= follow offNew >>= \p -> writeIORef hpFrRef (p - offNew)
         
       -- final: 
-      return $ env {renvGlobals = globals', renvHeap = hp {hpVals=vsNew}}
+      return $ env {renvGlobals = globals', renvHeap = hp {hpVals=vsNew, hpFirst=offNew}}
 
     put env'
-    -- rsemTr' True $ "GC done"
+    -- rsemTr $ "GC done"
+    -- rsemTr' True $ "GC done, curV=" >#< curV
+    -- rsemSetTrace False
     return curV
 %%]
 
@@ -374,14 +411,14 @@ heapGcM curV = do
 -- | Allocate on the heap
 heapAllocM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m HpPtr
 heapAllocM v = do
-  hp@(Heap {hpVals=vs, hpFree=fr}) <- gets renvHeap
+  hp@(Heap {hpVals=vs, hpFirst=off, hpFree=fr}) <- gets renvHeap
   p <- liftIO $ readIORef fr
   if p >= MV.length vs
     then heapGcM v >>= heapAllocM
     else liftIO $ do
       MV.write vs p v
       writeIORef fr (p + 1)
-      return p
+      return $ p + off
 
 -- | Allocate on the heap, packing as RVal_Ptr
 heapAllocAsPtrM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m RVal
@@ -394,7 +431,7 @@ heapAllocAsPtrM v = do
 -- | Get a value from the heap
 -- heapGetM'' :: PrimMonad m => Heap -> HpPtr -> m RVal
 heapGetM'' :: Heap -> HpPtr -> IO RVal
-heapGetM'' hp p = MV.read (hpVals hp) p
+heapGetM'' hp@(Heap {hpVals=vs, hpFirst=off}) p = MV.read vs (p - off)
 {-# INLINE heapGetM'' #-}
 
 -- | Get a value from the heap
@@ -411,7 +448,7 @@ heapGetM p = do
 
 -- | Set a value in the heap
 heapSetM' :: (RunSem RValCxt RValEnv RVal m x) => Heap -> HpPtr -> RVal -> RValT m ()
-heapSetM' hp p v = liftIO $ MV.write (hpVals hp) p v
+heapSetM' hp@(Heap {hpVals=vs, hpFirst=off}) p v = liftIO $ MV.write vs (p - off) v
 {-# INLINE heapSetM' #-}
 
 -- | Set a value in the heap
@@ -423,10 +460,11 @@ heapSetM p v = do
 
 -- | Update a value in the heap
 heapUpdM' :: (RunSem RValCxt RValEnv RVal m x) => Heap -> HpPtr -> (RVal -> RValT m RVal) -> RValT m ()
-heapUpdM' hp@(Heap {hpVals=vs}) p f = do
-  v <- liftIO $ MV.read vs p
+heapUpdM' hp@(Heap {hpVals=vs, hpFirst=off}) p f = do
+  let p' = p - off
+  v <- liftIO $ MV.read vs p'
   v' <- f v
-  liftIO $ MV.write vs p v'
+  liftIO $ MV.write vs p' v'
 {-# INLINE heapUpdM' #-}
 
 -- | Update a value in the heap
@@ -453,7 +491,7 @@ emptyRValCxt :: RValCxt
 emptyRValCxt = RValCxt True -- False
 %%]
 
-%%[(8 corerun) hs export(mustReturn, needNotReturn, rvalRetEvl)
+%%[(8 corerun) hs export(mustReturn, needNotReturn, rvalRetEvl, rvalPrimargEvl)
 -- | Set return context to True
 mustReturn :: RunSem RValCxt RValEnv RVal m x => RValT m a -> RValT m a
 mustReturn = local (\r -> r {rcxtInRet = True})
@@ -468,6 +506,11 @@ needNotReturn = local (\r -> r {rcxtInRet = False})
 rvalRetEvl :: RunSem RValCxt RValEnv RVal m x => RVal -> RValT m x
 rvalRetEvl = mustReturn . rsemEvl
 {-# INLINE rvalRetEvl #-}
+
+-- | Variation of `rsemEvl` in primitve argument context
+rvalPrimargEvl :: RunSem RValCxt RValEnv RVal m x => RVal -> RValT m x
+rvalPrimargEvl x = rvalRetEvl x >>= rsemPop >>= rsemDeref
+{-# INLINE rvalPrimargEvl #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -621,7 +664,9 @@ mvecReverseForM_ v m = mvecLoopReverse 0 (MV.length v) (\v i -> MV.read v i >>= 
 -- | Dereference a possibly RVal_Ptr
 ptr2valM :: (RunSem RValCxt RValEnv RVal m x) => RVal -> RValT m RVal
 ptr2valM v = case v of
-  RVal_Ptr pref -> liftIO (readIORef pref) >>= heapGetM >>= ptr2valM
+  RVal_Ptr pref -> liftIO (readIORef pref) >>= heapGetM >>= \v' -> case v' of
+                     RVal_Thunk {} -> return v
+                     _             -> ptr2valM v'
   _             -> return v
 {-# INLINE ptr2valM #-}
 
@@ -678,6 +723,7 @@ data RValEnv
       -- , renvFrSP		:: !(IORef Int)					-- ^ top of expr stack embedded in higher end of top frame
       , renvHeap		:: !Heap						-- ^ heap
       , renvDoTrace		:: !Bool
+      , renvGcRootStack	:: !(IORef [[RVal]])			-- ^ stack of roots for GC, use is optional
       }
 
 newRValEnv :: Int -> IO RValEnv
@@ -686,7 +732,8 @@ newRValEnv hpSz = do
   tp <- newIORef nullPtr
   hp <- newHeap hpSz
   -- sp <- newIORef 0
-  return $ RValEnv V.empty st tp hp False
+  rtst <- newIORef []
+  return $ RValEnv V.empty st tp hp False rtst
 %%]
 
 %%[(8 corerun) hs export(renvTopFrameM)
@@ -728,38 +775,32 @@ dumpPpEnvM extensive = do
         header2 = ppCurly $ "Heap =" >|< hpfr >|< "/" >|< MV.length (hpVals hp) >|< ", Stack =" >|< ppBracketsCommas stkfrs
         footer1 = dash
     hpPP <- dumpHeap hp hpfr
-    glPP <- dumpGlobals (renvGlobals env)
-    frPPs <- forM stkfrs dumpFrame
+    glPP <- dumpGlobals hp (renvGlobals env)
+    frPPs <- forM stkfrs $ dumpFrame hp
     if extensive
       then return $ header1 >-< header2 >-< hpPP >-< glPP >-< "====== Frames ======" >-< (indent 2 $ vlist frPPs) >-< footer1
       else return $ header2
   where
-    dumpFrame fp = do
+    dumpFrame hp fp = do
       fr@(RVal_Frame {rvalFrVals=vs, rvalFrSP=spref}) <- heapGetM fp
       sp  <- liftIO $ readIORef spref
-      pps <- ppa sp vs
-      return $ "Frame ptr=" >|< fp >|< " sp=" >|< sp >-< (indent 2 $ fr >-< (indent 2 $ vlist pps))
-    dumpGlobals glbls = do
+      -- pps <- ppa 0 hp sp vs
+      (liftIO $ ppRValWithHp hp fr) >>= \frpp -> return $ "Frame ptr=" >|< fp >|< " sp=" >|< sp >-< (indent 2 $ frpp) --  >-< (indent 2 $ vlist pps))
+    dumpGlobals hp glbls = do
       pps <- forM [0 .. V.length glbls - 1] $ \i -> do
-        dumpFrame (glbls V.! i)
+        dumpFrame hp (glbls V.! i)
       return $ "====== Globals ======" >-< indent 2 (vlist pps)
-    dumpHeap hp hpfr = do
-      pps <- ppa hpfr (hpVals hp)
+    dumpHeap hp@(Heap {hpFirst=off}) hpfr = do
+      pps <- ppa off hp hpfr (hpVals hp)
       return $ "======= Heap =======" >-< indent 2 (vlist pps)
-    ppb k v = do
-      ppvextra <- case v of
-        RVal_Ptr pref -> do 
-          v' <- heapGetM =<< liftIO (readIORef pref)
-          return $ " = " >|< v'
-        _ -> return empty
-      return $ k >|< ":" >#< v >|< ppvextra
-    ppa sz vs = forM [0 .. sz - 1] $ \i -> liftIO (MV.read vs i) >>= ppb i
+    ppb hp k v = (liftIO $ ppRValWithHp hp v) >>= \vpp -> return $ k >|< ":" >#< vpp
+    ppa off hp sz vs = forM [0 .. sz - 1] $ \i -> liftIO (MV.read vs i) >>= ppb hp (i + off)
 %%]
 
 %%[(8 corerun) hs export(dumpEnvM)
 -- | Dump environment
 dumpEnvM :: (RunSem RValCxt RValEnv RVal m x) => Bool -> RValT m ()
-dumpEnvM extensive = dumpPpEnvM extensive >>= (liftIO . putPPLn)
+dumpEnvM extensive = dumpPpEnvM extensive >>= \p -> liftIO $ putPPLn p >> hFlush stdout
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -860,6 +901,7 @@ rsemTr' :: (PP msg, RunSem RValCxt RValEnv RVal m x) => Bool -> msg -> RValT m (
 rsemTr' dumpExtensive msg = whenM (gets renvDoTrace) $ do
     liftIO $ putStrLn $ show $ pp msg
     dumpEnvM dumpExtensive
+    liftIO $ hFlush stdout
 
 -- | Trace
 rsemTr :: (PP msg, RunSem RValCxt RValEnv RVal m x) => msg -> RValT m ()

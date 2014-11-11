@@ -171,7 +171,7 @@ rvalImplStkExp e = do
     -- heap node
     Exp_Tup t as -> do
         as' <- V.mapM rsemExp as >>= (liftIO . mvecAllocFillFromV)
-        return $ RVal_Node (ctagTag t) as'
+        rsemNode (ctagTag t) as'
 
     -- lam as is, being a heap allocated thunk when 0 args are required
     Exp_Lam {nrArgs_Exp_Lam=na}
@@ -297,6 +297,9 @@ instance
     {-# INLINE rsemPush #-}
     rsemPop  = return
     {-# INLINE rsemPop #-}
+    rsemNode t vs = return $ RVal_Node t vs
+    {-# INLINE rsemNode #-}
+
 %%]
 
 

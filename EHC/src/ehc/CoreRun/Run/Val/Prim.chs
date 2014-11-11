@@ -35,8 +35,8 @@
 -- | Apply primitive to arguments
 rvalPrim :: (RunSem RValCxt RValEnv RVal m a) => RunPrim -> RValV -> RValT m a
 rvalPrim pr as = do 
-    -- as' <- forM (V.toList as) rsemDeref
-    let as' = V.toList as
+    as' <- forM (V.toList as) $ \a -> rsemDeref a >>= rsemPop
+    -- let as' = V.toList as
     -- rsemTr $ "Prim:" >#< show pr >|< ppParensCommas as'
     case (pr, as') of
       -- Int arithmetic
@@ -296,7 +296,7 @@ primInputIO io = (liftIO $ io) >>= hsUnmarshall
 
 -- | Output-like IO
 primOutputIO :: (RunSem RValCxt RValEnv RVal m a, HSMarshall x) => (x -> IO ()) -> RVal -> RValT m a
-primOutputIO io x = rvalVoid $ hsMarshall rvalRetEvl x >>= (liftIO . io)
+primOutputIO io x = rvalVoid $ hsMarshall rvalPrimargEvl x >>= (liftIO . io)
 -- {-# INLINE primOutputIO #-}
 %%]
 
