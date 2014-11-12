@@ -570,7 +570,7 @@ AC_ARG_WITH(shuffle,
 if test "$shuffleCmd" != "no" -a -x "$shuffleCmd" ; then
   shuffleExists="yes"
   shuffleVersion=`$shuffleCmd --version`
-  buildToolDependenciesUnchecked="shuffle>=0.1.1.0 ${buildToolDependenciesUnchecked}"
+  buildToolDependenciesUnchecked="shuffle>=0.1.3.1 ${buildToolDependenciesUnchecked}"
 else
   shuffleCmd=""
   shuffleExists="no"
