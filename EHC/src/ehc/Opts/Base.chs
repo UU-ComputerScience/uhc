@@ -192,6 +192,7 @@ execOptsPlain o = [ s | ExecOpt_Plain s <- o ]
 Convention: most option names/fields start with 'ehcOpt'
 
 %%[1.EHCOpts export(EHCOpts(..))
+-- | The options to use.
 data EHCOpts
   = EHCOpts
       {  ehcOptTrace          ::  forall a . String -> a -> a            -- tracing

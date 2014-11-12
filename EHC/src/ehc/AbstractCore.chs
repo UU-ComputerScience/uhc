@@ -87,10 +87,13 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   acoreCast :: ty -> expr -> expr
   acoreCast _ e = e
   
-  -- | case, with possible default
-  acoreCaseDflt  :: expr -> [alt] -> Maybe expr -> expr
+  -- | A Case expression, possibly with a default value.
+  acoreCaseDflt  :: expr    -- ^ The scrutinee. Required to be in WHNF.
+        -> [alt]            -- ^ The alternatives.
+        -> Maybe expr       -- ^ The default value. (TODO what is the behaviour if it is Nothing?)
+        -> expr
 
-  -- | var
+  -- | Creates a variable expression.
   acoreVar  :: HsName -> expr
 
   -- | string
@@ -556,7 +559,11 @@ acore1App :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e ->
 acore1App f a = acore1AppBound f (acoreBound1Val a)
 {-# INLINE acore1App #-}
 
-acoreApp :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e -> [e] -> e
+-- | Applies the first expression to all given arguments.
+acoreApp :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
+    => e    -- ^ The lambda to apply.
+    -> [e]  -- ^ The arguments (the empty list is allowed).
+    -> e
 acoreApp f as = foldl (\f a -> acore1App f a) f as
 
 acoreAppBound :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e -> [bound] -> e
@@ -593,6 +600,7 @@ acoreLam as e = foldr (\(n) e -> acoreLam1 n e) e as
 acoreTagTupTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => CTag -> t -> [e] -> e
 acoreTagTupTy tg t es = acoreTagTyTupBound tg t $ map acoreBound1Val es
 
+-- | Creates a new tuple/record with the given values.
 acoreTagTup :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => CTag -> [e] -> e
 acoreTagTup tg es = acoreTagTupTy tg (acoreTyErr "acoreTupTy") es
 
@@ -821,7 +829,12 @@ acoreLet1StrictTy nm t e
   = acoreLet cat [acoreBind1CatTy cat nm t e]
   where cat = acoreBindcategStrict
 
-acoreLet1Strict :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> e -> e -> e
+-- | Creates a let binding, which is strict in the bound expression.
+acoreLet1Strict :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
+    => HsName   -- ^ The identifer.
+    -> e        -- ^ The expression to bind. Will be evaluated to WHNF, before the body is evaluated.
+    -> e        -- ^ The body.
+    -> e
 acoreLet1Strict nm e = acoreLet1StrictTy nm (acoreTyErr "acoreLet1Strict") e
 {-# INLINE acoreLet1Strict #-}
 %%]
@@ -885,6 +898,7 @@ acoreBindcategDflt _ = acoreBindcategPlain
 acoreChar :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Char -> e
 acoreChar opts i = let x = acoreCharTy (acoreTyChar opts) i in x
 
+-- | Creates an `Int` constant.
 acoreInt :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Int -> e
 acoreInt opts i = let x = acoreIntTy (acoreTyInt opts) i in x
 
@@ -922,21 +936,34 @@ acoreBuiltinEqChar opts c e = acoreBuiltinApp opts ehbnPrimEqChar [e,acoreChar o
 %%]
 
 %%[(8 codegen) hs export(acoreBuiltinString)
-acoreBuiltinString :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> String -> e
+-- | Creates a string expression.
+-- The expression represents a packed String, which can be passed to Haskell generated Core functions.
+acoreBuiltinString :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
+    => EHCOpts
+    -> String   -- ^ The string.
+    -> e
 acoreBuiltinString opts m = let x = acoreBuiltinApp opts ehbnPackedStringToString [acoreStringTy (acoreTyString opts) m] in x
 %%]
 
 %%[(8 codegen) hs export(acoreBuiltinError,acoreBuiltinUndefined)
-acoreBuiltinError :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> String -> e
+-- | Generates an error expression, failing with the given string when evaluated. ('error' in haskell)
+acoreBuiltinError :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
+    => EHCOpts
+    -> String -- ^ The error message.
+    -> e
 acoreBuiltinError opts m = acoreBuiltinApp opts ehbnError [acoreBuiltinString opts m]
 
+-- | Generates an undefined expression, failing when evaluated. ('undefined' in haskell)
 acoreBuiltinUndefined :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> e
 acoreBuiltinUndefined opts = acoreBuiltinApp opts ehbnUndefined []
 %%]
 
 %%[(97 codegen) hs export(acoreBuiltinInteger)
--- | Builtin Integer
-acoreBuiltinInteger :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Integer -> e
+-- | Creates a Core 'Integer' constant.
+acoreBuiltinInteger :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
+    => EHCOpts
+    -> Integer  -- ^ The integer.
+    -> e
 acoreBuiltinInteger opts i = acoreBuiltinApp opts ehbnPackedStringToInteger [acoreStringTy (acoreTyString opts) (show i)]
 %%]
 
