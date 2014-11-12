@@ -72,8 +72,8 @@ emptyRunSt
 %%[(8 corerun) hs export(RunSem(..))
 -- | Factored out stuff, not much in it but intended to accomodate variability in running
 class (Monad m, MonadIO m, Functor m) => RunSem r s v m a
-    -- | r -> a s
-    -- , s -> a r
+    --- | r -> a s
+    --- , s -> a r
     | r s -> v a
     where
   -- | Provide initial state

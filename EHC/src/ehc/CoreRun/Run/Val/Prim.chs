@@ -94,7 +94,7 @@ rvalPrim pr as = do
 		-- and are initially open.
 
 -}
-	  -- | RP_stdin, RP_stdout, RP_stderr -- :: Handle
+	  --- | RP_stdin, RP_stdout, RP_stderr -- :: Handle
       (RP_stdin , _) -> rsemPush $ RHsV_Handle stdin
       (RP_stdout, _) -> rsemPush $ RHsV_Handle stdout
       (RP_stderr, _) -> rsemPush $ RHsV_Handle stderr
@@ -109,9 +109,9 @@ rvalPrim pr as = do
 	  -- IOMode(ReadMode,WriteMode,AppendMode,ReadWriteMode),
 
 -}
-		-- ** Closing files
+		--- ** Closing files
 
-	  -- | RP_hClose                    -- :: Handle -> IO ()
+	  --- | RP_hClose                    -- :: Handle -> IO ()
       (RP_hClose, [RHsV_Handle h]) -> primIO (hClose h)
 
 {-
@@ -128,25 +128,25 @@ rvalPrim pr as = do
 		-- $locking
 -}
 
-		-- * Operations on handles
+		--- * Operations on handles
 
-		-- ** Determining and changing the size of a file
+		--- ** Determining and changing the size of a file
 
-	  -- | RP_hFileSize                 -- :: Handle -> IO Integer
+	  --- | RP_hFileSize                 -- :: Handle -> IO Integer
       (RP_hFileSize, [RHsV_Handle h]) -> primInputIO (hFileSize h)
-	-- #ifdef __GLASGOW_HASKELL__
-	  -- | RP_hSetFileSize              -- :: Handle -> Integer -> IO ()
+	--- #ifdef __GLASGOW_HASKELL__
+	  --- | RP_hSetFileSize              -- :: Handle -> Integer -> IO ()
       (RP_hSetFileSize, [RHsV_Handle h, RVal_Integer i]) -> primIO (hSetFileSize h i)
-	-- #endif
+	--- #endif
 
-		-- ** Detecting the end of input
+		--- ** Detecting the end of input
 
-	  -- | RP_hIsEOF                    -- :: Handle -> IO Bool
+	  --- | RP_hIsEOF                    -- :: Handle -> IO Bool
       (RP_hIsEOF, [RHsV_Handle h]) -> primInputIO (hIsEOF h)
 {-
 	  | RP_isEOF                     -- :: IO Bool
 -}
-		-- ** Buffering operations
+		--- ** Buffering operations
 
 {-
 	  -- BufferMode(NoBuffering,LineBuffering,BlockBuffering),
@@ -154,7 +154,7 @@ rvalPrim pr as = do
       (RP_hSetBuffering, [RHsV_Handle h, RVal_Int m]) -> primInputIO (hSetBuffering h m)
 	  | RP_hGetBuffering             -- :: Handle -> IO BufferMode
 -}
-	  -- | RP_hFlush                    -- :: Handle -> IO ()
+	  --- | RP_hFlush                    -- :: Handle -> IO ()
       (RP_hFlush, [RHsV_Handle h]) -> primIO (hFlush h)
 
 {-
@@ -180,46 +180,46 @@ rvalPrim pr as = do
 
 		-- ** Terminal operations (not portable: GHC\/Hugs only)
 
-	-- #if !defined(__NHC__)
+	--- #if !defined(__NHC__)
 	  | RP_hIsTerminalDevice          -- :: Handle -> IO Bool
 
 	  | RP_hSetEcho                   -- :: Handle -> Bool -> IO ()
 	  | RP_hGetEcho                   -- :: Handle -> IO Bool
-	-- #endif
+	--- #endif
 
 		-- ** Showing handle state (not portable: GHC only)
 
 	-- #ifdef __GLASGOW_HASKELL__
 -}
-	  -- | RP_hShow                      -- :: Handle -> IO String
+	  --- | RP_hShow                      -- :: Handle -> IO String
       (RP_hShow, [RHsV_Handle h]) -> primInputIO (hShow h)
 {-
-	-- #endif
+	--- #endif
 
 		-- * Text input and output
 
 		-- ** Text input
 -}
-	  -- | RP_hWaitForInput             -- :: Handle -> Int -> IO Bool
+	  --- | RP_hWaitForInput             -- :: Handle -> Int -> IO Bool
       (RP_hWaitForInput, [RHsV_Handle h, RVal_Int i]) -> primInputIO (hWaitForInput h i)
 {-
 	  | RP_hReady                    -- :: Handle -> IO Bool
 -}
-	  -- | RP_hGetChar                  -- :: Handle -> IO Char
+	  --- | RP_hGetChar                  -- :: Handle -> IO Char
       (RP_hGetChar, [RHsV_Handle h]) -> primInputIO (hGetChar h)
-	  -- | RP_hGetLine                  -- :: Handle -> IO [Char]
+	  --- | RP_hGetLine                  -- :: Handle -> IO [Char]
       (RP_hGetLine, [RHsV_Handle h]) -> primInputIO (hGetLine h)
-	  -- | RP_hLookAhead                -- :: Handle -> IO Char
+	  --- | RP_hLookAhead                -- :: Handle -> IO Char
       (RP_hLookAhead, [RHsV_Handle h]) -> primInputIO (hLookAhead h)
-	  -- | RP_hGetContents              -- :: Handle -> IO [Char]
+	  --- | RP_hGetContents              -- :: Handle -> IO [Char]
       (RP_hGetContents, [RHsV_Handle h]) -> primInputIO (hGetContents h)
 {-
 		-- ** Text output
 
 -}
-	  -- | RP_hPutChar                  -- :: Handle -> Char -> IO ()
+	  --- | RP_hPutChar                  -- :: Handle -> Char -> IO ()
       (RP_hPutChar, [RHsV_Handle h, x]) -> primOutputIO (hPutChar h) x
-	  -- | RP_hPutStr                   -- :: Handle -> [Char] -> IO ()
+	  --- | RP_hPutStr                   -- :: Handle -> [Char] -> IO ()
       (RP_hPutStr, [RHsV_Handle h, x]) -> primOutputIO (hPutStr h) x
 {-
 	  | RP_hPutStrLn                 -- :: Handle -> [Char] -> IO ()
@@ -244,30 +244,30 @@ rvalPrim pr as = do
 	  | RP_withBinaryFile
 	  | RP_openBinaryFile            -- :: FilePath -> IOMode -> IO Handle
 -}
-	  -- | RP_hSetBinaryMode            -- :: Handle -> Bool -> IO ()
+	  --- | RP_hSetBinaryMode            -- :: Handle -> Bool -> IO ()
       (RP_hSetBinaryMode, [RHsV_Handle h, b]) -> primOutputIO (hSetBinaryMode h) b
-	  -- | RP_hPutBuf                   -- :: Handle -> Ptr a -> Int -> IO ()
+	  --- | RP_hPutBuf                   -- :: Handle -> Ptr a -> Int -> IO ()
       (RP_hPutBuf, [RHsV_Handle h, RHsV_Addr a, RVal_Int i]) -> primIO (hPutBuf h (Ptr a) i)
-	  -- | RP_hGetBuf                   -- :: Handle -> Ptr a -> Int -> IO Int
+	  --- | RP_hGetBuf                   -- :: Handle -> Ptr a -> Int -> IO Int
       (RP_hGetBuf, [RHsV_Handle h, RHsV_Addr a, RVal_Int i]) -> primInputIO (hGetBuf h (Ptr a) i)
 {-
-	-- #if !defined(__NHC__) && !defined(__HUGS__)
+	--- #if !defined(__NHC__) && !defined(__HUGS__)
 -}
-	  -- | RP_hPutBufNonBlocking        -- :: Handle -> Ptr a -> Int -> IO Int
+	  --- | RP_hPutBufNonBlocking        -- :: Handle -> Ptr a -> Int -> IO Int
       (RP_hPutBufNonBlocking, [RHsV_Handle h, RHsV_Addr a, RVal_Int i]) -> primIO (hPutBufNonBlocking h (Ptr a) i)
-	  -- | RP_hGetBufNonBlocking        -- :: Handle -> Ptr a -> Int -> IO Int
+	  --- | RP_hGetBufNonBlocking        -- :: Handle -> Ptr a -> Int -> IO Int
       (RP_hGetBufNonBlocking, [RHsV_Handle h, RHsV_Addr a, RVal_Int i]) -> primInputIO (hGetBufNonBlocking h (Ptr a) i)
 {-
-	-- #endif
+	--- #endif
 		-- * Temporary files
 
 	  | RP_openTempFile
 	  | RP_openBinaryTempFile
 -}
-        -- * Additional ones
-      -- | RP_primShowHandle               -- :: Handle -> String
+        --- * Additional ones
+      --- | RP_primShowHandle               -- :: Handle -> String
       (RP_primShowHandle, [RHsV_Handle h]) -> hsUnmarshall $ show h
-      -- | RP_primEqHandle                 -- :: Handle -> Handle -> Bool
+      --- | RP_primEqHandle                 -- :: Handle -> Handle -> Bool
       (RP_primEqHandle, [RHsV_Handle h1, RHsV_Handle h2]) -> hsUnmarshall $ h1 == h2
 
       (pr, _) -> err $ "CoreRun.Run.Val.Prim:" >#< show pr

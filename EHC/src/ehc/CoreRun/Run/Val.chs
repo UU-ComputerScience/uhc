@@ -69,12 +69,12 @@ data RVal
       }
   | RVal_Char  			   {-# UNPACK #-} !Char   
   | RVal_Int   			   {-# UNPACK #-} !Int   
-{-
+{--
   | RVal_Int8  			   {-# UNPACK #-} !Int8  
   | RVal_Int16 			   {-# UNPACK #-} !Int16
 -}
   | RVal_Int32 			   {-# UNPACK #-} !Int32 
-{-
+{--
   | RVal_Int64 			   {-# UNPACK #-} !Int64 
   | RVal_Word  			   {-# UNPACK #-} !Word  
   | RVal_Word8 			   {-# UNPACK #-} !Word8 
@@ -92,7 +92,8 @@ data RVal
       { rvalBody		:: !Exp						-- ^ a Exp_Lam, which also encodes a thunk
       , rvalSLRef		:: !(IORef HpPtr)			-- ^ static link to enclosing stack frame
       }
-  | RVal_Thunk										-- ^ special case of Lam taking 0 params
+  -- | special case of Lam taking 0 params
+  | RVal_Thunk										
       { rvalBody		:: !Exp						-- ^ Exp taking no arguments (thunk)
       , rvalSLRef		:: !(IORef HpPtr)			-- ^ static link to enclosing stack frame
       }
@@ -121,9 +122,12 @@ data RVal
   | RVal_None
   
     -- Value representations for library or runtime env (not Core specific)
-  | RHsV_MutVar			   !(IORef RVal)			-- ^ mutable var
-  | RHsV_Handle			   !Handle					-- ^ IO handle
-  | RHsV_Addr			   Addr#					-- ^ Addr inside Ptr
+  -- | mutable var
+  | RHsV_MutVar			   !(IORef RVal)
+  -- | IO handle
+  | RHsV_Handle			   !Handle
+  -- | Addr inside Ptr
+  | RHsV_Addr			   Addr#
 
 instance Show RVal where
   show _ = "RVal"
@@ -133,12 +137,12 @@ ppRVal' lkptr rval = case rval of
     RVal_Lit   			e     		-> dfltpp e
     RVal_Char   		v     		-> dfltpp $ show v
     RVal_Int   			v     		-> dfltpp v
-{-
+{--
     RVal_Int8   		v     		-> dfltpp $ show v
     RVal_Int16   		v     		-> dfltpp $ show v
 -}
     RVal_Int32  		v     		-> dfltpp $ show v
-{-
+{--
     RVal_Int64 			v     		-> dfltpp $ show v
     RVal_Word   		v     		-> dfltpp $ show v
     RVal_Word8   		v     		-> dfltpp $ show v
@@ -380,7 +384,7 @@ heapGcM curV = do
                 if pBlk < pGry' then follow pBlk pGry' else return pBlk
       
       -- initial copy: top frame
-      modifyIORefM topFrRef copyp -- $ \topFr -> {- if isNullPtr topFr then return topFr else -} copyp topFr
+      modifyIORefM topFrRef copyp --- $ \topFr -> {- if isNullPtr topFr then return topFr else -} copyp topFr
 
       -- initial copy: stack
       modifyIORefM stkRef $ mapM copyp
