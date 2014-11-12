@@ -236,21 +236,28 @@ instance
   where
     -- {-# SPECIALIZE instance RunSem RValCxt RValEnv RVal IO () #-}
     rsemInitial = do
-      s <- liftIO $ newRValEnv 100000 --  
+      s <- liftIO $ newRValEnv 1000 -- 100000 --  
       return (emptyRValCxt, s, undefined)
   
     rsemSetup opts modImpL mod@(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) = do
-        rsemSetTrace True
+        -- rsemSetTrace True
+        rsemGcEnterRootLevel
         let modAllL = modImpL ++ [mod]
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
         forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz}) -> do
+          -- construct frame for each module
           explStkPushAllocFrameM r2n nullPtr 0 sz 0
+          -- holding all local defs
           V.forM_ bs rsemExp
           p <- explStkPopFrameM
-          liftIO $ MV.write ms nr p
+          -- and store the frame into the array holding module frames
+          (liftIO $ MV.write ms nr p >> newIORef p) >>= \r -> rsemGcPushRoot (RVal_Ptr r)
+        -- get the module array and store it as the globals
         ms' <- liftIO $ V.freeze ms
         modify $ \env -> env {renvGlobals = ms'}
+        -- use the main module's stackframe for evaluating 'main'
         explStkPushFrameM $ ms' V.! mainModNr
+        rsemGcLeaveRootLevel
         rsemSetTrace $ CoreOpt_RunTrace `elem` ehcOptCoreOpts opts
 
     rsemSetTrace doTrace = modify $ \env ->
@@ -294,13 +301,17 @@ instance
               v' <- rvalExplStkAppLam sl e 0 $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
               hp <- gets renvHeap
               p <- liftIO (readIORef pref)
-              rsemPop v' >>= \v'' -> heapSetM' hp p v''
-              return ()
+              v'' <- rsemPop v'
+              heapSetM' hp p v''
+              return v''
             RVal_Ptr {rvalPtrRef=pref} -> do
               v' <- evlPtr pref =<< liftIO (readIORef pref)
-              return ()
+              hp <- gets renvHeap
+              p <- liftIO (readIORef pref)
+              heapSetM' hp p v'
+              return v'
             v -> do
-              return ()
+              return v
 
     rsemDeref v = do
       v' <- ptr2valM v

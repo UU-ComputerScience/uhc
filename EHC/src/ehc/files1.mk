@@ -54,7 +54,7 @@ EHC_MAIN								:= EHC
 EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
-EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
+EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics Config NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix AbstractCore/,Utils) \
@@ -90,7 +90,16 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Debug/HighWaterMark \
 											)
 
-EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
+EHC_HS_UTIL_SRC_CHS_ASIS				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
+													API \
+													$(addprefix Core/,API) \
+											)
+
+EHC_HS_UTIL_SRC_CHS						:= $(EHC_HS_UTIL_SRC_CHS_DFLT) $(EHC_HS_UTIL_SRC_CHS_ASIS)
+
+EHC_HS_UTIL_DRV_HS_DFLT					:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS_DFLT))
+EHC_HS_UTIL_DRV_HS_ASIS					:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS_ASIS))
+EHC_HS_UTIL_DRV_HS						:= $(EHC_HS_UTIL_DRV_HS_DFLT) $(EHC_HS_UTIL_DRV_HS_ASIS)
 
 EHC_HS_UTILCPP_SRC_CHS					:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													ConfigDefines \
@@ -394,9 +403,14 @@ $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(SRC_EHC_PREFIX)%
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=Main --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
-$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) # $(MK_CONFIG_MKF)
+$(EHC_HS_UTIL_DRV_HS_DFLT): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) # $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_HS_DFLT) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	touch $@
+
+$(EHC_HS_UTIL_DRV_HS_ASIS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) # $(MK_CONFIG_MKF)
+	mkdir -p $(@D)
+	$(SHUFFLE_HS_ASIS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 $(EHC_HS_UTIL_DRV_C): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.c: $(SRC_EHC_PREFIX)%.cc $(SHUFFLE)

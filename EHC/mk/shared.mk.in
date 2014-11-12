@@ -265,7 +265,9 @@ BIBTEX						:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_
 MAKEINDEX					:= makeindex
 
 # shuffle
-SHUFFLE_HS					:= $(SHUFFLE) --hs --preamble=no --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
+SHUFFLE_HS_DFLT				:= $(SHUFFLE) --hs --preamble=no --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
+SHUFFLE_HS_ASIS				:= $(SHUFFLE) --plain --preamble=no --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
+SHUFFLE_HS					:= $(SHUFFLE_HS_DFLT)
 SHUFFLE_HS_PRE				:= $(SHUFFLE) --hs --preamble=yes --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
 SHUFFLE_AG					:= $(SHUFFLE) --ag --preamble=no --lhs2tex=no --line=no --compiler=$(GHC_VERSION)
 SHUFFLE_AG_PRE				:= $(SHUFFLE) --ag --preamble=yes --lhs2tex=no --line=no --compiler=$(GHC_VERSION)
