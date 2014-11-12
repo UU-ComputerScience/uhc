@@ -38,7 +38,7 @@
 -- | Allocate a new frame
 explStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> Int -> Int -> Int -> RValT m HpPtr
 explStkAllocFrameM r2n sl lev sz nrArgs = do
-  a <- liftIO $ mvecAllocInit sz
+  a <- liftIO $ mvecAllocInit (sz+10)		-- TBD: stack overflow somewhere...
   when (nrArgs > 0) $ renvFrStkReversePopInMV 0 nrArgs a
   slref <- liftIO $ newIORef sl
   spref <- liftIO $ newIORef nrArgs
@@ -154,7 +154,7 @@ rvalExplStkApp f nrActualArgs = do
             renvFrStkReversePopMV nrActualArgs >>= \as -> heapAllocAsPtrM (RVal_App f as) >>= renvFrStkPush1
           else do
             -- rsemTr $ "V app lam >"
-            ap <- rvalExplStkApp f narg >> renvFrStkPop1
+            ap <- mustReturn $ rvalExplStkApp f narg >>= rsemPop >>= rsemDeref >>= rsemPop
             rvalExplStkApp ap (nrActualArgs - narg)
     RVal_App appf appas
       | nrActualArgs > 0 -> do

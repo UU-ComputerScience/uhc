@@ -536,7 +536,9 @@ ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
   | Mod         loc         .   crmBinds        =   CR.mkCRArray $ map snd @expr.crb
-                lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (@expr.stackDepthMax {- - CR.craLength @crmBinds -}) @crmBinds (CR.Exp_Force @creMod)
+                lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew)
+                                                      @moduleNm @lhs.modNr (@expr.stackDepthMax + 2 {- - CR.craLength @crmBinds -})
+                                                      @crmBinds (CR.Exp_Force @creMod)
 %%]
 
 
