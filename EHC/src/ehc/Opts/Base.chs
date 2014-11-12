@@ -66,8 +66,8 @@ data ImmediateQuitOption
   | ImmediateQuitOption_Meta_Pkgdir_User                    -- print user package dir
   | ImmediateQuitOption_VersionDotted                       -- print version in dotted style, for external version comparison
   | ImmediateQuitOption_VersionAsNumber                     -- print version as number, for external version comparison
-  -- | ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
-  -- | ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
+  -- -| ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
+  -- -| ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
 %%]]
 %%]
 

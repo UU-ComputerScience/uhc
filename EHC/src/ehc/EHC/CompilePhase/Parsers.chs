@@ -286,7 +286,7 @@ cpDecodeHIInfo modNm
                      [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  , show $ HI.hiiTarget hiinfo, show $ HI.hiiTargetFlavor hiinfo]
                   ]
 %%]]
-           _ -> cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
+           _ -> cpUpdCU modNm (ecuStorePrevHIInfo {-- $ HI.hiiPostCheckValidity opts -} hiinfo)
        }
 %%]
 

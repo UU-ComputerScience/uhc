@@ -43,11 +43,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.Substitutable
-infixr 6 {- |=>, -} `varUpd`
+infixr 6 {-- |=>, -} `varUpd`
 %%]
 
 %%[4
-infixr 6 {- |==>, -} `varUpdCyc`
+infixr 6 {-- |==>, -} `varUpdCyc`
 %%]
 
 %%[2 export(VarUpdatable(..))

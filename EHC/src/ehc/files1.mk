@@ -436,7 +436,8 @@ $(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
 
 # installation configuration
 $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
-	@(echo "module $(LIB_EHC_QUAL_PREFIX)$(EHC_HS_CFGINSTALL_MAIN) where" ; \
+	@(echo "-- AUTO GENERATED MODULE - see files1.mk" ; \
+	  echo "module $(LIB_EHC_QUAL_PREFIX)$(EHC_HS_CFGINSTALL_MAIN) where" ; \
 	  echo "import $(LIB_EHC_QUAL_PREFIX)Opts.CommandLine" ; \
 	  echo "import Data.List" ; \
 	  echo "" ; \
@@ -460,7 +461,7 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "ehcPkgConfigfileName = \"$(UHC_PKG_CONFIGFILE_NAME)\"" ; \
 	  echo "" ; \
-	  echo "data WhatInstallFile = USER_PKG | INST_BIN | INST_LIB | INST_LIB_SHARED | INST_INCLUDE | INST_INCLUDE_SHARED | INST_LIB_PKG2 {- | INST_LIB_PKG | INST_LIB_PKG_INCLUDE -} " ; \
+	  echo "data WhatInstallFile = USER_PKG | INST_BIN | INST_LIB | INST_LIB_SHARED | INST_INCLUDE | INST_INCLUDE_SHARED | INST_LIB_PKG2 {-- | INST_LIB_PKG | INST_LIB_PKG_INCLUDE -} " ; \
 	  echo "" ; \
 	  echo "mkCLibFilename dirprefix pkg = \"$(call FUN_MK_CLIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
