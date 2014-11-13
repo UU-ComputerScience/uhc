@@ -140,8 +140,11 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   -- | pat var, with type
   acorePatVarTy :: HsName -> ty -> pat
   
-  -- | pat con
-  acorePatCon :: CTag -> patrest -> [patfld] -> pat
+  -- | Matches the case scrutinee with the given constructor tag.
+  acorePatCon :: CTag   -- ^ The constructor to match.
+    -> patrest          -- ^ ???
+    -> [patfld]         -- ^ ???
+    -> pat
 
   -- | pat int
   acorePatIntTy :: ty -> Int -> pat
@@ -157,20 +160,24 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   acorePatBoolExpr :: expr -> pat
 %%]]
   ------------------------- constructing: pat field -------------------------
-  -- | pat field
-  acorePatFldBind :: (HsName,expr) -> bind -> patfld
+  -- | TODO ??? pat field
+  acorePatFldBind :: (HsName,expr)  -- ^ lbl, offset ???
+    -> bind     -- ^ ??
+    -> patfld
   -- acorePatFldTy :: ty -> (HsName,expr) -> HsName -> patfld
 
   ------------------------- constructing: patrest -------------------------
-  -- | patrest, empty
+  -- | patrest, empty TODO what does it mean?
   acorePatRestEmpty :: patrest
 
   -- | patrest, var
   acorePatRestVar :: HsName -> patrest
 
   ------------------------- constructing: alt -------------------------
-  -- | 1 arg application, together with meta info about the argument
-  acoreAlt :: pat -> expr -> alt
+  -- | Creates an alternative of a case statement.
+  acoreAlt :: pat   -- ^ The pattern with which to match the case scrutinee.
+        -> expr     -- ^ The value of this alternative.
+        -> alt
   
   ------------------------- type related -------------------------
   -- | construct ty from Ty, usable in Core context
@@ -802,7 +809,11 @@ acoreLet :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
 acoreLet c bs e = acoreLetMerge False c bs e
 {-# INLINE acoreLet #-}
 
-acoreLetRec :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => [b] -> e -> e
+-- | Creates a let binding, where the bindings may be mutually recursive.
+acoreLetRec :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
+    => [b]  -- ^ The bindings.
+    -> e    -- ^ The body.
+    -> e
 acoreLetRec bs e = acoreLet (acoreBindcategRec) bs e
 {-# INLINE acoreLetRec #-}
 %%]
@@ -818,7 +829,12 @@ acoreLet1PlainTy nm t e
   = acoreLet cat [acoreBind1CatTy cat nm t e]
   where cat = acoreBindcategPlain
 
-acoreLet1Plain :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> e -> e -> e
+-- | Creates a (non-recursive) let binding.
+acoreLet1Plain :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
+    => HsName   -- ^ The identifier.
+    -> e       -- ^ The expression to bind.
+    -> e       -- ^ The body.
+    -> e
 acoreLet1Plain nm e = acoreLet1PlainTy nm (acoreTyErr "acoreLet1Plain") e
 {-# INLINE acoreLet1Plain #-}
 %%]
