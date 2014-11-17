@@ -23,7 +23,7 @@ EHC_ALL_HADDOCKS						:= $(patsubst %,$(EHC_HDOC_PREFIX)%/$(EHC_HADDOCK_NAME),$(
 UHC_INSTALL_EXEC						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
 UHC_INSTALL_SHELL						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)
 EHC_FOR_UHC_BLD_EXEC					:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHC_INSTALL_VARIANT))
-EHC_FOR_UHCLIGHT_BLD_EXEC				:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHC_CABAL_VARIANT))
+EHC_FOR_UHCLIGHT_BLD_EXEC				:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHCLIGHT_CABAL_VARIANT))
 
 # sources + dpds, for .rul
 EHC_RULES_1_SRC_RUL						:= $(SRC_EHC_PREFIX)rules.rul
@@ -154,6 +154,15 @@ EHC_HS_SIG_DRV_HS						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)$(EHC_HS_SIG_MAIN).hs
 # file with info about installation configuration
 EHC_HS_CFGINSTALL_MAIN					:= ConfigInstall
 EHC_HS_CFGINSTALL_DRV_HS				:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)$(EHC_HS_CFGINSTALL_MAIN).hs
+
+###########################################################################################
+# uhc-light files in cabal buildable distr
+###########################################################################################
+
+CABALDIST_SRC_ALL_DRV_NO_MAIN_PREFIX	:= $(CABALDIST_SRC_PREFIX)$(LIB_EHC_HS_PREFIX)
+
+EHC_CABALDIST_ALL_DRV_HS_NO_MAIN		:= $(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(CABALDIST_SRC_ALL_DRV_NO_MAIN_PREFIX)%.hs,$(EHC_HS_ALL_DRV_HS_NO_MAIN))
+EHC_CABALDIST_MAIN_DRV_HS				:= $(patsubst $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(CABALDIST_SRC_PREFIX)%.hs,$(EHC_HS_MAIN_DRV_HS))
 
 ###########################################################################################
 # (re)generate derived makefiles
@@ -320,6 +329,13 @@ EHC_ALL_DPDS_NOPREPROC					:= $(subst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefi
 
 
 ###########################################################################################
+# cabal library dependencies and extensions
+###########################################################################################
+
+CABAL_EHCLIB_DEPENDS_ON					:= binary syb bytestring uulib>=0.9.12 old-locale
+CABAL_EHCLIB_EXTENSIONS					:= $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable OverlappingInstances LiberalTypeSynonyms StandaloneDeriving FlexibleContexts FlexibleInstances TypeSynonymInstances ScopedTypeVariables
+
+###########################################################################################
 # variant dispatch rules
 ###########################################################################################
 
@@ -346,8 +362,8 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_EHC_PKG_NAME) \
 		, $(EH_VERSION_SHORT) \
-		, binary syb bytestring uulib>=0.9.12 old-locale \
-		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable OverlappingInstances LiberalTypeSynonyms StandaloneDeriving FlexibleContexts FlexibleInstances TypeSynonymInstances ScopedTypeVariables \
+		, $(CABAL_EHCLIB_DEPENDS_ON) \
+		, $(CABAL_EHCLIB_EXTENSIONS) \
 		, Part of EH$(EHC_VARIANT_ASPECTS) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,\
 			$(shell echo $(EHC_ALL_LIB_FROMHS_HS) $(EHC_ALL_LIB_FROMAG_HS) \

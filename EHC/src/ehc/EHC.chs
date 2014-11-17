@@ -182,8 +182,13 @@ handleImmQuitOption immq opts
 %%][99
                 let progName = fpathToStr (ehcProgName opts)
 %%]]
+%%[[1
+              ; let inputSuffixes = ["hs", "eh"]
+%%][8
+              ; let inputSuffixes = catMaybes $ map fst $ mkFileSuffMpHs opts
+%%]]
               ; putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs] ...]\n\noptions:"
+                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[" ++ (concat $ intersperse "|" $ map ('.':) inputSuffixes) ++ "] ...]\n\noptions:"
                                     )
                                     ehcCmdLineOpts)
 %%[[(8 codegen)

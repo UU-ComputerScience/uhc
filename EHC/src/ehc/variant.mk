@@ -6,7 +6,7 @@
 # aspects, EHC_ASPECTS to be configured at top level, for now here
 ###########################################################################################
 
-ifeq ($(EHC_VARIANT),$(EHC_UHC_CABAL_VARIANT))
+ifeq ($(EHC_VARIANT),$(EHC_UHCLIGHT_CABAL_VARIANT))
 EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core corein coreout corebackend corerun
 else
 EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core grin corein coreout machdep
@@ -95,7 +95,7 @@ ifeq ($(EHC_VARIANT),$(EHC_UHC_INSTALL_VARIANT))
 # uhc compiler
 LIB_EHC_QUAL							:= UHC.Compiler
 else
-ifeq ($(EHC_VARIANT),$(EHC_UHC_CABAL_VARIANT))
+ifeq ($(EHC_VARIANT),$(EHC_UHCLIGHT_CABAL_VARIANT))
 # uhc cabal/package installation
 LIB_EHC_QUAL							:= UHC.Light.Compiler
 else

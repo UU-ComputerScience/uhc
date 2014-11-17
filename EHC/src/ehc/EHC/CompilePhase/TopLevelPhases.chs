@@ -203,7 +203,7 @@ cpEhcFullProgCompileAllModules
                   )
 %%]]
                ++ [cpEhcFullProgModuleCompileN modNmL]
-%%[[(50 codegen grin)
+%%[[(50 codegen)
                ++ [cpEhcFullProgLinkAllModules modNmL]
 %%]]
               )

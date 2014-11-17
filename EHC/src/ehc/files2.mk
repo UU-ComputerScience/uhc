@@ -179,3 +179,53 @@ ehc-barebones-variant: $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG) $(EHC
 	  > Makefile \
 	)
 
+###########################################################################################
+# rules for uhc light cabal distribution
+###########################################################################################
+
+uhc-light-cabal-dist: $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)		
+	rm -rf $($(CABALDIST_SRC_PREFIX)) ; \
+	mkdir -p $(CABALDIST_SRC_ALL_DRV_NO_MAIN_PREFIX) $(CABALDIST_SRC_PREFIX) ; \
+	ehc_nomain_exposed_hs_files="$(subst $(EHC_BLD_LIBEHC_VARIANT_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(filter %API.hs,$(shell find $(call FUN_PREFIX2DIR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX)) \( -name '*.hs' \)))))" ; \
+	ehc_nomain_exposed_names="`echo $${ehc_nomain_exposed_hs_files} | sed -e 's/\.hs//g' -e 's/ /,/g' -e 's+$(PATH_SEP)+.+g'`" ; \
+	ehc_nomain_nonexposed_hs_files="$(filter-out dist%, $(subst $(EHC_BLD_LIBEHC_VARIANT_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(filter-out %API.hs,$(shell find $(call FUN_PREFIX2DIR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX)) \( -name '*.hs'  \))))))" ; \
+	ehc_nomain_nonexposed_names="`echo $${ehc_nomain_nonexposed_hs_files} | sed -e 's/\.hs//g' -e 's/ /,/g' -e 's+$(PATH_SEP)+.+g'`" ; \
+	ehc_main_hs_files="$(subst $(EHC_BLD_VARIANT_ASPECTS_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(EHC_HS_MAIN_DRV_HS)))" ; \
+	echo "A: $(EHC_ALL_LIB_FROMHS_HS)" ; \
+	echo "B: $(EHC_ALL_LIB_FROMAG_HS)" ; \
+	echo "C: $(EHC_BLD_LIBEHC_VARIANT_PREFIX)" ; \
+	echo "XXX: $(XXX)" ; \
+	echo "NOMAIN EXP: $${ehc_nomain_exposed_names}" ; \
+	echo "NOMAIN NONEXP: $${ehc_nomain_nonexposed_names}" ; \
+	echo "MAIN: $${ehc_main_hs_files}" ; \
+	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX),$(CABALDIST_SRC_PREFIX),$${ehc_nomain_exposed_hs_files} $${ehc_nomain_nonexposed_hs_files}) ; \
+	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_VARIANT_ASPECTS_PREFIX),$(CABALDIST_SRC_PREFIX),$${ehc_main_hs_files}) ; \
+	$(call FUN_GEN_CABAL_UHC_LIGHT \
+		, uhc-light \
+		, $(EH_VERSION_FULL) \
+		, $(CABAL_EHCLIB_DEPENDS_ON) \
+		, $(CABAL_EHCLIB_EXTENSIONS) \
+		, Part of UHC packaged as cabal/hackage installable library \
+		, $${ehc_nomain_exposed_names} \
+		, $${ehc_nomain_nonexposed_names} \
+		, $(EHC_MAIN) \
+		, uhcl \
+		, Simple \
+		, LICENSE \
+	) > $(CABALDIST_PREFIX)uhc-light.cabal ; \
+	cp LICENSE $(CABALDIST_PREFIX) ; \
+	$(call GEN_CABAL_SETUP) > $(CABALDIST_PREFIX)Setup.hs ; \
+	echo done
+
+
+# $1: pkg name
+# $2: version
+# $3: build-depends (additional)
+# $4: extensions (additional)
+# $5: synopsis (also used for description)
+# $6: exposed library modules
+# $7: other library modules
+# $8: executable Main
+# $9: executable name
+# $10: build type
+# $11: license

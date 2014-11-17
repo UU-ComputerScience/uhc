@@ -140,6 +140,8 @@ Default target
 defaultTarget :: Target
 %%[[(8 codegen grin)
 defaultTarget = Target_Interpreter_Grin_C
+%%][(103 corerun)
+defaultTarget = Target_None_Core_AsIs
 %%][8
 defaultTarget = Target_None
 %%]]

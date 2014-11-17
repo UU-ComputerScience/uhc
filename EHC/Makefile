@@ -300,7 +300,15 @@ uhc-install-postprocess-llvm:
 ###########################################################################################
 
 uhc-light:
-	$(MAKE) ENABLE_JS= $(EHC_FOR_UHCLIGHT_BLD_EXEC)
+	$(MAKE) ENABLE_JS= EHC_VARIANT=$(EHC_UHCLIGHT_CABAL_VARIANT) uhc-light-dist
+
+uhc-light-tst:
+	$(MAKE) ENABLE_JS= EHC_VARIANT=$(EHC_UHCLIGHT_CABAL_VARIANT) INCLUDE_DERIVED_MK=yes uhc-light-cabal-dist
+
+uhc-light-dist:
+	$(MAKE) $(EHC_UHCLIGHT_CABAL_VARIANT)/ehc
+	$(MAKE) $(EHC_UHCLIGHT_CABAL_VARIANT)/ehclib
+	$(MAKE) INCLUDE_DERIVED_MK=yes uhc-light-cabal-dist
 
 ###########################################################################################
 # Target: UHC: binary distribution generation
@@ -483,9 +491,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHC_ASPECTS_SUFFIX2)
-	@echo $(EHC_ASPECTS_SUFFIX)
-	@echo $(EHC_BUILD_SUFFIX)
+	@echo $(EHC_ALL_LIB_FROMAG_HS)
 
 tstv:
 	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=100 tst
