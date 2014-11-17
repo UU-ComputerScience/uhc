@@ -548,16 +548,17 @@ GHC_CABAL			= $(GHC) $(GHC_OPTS_GENERAL) -package Cabal -o $(2) $(1)  ; $(STRIP_
 # $7: other library modules
 # $8: executable Main
 # $9: executable name
-# $10: build type
-# $11: license
+# $10: extra source files
+# $11: build type
+# $12: license
 FUN_GEN_CABAL_UHC_LIGHT		= \
 					( \
 					echo   "Name:				$(strip $(1))" ; \
 					echo   "Version:			$(strip $(2))" ; \
 					echo   "License:			BSD3" ; \
 					echo   "Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group" ; \
-					echo   "Build-Type:			$(10)" ; \
-					echo   "license-file:		$(11)" ; \
+					echo   "Build-Type:			$(11)" ; \
+					echo   "license-file:		$(12)" ; \
 					echo   "Author:				UHC Team" ; \
 					echo   "Maintainer:         uhc-developers@lists.science.uu.nl" ; \
 					echo   "Homepage:			https://github.com/UU-ComputerScience/uhc" ; \
@@ -566,6 +567,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "Synopsis:			$(strip $(5))" ; \
 					echo   "Description:		$(strip $(5))" ; \
 					echo   "Cabal-Version:      >= 1.8" ; \
+					echo   "data-files:         $(10)" ; \
 					echo   "" ; \
 					echo   "Library" ; \
 					echo   "  Hs-Source-Dirs:       src" ; \
