@@ -431,7 +431,7 @@ test-all:
 clean:
 	$(MAKE) cleans
 	$(MAKE) ruler-clean
-	rm -rf $(DIST_PREFIX)
+	rm -rf $(DIST_PREFIX) $(CABALDIST_PREFIX)
 
 #	$(MAKE) libutil-clean
 

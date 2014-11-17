@@ -84,7 +84,7 @@ ehcOptUpdateWithPragmas pragmas opts
               Pragma_ExtensibleRecords  	-> Just $ opts { ehcOptExtensibleRecords    = True  }
               Pragma_Fusion             	-> Just $ opts { ehcOptFusion               = True  }
               Pragma_OptionsUHC o       	-> fmap (\o -> o {ehcOptCmdLineOptsDoneViaPragma = True}) mo
-                                        	where (mo,_,_) = ehcCmdLineOptsApply (words o) opts
+                                        	where (mo,_,_) = ehcCmdLineOptsApply [] (words o) opts
               _                         	-> Nothing
 %%]
 
@@ -884,10 +884,11 @@ oStopAtHIError       o b = o { ehcDebugStopAtHIError       = b }
 
 %%[1 export(ehcCmdLineOptsApply)
 -- | Apply the cmdline opts description to a EHCOpts, returning Nothing when there were no options
-ehcCmdLineOptsApply :: [String] -> EHCOpts -> (Maybe EHCOpts, [String], [String])
-ehcCmdLineOptsApply args opts
-  = (if null o then Nothing else Just (foldl (flip ($)) opts o),n,errs)
+ehcCmdLineOptsApply :: [EHCOpts -> EHCOpts] -> [String] -> EHCOpts -> (Maybe EHCOpts, [String], [String])
+ehcCmdLineOptsApply postopts args opts
+  = (if null o' then Nothing else Just (foldl (flip ($)) opts o'),n,errs)
   where oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
+        o' = o ++ postopts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

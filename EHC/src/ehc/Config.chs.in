@@ -23,6 +23,9 @@
 %%[8 import({%{EH}EHC.Environment})
 %%]
 
+%%[103 import(qualified {%{EH}ConfigCabal} as Cfg)
+%%]
+
 %%[5050 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
@@ -86,6 +89,25 @@ verInfo v =
 %%% Install locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 export(installRootM)
+-- | Get the installation root, in order of cabal specified (when installed as such), cmd line, builtin
+installRootM :: EHCOpts -> IO String
+installRootM opts = do
+%%[[8
+    return envroot
+%%][99
+    maybe (return envroot) return (ehcOptCfgInstallRoot opts)
+%%][103
+    d <- Cfg.getDataDir
+    if null d
+      then maybe (return envroot) return (ehcOptCfgInstallRoot opts)
+      else return d
+%%]]
+  where envroot = ehcenvInstallRoot $ ehcOptEnvironment opts
+%%]
+
+getDataDir
+
 %%[8 export(installRoot)
 installRoot :: EHCOpts -> String
 installRoot opts
@@ -112,16 +134,34 @@ installVariant opts
 %%% File locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 export(mkInstallFilePrefixM)
+mkInstallFilePrefixM :: EHCOpts -> WhatInstallFile -> String -> String -> IO String
+mkInstallFilePrefixM opts whatfile variant pkg
+  = installRootM opts >>= \r -> return $ mkDirbasedInstallPrefix r whatfile variant (show $ ehcOptTarget opts) pkg
+%%]
+
 %%[8 export(mkInstallFilePrefix)
 mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String -> String
 mkInstallFilePrefix opts whatfile variant pkg
   = mkDirbasedInstallPrefix (installRoot opts) whatfile variant (show $ ehcOptTarget opts) pkg
 %%]
 
+%%[(8 codegen) export(mkInstallBindirPrefixM)
+mkInstallBindirPrefixM :: EHCOpts -> String -> IO String
+mkInstallBindirPrefixM opts variant
+  = installRootM opts >>= \r -> return $ mkDirbasedInstallPrefix r INST_BIN variant "" ""
+%%]
+
 %%[(8 codegen) export(mkInstallBindirPrefix)
 mkInstallBindirPrefix :: EHCOpts -> String -> String
 mkInstallBindirPrefix opts variant
   = mkDirbasedInstallPrefix (installRoot opts) INST_BIN variant "" ""
+%%]
+
+%%[99 export(mkInstallPkgdirSystemM)
+mkInstallPkgdirSystemM :: EHCOpts -> IO String
+mkInstallPkgdirSystemM opts
+  = fmap filePathUnPrefix $ mkInstallFilePrefixM opts INST_LIB_PKG2 (installVariant opts) ""
 %%]
 
 %%[99 export(mkInstallPkgdirSystem)
@@ -134,6 +174,13 @@ mkInstallPkgdirSystem opts
 mkInstallPkgdirUser :: EHCOpts -> String
 mkInstallPkgdirUser opts
   = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG2 "" (show $ ehcOptTarget opts) ""
+%%]
+
+%%[(8 codegen) export(mkInstalledRtsM)
+-- | construct path for RTS
+mkInstalledRtsM :: EHCOpts -> (String -> String -> String) -> WhatInstallFile -> String -> String -> IO String
+mkInstalledRtsM opts mkLib how variant rts
+  = mkInstallFilePrefixM opts how variant rts >>= \p -> return $ mkLib p rts
 %%]
 
 %%[(8 codegen) export(mkInstalledRts)

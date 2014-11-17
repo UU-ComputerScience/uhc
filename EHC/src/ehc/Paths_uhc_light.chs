@@ -9,9 +9,9 @@
 %%% Get data file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[103 export(getDataFileName)
--- | Dummy implementation, see cabal
-getDataFileName :: FilePath -> IO FilePath
-getDataFileName = return
+%%[103 export(getDataDir)
+-- | Dummy implementation, see cabal. Return of empty string signals encodes absence of cabal generated implementation.
+getDataDir :: IO FilePath
+getDataDir = return ""
 %%]
 

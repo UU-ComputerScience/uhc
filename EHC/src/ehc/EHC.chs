@@ -78,6 +78,10 @@
 %%[(102 codegen) import({%{EH}Core.Trf.Strip})
 %%]
 
+-- Config
+%%[103 import(qualified {%{EH}ConfigCabal} as Cfg (getDataDir))
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main, compiling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +92,11 @@ main
   =  do  {  args      <- getArgs
          ;  progName  <- getProgName
 %%[[99
-         ;  curDir  <- getCurrentDirectory
+         ;  curDir    <- getCurrentDirectory
+%%]]
+%%[[103
+         -- an empty data dir means we are running as cabal installed exec
+         ;  mbDataDir <- Cfg.getDataDir >>= \d -> return $ if null d then Nothing else Just d
 %%]]
          ;  let  opts1          = defaultEHCOpts
 %%[[8
@@ -104,7 +112,11 @@ main
 %%][101
                                 where p = mkFPath "uhc"     -- hardbaked name
 %%]]
-                 oo@(o,n,errs)  = ehcCmdLineOptsApply args opts1
+%%[[1
+                 oo@(o,n,errs)  = ehcCmdLineOptsApply [] args opts1
+%%][103
+                 oo@(o,n,errs)  = ehcCmdLineOptsApply (maybe [] (\d -> [\o -> o {ehcOptCfgInstallRoot = Just d}]) mbDataDir) args opts1
+%%]]
                  opts2          = maybe opts1 id o
 %%[[(8 codegen)
          ;  case opts2 of
@@ -376,8 +388,8 @@ doCompilePrepare fnL@(fn:_) opts
   = do { let fpL@(fp:_)             = map (mkTopLevelFPath "hs") fnL
              topModNmL@(topModNm:_) = map (mkHNm . fpathBase) fpL
 %%[[99
-             installRoot            = Cfg.installRoot    opts
              installVariant         = Cfg.installVariant opts
+       ; installRoot <- Cfg.installRootM opts
        -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
        -- ; let opts2 = opts -- {ehcOptUserDir = userDir}
        ; pkgDb1 <- pkgDbFromDirs opts
