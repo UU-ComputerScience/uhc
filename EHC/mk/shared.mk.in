@@ -216,7 +216,7 @@ BARE_PREFIX				:= $(TOP_PREFIX)bare$(EHC_BUILD_SUFFIX_DASH)/
 CABALDIST_PREFIX		:= $(TOP_PREFIX)cabaldist$(EHC_BUILD_SUFFIX_DASH)/
 CABALDISTABS_PREFIX		:= $(TOPABS_PREFIX)cabaldist$(EHC_BUILD_SUFFIX_DASH)/
 CABALDIST_SRC_PREFIX	:= $(CABALDIST_PREFIX)src/
-CABALDIST_LIB_PREFIX	:= $(CABALDIST_PREFIX)lib/
+#CABALDIST_LIB_PREFIX	:= $(CABALDIST_PREFIX)lib/
 
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
@@ -290,6 +290,9 @@ endif
 ###########################################################################################
 # installation locations for ehc running time, as functions still depending on variant + target, see also functions.mk
 ###########################################################################################
+
+FUN_VARIANT_XXX_PREFIX						= $(call FUN_VARIANT_PREFIX,$(1))$(2)/
+FUN_VARIANT_LIB_PREFIX						= $(call FUN_VARIANT_XXX_PREFIX,$(1),lib)
 
 FUN_DIR_VARIANT_XXX_PREFIX					= $(call FUN_DIR_VARIANT_PREFIX,$(1),$(2))$(3)/
 FUN_DIR_VARIANT_SHARED_PREFIX				= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),shared)

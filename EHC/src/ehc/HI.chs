@@ -53,6 +53,8 @@
 
 %%[50 hs import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[50 hs import(qualified {%{EH}ConfigInternalVersions} as Cfg)
+%%]
 %%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
@@ -85,9 +87,13 @@ instance Show Visible where
 %%[50 hs export(HIInfoUsedModMp,HIInfo(..))
 type HIInfoUsedModMp = (Map.Map HsName (Set.Set HsName))
 
+-- | Encoding of info in .hi file, when changed also change {%{EH}ConfigInternalVersions}
 data HIInfo
   = HIInfo
       { hiiValidity             :: !HIValidity                              -- a valid HI info?
+      , hiiInternalVersions		:: !( Cfg.InternalVersionHI					-- internal version
+      								, Cfg.InternalVersionCore
+      								) 
       , hiiOrigin               :: !HIOrigin                                -- where did the HI come from
       , hiiSrcSig               :: !String                                  -- compiler source signature (md5)
       , hiiTarget               :: !Target                                  -- for which backend the hi is generated
@@ -140,7 +146,9 @@ data HIInfo
 %%[50 hs export(emptyHIInfo)
 emptyHIInfo :: HIInfo
 emptyHIInfo 
-  = HIInfo HIValidity_Absent HIOrigin_FromFile
+  = HIInfo HIValidity_Absent
+           (Cfg.internalVersionHI, Cfg.internalVersionCore)
+           HIOrigin_FromFile
            "" defaultTarget defaultTargetFlavor "" "" False hsnUnknown "" "" "" "" ""
            Rel.empty Rel.empty emptyGam
            Set.empty Set.empty
@@ -399,14 +407,17 @@ sgetHIInfo opts = do
   ; if hi_magic == Cfg.magicNumberHI
     then do { hi_sig   <- sget
             ; hi_ts    <- sget
+            ; hi_iv    <- sget
             ; hi_t     <- sget
             ; hi_tv    <- sget
             ; hi_fl    <- sget
             ; hi_comp  <- sget
-            ; if (    hi_sig == Sig.sig
+            ; if ( {-   hi_sig == Sig.sig
                    && hi_ts  == Sig.timestamp
-                   && hi_t   == ehcOptTarget       opts
-                   && hi_tv  == ehcOptTargetFlavor opts
+                   && -}
+                      hi_iv  == hiiInternalVersions emptyHIInfo
+                   && hi_t   == ehcOptTarget        opts
+                   && hi_tv  == ehcOptTargetFlavor  opts
                  )
 %%[[99
                  || not (ehcOptHiValidityCheck opts)
@@ -456,6 +467,7 @@ sgetHIInfo opts = do
                             , hiiTargetFlavor         = hi_tv
                             , hiiHasMain              = hi_hm
                             , hiiSrcTimeStamp         = hi_ts
+                            , hiiInternalVersions	  = hi_iv
                             , hiiModuleNm             = hi_nm
                             , hiiSrcVersionMajor      = hi_m
                             , hiiSrcVersionMinor      = hi_mm
@@ -497,6 +509,7 @@ sgetHIInfo opts = do
                        { hiiValidity             = HIValidity_Inconsistent
                        , hiiSrcSig               = hi_sig
                        , hiiSrcTimeStamp         = hi_ts
+                       , hiiInternalVersions	 = hi_iv
                        , hiiCompileFlags         = hi_fl
                        , hiiCompiler             = hi_comp
                        , hiiTarget               = hi_t
@@ -521,6 +534,7 @@ instance Serialize HIInfo where
                   , hiiModuleNm             = hi_nm
                   , hiiHasMain              = hi_hm
                   , hiiSrcTimeStamp         = hi_ts
+                  , hiiInternalVersions		= hi_iv
                   , hiiSrcVersionMajor      = hi_m
                   , hiiSrcVersionMinor      = hi_mm
                   , hiiSrcVersionMinorMinor = hi_mmm
@@ -558,6 +572,7 @@ instance Serialize HIInfo where
               =    mapM sputWord8 Cfg.magicNumberHI
                 >> sput hi_sig
                 >> sput hi_ts
+                >> sput hi_iv
                 >> sput hi_t
                 >> sput hi_tv
                 >> sput hi_fl

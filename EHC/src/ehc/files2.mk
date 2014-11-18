@@ -186,10 +186,10 @@ ehc-barebones-variant: $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG) $(EHC
 # target assumes files found by wildcards/shell/find are present and already built
 uhc-light-cabal-dist: $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)		
 	@rm -rf $(CABALDIST_PREFIX) ; \
-	mkdir -p $(CABALDIST_SRC_ALL_DRV_NO_MAIN_PREFIX) $(CABALDIST_SRC_PREFIX) $(CABALDIST_LIB_PREFIX) ; \
+	mkdir -p $(CABALDIST_SRC_ALL_DRV_NO_MAIN_PREFIX) $(CABALDIST_SRC_PREFIX) $(CABALDIST_VARIANT_LIB_PREFIX) ; \
 	ehc_ehclib_lib_dir="$(EHCLIB_INS_LIB_DIR)" ; \
 	ehc_ehclib_files="$(filter-out $(EHCLIB_INS_LIB_DIR) %DS_Store,$(subst $(EHCLIB_INS_LIB_PREFIX),,$(shell find $(call FUN_PREFIX2DIR,$(EHCLIB_INS_LIB_PREFIX)) \( -name '*' -type f \) )))" ; \
-	ehc_ehclib_names="`echo $${ehc_ehclib_files} | sed -e 's=\([^ ]*\)=lib/\1=g' -e 's/ /,/g'`" ; \
+	ehc_ehclib_names="`echo $${ehc_ehclib_files} | sed -e 's=\([^ ]*\)=$(call FUN_PREFIX2DIR,$(call FUN_VARIANT_LIB_PREFIX,$(EHC_VARIANT)))/\1=g' -e 's/ /,/g'`" ; \
 	ehc_nomain_exposed_hs_files="$(subst $(EHC_BLD_LIBEHC_VARIANT_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(filter %API.hs,$(shell find $(call FUN_PREFIX2DIR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX)) \( -name '*.hs' \)))))" ; \
 	ehc_nomain_exposed_names="`echo $${ehc_nomain_exposed_hs_files} | sed -e 's/\.hs//g' -e 's/ /,/g' -e 's+$(PATH_SEP)+.+g'`" ; \
 	ehc_nomain_nonexposed_hs_files="$(filter-out %Paths_uhc_light.hs dist%, $(subst $(EHC_BLD_LIBEHC_VARIANT_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(filter-out %API.hs,$(shell find $(call FUN_PREFIX2DIR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX)) \( -name '*.hs'  \))))))" ; \
@@ -197,7 +197,7 @@ uhc-light-cabal-dist: $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)
 	ehc_main_hs_files="$(subst $(EHC_BLD_VARIANT_ASPECTS_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(EHC_HS_MAIN_DRV_HS)))" ; \
 	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX),$(CABALDIST_SRC_PREFIX),$${ehc_nomain_exposed_hs_files} $${ehc_nomain_nonexposed_hs_files}) ; \
 	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_VARIANT_ASPECTS_PREFIX),$(CABALDIST_SRC_PREFIX),$${ehc_main_hs_files}) ; \
-	$(call FUN_COPY_FILES_BY_TAR,$${ehc_ehclib_lib_dir},$(CABALDIST_LIB_PREFIX),$${ehc_ehclib_files}) ; \
+	$(call FUN_COPY_FILES_BY_TAR,$${ehc_ehclib_lib_dir},$(CABALDIST_VARIANT_LIB_PREFIX),$${ehc_ehclib_files}) ; \
 	$(call FUN_GEN_CABAL_UHC_LIGHT \
 		, uhc-light \
 		, $(EH_VERSION_FULL) \

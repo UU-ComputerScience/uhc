@@ -48,4 +48,5 @@ FUN_INSTALLUHC_WRAPPER	= \
 # installation locations for ehc running time, as functions still depending on variant + target, see shared.mk for more
 ###########################################################################################
 
+FUN_VARIANT_PREFIX							= $(1)/
 FUN_DIR_VARIANT_PREFIX						= $(1)/$(2)/

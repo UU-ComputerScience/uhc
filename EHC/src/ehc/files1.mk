@@ -55,7 +55,8 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics Config NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore ConfigCabal Paths_uhc_light \
+													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
+													Config ConfigInternalVersions ConfigCabal Paths_uhc_light \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \
@@ -161,8 +162,10 @@ EHC_HS_CFGINSTALL_DRV_HS				:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)$(EHC_HS_CFGINSTA
 
 CABALDIST_SRC_ALL_DRV_NO_MAIN_PREFIX	:= $(CABALDIST_SRC_PREFIX)$(LIB_EHC_HS_PREFIX)
 
-EHC_CABALDIST_ALL_DRV_HS_NO_MAIN		:= $(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(CABALDIST_SRC_ALL_DRV_NO_MAIN_PREFIX)%.hs,$(EHC_HS_ALL_DRV_HS_NO_MAIN))
-EHC_CABALDIST_MAIN_DRV_HS				:= $(patsubst $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(CABALDIST_SRC_PREFIX)%.hs,$(EHC_HS_MAIN_DRV_HS))
+#EHC_CABALDIST_ALL_DRV_HS_NO_MAIN		:= $(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(CABALDIST_SRC_ALL_DRV_NO_MAIN_PREFIX)%.hs,$(EHC_HS_ALL_DRV_HS_NO_MAIN))
+#EHC_CABALDIST_MAIN_DRV_HS				:= $(patsubst $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(CABALDIST_SRC_PREFIX)%.hs,$(EHC_HS_MAIN_DRV_HS))
+
+CABALDIST_VARIANT_LIB_PREFIX			:= $(call FUN_DIR_VARIANT_LIB_PREFIX,$(CABALDIST_PREFIX),$(EHC_VARIANT))
 
 ###########################################################################################
 # (re)generate derived makefiles
