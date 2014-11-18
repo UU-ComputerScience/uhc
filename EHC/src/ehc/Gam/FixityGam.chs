@@ -37,6 +37,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 export(FixityGam, FixityGamInfo(..), defaultFixityGamInfo)
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data FixityGamInfo = FixityGamInfo { fgiPrio :: !Int, fgiFixity :: !Fixity } deriving Show
 
 defaultFixityGamInfo = FixityGamInfo fixityMaxPrio Fixity_Infixl

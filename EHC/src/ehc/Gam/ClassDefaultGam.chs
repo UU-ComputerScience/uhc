@@ -29,6 +29,7 @@ Currently only the first one is used.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer).AppSpineGam export(ClassDefaultGamInfo(..))
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data ClassDefaultGamInfo
   = ClassDefaultGamInfo
       { cldiDefaultTypes	:: [Ty]

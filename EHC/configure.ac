@@ -482,6 +482,9 @@ then
           uhc-util)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.3.7"
             ;;
+          base)
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} base>=4&&<5"
+            ;;
           hashable)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} hashable>=1.1&&<1.3"
             ;;

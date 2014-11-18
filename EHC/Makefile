@@ -164,7 +164,7 @@ explanation:
 	echo  "" ; \
     echo  "Distribution" ; \
 	echo  "===========" ; \
-	echo  "make uhc-dist            : make platform specific binary distribution from uhc build in $(DISTABS_PREFIX)" ; \
+	echo  "make uhc-light           : make cabal version of a light UHC variant in $(CABALDIST_UHCLIGHT_PREFIX)" ; \
 	echo  "" ; \
     echo  "Cleaning up" ; \
 	echo  "===========" ; \
@@ -186,6 +186,7 @@ explanation:
 	echo  "make <n>/grini           : make grin interpreter variant <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)}) (obsolete)" ; \
 	echo  "make <n>/hdoc            : make Haddock documentation for variant <n> (in hdoc/)" ; \
 	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
+	echo  "make uhc-dist            : make platform specific binary distribution from uhc build in $(DISTABS_PREFIX)" ; \
 	echo  "" ; \
 
 ###########################################################################################
@@ -431,7 +432,7 @@ test-all:
 clean:
 	$(MAKE) cleans
 	$(MAKE) ruler-clean
-	rm -rf $(DIST_PREFIX) $(CABALDIST_PREFIX)
+	rm -rf $(DIST_PREFIX) $(CABALDIST_UHCLIGHT_PREFIX)
 
 #	$(MAKE) libutil-clean
 

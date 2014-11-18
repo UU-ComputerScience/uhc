@@ -34,6 +34,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(ClGamInfo(..),ClGam,emptyCLGI)
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data ClGamInfo
   =  ClGamInfo
 %%[[(9 hmtyinfer)

@@ -46,6 +46,7 @@
 
 %%[(7 hmtyinfer) export(DataFldMp,DataFldInfo(..),emptyDataFldInfo)
 -- | per named field info
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data DataFldInfo
   = DataFldInfo
 %%[[(8 codegen || hmtyinfer)
@@ -65,6 +66,7 @@ emptyDataFldInfo
 
 %%[(7 hmtyinfer) export(DataConFldAnnInfo(..),emptyDataConFldAnnInfo)
 -- | per positional constructor field annotation like info
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data DataConFldAnnInfo
   = DataConFldAnnInfo
 %%[[(8 codegen || hmtyinfer)
@@ -82,6 +84,7 @@ emptyDataConFldAnnInfo
 %%]
 
 %%[(7 hmtyinfer) export(DataTagInfo(..),emptyDataTagInfo,DataConstrTagMp)
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data DataTagInfo
   = DataTagInfo
       { dtiFldMp    		:: !DataFldMp				-- map of field names to offset
@@ -117,6 +120,7 @@ dtiOffsetOfFld fldNm dti = dfiOffset $ panicJust "dtiOffsetOfFld" $ Map.lookup f
 %%]
 
 %%[(8 hmtyinfer) export(DataFldInConstr(..),DataFldInConstrMp)
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data DataFldInConstr
   = DataFldInConstr
       { dficInTagMp	:: !(Map.Map CTag Fld)
@@ -127,6 +131,7 @@ type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 
 %%[(90 hmtyinfer) export(DataGamInfoVariant(..))
 -- | specific info about what a DataGamInfo encodes
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data DataGamInfoVariant
   = DataGamInfoVariant_Plain		-- plain data type
   | DataGamInfoVariant_Newtype		-- newtype variation
@@ -139,6 +144,7 @@ data DataGamInfoVariant
 
 %%[(7 hmtyinfer) export(DataGamInfo(..))
 
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)

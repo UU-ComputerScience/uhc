@@ -213,10 +213,9 @@ BLD_LIBUTIL_PREFIX		:= $(BLD_PREFIX)libutil/
 BARE_PREFIX				:= $(TOP_PREFIX)bare$(EHC_BUILD_SUFFIX_DASH)/
 
 # location for cabal buildable distributions (in particular uhc light)
-CABALDIST_PREFIX		:= $(TOP_PREFIX)cabaldist$(EHC_BUILD_SUFFIX_DASH)/
-CABALDISTABS_PREFIX		:= $(TOPABS_PREFIX)cabaldist$(EHC_BUILD_SUFFIX_DASH)/
-CABALDIST_SRC_PREFIX	:= $(CABALDIST_PREFIX)src/
-#CABALDIST_LIB_PREFIX	:= $(CABALDIST_PREFIX)lib/
+CABALDIST_UHCLIGHT_PREFIX		:= $(TOP_PREFIX)cabaldist$(EHC_BUILD_SUFFIX_DASH)/uhc-light/
+CABALDIST_UHCLIGHT_SRC_PREFIX	:= $(CABALDIST_UHCLIGHT_PREFIX)src/
+#CABALDIST_UHCLIGHT_LIB_PREFIX	:= $(CABALDIST_UHCLIGHT_PREFIX)lib/
 
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
@@ -546,44 +545,45 @@ GHC_CABAL			= $(GHC) $(GHC_OPTS_GENERAL) -package Cabal -o $(2) $(1)  ; $(STRIP_
 # $2: version
 # $3: build-depends (additional)
 # $4: extensions (additional)
-# $5: synopsis (also used for description)
-# $6: exposed library modules
-# $7: other library modules
-# $8: executable Main
-# $9: executable name
-# $10: extra source files
-# $11: build type
-# $12: license
+# $5: synopsis 
+# $6: description 
+# $7: exposed library modules
+# $8: other library modules
+# $9: executable Main
+# $10: executable name
+# $11: extra source files
+# $12: build type
+# $13: license
 FUN_GEN_CABAL_UHC_LIGHT		= \
 					( \
 					echo   "Name:				$(strip $(1))" ; \
 					echo   "Version:			$(strip $(2))" ; \
 					echo   "License:			BSD3" ; \
 					echo   "Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group" ; \
-					echo   "Build-Type:			$(11)" ; \
-					echo   "license-file:		$(12)" ; \
+					echo   "Build-Type:			$(12)" ; \
+					echo   "license-file:		$(13)" ; \
 					echo   "Author:				UHC Team" ; \
 					echo   "Maintainer:         uhc-developers@lists.science.uu.nl" ; \
 					echo   "Homepage:			https://github.com/UU-ComputerScience/uhc" ; \
 					echo   "Bug-Reports:        https://github.com/UU-ComputerScience/uhc/issues" ; \
 					echo   "Category:			Development" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
-					echo   "Description:		$(strip $(5))" ; \
+					echo   "Description:		$(strip $(6))" ; \
 					echo   "Cabal-Version:      >= 1.8" ; \
-					echo   "data-files:         $(10)" ; \
+					echo   "data-files:         $(11)" ; \
 					echo   "" ; \
 					echo   "Library" ; \
 					echo   "  Hs-Source-Dirs:       src" ; \
 					echo   "  Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
-					echo   "  Exposed-Modules:		$(6)" ; \
-					echo   "  Other-Modules:		$(7)" ; \
+					echo   "  Exposed-Modules:		$(7)" ; \
+					echo   "  Other-Modules:		$(8)" ; \
 					echo   "" ; \
-					echo   "Executable $(strip $(9))" ; \
+					echo   "Executable $(strip $(10))" ; \
 					echo   "  Hs-Source-Dirs:       src" ; \
 					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
-					echo   "  Main-Is:           	$(strip $(8)).hs" ; \
+					echo   "  Main-Is:           	$(strip $(9)).hs" ; \
 					)
 
 ###########################################################################################

@@ -37,6 +37,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.ValGam.Base export(ValGamInfo(..),ValGam)
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data ValGamInfo
   = ValGamInfo
 %%[[(1 hmtyinfer || hmtyast)

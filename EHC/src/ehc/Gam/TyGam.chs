@@ -37,6 +37,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.TyGamInfo export(TyGamInfo(..))
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data TyGamInfo
   = TyGamInfo
 %%[[(1 hmtyinfer || hmtyast)
