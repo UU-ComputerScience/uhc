@@ -491,7 +491,7 @@ FUN_GEN_CABAL		= \
 					echo   "Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group" ; \
 					echo   "Build-Type:			$(8)" ; \
 					echo   "license-file:		$(9)" ; \
-					echo   "Author:				UHC Team" ; \
+					echo   "Author:				$(UHC_TEAM)" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC" ; \
 					echo   "Category:			Testing" ; \
 					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
@@ -562,7 +562,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group" ; \
 					echo   "Build-Type:			$(12)" ; \
 					echo   "license-file:		$(13)" ; \
-					echo   "Author:				UHC Team" ; \
+					echo   "Author:				$(UHC_TEAM)" ; \
 					echo   "Maintainer:         uhc-developers@lists.science.uu.nl" ; \
 					echo   "Homepage:			https://github.com/UU-ComputerScience/uhc" ; \
 					echo   "Bug-Reports:        https://github.com/UU-ComputerScience/uhc/issues" ; \

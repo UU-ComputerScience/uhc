@@ -197,7 +197,7 @@ handleImmQuitOption immq opts
 %%[[1
               ; let inputSuffixes = ["hs", "eh"]
 %%][8
-              ; let inputSuffixes = catMaybes $ map fst $ mkFileSuffMpHs opts
+              ; let inputSuffixes = catMaybes [ s | (s,_,vis) <- mkFileSuffMpHs opts, vis ]
 %%]]
               ; putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
                                     ++ "\n\nUsage: " ++ progName ++ " [options] [file[" ++ (concat $ intersperse "|" $ map ('.':) inputSuffixes) ++ "] ...]\n\noptions:"
@@ -265,37 +265,40 @@ handleImmQuitOption immq opts
 %%% Suffix search path
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Order is significant.
-
 %%[8
-type FileSuffMp = [(FileSuffix,EHCompileUnitState)]
+type FileSuffMp =
+  [( FileSuffix				-- suffix
+   , EHCompileUnitState		-- initial state
+   , Bool					-- visible from commandline
+   )]
 
+-- | Allowed suffixes, order is significant.
 mkFileSuffMpHs :: EHCOpts -> FileSuffMp
 mkFileSuffMpHs opts
-  = [ ( Just "hs"  , ECUS_Haskell HSStart )
+  = [ ( Just "hs"  , ECUS_Haskell HSStart, True )
 %%[[99
-    , ( Just "lhs" , ECUS_Haskell LHSStart )
+    , ( Just "lhs" , ECUS_Haskell LHSStart, True )
 %%]]
-    , ( Just "eh"  , ECUS_Eh EHStart )
+    , ( Just "eh"  , ECUS_Eh EHStart, True )
 %%[[50
-    , ( Just "hi"  , ECUS_Haskell HIStart )
+    , ( Just "hi"  , ECUS_Haskell HIStart, False )
 %%]]
 %%[[(8 grin)
     -- currently not supported
-    -- , ( Just "grin", ECUS_Grin )
+    -- , ( Just "grin", ECUS_Grin, True )
 %%]]
 %%[[(50 corein)
-    , ( Just Cfg.suffixDotlessInputOutputTextualCore, ECUS_Core CRStartText   )
-    , ( Just Cfg.suffixDotlessInputOutputBinaryCore , ECUS_Core CRStartBinary )
+    , ( Just Cfg.suffixDotlessInputOutputTextualCore, ECUS_Core CRStartText, True   )
+    , ( Just Cfg.suffixDotlessInputOutputBinaryCore , ECUS_Core CRStartBinary, True )
 %%]]
 %%[[(50 corebackend)
-    , ( Just Cfg.suffixDotlessBinaryCore , ECUS_Core CRStartBinary )
+    , ( Just Cfg.suffixDotlessBinaryCore , ECUS_Core CRStartBinary, False )
 %%]]
     ]
 %%[[(90 codegen)
     ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts)
-        then [ ( Just "c"   , ECUS_C CStart )
-             , ( Just "o"   , ECUS_O OStart )
+        then [ ( Just "c"   , ECUS_C CStart, True )
+             , ( Just "o"   , ECUS_O OStart, True )
              ]
         else []
        )
@@ -306,7 +309,7 @@ mkFileSuffMpHs opts
 -- Suffix map for empty suffix, defaults to .hs
 fileSuffMpHsNoSuff :: FileSuffMp
 fileSuffMpHsNoSuff
-  = [ ( Nothing  , ECUS_Haskell HSStart )
+  = [ ( Nothing  , ECUS_Haskell HSStart, False )
     ]
 %%]
 
@@ -388,8 +391,8 @@ doCompilePrepare fnL@(fn:_) opts
   = do { let fpL@(fp:_)             = map (mkTopLevelFPath "hs") fnL
              topModNmL@(topModNm:_) = map (mkHNm . fpathBase) fpL
 %%[[99
-             installVariant         = Cfg.installVariant opts
-       ; installRoot <- Cfg.installRootM opts
+             -- installVariant         = Cfg.installVariant opts
+       -- ; installRoot <- Cfg.installRootM opts
        -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
        -- ; let opts2 = opts -- {ehcOptUserDir = userDir}
        ; pkgDb1 <- pkgDbFromDirs opts
@@ -608,7 +611,7 @@ doCompileRun fnL@(fn:_) opts
         imp1 :: EHCOpts -> FileSuffMp -> FileLocPath -> EHCompileUnitState -> Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
         imp1 opts fileSuffMpHs searchPath desiredState mbFp mbPrev nm
           = do { let isTopModule = isJust mbFp
-                     fileSuffMpHs' = (if isTopModule then fileSuffMpHsNoSuff else []) ++ fileSuffMpHs
+                     fileSuffMpHs' = map tup123to12 $ (if isTopModule then fileSuffMpHsNoSuff else []) ++ fileSuffMpHs
 %%[[50
                ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
 %%][99
