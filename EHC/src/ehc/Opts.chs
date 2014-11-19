@@ -281,6 +281,7 @@ ehcOptOptimizes o opts = o `Set.member` ehcOptOptimizations opts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.defaultEHCOpts export(defaultEHCOpts)
+-- | The default EHC options.
 defaultEHCOpts
   = emptyEHCOpts
 %%[[99
