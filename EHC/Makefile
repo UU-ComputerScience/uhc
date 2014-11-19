@@ -302,6 +302,7 @@ uhc-install-postprocess-llvm:
 
 uhc-light:
 	$(MAKE) ENABLE_JS= EHC_VARIANT=$(EHC_UHCLIGHT_CABAL_VARIANT) uhc-light-dist
+	cd $(CABALDIST_UHCLIGHT_PREFIX) && cabal configure && cabal sdist
 
 uhc-light-tst:
 	$(MAKE) ENABLE_JS= EHC_VARIANT=$(EHC_UHCLIGHT_CABAL_VARIANT) INCLUDE_DERIVED_MK=yes uhc-light-cabal-dist

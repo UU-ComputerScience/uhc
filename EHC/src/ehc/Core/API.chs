@@ -1,6 +1,6 @@
 %%[(8 core)
 
--- | Core Public API
+-- | Core Public API (provisional, to be refactored)
 --
 -- Intended for constructing basic Core Programs.
 -- This module does not offer any way to inspect the built Core Programs (on purpose), but the
@@ -50,7 +50,9 @@ module %%@{%{EH}%%}Core.API
   , acoreUnit
   , acoreInt
 
+%%[[97
   , acoreBuiltinInteger -- TODO acoreInt2 or acoreBuiltinInteger ?
+%%]]
   , acoreBuiltinString
   , acoreBuiltinError
   , acoreBuiltinUndefined

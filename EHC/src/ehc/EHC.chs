@@ -510,7 +510,7 @@ doCompileRun fnL@(fn:_) opts
 %%[[8
   where compile :: EHCOpts -> FileSuffMp -> FileLocPath -> Maybe FPath -> HsName -> EHCompilePhase ()
         compile opts fileSuffMpHs searchPath mbFp nm
-          = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
+          = do { mbFoundFp <- cpFindFileForFPath (map tup123to12 fileSuffMpHs) searchPath (Just nm) mbFp
                ; when (isJust mbFoundFp)
                       (cpEhcModuleCompile1 nm)
                }
