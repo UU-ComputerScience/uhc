@@ -212,13 +212,14 @@ uhc-light-cabal-dist: # $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)
 		, $${ehc_ehclib_names} \
 		, Simple \
 		, LICENSE \
+		, changelog.md \
 	) > $(CABALDIST_UHCLIGHT_PREFIX)uhc-light.cabal ; \
 	(echo "module $(LIB_EHC_QUAL_PREFIX)ConfigCabal" ; \
 	  echo "  (module Paths_uhc_light)" ; \
 	  echo "  where" ; \
 	  echo "import Paths_uhc_light" ; \
 	) > $(CABALDIST_UHCLIGHT_SRC_PREFIX)$(LIB_EHC_HS_PREFIX)ConfigCabal.hs
-	cp LICENSE $(CABALDIST_UHCLIGHT_PREFIX) ; \
+	cp changelog.md LICENSE $(CABALDIST_UHCLIGHT_PREFIX) ; \
 	$(call GEN_CABAL_SETUP) > $(CABALDIST_UHCLIGHT_PREFIX)Setup.hs ; \
 	echo done
 

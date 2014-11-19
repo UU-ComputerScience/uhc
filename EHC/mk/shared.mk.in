@@ -554,6 +554,7 @@ GHC_CABAL			= $(GHC) $(GHC_OPTS_GENERAL) -package Cabal -o $(2) $(1)  ; $(STRIP_
 # $11: extra source files
 # $12: build type
 # $13: license
+# $14: change log
 FUN_GEN_CABAL_UHC_LIGHT		= \
 					( \
 					echo   "Name:				$(strip $(1))" ; \
@@ -571,6 +572,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "Description:		$(strip $(6))" ; \
 					echo   "Cabal-Version:      >= 1.8" ; \
 					echo   "data-files:         $(11)" ; \
+					echo   "extra-source-files: $(14)" ; \
 					echo   "" ; \
 					echo   "Library" ; \
 					echo   "  Hs-Source-Dirs:       src" ; \
