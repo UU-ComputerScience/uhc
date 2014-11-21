@@ -608,6 +608,7 @@ acoreTagTupTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => 
 acoreTagTupTy tg t es = acoreTagTyTupBound tg t $ map acoreBound1Val es
 
 -- | Creates a new tuple/record with the given values.
+-- Has to be fully applied, partial application is not allowed.
 acoreTagTup :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => CTag -> [e] -> e
 acoreTagTup tg es = acoreTagTupTy tg (acoreTyErr "acoreTupTy") es
 

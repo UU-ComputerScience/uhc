@@ -2,16 +2,16 @@
 
 -- | Core Public API (provisional, to be refactored)
 --
--- Intended for constructing basic Core Programs.
--- This module does not offer any way to inspect the built Core Programs (on purpose), but the
--- EHXX.Core module does.
+-- Intended for constructing basic Core Programs. Use the binary serialization from `UHC.Util.Binary`
+-- to produce a core file, which can be compiled by UHC.
 --
+-- Restrictions:
+--  - Extendable data types are not supported
+--  - Generated code is not (type-)checked, might cause runtime crashes
+--  - Core parsing/Pretty printing is incomplete and might be partially broken.
 -- Invariants:
 -- - Constructor applications (mkCon) always have to be fully saturated. (Should we handle this internally?)
 -- - Haskell constructor names must be unambigous per module (mkHSCTag)
--- - TODO Tag ordering ?? What exactly are the invariants?
---
--- TODO Use AbstractCore instead of directly using the Constructors in the implementation
 
 module %%@{%{EH}%%}Core.API
   (
@@ -69,6 +69,27 @@ module %%@{%{EH}%%}Core.API
   , acoreLet1Strict
   , acoreLetRec
 
+  -- ** Abstraction
+  , acoreLam
+
+  -- ** Application
+  , acoreApp
+
+  -- ** Binds/Bounds
+  , acoreBind1
+  , acoreBind1Nm1
+
+  -- ** Constructor tags
+  , makeCTag
+  , destructCTag
+
+  , ctagUnit
+  , ctagTup
+  , ctagTrue
+  , ctagFalse
+  , ctagCons
+  , ctagNil
+
   -- ** Case
   -- | Scrutinizes an expression and executes the appropriate alternative.
   -- The scrutinee of a case statement is required to be in WHNF (weak head normal form).
@@ -79,27 +100,23 @@ module %%@{%{EH}%%}Core.API
   , acorePatRestEmpty
   , acorePatFldBind
 
-  -- ** Abstraction
-  , acoreLam
-
-  -- ** Application
-  , acoreApp
 
   -- ** Datatypes
   , acoreTagTup
 
-  -- ** Binds/Bounds
-  , acoreBind1
-  , acoreBind1Nm1
 
   -- ** Module
   , makeModule
   , makeImport
   , makeMetaData
   , makeMetaDataCon
+  , makeMetaDataConFromCTag
 
   -- * Utilities
   , makeMain
+  , ppCModule
+  , pCExpr
+  , coreScanOpts
   
   -- * Re-exports (or not???)
   , module %%@{%{EH}%%}Base.API
@@ -116,7 +133,11 @@ import %%@{%{EH}%%}Base.API
 import %%@{%{EH}%%}Base.Common
 import %%@{%{EH}%%}Base.HsName
 import %%@{%{EH}%%}Core hiding (acoreCaseDflt)
+import %%@{%{EH}%%}Core.Pretty
+import %%@{%{EH}%%}Core.Parser
+import %%@{%{EH}%%}Scanner.Common
 import %%@{%{EH}%%}Opts
+import %%@{%{EH}%%}CodeGen.Tag
 
 -- | Creates a new Core name. All names generated with this function live in
 -- the "Core API" namespace and will not collide with names in other namespaces.
@@ -167,6 +188,29 @@ hsnMkModf1 uniq mods nm = hsnMkModf mods (hsnFromString nm) uniq
 acoreUnit :: EHCOpts -> CExpr
 acoreUnit _ = acoreTup []
 
+-- | Creates a constructor tag.
+makeCTag :: HsName  -- ^ Fully qualified Datatype name.
+    -> HsName       -- ^ Fully qualified Constructor name.
+    -> Int          -- ^ Tag number.
+    -> Int          -- ^ Arity.
+    -> CTag
+makeCTag tyNm conNm tg ar = CTag tyNm conNm tg ar (-1)
+
+destructCTag :: a -- ^ Algebra for record/tuple case.
+    -> (HsName -> HsName -> Int -> Int -> a)    -- ^ Algebra for datatype case. Order of arguments is the same as in 'makeCTag'.
+    -> CTag
+    -> a
+destructCTag arec _ CTagRec = arec
+destructCTag _ adat (CTag {ctagTyNm = ty, ctagNm = nm, ctagTag' = tag, ctagArity = ar}) = adat ty nm tag ar
+
+-- | `CTag` for unit values ('()' in haskell).
+ctagUnit :: CTag
+ctagUnit = ctagTup
+
+-- | `CTag` of tuple/records.
+ctagTup :: CTag
+ctagTup = CTagRec
+
 -- TODO verify that this sorting is always correct (see also AbstractCore/Utils.chs)
 -- | A Case expression, possibly with a default value.
 acoreCaseDflt  :: AbstractCore  e m b bound boundmeta bcat mbind t p pr pf a
@@ -208,9 +252,14 @@ makeMetaDataCon :: HsName   -- ^ The fully qualified name of the constructor.
     -> CDataCon
 makeMetaDataCon = CDataCon_Con
 
+makeMetaDataConFromCTag :: CTag -- ^ CTag to export.
+    -> Maybe CDataCon   -- ^ The constructor description. Nothing if it is a record/tuple constructor.
+makeMetaDataConFromCTag = destructCTag Nothing (\_ b c d -> Just $ makeMetaDataCon b c d)
+
 -- | Creates the main entry point, calling the given function when run. The given
 -- function to call has to be in scope (either define it in the same module,
 -- or import it).
+-- In addition, the module "UHC.Run" has to be imported!
 makeMain :: HsName       -- ^ The function containing the user code to call.
     -> CExpr
 makeMain main = mainEhc

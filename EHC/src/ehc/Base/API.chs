@@ -9,14 +9,14 @@ module %%@{%{EH}%%}Base.API
     EHCOpts
   , defaultEHCOpts
 
-  -- * Base types
-  -- | From Base.Common
+  -- * Constructor Tags
+  -- From Base.Common
   , CTag
 
-  -- | From Base.HsName
+  -- * Names
   , HsName
 
-  -- | From Base.HsName.Builtin
+  -- * Misc
 %%[[99
   , hsnEhcRunMain
 %%]]
