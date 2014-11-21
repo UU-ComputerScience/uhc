@@ -15,9 +15,27 @@
 
 module %%@{%{EH}%%}Core.API
   (
+  {-
   -- Opts
     EHCOpts
   , defaultEHCOpts
+  -}
+
+  {-
+  -- Base.Common
+  , CTag
+  -- Base.HsName
+  , HsName
+  -}
+
+  -- * Names
+  -- | Names in UHC have to be of the form P1.P2....Pn.Ident . All names
+  -- in module M must have the form M.Ident . Datatype and constructor names
+  -- have to start with an uppercase letter, functions with a lowercase letter.
+    mkUniqueHsName
+  , mkHsName
+  , mkHsName1
+  , addHsNamePrefix
 
   -- * Core AST
   -- | The datatypes making up a Core program.
@@ -30,20 +48,6 @@ module %%@{%{EH}%%}Core.API
   , CAlt
   , CPat
   , CPatFld
-
-  -- Base.Common
-  , CTag
-  -- Base.HsName
-  , HsName
-
-  -- * Names
-  -- | Names in UHC have to be of the form P1.P2....Pn.Ident . All names
-  -- in module M must have the form M.Ident . Datatype and constructor names
-  -- have to start with an uppercase letter, functions with a lowercase letter.
-  , mkUniqueHsName
-  , mkHsName
-  , mkHsName1
-  , addHsNamePrefix
 
   -- * Construction functions
   -- ** Constants
@@ -96,6 +100,9 @@ module %%@{%{EH}%%}Core.API
 
   -- * Utilities
   , makeMain
+  
+  -- * Re-exports (or not???)
+  , module %%@{%{EH}%%}Base.API
   )
   where
 
@@ -105,6 +112,7 @@ import Data.Ord
 
 import %%@{%{EH}%%}AbstractCore hiding (acoreCaseDflt)
 import qualified %%@{%{EH}%%}AbstractCore as AC
+import %%@{%{EH}%%}Base.API
 import %%@{%{EH}%%}Base.Common
 import %%@{%{EH}%%}Base.HsName
 import %%@{%{EH}%%}Core hiding (acoreCaseDflt)
@@ -207,9 +215,14 @@ makeMain :: HsName       -- ^ The function containing the user code to call.
     -> CExpr
 makeMain main = mainEhc
   where mainEhc = acoreLet1Plain mainNm
-            (acoreApp (acoreVar $ hsnMkModf ["UHC", "Run"] (hsnFromString "ehcRunMain") M.empty) [acoreVar main])
+            (mainWrap $ acoreVar main)
             (acoreVar mainNm)
-        mainNm = hsnMkModf [] (hsnFromString "main") M.empty
+        mainNm = hsnMain
+%%[[8
+        mainWrap = id
+%%][99
+        mainWrap = \m -> acoreApp (acoreVar hsnEhcRunMain) [m]
+%%]]
 
 
 %%]

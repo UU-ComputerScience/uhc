@@ -93,7 +93,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 
 EHC_HS_UTIL_SRC_CHS_ASIS				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													API \
-													$(addsuffix /API,Core) \
+													$(addsuffix /API,Core Base) \
 											)
 
 EHC_HS_UTIL_SRC_CHS						:= $(EHC_HS_UTIL_SRC_CHS_DFLT) $(EHC_HS_UTIL_SRC_CHS_ASIS)
