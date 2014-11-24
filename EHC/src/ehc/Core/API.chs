@@ -228,6 +228,7 @@ acoreCaseDflt e as def =
 
 -- | Creates a module.
 makeModule :: HsName    -- ^ The name of the module.
+    -> [CExport]        -- ^ The exports.
     -> [CImport]        -- ^ The imports (only direct imports, not transitive ones).
     -> [CDeclMeta]      -- ^ The meta information.
     -> CExpr            -- ^ The body of the module.

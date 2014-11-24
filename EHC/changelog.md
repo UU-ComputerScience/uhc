@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.7.2
+
+- [core] Core allows exports (only AST currently).
+- [api] Core.API extended.
+
 ## 1.1.7.1 - 20141119
 
 - [api] Initial Core.API ([#31](https://github.com/UU-ComputerScience/uhc/pull/31)).

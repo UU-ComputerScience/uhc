@@ -150,7 +150,7 @@ SEM ExprSeq1 FldBind MbExpr ValBind Alt Pat
 ATTR Module AGItf [ | | core: CModule ]
 
 SEM Module
-  | Mod         lhs         .   core                =   CModule_Mod @moduleNm [] [] (mkLet CBindCateg_Rec @vbinds.core (acoreBuiltinUndefined @lhs.opts)) -- []
+  | Mod         lhs         .   core                =   CModule_Mod @moduleNm [] [] [] (mkLet CBindCateg_Rec @vbinds.core (acoreBuiltinUndefined @lhs.opts)) -- []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

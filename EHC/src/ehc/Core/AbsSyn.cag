@@ -43,6 +43,7 @@ DATA CodeAGItf
 %%[(8 core)
 DATA CModule
   | Mod         moduleNm        : {HsName}
+                exports			: CExportL
                 imports			: CImportL
                 declMetas		: CDeclMetaL
                 expr            : CExpr
@@ -50,8 +51,17 @@ DATA CModule
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Imports
+%%% Imports & exports
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 core)
+DATA CExport
+  | Export		nm				: {HsName}
+
+TYPE CExportL	= [CExport]
+
+SET AllExport	= CExportL CExport
+%%]
 
 %%[(8 core)
 DATA CImport
@@ -451,5 +461,6 @@ SET AllNT
   = AllCodeNT
     AllMetaNT
     AllImport
+    AllExport
 %%]
 

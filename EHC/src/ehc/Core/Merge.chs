@@ -48,7 +48,7 @@ instance ModPuller
            (HsName,CImportL,CDeclMetaL)
            CModule CExpr CBindCateg CBind
   where
-    mpullSplit mmain@(CModule_Mod modNm _ _ _) mimpL =
+    mpullSplit mmain@(CModule_Mod modNm _ _ _ _) mimpL =
         ( cmoddbMainExpr modDbMain
         , 
 %%[[50
@@ -81,7 +81,7 @@ instance ModPuller
     
     mpullFreeVars = cexprFvS
 
-    mpullBindingsAddToMod (modNm,allImports,allMeta) rootExpr bs _ = CModule_Mod modNm allImports allMeta (acoreLetN bs $ rootExpr)
+    mpullBindingsAddToMod (modNm,allImports,allMeta) rootExpr bs _ = CModule_Mod modNm [] allImports allMeta (acoreLetN bs $ rootExpr)
 %%]
 
 %%[(50 core) hs export(cModMerge)

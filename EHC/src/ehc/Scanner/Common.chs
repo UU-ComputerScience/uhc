@@ -268,6 +268,7 @@ coreScanOpts opts
                                         [ "let", "in", "case", "of", "rec", "foreign", "uniq"
                                         , "Int", "Char", "String", "Tag", "Rec"
                                         , "module", "default"
+                                        , "import", "export"
                                         , "BINDPLAIN", "BINDFUNCTION0", "BINDFUNCTION1", "BINDAPPLY0"
                                         , "VAL"
                                         , "FAIL"
