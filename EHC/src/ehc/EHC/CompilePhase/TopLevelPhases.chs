@@ -509,7 +509,7 @@ cpEhcModuleCompile1 targHSState modNm
              |    st == HIStart || st == HSStart -- st /= HMOnlyMinimal
              -> do { let mod = emptyMod' modNm
                    ; cpUpdCU modNm (ecuStoreMod mod)
-                   -- ; cpCheckMods [modNm]
+                   -- ; cpCheckModsWithBuiltin [modNm]
 %%[[(50 codegen grin)
 				   ; cpUpdateModOffMp [modNm]
 %%]]
@@ -521,9 +521,11 @@ cpEhcModuleCompile1 targHSState modNm
              | cst == CRStartText || isBinary
              -> do { cpMsg modNm VerboseNormal $ "Reading Core (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
+                   -- ; cpGetDummyCheckSrcMod modNm		-- really dummy, should be based on actual import info to be extracted by cpEhcCoreImport
                    ; cpEhcHaskellModulePrepareSrc modNm
                    ; modNm2 <- cpEhcCoreImport isBinary modNm
-                   ; cpGetDummyCheckSrcMod modNm2		-- really dummy, should be based on actual import info to be extracted by cpEhcCoreImport
+                   -- ; cpGetDummyCheckSrcMod modNm2		-- really dummy, should be based on actual import info to be extracted by cpEhcCoreImport
+                   -- ; cpCheckModsWithBuiltin [modNm2]
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_Core CROnlyImports))
                    ; return modNm2
                    }
@@ -883,7 +885,7 @@ cpEhcCoreParse modNm
 cpEhcHaskellAnalyseModuleItf :: HsName -> EHCompilePhase ()
 cpEhcHaskellAnalyseModuleItf modNm
   = cpSeq [ cpStepUID, cpFoldHsMod modNm, cpGetHsMod modNm
-          , cpCheckMods [modNm]
+          , cpCheckModsWithBuiltin [modNm]
 %%[[(50 codegen grin)
           , cpUpdateModOffMp [modNm]
 %%]]
@@ -898,7 +900,8 @@ cpEhcHaskellAnalyseModuleItf modNm
 --     (1) module information (import, export, etc),
 cpEhcCoreAnalyseModuleItf :: HsName -> EHCompilePhase ()
 cpEhcCoreAnalyseModuleItf modNm
-  = cpSeq [ cpCheckMods [modNm]
+  = cpSeq [ cpMsg modNm VerboseDebug "cpEhcCoreAnalyseModuleItf"
+          , cpCheckModsWithoutBuiltin [modNm]
 %%[[(50 codegen grin)
           , cpUpdateModOffMp [modNm]
 %%]]
@@ -1160,11 +1163,7 @@ cpProcessCoreBasic modNm
        ; cpSeq [ cpTransformCore OptimizationScope_PerModule modNm
 %%[[50
                , cpFlowHILamMp modNm
-               -- , when (ehcOptEmitCore opts) (void $ cpOutputCore CPOutputCoreHow_Binary "" "core" modNm)
                , void $ cpOutputCore CPOutputCoreHow_Binary [] "" Cfg.suffixDotlessBinaryCore modNm
-%%]]
-%%[[(8888 codegen java)
-               , when (ehcOptEmitJava opts) (cpOutputJava         "java" modNm)
 %%]]
                , cpProcessCoreFold modNm
                ]

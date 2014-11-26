@@ -21,6 +21,8 @@ Folding over AST to compute semantics
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
 %%]
+%%[(50 codegen) import({%{EH}EHC.CompilePhase.Common})
+%%]
 
 -- EH semantics
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
@@ -88,14 +90,17 @@ cpFoldCoreMod modNm
                  core     = panicJust "cpFoldCoreMod" mbCore
                  inh      = Core2ChkSem.Inh_CodeAGItf
                                 { Core2ChkSem.opts_Inh_CodeAGItf = opts
+                                , Core2ChkSem.moduleNm_Inh_CodeAGItf = modNm
                                 , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsiEHInh crsi
                                 }
                  coreSem  = Core2ChkSem.cmodCheck' inh core
                  hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
+                 mod      = Core2ChkSem.mod_Syn_CodeAGItf coreSem
          -- ;  lift $ putStrLn $ "cpFoldCoreMod " ++ show hasMain
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSemMod coreSem
                                 . ecuSetHasMain hasMain
+                                . ecuStoreMod mod
                                 ))
          }
 %%]
@@ -104,15 +109,22 @@ cpFoldCoreMod modNm
 cpFoldEH :: HsName -> EHCompilePhase ()
 cpFoldEH modNm
   =  do  {  cr <- get
+%%[[(50 codegen)
+         ;  mieimpl <- cpGenModuleImportExportImpl modNm
+%%]]
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbEH   = ecuMbEH ecu
                  ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf $ panicJust "cpFoldEH" mbEH)
                                            ((crsiEHInh crsi)
-                                                  { EHSem.moduleNm_Inh_AGItf         = ecuModNm ecu
-                                                  , EHSem.gUniq_Inh_AGItf            = crsiHereUID crsi
-                                                  , EHSem.opts_Inh_AGItf             = opts
+                                                  { EHSem.moduleNm_Inh_AGItf         		= ecuModNm ecu
+                                                  , EHSem.gUniq_Inh_AGItf            		= crsiHereUID crsi
+                                                  , EHSem.opts_Inh_AGItf             		= opts
+%%[[(50 codegen)
+                                                  , EHSem.importUsedModules_Inh_AGItf		= ecuImportUsedModules ecu
+                                                  , EHSem.moduleImportExportImpl_Inh_AGItf	= mieimpl
+%%]]
 %%[[50
-                                                  , EHSem.isMainMod_Inh_AGItf        = ecuIsMainMod ecu
+                                                  , EHSem.isMainMod_Inh_AGItf        		= ecuIsMainMod ecu
 %%]]
                                                   })
          ;  when (isJust mbEH)

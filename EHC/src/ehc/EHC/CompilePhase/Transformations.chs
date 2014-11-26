@@ -88,7 +88,7 @@ cpTransformCore optimScope modNm
                                  , trfcoreIsLamLifted	= maybe False Core2ChkSem.isLamLifted_Syn_CodeAGItf $ ecuMbCoreSemMod ecu
 %%]]
 %%[[50
-                                 , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
+                                 , trfcoreExpNmOffMp    = crsiExpNmOffMpDbg "cpTransformCore" modNm crsi
 								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
 %%]]
                                  }

@@ -462,7 +462,8 @@ doCompilePrepare fnL@(fn:_) opts
 -}
              crsi           =   (EHCompileRunStateInfo opts3
                                                        uidStart uidStart
-                                                       (initialHSSem opts3) (initialEHSem opts3 fp)
+                                                       (initialHSSem opts3)
+                                                       (initialEHSem opts3 fp)
 %%[[(8 codegen)
                                                        (initialCore2GrSem opts3)
 %%]]
@@ -501,7 +502,7 @@ doCompileRun fnL@(fn:_) opts
 %%][50
                  ; _ <- if False -- ehcOptPriv opts
                         then runStateT (compile2 opts fileSuffMpHs searchPath fpL topModNmL) initialState
-                        else runStateT (compile opts fileSuffMpHs searchPath fpL topModNmL) initialState
+                        else runStateT (compile  opts fileSuffMpHs searchPath fpL topModNmL) initialState
 %%]]
                  ; return ()
                  }
@@ -555,10 +556,11 @@ doCompileRun fnL@(fn:_) opts
                 -}
                
         compile :: EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhase ()
-        compile opts fileSuffMpHs searchPath fpL topModNmL
-          = do { 
+        compile opts fileSuffMpHs searchPath fpL topModNmL@(modNm:_)
+          = do { cpMsg modNm VerboseDebug $ "doCompileRun.compile topModNmL: " ++ show topModNmL
+
                -- check module import relationship for builtin module
-                 cpCheckMods' (const emptyModMpInfo) [modBuiltin]
+               ; cpCheckModsModWith (const emptyModMpInfo) [modBuiltin]
                
                -- start with directly importing top modules, providing the filepath directly
                ; topModNmL' <- zipWithM (\fp topModNm -> imp (ECUS_Haskell HSOnlyImports) (Just fp) Nothing topModNm) fpL topModNmL

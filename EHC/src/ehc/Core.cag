@@ -101,12 +101,12 @@ instance Show CModule where
 
 
 %%[(8 core) ag
-DERIVING CImport AllExpr
+DERIVING CImport CExport AllExpr
   : Eq
 %%]
 
 %%[(8 core) ag
-DERIVING CImport
+DERIVING CImport CExport
   : Ord
 %%]
 
@@ -518,12 +518,13 @@ data CModuleDatabase
       , cmoddbBindArr       :: !CDbBindArray        -- bindings
       , cmoddbBindMp        :: !CDbModuleBindMp     -- map of name to bindings
       , cmoddbMainExpr      :: !CExpr               -- the final expr of the module's let expr
+      , cmoddbExports       :: !CExportL            -- exports
       , cmoddbImports       :: !CImportL            -- imports
       , cmoddbMeta          :: !CDeclMetaL          -- meta info/decl
       }
 
 emptyCModuleDatabase :: CModuleDatabase
-emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (CExpr_Int 0) [] []
+emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (CExpr_Int 0) [] [] []
 %%]
 
 %%[(50 core) hs export(cmoddbLookup)

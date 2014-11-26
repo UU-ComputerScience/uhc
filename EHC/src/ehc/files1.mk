@@ -71,7 +71,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addsuffix /Trf,Core TyCore JavaScript Cmm) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
-													$(addprefix CodeGen/,BuiltinPrims BasicAnnot Bits BuiltinSizeInfo GenC Tag CVar ValAccess Const RefGenerator GenJavaLike ImportUsedModules TrfUtils) \
+													$(addprefix CodeGen/,BuiltinPrims BasicAnnot Bits BuiltinSizeInfo GenC Tag CVar ValAccess Const RefGenerator GenJavaLike ModuleImportExportImpl ImportUsedModules TrfUtils) \
 													$(addprefix Module/,Merge ImportExport) \
 													$(addprefix Foreign/,Boxing) \
 													$(addprefix CoreRun/,Run Prim) \
@@ -83,7 +83,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix TyCore/Trf/,Common) \
 													$(addprefix GrinCode/,Common SolveEqs) \
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
-														$(addprefix CompilePhase/,Run Parsers Output Translations Transformations \
+														$(addprefix CompilePhase/,Common Run Parsers Output Translations Transformations \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM CompileJavaScript Link \
 															Cleanup Module TopLevelPhases \

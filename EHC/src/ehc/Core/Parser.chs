@@ -59,7 +59,7 @@ pCTy
 %%[(8 corein) export(pCModule,pCExpr)
 pCModule :: CParser CModule
 pCModule
-  = (\m mt e -> CModule_Mod m mt e)
+  = CModule_Mod
     <$  pMODULE <*> pDollNm <* pSEMI
     <*> pE
     <*> pI
