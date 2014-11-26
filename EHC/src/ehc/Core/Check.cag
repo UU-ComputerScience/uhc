@@ -110,7 +110,7 @@ ATTR
 ATTR CodeAGItf CModule [ | | realModuleNm: HsName ]
 
 SEM CModule
-  | Mod         lhs         .   realModuleNm        =   @moduleNm
+  | Mod         loc         .   realModuleNm        =   @moduleNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -154,23 +154,8 @@ SEM CBind
 ATTR CodeAGItf CModule [ | | mod: Mod ]
 
 SEM CModule
-  | Mod         lhs         .   mod			        =   Mod @lhs.moduleNm (Just @moduleNm) (Just @exports.modExpL) @imports.modImpL @expr.modDefsRel Rel.empty []
+  | Mod         lhs         .   mod			        =   Mod @realModuleNm {- @lhs.moduleNm -} (Just @realModuleNm) (Just @exports.modExpL) @imports.modImpL @expr.modDefsRel Rel.empty []
 %%]
-
-SEM Declaration
-    | TypeSignature FunctionBindings PatternBinding ForeignImport
-        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Val o Set.empty @range) | o <- @idOccDefs ]
-    | Type
-        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty @range) | o <- @idOccDefs ]
-
-
-SEM Module
-    | Module
-        lhs             .   mod         =   -- (\v -> tr "XX" (pp v) v) $
-                                            Mod @lhs.moduleNm @name
-                                                @exports.modExpsMb @modImpL
-                                                @body.modDefsRel @body.modHideDefsRel
-                                                (reverse @body.topInstanceNmL)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module has 'main'?

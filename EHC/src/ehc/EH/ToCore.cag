@@ -51,8 +51,12 @@ SEM AGItf
   | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then acoreVar hsnMain else @expr.letCBody
                                                     d = if @insertMainDef then acoreLet CBindCateg_Plain [acoreBind1Ty hsnMain (acoreTyErr $ "EH.ToCore.AGItf.main") @expr.letCBody] else id
                                                 in  CModule_Mod @lhs.moduleNm
+%%[[8
+                                                        [] []
+%%][50
                                                         (map CExport_Export $ Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl) -- TBD: exports are filled in later
                                                         (map CImport_Import $ Set.toList $ iumHSDeclModules @lhs.importUsedModules) -- TBD: imports are filled in later
+%%]]
                                                         [ CDeclMeta_Data tn
                                                             [ CDataCon_Con cn (ctagTag ctag) (ctagArity ctag)
                                                             | (cn,dti) <- Map.toList $ dgiConstrTagMp dgi
