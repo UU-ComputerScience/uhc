@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.1.7.2
+## 1.1.7.2 - 20141126
 
-- [core] Core allows exports (only AST currently).
+- [core] Core allows exports, can mix .hs and .bcr/.tcr files (tested rudimentary only).
 - [api] Core.API extended.
 
 ## 1.1.7.1 - 20141119
