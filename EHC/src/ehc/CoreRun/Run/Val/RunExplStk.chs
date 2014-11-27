@@ -330,7 +330,7 @@ instance
               -- rsemGcPushRoot v
               sl <- liftIO $ readIORef slref
               heapSetM' hp p RVal_BlackHole
-              v' <- {- rvalTrEnterLam mn $ -} rvalExplStkAppLam sl e (emptyExplArgs {eaStk=0}) $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
+              v' <- rvalExplStkAppLam sl e (emptyExplArgs {eaStk=0}) $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
               hp <- gets renvHeap
               p <- liftIO (readIORef pref)
               v'' <- rsemPop v'
