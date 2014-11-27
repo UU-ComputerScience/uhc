@@ -455,7 +455,7 @@ SEM CExpr
                 loc         .   creBase         =   CR.Exp_SExp @crse
   | Var         loc         .   creBase         =   taileval @lhs.tailCtx $ CR.Exp_SExp @crse
   | Lam         loc         .   creBase         =   if @isTopLam
-                                                    then CR.Exp_Lam @lev (length @creLamArgL) (@refOffsetMax) (@stackDepthMax) (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
+                                                    then CR.Exp_Lam (whatExprMbBind @lhs.whatAbove) @lev (length @creLamArgL) (@refOffsetMax) (@stackDepthMax) (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
                                                     else dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
   | App         loc         .   creBase         =   if @isTopApp'
                                                     then @creAppFun @lhs.tailCtx $ CR.mkCRArray $ reverse @creAppArgL
@@ -493,7 +493,7 @@ ATTR AllBind CExpr [ | | crb USE {++} {[]} : {[(HsName, CR.Bind)]} ]
 SEM CBound
   | Bind Val    loc         .   creMkForce      =   case @toBe of
                                                         ToBe_Forced   -> tailrec @tailCtx . CR.Exp_Force
-                                                        ToBe_Thunked  -> CR.Exp_Lam @lev 0 (@expr.refOffsetMax) (@stackDepthMaxThunked) (CR.nm2RefMpInverse @nm2refNew)
+                                                        ToBe_Thunked  -> CR.Exp_Lam (Just @lhs.nm) @lev 0 (@expr.refOffsetMax) (@stackDepthMaxThunked) (CR.nm2RefMpInverse @nm2refNew)
                                                         ToBe_LeftAsIs -> id
                             .   creMkReturned   =   if @isToBeReturned then CR.Exp_Ret else id
                             .   creBind         =   @creMkReturned $ @creMkForce @expr.cre

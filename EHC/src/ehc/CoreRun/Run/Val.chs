@@ -89,12 +89,14 @@ data RVal
 
     -- Value representations for running itself: function, application, etc
   | RVal_Lam
-      { rvalBody		:: !Exp						-- ^ a Exp_Lam, which also encodes a thunk
+      { rvalMbNm		:: !(Maybe HsName)			-- ^ possibly bound to name
+      , rvalBody		:: !Exp						-- ^ a Exp_Lam, which also encodes a thunk
       , rvalSLRef		:: !(IORef HpPtr)			-- ^ static link to enclosing stack frame
       }
   -- | special case of Lam taking 0 params
   | RVal_Thunk										
-      { rvalBody		:: !Exp						-- ^ Exp taking no arguments (thunk)
+      { rvalMbNm		:: !(Maybe HsName)			-- ^ possibly bound to name
+      , rvalBody		:: !Exp						-- ^ Exp taking no arguments (thunk)
       , rvalSLRef		:: !(IORef HpPtr)			-- ^ static link to enclosing stack frame
       }
   | RVal_Node
@@ -154,8 +156,8 @@ ppRVal' lkptr rval = case rval of
     RVal_Float   		v     		-> dfltpp v
     RVal_Double   		v     		-> dfltpp $ show v
     RVal_PackedString	v    		-> dfltpp $ show v
-    RVal_Lam   			b slref		-> dfltpp b
-    RVal_Thunk 			e slref 	-> return $ ppBrackets e
+    RVal_Lam   			mn b slref	-> dfltpp b
+    RVal_Thunk 			mn e slref 	-> return $ ppBrackets e
     RVal_Node  			t vs 		-> do
                                        vl <- mvecToList vs
                                        return $ t >|< ppBracketsCommas vl
@@ -488,11 +490,16 @@ heapUpdM p f = do
 data RValCxt
   = RValCxt
       { rcxtInRet		:: !Bool						-- ^ in returning context, True by default
-      -- , rcxtDoTrace		:: !Bool						-- ^ tracing
+      , rcxtCallCxt		:: [Maybe HsName]				-- ^ calling context stack, for debugging only
       }
 
 emptyRValCxt :: RValCxt
-emptyRValCxt = RValCxt True -- False
+emptyRValCxt = RValCxt True []
+%%]
+
+%%[(8 corerun) hs export(rvalTrEnterLam)
+rvalTrEnterLam :: RunSem RValCxt RValEnv RVal m x => Maybe HsName -> RValT m a -> RValT m a
+rvalTrEnterLam s = local (\r -> r {rcxtCallCxt = s : rcxtCallCxt r})
 %%]
 
 %%[(8 corerun) hs export(mustReturn, needNotReturn, rvalRetEvl, rvalPrimargEvl)
@@ -551,7 +558,7 @@ vecReverseForM_ v m = vecLoopReverse 0 (V.length v) (\_ i -> m (v V.! i)) v
 %%% Mutable Vector utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(mvecAllocInit, mvecAlloc, mvecFillFromV, mvecFillFromMV, mvecAllocFillFromV, mvecAppend, mvecToList)
+%%[(8 corerun) hs export(mvecAllocInit, mvecAlloc, mvecFillFromV, mvecReverseFillFromV, mvecFillFromMV, mvecAllocFillFromV, mvecAppend, mvecToList)
 -- | Allocate a mutable vector of given size
 mvecAllocWith :: PrimMonad m => Int -> a -> m (MV.MVector (PrimState m) a)
 mvecAllocWith = MV.replicate
@@ -596,6 +603,11 @@ mvecToList v = mvecLoopReverseAccum [] 0 (MV.length v) (\l i -> MV.read v i >>= 
 mvecFillFromV :: PrimMonad m => Int -> MV.MVector (PrimState m) a -> CRArray a -> m ()
 mvecFillFromV lwb toarr frarr = forM_ (craAssocs' lwb frarr) $ \(i,e) -> MV.write toarr i e
 {-# INLINE mvecFillFromV #-}
+
+-- | Fill a mutable vector from a unmutable vector, starting with filling at the given lowerbound, reversing the given vector
+mvecReverseFillFromV :: PrimMonad m => Int -> MV.MVector (PrimState m) a -> CRArray a -> m ()
+mvecReverseFillFromV lwb toarr frarr = forM_ (craReverseAssocs' lwb frarr) $ \(i,e) -> MV.write toarr i e
+{-# INLINE mvecReverseFillFromV #-}
 
 -- | Fill a mutable vector from another mutable vector, starting with copying at the given lowerbounds, copying size elements
 mvecFillFromMV' :: PrimMonad m => Int -> Int -> Int -> MV.MVector (PrimState m) a -> MV.MVector (PrimState m) a -> m ()
@@ -771,12 +783,14 @@ dumpPpEnvM :: (RunSem RValCxt RValEnv RVal m x) => Bool -> RValT m PP_Doc
 dumpPpEnvM extensive = do
     stkfrs <- renvAllFrameM
     env <- get
+    callcxt <- asks rcxtCallCxt
     let hp = renvHeap env
+    stkfrspp <- forM stkfrs $ dumpFrameMinimal hp
     hpfr <- liftIO $ readIORef (hpFree hp)
     needRet <- asks rcxtInRet
     let dash    = "===================="
         header1 = dash >-< "rcxtInRet=" >|< needRet
-        header2 = ppCurly $ "Heap =" >|< hpfr >|< "/" >|< MV.length (hpVals hp) >|< ", Stack =" >|< ppBracketsCommas stkfrs
+        header2 = ppCurly $ "Heap =" >|< hpfr >|< "/" >|< MV.length (hpVals hp) >|< ", CallCxt=" >|< ppBracketsCommas callcxt >|< ", Stack=" >|< ppBracketsCommas stkfrspp
         footer1 = dash
     hpPP <- dumpHeap hp hpfr
     glPP <- dumpGlobals hp (renvGlobals env)
@@ -785,6 +799,10 @@ dumpPpEnvM extensive = do
       then return $ header1 >-< header2 >-< hpPP >-< glPP >-< "====== Frames ======" >-< (indent 2 $ vlist frPPs) >-< footer1
       else return $ header2
   where
+    dumpFrameMinimal hp fp = do
+      fr@(RVal_Frame {rvalFrVals=vs, rvalFrSP=spref}) <- heapGetM fp
+      sp  <- liftIO $ readIORef spref
+      return $ fp >|< (ppParens $ sp >|< "/" >|< MV.length vs)
     dumpFrame hp fp = do
       fr@(RVal_Frame {rvalFrVals=vs, rvalFrSP=spref}) <- heapGetM fp
       sp  <- liftIO $ readIORef spref
@@ -848,6 +866,16 @@ renvFrStkPushMV = renvFrStkPush' (\sp frvs vs -> mvecFillFromMV sp frvs vs >> re
 renvFrStkReversePushMV :: RunSem RValCxt RValEnv RVal m x => RValMV -> RValT m ()
 renvFrStkReversePushMV = renvFrStkPush' (\sp frvs vs -> mvecReverseFillFromMV sp frvs vs >> return (sp + MV.length vs))
 {-# INLINE renvFrStkReversePushMV #-}
+
+-- | Push on the stack embedded in the top frame
+renvFrStkPushV :: RunSem RValCxt RValEnv RVal m x => RValV -> RValT m ()
+renvFrStkPushV = renvFrStkPush' (\sp frvs vs -> mvecFillFromV sp frvs vs >> return (sp + V.length vs))
+{-# INLINE renvFrStkPushV #-}
+
+-- | Push reversed on the stack embedded in the top frame
+renvFrStkReversePushV :: RunSem RValCxt RValEnv RVal m x => RValV -> RValT m ()
+renvFrStkReversePushV = renvFrStkPush' (\sp frvs vs -> mvecReverseFillFromV sp frvs vs >> return (sp + V.length vs))
+{-# INLINE renvFrStkReversePushV #-}
 %%]
 
 %%[(8 corerun) hs export(renvFrStkPop1, renvFrStkPopMV, renvFrStkReversePopMV, renvFrStkReversePopInMV)

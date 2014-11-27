@@ -64,7 +64,7 @@ cpGenModuleImportExportImpl modNm
            , mieimplHsName2FldMpMp 	= Map.fromList
                [ (n,(o,mp))
                | (n,o) <- refGen 0 1 impNmL
-               , let (_,mp) = panicJust ("cpGenGrinGenInfo: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
+               , let (_,mp) = panicJust ("cpGenModuleImportExportImpl: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
                ]
            , mieimplHsName2FldMp 	= expNmFldMp
            }

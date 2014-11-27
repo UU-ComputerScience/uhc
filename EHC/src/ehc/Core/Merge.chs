@@ -57,12 +57,12 @@ instance ModPuller
           Just (CBindCateg_FFE, [ (effeBind e, effeFvS e) | m <- mmain : mimpL, e <- cmodExtractFFE m ])
 %%]]
         , ( modDbMain
-          , Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
+          , modDbMp
           )
         , ( modNm
           -- TBD: combine this in some way with the FFE implicit exports...
-          , Set.toList $ Set.fromList $ concatMap cmoddbExports $ modDbMain : modDbImp
-          , Set.toList $ Set.fromList $ concatMap cmoddbImports $ modDbMain : modDbImp
+          , [] -- Set.toList $ Set.fromList $ concatMap cmoddbExports $ modDbMain : modDbImp
+          , [] -- Set.toList $ Set.fromList $ concatMap cmoddbImports $ modDbMain : modDbImp
           , concatMap cmoddbMeta $ modDbMain : modDbImp
         ) )
       where modDbMain =     cexprModAsDatabase mmain

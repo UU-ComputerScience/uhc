@@ -66,11 +66,12 @@ DATA Exp
   | App         -- isTailRec		: {Bool}
   				func            : Exp
                 args            : {CRArray Exp}
-  | Lam         lev				: {Int}			-- lexical level
-  				nrArgs          : {Int}			-- nr of arguments, 0 means it is a thunk
-                nrBinds         : {Int}			-- nr stack frame locations to be allocated (excluding arguments) for locals
-                stkDepth        : {Int}			-- max depth of stack
-                ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
+  | Lam         mbNm			: {Maybe HsName}	-- possibly bound to name
+  				lev				: {Int}				-- lexical level
+  				nrArgs          : {Int}				-- nr of arguments, 0 means it is a thunk
+                nrBinds         : {Int}				-- nr stack frame locations to be allocated (excluding arguments) for locals
+                stkDepth        : {Int}				-- max depth of stack
+                ref2nm			: {Ref2Nm}			-- inverse lookup of locally introduced binding RRef's
                 body            : Exp
 
   -- thunking, forcing, partial applications

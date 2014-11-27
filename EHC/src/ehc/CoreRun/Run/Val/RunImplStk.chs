@@ -174,9 +174,9 @@ rvalImplStkExp e = do
         rsemNode (ctagTag t) as'
 
     -- lam as is, being a heap allocated thunk when 0 args are required
-    Exp_Lam {nrArgs_Exp_Lam=na}
-      | na == 0   -> mk RVal_Thunk >>= heapAllocM >>= (liftIO . newIORef) >>= (return . RVal_Ptr)
-      | otherwise -> mk RVal_Lam
+    Exp_Lam {nrArgs_Exp_Lam=na, mbNm_Exp_Lam=mn}
+      | na == 0   -> mk (RVal_Thunk mn) >>= heapAllocM >>= (liftIO . newIORef) >>= (return . RVal_Ptr)
+      | otherwise -> mk (RVal_Lam   mn)
       where mk rv = do
              sl <- renvTopFrameM
              slref <- liftIO $ newIORef sl

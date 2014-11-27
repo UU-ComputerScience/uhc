@@ -1521,20 +1521,21 @@ data AppFunKind
 
 -- | What kind of Expr?
 data WhatExpr
-  = ExprIsLam   Int			-- arity
-  | ExprIsApp   Int         -- arity
-  				WhatExpr	-- function
+  = ExprIsLam   Int				-- arity
+                (Maybe HsName)	-- possibly name bound to
+  | ExprIsApp   Int         	-- arity
+  				WhatExpr		-- function
   | ExprIsVar   HsName
   | ExprIsInt   Int
   | ExprIsTup   CTag
   | ExprIsFFI
   | ExprIsOtherWHNF
   | ExprIsOther
-  | ExprIsBind
+  | ExprIsBind 	HsName
   deriving Eq
 %%]
 
-%%[(8 codegen) hs export(whatExprMbVar, whatExprMbApp,whatExprMbLam,whatExprAppArity)
+%%[(8 codegen) hs export(whatExprMbVar, whatExprMbApp,whatExprMbLam, whatExprMbLam', whatExprAppArity, whatExprMbBind)
 -- | is an var?
 whatExprMbVar :: WhatExpr -> Maybe HsName
 whatExprMbVar (ExprIsVar a) = Just a
@@ -1546,9 +1547,19 @@ whatExprMbApp (ExprIsApp a w) = Just (a,w)
 whatExprMbApp _               = Nothing
 
 -- | is a lam?
+whatExprMbLam' :: WhatExpr -> Maybe (Int, Maybe HsName)
+whatExprMbLam' (ExprIsLam a n) = Just (a, n)
+whatExprMbLam' _               = Nothing
+
+-- | is a lam?
 whatExprMbLam :: WhatExpr -> Maybe Int
-whatExprMbLam (ExprIsLam a) = Just a
-whatExprMbLam _             = Nothing
+whatExprMbLam (ExprIsLam a _) = Just a
+whatExprMbLam _               = Nothing
+
+-- | is a bind?
+whatExprMbBind :: WhatExpr -> Maybe HsName
+whatExprMbBind (ExprIsBind n) = Just n
+whatExprMbBind _              = Nothing
 
 -- | app arity
 whatExprAppArity :: WhatExpr -> Int
@@ -1558,7 +1569,7 @@ whatExprAppArity _               = 0
 
 %%[(8 codegen) hs export(whatExprIsWHNF)
 whatExprIsWHNF :: WhatExpr -> Bool
-whatExprIsWHNF (ExprIsLam _) 	= True
+whatExprIsWHNF (ExprIsLam _ _) 	= True
 whatExprIsWHNF (ExprIsVar _) 	= True
 whatExprIsWHNF (ExprIsInt _) 	= True
 whatExprIsWHNF (ExprIsTup _) 	= True
@@ -1566,7 +1577,11 @@ whatExprIsWHNF ExprIsOtherWHNF 	= True
 whatExprIsWHNF _ 				= False
 %%]
 
-%%[(8 codegen) hs export(whatExprIsLam, whatExprIsTup)
+%%[(8 codegen) hs export(whatExprIsLam, whatExprIsTup, whatExprIsBind)
+whatExprIsBind :: WhatExpr -> Bool
+whatExprIsBind = isJust . whatExprMbBind
+{-# INLINE whatExprIsBind #-}
+
 whatExprIsLam :: WhatExpr -> Bool
 whatExprIsLam = isJust . whatExprMbLam
 {-# INLINE whatExprIsLam #-}
