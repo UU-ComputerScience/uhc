@@ -1,8 +1,13 @@
 # Changelog
 
-## 1.1.7.3
+## 1.1.7.4
 
 - 
+
+## 1.1.7.3 - 20141127
+
+- [core] Core running engine works (FFI stuff still to be done).
+- [api] Core.API made more consistent.
 
 ## 1.1.7.2 - 20141126
 
