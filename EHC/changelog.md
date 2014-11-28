@@ -2,7 +2,8 @@
 
 ## 1.1.7.4
 
-- 
+- [api] Added better documentation and one small example program
+- [api] Fix issue #36 (wrong runtime behaviour and/or crashes)
 
 ## 1.1.7.3 - 20141127
 
