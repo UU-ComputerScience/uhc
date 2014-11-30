@@ -366,7 +366,7 @@ SEM CExpr
 %%[(8 corerun) hs
 -- | Construct application
 mkApp :: CR.Exp -> CR.CRArray CR.Exp -> CR.Exp
-mkApp f as = CR.Exp_App (CR.Exp_Ret $ CR.Exp_Force f) as
+mkApp f as = CR.Exp_App ({- CR.Exp_Ret $ -} CR.Exp_Force f) as
 %%]
 
 %%[(8 corerun)
@@ -495,8 +495,8 @@ SEM CBound
                                                         ToBe_Forced   -> tailrec @tailCtx . CR.Exp_Force
                                                         ToBe_Thunked  -> CR.Exp_Lam (Just @lhs.nm) @lev 0 (@expr.refOffsetMax) (@stackDepthMaxThunked) (CR.nm2RefMpInverse @nm2refNew)
                                                         ToBe_LeftAsIs -> id
-                            .   creMkReturned   =   if @isToBeReturned then CR.Exp_Ret else id
-                            .   creBind         =   @creMkReturned $ @creMkForce @expr.cre
+                            -- .   creMkReturned   =   if @isToBeReturned then CR.Exp_Ret else id
+                            .   creBind         =   {- @creMkReturned $ -} @creMkForce @expr.cre
                 loc         .   crb             =   [( @lhs.nm, @creBind )]
 
 SEM CBind

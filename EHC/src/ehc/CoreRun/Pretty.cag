@@ -181,7 +181,7 @@ SEM Exp
   | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (map (ppExp'' @lhs.inhpp) $ V.toList @args)
   | Let         lhs         .   pp          =   "let" >#< ppBinds'' @inhpp (RRef_Loc @lev) @firstOff @binds >#< "in" >-< @body.pp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
-  | Ret         lhs         .   pp          =   "ret" >|< ppParens @expr.pp
+  -- | Ret         lhs         .   pp          =   "ret" >|< ppParens @expr.pp
   | RetCase     lhs         .   pp          =   "retcase" >|< @nrBinds >|< ppParens @expr.pp
   | Tail        lhs         .   pp          =   "tail" >|< ppParens @expr.pp
   -- | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp

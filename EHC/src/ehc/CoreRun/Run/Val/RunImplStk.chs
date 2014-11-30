@@ -94,7 +94,7 @@ implStkPopFrameM = do
 cmodRun :: (RunSem RValCxt RValEnv RVal m RVal) => EHCOpts -> Mod -> RValT m RVal
 cmodRun opts (Mod_Mod {body_Mod_Mod=e}) = do
   -- dumpEnvM True
-  v <- rsemExp e
+  v <- mustReturn $ rsemExp e
 %%[[8
   dumpEnvM False
 %%][100
@@ -165,8 +165,8 @@ rvalImplStkExp e = do
   case e of
     -- app, call
     Exp_App f as -> do
-        f' <- {- mustReturn $ -} rsemExp f {- >>= rsemEvl -}
-        V.mapM rsemExp as >>= (liftIO . V.thaw) >>= rvalImplStkApp f'
+        f' <- mustReturn $ rsemExp f {- >>= rsemEvl -}
+        (mustReturn $ V.mapM rsemExp as) >>= (liftIO . V.thaw) >>= rvalImplStkApp f'
     
     -- heap node
     Exp_Tup t as -> do
@@ -184,7 +184,7 @@ rvalImplStkExp e = do
 
     -- let
     Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
-        bs' <- (liftIO . V.thaw) =<< V.forM bs rsemExp
+        bs' <- mustReturn $ (liftIO . V.thaw) =<< V.forM bs rsemExp
         fr <- renvTopFrameM >>= heapGetM -- >>= rsemDeref
         fillFrameM fillFrom bs' fr
         rsemExp b
@@ -198,7 +198,7 @@ rvalImplStkExp e = do
     Exp_Force e -> rsemExp e >>= rsemPop >>= rsemEvl
 
     -- setup for context requiring a return (TBD: should be done via CPS style, but is other issue)
-    Exp_Ret e -> mustReturn $ rsemExp e
+    -- Exp_Ret e -> mustReturn $ rsemExp e
 
     -- setup for context requiring a return from case alternative
     Exp_RetCase _ e -> rsemExp e

@@ -124,7 +124,7 @@ explStkPopFrameM = do
 cmodRun :: (RunSem RValCxt RValEnv RVal m ()) => EHCOpts -> Mod -> RValT m ()
 cmodRun opts (Mod_Mod {body_Mod_Mod=e}) = do
   -- dumpEnvM True
-  rsemExp e
+  mustReturn $ rsemExp e
   -- v <- renvFrStkPop1
 %%[[8
   dumpEnvM False
@@ -208,8 +208,10 @@ rvalExplStkExp e = do
   case e of
     -- app, call
     Exp_App f as -> do
-        vecReverseForM_ as rsemExp
-        rsemExp f >>= rsemPop >>= ptr2valM >>= \f' -> rvalExplStkApp f' (emptyExplArgs {eaStk=V.length as})
+        f' <- mustReturn $ do
+          vecReverseForM_ as rsemExp
+          rsemExp f
+        rsemPop f' >>= ptr2valM >>= \f' -> rvalExplStkApp f' (emptyExplArgs {eaStk=V.length as})
     
     -- heap node
     Exp_Tup t as -> do
@@ -227,7 +229,7 @@ rvalExplStkExp e = do
 
     -- let
     Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
-        V.forM_ bs rsemExp
+        mustReturn $ V.forM_ bs rsemExp
         rsemExp b
 
     -- case, scrutinee already evaluated
@@ -241,7 +243,7 @@ rvalExplStkExp e = do
     Exp_Force e -> rsemExp e >>= rsemPop >>= rsemEvl
 
     -- setup for context requiring a return (TBD: should be done via CPS style, but is other issue)
-    Exp_Ret e -> mustReturn $ rsemExp e
+    -- Exp_Ret e -> mustReturn $ rsemExp e
 
     -- setup for context requiring a return from case alternative
     Exp_RetCase _ e -> rsemExp e
