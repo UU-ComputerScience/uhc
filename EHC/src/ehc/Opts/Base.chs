@@ -122,6 +122,7 @@ data CoreOpt
   | CoreOpt_Run					-- run after compilation
   | CoreOpt_RunDump				-- dump CoreRun
   | CoreOpt_RunTrace			-- trace during running CoreRun
+  | CoreOpt_RunTraceExtensive	-- trace during running CoreRun, with extensive info, implies CoreOpt_RunTrace
   | CoreOpt_RunPPNames			-- when dump/run CoreRun print names instead of
 %%]]
 %%[[(8 coresysf)

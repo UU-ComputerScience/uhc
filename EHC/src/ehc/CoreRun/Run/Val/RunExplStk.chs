@@ -203,7 +203,10 @@ rvalExplStkExp :: RunSem RValCxt RValEnv RVal m () => Exp -> RValT m ()
 {-# SPECIALIZE rvalExplStkExp :: RunSem RValCxt RValEnv RVal IO () => Exp -> RValT IO () #-}
 -- {-# INLINE rvalExplStkExp #-}
 rvalExplStkExp e = do
-  -- rsemTr' False $ ">E:" >#< e
+%%[[8
+  rsemTr $ ">E:" >#< e
+%%][100
+%%]]
   -- e' <- case e of
   case e of
     -- app, call
@@ -220,12 +223,12 @@ rvalExplStkExp e = do
 
     -- lam as is, being a heap allocated thunk when 0 args are required
     Exp_Lam {nrArgs_Exp_Lam=na, mbNm_Exp_Lam=mn}
-      | na == 0   -> mk (RVal_Thunk mn) >>= heapAllocAsPtrM >>= rsemPush
-      | otherwise -> mk (RVal_Lam   mn) >>= heapAllocAsPtrM >>= rsemPush
+      | na == 0   -> mk RVal_Thunk
+      | otherwise -> mk RVal_Lam
       where mk rv = do
              sl <- renvTopFrameM
              slref <- liftIO $ newIORef sl
-             return $ rv e slref
+             heapAllocAsPtrM (rv mn e slref) >>= rsemPush
 
     -- let
     Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
@@ -259,7 +262,10 @@ rvalExplStkExp e = do
 
     e -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp:" >#< e
 
-  -- rsemTr' False $ "<E:" >#< (e) -- >-< e')
+%%[[8
+  rsemTr $ "<E:" >#< (e) -- >-< e')
+%%][100
+%%]]
   -- return e'
 %%]
 
@@ -268,7 +274,7 @@ instance
     ( Monad m, MonadIO m, Functor m
     ) => RunSem RValCxt RValEnv RVal m ()
   where
-    -- {-# SPECIALIZE instance RunSem RValCxt RValEnv RVal IO () #-}
+    {-# SPECIALIZE instance RunSem RValCxt RValEnv RVal IO () #-}
     rsemInitial = do
       s <- liftIO $ newRValEnv 1000 -- 100000 --  
       return (emptyRValCxt, s, undefined)
@@ -292,10 +298,10 @@ instance
         -- use the main module's stackframe for evaluating 'main'
         explStkPushFrameM $ ms' V.! mainModNr
         rsemGcLeaveRootLevel
-        rsemSetTrace $ CoreOpt_RunTrace `elem` ehcOptCoreOpts opts
+        rsemSetupTracing opts
 
-    rsemSetTrace doTrace = modify $ \env ->
-      env {renvDoTrace = doTrace}
+    rsemSetTrace doTrace doExtensive = modify $ \env ->
+      env {renvDoTrace = doTrace, renvDoTraceExt = doExtensive}
     
     rsemExp = rvalExplStkExp
 

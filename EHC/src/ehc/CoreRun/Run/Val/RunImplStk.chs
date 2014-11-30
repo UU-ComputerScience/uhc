@@ -160,9 +160,12 @@ rvalImplStkExp :: RunSem RValCxt RValEnv RVal m RVal => Exp -> RValT m RVal
 -- {-# SPECIALIZE rvalImplStkExp :: RunSem RValCxt RValEnv RVal IO RVal => Exp -> RValT IO RVal #-}
 {-# INLINE rvalImplStkExp #-}
 rvalImplStkExp e = do
-  -- rsemTr $ "E:" >#< e
-  -- e' <- case e of
+%%[[8
+  rsemTr $ ">E:" >#< e
+  e' <- case e of
+%%][100
   case e of
+%%]]
     -- app, call
     Exp_App f as -> do
         f' <- mustReturn $ rsemExp f {- >>= rsemEvl -}
@@ -214,8 +217,11 @@ rvalImplStkExp e = do
 
     e -> err $ "CoreRun.Run.Val.RunExplStk.rvalImplStkExp:" >#< e
 
-  -- rsemTr $ "E->:" >#< (e >-< e')
-  -- return e'
+%%[[8
+  rsemTr $ "<E:" >#< e -- (e >-< e')
+  return e'
+%%][100
+%%]]
 
 %%]
 
@@ -239,11 +245,11 @@ instance
           liftIO $ MV.write ms nr p
         ms' <- liftIO $ V.freeze ms
         modify $ \env -> env {renvGlobals = ms'}
-        rsemSetTrace $ CoreOpt_RunTrace `elem` ehcOptCoreOpts opts
+        rsemSetupTracing opts
         -- return RVal_None
 
-    rsemSetTrace doTrace = modify $ \env ->
-      env {renvDoTrace = doTrace}
+    rsemSetTrace doTrace doExtensive = modify $ \env ->
+      env {renvDoTrace = doTrace, renvDoTraceExt = doExtensive}
     
     rsemExp = rvalImplStkExp
 

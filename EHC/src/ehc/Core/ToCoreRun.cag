@@ -130,10 +130,10 @@ SEM CBound
                                                           _              -> ToBe_LeftAsIs
                             .   isToBeThunked   =   @toBe == ToBe_Thunked
                             .   isToBeALam      =   @isToBeThunked || whatExprIsLam @expr.whatBelow
+%%]
                             .   isToBeReturned  =   case @lhs.evalCtx of
                                                           EvalCtx_Eval -> True
                                                           _            -> False
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Level, see also Core/CommonLev

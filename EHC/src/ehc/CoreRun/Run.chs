@@ -82,9 +82,16 @@ class (Monad m, MonadIO m, Functor m) => RunSem r s v m a
   -- | Setup whatever needs to be setup
   rsemSetup :: EHCOpts -> [Mod] -> Mod -> RunT' r s v m ()
 
-  -- | Set tracing on/off
-  rsemSetTrace :: Bool -> RunT' r s v m ()
-  rsemSetTrace _ = return ()
+  -- | Setup tracing
+  rsemSetupTracing :: EHCOpts -> RunT' r s v m ()
+  rsemSetupTracing opts = do
+        let dotr  = CoreOpt_RunTrace `elem` ehcOptCoreOpts opts
+            dotre = CoreOpt_RunTraceExtensive `elem` ehcOptCoreOpts opts
+        rsemSetTrace (dotre || dotr) dotre
+
+  -- | Set tracing on/off, 2nd param to tell to do it extensively
+  rsemSetTrace :: Bool -> Bool -> RunT' r s v m ()
+  rsemSetTrace _ _ = return ()
 
   -- | Exp
   rsemExp :: Exp -> RunT' r s v m a

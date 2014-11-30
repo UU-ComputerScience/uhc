@@ -739,6 +739,7 @@ data RValEnv
       -- , renvFrSP		:: !(IORef Int)					-- ^ top of expr stack embedded in higher end of top frame
       , renvHeap		:: !Heap						-- ^ heap
       , renvDoTrace		:: !Bool
+      , renvDoTraceExt	:: !Bool						-- ^ when tracing, do it extensively?
       , renvGcRootStack	:: !(IORef [[RVal]])			-- ^ stack of roots for GC, use is optional
       }
 
@@ -749,7 +750,7 @@ newRValEnv hpSz = do
   hp <- newHeap hpSz
   -- sp <- newIORef 0
   rtst <- newIORef []
-  return $ RValEnv V.empty st tp hp False rtst
+  return $ RValEnv V.empty st tp hp False False rtst
 %%]
 
 %%[(8 corerun) hs export(renvTopFrameM)
@@ -930,14 +931,18 @@ renvFrStkReversePopMV sz = (liftIO $ mvecAlloc sz) >>= \vs -> renvFrStkReversePo
 %%[(8 corerun) hs export(rsemTr', rsemTr)
 -- | Trace
 rsemTr' :: (PP msg, RunSem RValCxt RValEnv RVal m x) => Bool -> msg -> RValT m ()
-rsemTr' dumpExtensive msg = whenM (gets renvDoTrace) $ do
-    liftIO $ putStrLn $ show $ pp msg
-    dumpEnvM dumpExtensive
-    liftIO $ hFlush stdout
+rsemTr' dumpExtensive msg = do
+    env <- get
+    when (renvDoTrace env) $ do
+      liftIO $ putStrLn $ show $ pp msg
+      dumpEnvM (dumpExtensive || renvDoTraceExt env)
+      liftIO $ hFlush stdout
+{- INLINE rsemTr' #-}
 
 -- | Trace
 rsemTr :: (PP msg, RunSem RValCxt RValEnv RVal m x) => msg -> RValT m ()
 rsemTr = rsemTr' False
+{- INLINE rsemTr #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
