@@ -11,7 +11,7 @@ echo "Running Core generator..."
 ./CoreApi
 
 echo "Compile generated core to an executable using uhc..."
-~/Projects/uu/uhc/uhc/EHC/install/99/bin/ehc CoreApiProg.bcr
+uhc CoreApiProg.bcr
 
 echo "Running the generated executable..."
 ./CoreApiProg
