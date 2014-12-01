@@ -57,7 +57,7 @@ include $(MK_PREFIX)shared.mk
 -include $(SRC_PREFIX)helium/files.mk
 -include $(SRC_PREFIX)lvm/files.mk
 -include $(SRC_PREFIX)text2text/files.mk
-include $(SRC_PREFIX)ruler2/files.mk
+#include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 include $(SRC_PREFIX)gen/files.mk
 include $(SRC_PREFIX)ehc/files1.mk

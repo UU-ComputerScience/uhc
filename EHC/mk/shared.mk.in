@@ -238,6 +238,7 @@ EHCLIB_SHARED						:= @EHCLIB_SHARED@
 # compilers and tools used
 AGC							:= @UUAGC_CMD@
 SHUFFLE						:= @SHUFFLE_CMD@
+RULER2						:= @RULER_CMD@
 GHC							:= @GHC_CMD@
 GHC1						:= @GHC_CMD1@
 GHC_VERSION         		:= @GHC_VERSION@

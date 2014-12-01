@@ -580,6 +580,28 @@ else
 fi
 AC_SUBST(SHUFFLE_CMD,$shuffleCmd)
 
+# ruler
+AC_ARG_WITH(ruler,
+[AS_HELP_STRING([--with-ruler=<ruler compiler>],[Use a command different from 'ruler' to compile with ruler.])],
+[ rulerCmd="$withval" ],
+[
+  if test "$RULER" = ""; then
+    AC_PATH_PROG(rulerCmd,ruler)
+  else
+    rulerCmd=$RULER
+  fi
+]
+)
+if test "$rulerCmd" != "no" -a -x "$rulerCmd" ; then
+  rulerExists="yes"
+  rulerVersion=`$rulerCmd --version`
+  buildOptionalToolDependenciesUnchecked="ruler>=0.4.0.1 ${buildOptionalToolDependenciesUnchecked}"
+else
+  rulerCmd=""
+  rulerExists="no"
+fi
+AC_SUBST(RULER_CMD,$rulerCmd)
+
 # gcc
 AC_ARG_WITH(gcc,
 [AS_HELP_STRING([--with-gcc=<gcc compiler>],[Use a command different from 'gcc' to compile with GCC.])],
@@ -1325,12 +1347,13 @@ if test "$mplib" = "gmp" ; then
   fi
 fi
 
-echo "Required but not (yet) or during build enforced:"
+echo "Required (or optional) but not (yet) or during build enforced:"
 echo "  cabal base dependencies       : $cabal_base_lib_depends"
 echo "  cabal extra dependencies      : $cabal_extra_lib_depends"
 echo "  build tool dependencies       : $buildToolDependenciesUnchecked"
+echo "  (optional) build tool dpdcies : $buildOptionalToolDependenciesUnchecked"
 
-echo "Optional:"
+echo "Other:"
 echo "  haddock is available?         : $haddockExists"
 if test "x$haddockExists" = "xyes" ;then
 echo "    version                     : $haddockVersion"
