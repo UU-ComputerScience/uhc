@@ -57,6 +57,16 @@ emptyCheckEnv
       -- emptyLamMp
 
 
+%%[(8 codegen corein) hs export(NotYetTransformed(..), NotYetTransformedS)
+-- | What not yet has been transformed in the given Core, absence means some aspect has been transformed everywhere
+data NotYetTransformed
+  = NotYetTransformed_LambdaLifted
+  | NotYetTransformed_ANormal
+  deriving (Eq, Ord)
+
+type NotYetTransformedS = Set.Set NotYetTransformed
+%%]
+
 %%[(8 codegen corein) hs export(cmodCheck', Inh_CodeAGItf(..), Syn_CodeAGItf(..))
 cmodCheck'
   :: Inh_CodeAGItf
@@ -177,6 +187,7 @@ SEM CBind
 ATTR AllCodeNT [ | | isFreeOfLam USE {&&} {True} : Bool ]
 ATTR CExpr [ | | lamBodyIsFreeOfLam: Bool ]
 ATTR CodeAGItf CModule CExpr AllBind [ | | isLamLifted USE {&&} {True} : Bool ]
+ATTR CodeAGItf CModule CExpr AllBind [ | | notYetTransformed USE {`Set.union`} {Set.empty} : NotYetTransformedS ]
 
 SEM CExpr
   | Lam         lhs         .   isFreeOfLam         =   False
@@ -189,6 +200,15 @@ SEM CBound
   | Bind Val    loc         .   isLamLifted         =   if whatExprIsLam @expr.whatBelow
                                                         then @lhs.isGlobal && @expr.lamBodyIsFreeOfLam
                                                         else @expr.isFreeOfLam
+
+SEM CBound
+  | Bind Val    loc         .   notYetTransformed   =   if whatExprIsLam @expr.whatBelow
+                                                        then if @lhs.isGlobal && @expr.lamBodyIsFreeOfLam
+                                                             then Set.empty
+                                                             else Set.singleton NotYetTransformed_LambdaLifted
+                                                        else if @expr.isFreeOfLam
+                                                             then Set.empty
+                                                             else Set.singleton NotYetTransformed_LambdaLifted
 
 %%]
 

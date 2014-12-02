@@ -30,6 +30,8 @@
 %%]
 
 -- Core check
+%%[(8 codegen corein) import({%{EH}Core.Check})
+%%]
 %%[(8 codegen coresysf) import({%{EH}Core.SysF.Check})
 %%]
 
@@ -93,6 +95,9 @@ data TrfCoreExtra
 %%]]
       , trfcoreECUState			:: !EHCompileUnitState
       , trfcoreIsLamLifted      :: !Bool
+%%[[(8 corein)
+      , trfcoreNotYetTransformed:: !NotYetTransformedS
+%%]]
       }
 
 emptyTrfCoreExtra :: TrfCoreExtra
@@ -106,6 +111,9 @@ emptyTrfCoreExtra = TrfCoreExtra
 %%]]
                        ECUS_Unknown
                        False
+%%[[(8 corein)
+                       Set.empty
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,10 +127,14 @@ trfCore :: EHCOpts -> OptimizationScope -> DataGam -> HsName -> TrfCore -> TrfCo
 trfCore opts optimScope dataGam modNm trfcore
   -- = execState trf trfcore
   = runTrf opts modNm ehcOptDumpCoreStages (optimScope `elem`) trfcore trf
-  where isFromCoreSrc = ecuStateIsCore $ trfcoreECUState    $ trfstExtra trfcore
-        isLamLifted   =                  trfcoreIsLamLifted $ trfstExtra trfcore
-        noOptims      = ehcOptOptimizationLevel opts <= OptimizationLevel_Off
-        isCoreTarget  = targetIsCore $ ehcOptTarget opts
+  where isFromCoreSrc 		= ecuStateIsCore $ trfcoreECUState $ trfstExtra trfcore
+        notYetTransformed	= trfcoreNotYetTransformed         $ trfstExtra trfcore
+        isNotLamLifted		= NotYetTransformed_LambdaLifted `Set.member` notYetTransformed
+        isNotANormal  		= NotYetTransformed_ANormal      `Set.member` notYetTransformed
+        isLamLifted   		= not isNotLamLifted
+        isANormal     		= not isNotANormal
+        noOptims      		= ehcOptOptimizationLevel opts <= OptimizationLevel_Off
+        isCoreTarget  		= targetIsCore $ ehcOptTarget opts
         isUnOptimCoreTarget = isCoreTarget && noOptims
         trf
           = do { -- initial is just to obtain Core for dumping stages
@@ -209,7 +221,7 @@ trfCore opts optimScope dataGam modNm trfcore
                    ; t_elim_trivapp
                    }
 
-               ; when (isUnOptimCoreTarget || not isLamLifted) $ do
+               ; when (isUnOptimCoreTarget || isNotLamLifted || isNotANormal) $ do
                    {
 					 -- put in A-normal form, where args to app only may be identifiers
 				   ; u1 <- freshInfUID
@@ -221,7 +233,7 @@ trfCore opts optimScope dataGam modNm trfcore
                       t_fix_dictfld
 %%]]
                
-               ; when (not isLamLifted && not isUnOptimCoreTarget) $ do
+               ; when (isNotLamLifted && not isUnOptimCoreTarget) $ do
                    {
 					 -- pass all globals used in lambda explicit as argument
 				   ; t_lam_asarg
