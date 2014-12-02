@@ -1,0 +1,7 @@
+*.tcr
+*.bcr
+*.c
+*.o
+*.cr
+CoreApi
+CoreApiProg

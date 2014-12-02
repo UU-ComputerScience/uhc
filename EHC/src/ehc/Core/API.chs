@@ -1,20 +1,28 @@
 %%[(8 core)
 
--- | Core Public API (provisional, to be refactored)
+-- | Core Public API (provisional)
 --
 -- Intended for constructing basic Core Programs. Use the binary serialization from `UHC.Util.Binary`
 -- to produce a core file, which can be compiled by UHC.
+-- You will need to install the full UHC Compiler Suite in addition to uhc-light for this, and Core support
+-- in UHC has to be enabled (use the @--enable-core-asinpoutp@ configure option). See <https://github.com/UU-ComputerScience/uhc> for more details.
+--
+-- A small example program can be found at <https://github.com/UU-ComputerScience/uhc/tree/master/EHC/demo/CoreApi/> .
+-- In general, it is also a good idea to see what kind of Core UHC generates for Haskell files. To do this,
+-- call UHC with the option @--coreopt=dump@. This will produce an additional XXX.tcr file which you can
+-- read in any text editor. It may also be a good idea to add the @NoGenericDeriving@ pragma
+-- to your haskell files, as this will make the produced Core code much smaller.
 --
 -- Restrictions:
 --
 --  - Extendable data types are not supported
 --  - Generated code is not (type-)checked, might cause runtime crashes
 --  - Core parsing/Pretty printing is incomplete and might be partially broken.
---
--- TODO:
--- - Constructor applications (mkCon) always have to be fully saturated. (move to acoreTagTup)
--- - Haskell constructor names must be unambigous per module (mkHSCTag)
-
+--    The pretty printing should work good enough for dumping generated core
+--    code as debug output.
+--  - Calling Haskell functions which use the haskell class system is not (yet?) supported.
+--  - Avoiding name clashes is the responsibility of the user. The behaviour if duplicate
+--    names exists is undefined.
 module %%@{%{EH}%%}Core.API
   (
   -- * Core AST
@@ -327,7 +335,18 @@ mkModule :: HsName    -- ^ The name of the module.
     -> [EC.CDeclMeta]      -- ^ The meta information.
     -> EC.CExpr            -- ^ The body of the module.
     -> EC.CModule
-mkModule = EC.CModule_Mod
+mkModule mod exps imps meta body =
+  EC.CModule_Mod mod exps imps meta body'
+  -- TODO this is a work around, it forces UHC to recognize that
+  -- this core file is not yet lambda-lifted.
+  -- See issue #36.
+  where body' = mkLet1Plain dummyName (mkApp
+                    (mkLam [mkUniqueHsName prefix [] "dummy-arg"] unit)
+                    [ unit ]
+                    ) body
+        unit = mkUnit defaultEHCOpts
+        dummyName = hsnUniqifyStr HsNameUniqifier_CoreAPI prefix $ hsnPrefixQual mod (hsnFromString "dummy")
+        prefix = "nl.uu.uhc.core-api.lambda-lift-fix"
 
 -- | Creates an import.
 mkImport :: HsName -- ^ The module to import.
