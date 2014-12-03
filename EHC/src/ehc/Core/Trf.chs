@@ -94,7 +94,7 @@ data TrfCoreExtra
       , trfcoreExtraExports     :: !FvS             -- extra exported names, introduced by transformations
 %%]]
       , trfcoreECUState			:: !EHCompileUnitState
-      , trfcoreIsLamLifted      :: !Bool
+      -- , trfcoreIsLamLifted      :: !Bool
 %%[[(8 corein)
       , trfcoreNotYetTransformed:: !NotYetTransformedS
 %%]]
@@ -110,9 +110,9 @@ emptyTrfCoreExtra = TrfCoreExtra
                        Set.empty
 %%]]
                        ECUS_Unknown
-                       False
+                       -- False
 %%[[(8 corein)
-                       Set.empty
+                       (Set.fromList [minBound .. maxBound])
 %%]]
 %%]
 

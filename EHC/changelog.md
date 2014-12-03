@@ -2,6 +2,8 @@
 
 ## 1.1.7.4
 
+- [core] Detection of yes/no ANormal form of parsed Core and corresponding no/yes transformation (not tested for cases where it matters; unknown whether this is good enough for codegen to work properly)
+- [cleanup] Removal of src/ruler from source tree (has its own repo)
 - [api] Added better documentation and one small example program
 - [api] Fix issue #36 (wrong runtime behaviour and/or crashes)
 
