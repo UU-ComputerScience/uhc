@@ -317,8 +317,6 @@ instance
     {-# INLINE rsemSExp #-}
 
     rsemEvl v = do
-        -- rsemGcEnterRootLevel
-        -- rsemGcPushRoot v
         case v of
           RVal_Ptr {rvalPtrRef=pref} -> do
             rsemGcEnterRootLevel
@@ -327,7 +325,6 @@ instance
             rsemGcLeaveRootLevel
           RVal_BlackHole             -> err $ "CoreRun.Run.Val.rsemEvl.RVal_BlackHole:" >#< "Black hole"
           _                          -> return () -- rsemPush v
-        -- rsemGcLeaveRootLevel
         rsemPush v
       where
         evlPtr pref p = do

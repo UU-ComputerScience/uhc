@@ -774,23 +774,6 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Running Core: runtime references
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 corerun) hs export(RRef(..))
--- | Identifier references for use during running Core
-data RRef
-  = RRef_Glb		-- ^ global reference to module and its entry
-      { rrefMod		:: !Int		-- ^ module
-      , rrefEntry	:: !Int		-- ^ entry inside module
-      }
-  | RRef_Loc		-- ^ local reference to on stack value
-      { rrefLev		:: !Int		-- ^ level
-      , rrefEntry	:: !Int		-- ^ entry inside level
-      }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances: Binary, Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

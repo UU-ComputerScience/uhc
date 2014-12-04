@@ -128,7 +128,12 @@ data RRef
       }
   -- | local reference to on stack value
   | RRef_Loc
-      { rrefLev         :: !Int     -- ^ level
+      { rrefLev         :: !Int     -- ^ level when used statically
+      , rrefEntry       :: !Int     -- ^ entry inside level
+      }
+  -- | local reference to on stack value, but measured relative to level of from where is referenced, used at runtime
+  | RRef_LDf
+      { rrefLevDiff		:: !Int     -- ^ offset/difference in levels when used at runtime
       , rrefEntry       :: !Int     -- ^ entry inside level
       }
   -- | tag of memory/constructor node referred to by other ref (not yet used)
@@ -150,6 +155,14 @@ instance Show RRef where
   show _ = "RRef"
 
 noRRef = RRef_Dbg hsnUnknown
+%%]
+
+%%[(8 corerun) hs export(rrefToDis)
+-- | Convert to RRef_Loc to RRef_LDf, i.e. absolute level to relative (to current) level
+rrefToDis curlev r@(RRef_Loc l o         ) = RRef_LDf (curlev - l) o
+rrefToDis curlev r@(RRef_Fld {rrefRef=r'}) = r {rrefRef = rrefToDis curlev r'}
+rrefToDis curlev r@(RRef_Tag {rrefRef=r'}) = r {rrefRef = rrefToDis curlev r'}
+rrefToDis _      r                         = r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

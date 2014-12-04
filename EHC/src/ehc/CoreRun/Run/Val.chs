@@ -695,6 +695,7 @@ ref2valM r = do
     RRef_Glb m e -> do
         modFrame <- heapGetM (renvGlobals env V.! m)
         liftIO $ MV.read (rvalFrVals modFrame) e
+{-
     RRef_Loc l o -> do
         topfrp <- renvTopFrameM
         topfr <- heapGetM topfrp
@@ -709,6 +710,20 @@ ref2valM r = do
           heapGetM sl >>= access
         access v                                                        = 
           err $ "CoreRun.Run.Val.ref2valM.RRef_Loc.access:" >#< r >#< "in" >#< v
+-}
+    RRef_LDf ld o -> do
+        topfrp <- renvTopFrameM
+        topfr <- heapGetM topfrp
+        access ld topfr
+      where
+        access 0 (RVal_Frame {rvalFrVals=vs}) =
+          liftIO $ MV.read vs o 
+        access ld (RVal_Frame {rvalSLRef=slref}) = do
+          sl <- liftIO $ readIORef slref
+          fr <- heapGetM sl
+          access (ld-1) fr
+        access _ v = 
+          err $ "CoreRun.Run.Val.ref2valM.RRef_LDf.access:" >#< r >#< "in" >#< v
     RRef_Fld r e -> do
         v <- ptr2valM =<< ref2valM r -- >>= rsemDeref
         case v of

@@ -423,7 +423,7 @@ SEM CExpr
   | Int         loc         .   crse            =   CR.SExp_Int @int
   | Char        loc         .   crse            =   CR.SExp_Char @char
   | String      loc         .   crse            =   CR.SExp_String @str
-  | Var         loc         .   crse            =   CR.SExp_Var $ fromMaybe (CR.RRef_Dbg @nm) $ Map.lookup @nm @lhs.nm2ref
+  | Var         loc         .   crse            =   CR.SExp_Var $ maybe (CR.RRef_Dbg @nm) (CR.rrefToDis @lhs.lev) $ Map.lookup @nm @lhs.nm2ref
 %%[[97
   | Integer     loc         .   crse            =   CR.SExp_Integer @integer
 %%]]
