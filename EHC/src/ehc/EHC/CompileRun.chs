@@ -175,7 +175,11 @@ emptyEHCompileRunStateInfo
       }
 %%]
 
-%%[(50 codegen) export(crsiExpNmOffMp)
+%%[(50 codegen) export(crsiExpNmOffMpDbg, crsiExpNmOffMp)
+crsiExpNmOffMpDbg :: String -> HsName -> EHCompileRunStateInfo -> VA.HsName2FldMp
+crsiExpNmOffMpDbg ctxt modNm crsi = mmiNmOffMp $ panicJust ("crsiExpNmOffMp." ++ ctxt ++ show ks ++ ": " ++ show modNm) $ Map.lookup modNm $ crsiModMp crsi
+  where ks = Map.keys $ crsiModMp crsi
+
 crsiExpNmOffMp :: HsName -> EHCompileRunStateInfo -> VA.HsName2FldMp
 crsiExpNmOffMp modNm crsi = mmiNmOffMp $ panicJust ("crsiExpNmOffMp: " ++ show modNm) $ Map.lookup modNm $ crsiModMp crsi
 %%]
@@ -202,27 +206,35 @@ type EHCompilePhase a = CompilePhase HsName EHCompileUnit EHCompileRunStateInfo 
 %%% Compile Run base info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(crBaseInfo,crBaseInfo')
+%%[8 export(crBaseInfo,crMbBaseInfo,crBaseInfo')
 crBaseInfo' :: EHCompileRun -> (EHCompileRunStateInfo,EHCOpts)
 crBaseInfo' cr
   = (crsi,opts)
   where crsi   = crStateInfo cr
         opts   = crsiOpts  crsi
 
-crBaseInfo :: HsName -> EHCompileRun -> (EHCompileUnit,EHCompileRunStateInfo,EHCOpts,FPath)
-crBaseInfo modNm cr
-  = ( ecu ,crsi
+crMbBaseInfo :: HsName -> EHCompileRun -> (Maybe EHCompileUnit, EHCompileRunStateInfo, EHCOpts, Maybe FPath)
+crMbBaseInfo modNm cr
+  = ( mbEcu ,crsi
 %%[[8
     , opts
 %%][99
     -- if any per module opts are available, use those
-    , maybe opts id $ ecuMbOpts ecu
+    , maybe opts id $ mbEcu >>= ecuMbOpts
 %%]]
-    , fp
+    , fmap ecuFilePath mbEcu
     )
-  where ecu         = crCU modNm cr
+  where mbEcu       = crMbCU modNm cr
         (crsi,opts) = crBaseInfo' cr
-        fp          = ecuFilePath ecu
+
+crBaseInfo :: HsName -> EHCompileRun -> (EHCompileUnit,EHCompileRunStateInfo,EHCOpts,FPath)
+crBaseInfo modNm cr
+  = ( maybe (panic "crBaseInfo.mbEcu") id mbEcu 
+    , crsi
+    , opts
+    , maybe (panic "crBaseInfo.mbFp") id mbFp
+    )
+  where (mbEcu, crsi, opts, mbFp) = crMbBaseInfo modNm cr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -289,14 +301,14 @@ cpRmFilesToRm
 cpMsg :: HsName -> Verbosity -> String -> EHCompilePhase ()
 cpMsg modNm v m
   = do { cr <- get
-       ; let (_,_,_,fp) = crBaseInfo modNm cr
-       ; cpMsg' modNm v m Nothing fp
+       ; let (_,_,_,mbFp) = crMbBaseInfo modNm cr
+       ; cpMsg' modNm v m Nothing (maybe emptyFPath id mbFp)
        }
 
 cpMsg' :: HsName -> Verbosity -> String -> Maybe String -> FPath -> EHCompilePhase ()
 cpMsg' modNm v m mbInfo fp
   = do { cr <- get
-       ; let (ecu,crsi,opts,_) = crBaseInfo modNm cr
+       ; let (mbEcu,crsi,opts,_) = crMbBaseInfo modNm cr
 %%[[99
        ; ehcioinfo <- lift $ readIORef (crsiEHCIOInfo crsi)
        ; clockTime <- lift getEHCTime
@@ -310,7 +322,7 @@ cpMsg' modNm v m mbInfo fp
              m'             = m
 %%][99
              t				= if v >= VerboseALot then "<" ++ strBlankPad 35 (ehcTimeDiffFmt clockStartTimeDiff ++ "/" ++ ehcTimeDiffFmt clockTimeDiff) ++ ">" else ""
-             m'             = show (ecuSeqNr ecu) ++ t ++ " " ++ m
+             m'             = maybe "" (\ecu -> show (ecuSeqNr ecu) ++ t ++ " ") mbEcu ++ m
 %%]]
        ; lift $ putCompileMsg v (ehcOptVerbosity opts) m' mbInfo modNm fp
 %%[[99

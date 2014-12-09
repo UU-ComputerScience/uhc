@@ -62,10 +62,18 @@ cpCompileJavaScript :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase (
 cpCompileJavaScript how othModNmL modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+%%[[8
+              odirStrip       = id
+              outputToOtherLoc= False
+%%][99
               odirStrip       = maybe id (\ofp fp -> (maybe id fpathUnPrependDir $ fpathMbDir ofp) fp) $ ehcOptMbOutputFile opts
               outputToOtherLoc= isJust (ehcOptMbOutputFile opts) || isJust (ehcOptOutputDir opts)
+%%]]
               canonicalize    = if outputToOtherLoc then canonicalizePath else return
-              optsNoOdir      = opts {ehcOptOutputDir = Nothing}
+              optsNoOdir      = opts
+%%[[99
+                                  {ehcOptOutputDir = Nothing}
+%%]]
               mbJs            = ecuMbJavaScript ecu
               fpOOpts o m f   = outputMkFPathJavaScriptModule o m f Cfg.suffixJavaScriptLib
               fpO m f         = fpOOpts opts m f

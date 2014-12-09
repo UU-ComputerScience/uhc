@@ -6,7 +6,7 @@
 # aspects, EHC_ASPECTS to be configured at top level, for now here
 ###########################################################################################
 
-ifeq ($(EHC_VARIANT),$(EHC_UHC_CABAL_VARIANT))
+ifeq ($(EHC_VARIANT),$(EHC_UHCLIGHT_CABAL_VARIANT))
 EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core corein coreout corebackend corerun
 else
 EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core grin corein coreout machdep
@@ -28,6 +28,16 @@ EHC_ASPECTS								:= $(strip $(sort $(if $(ASPECTS),$(ASPECTS) \
 											)))
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)
 EHC_ASPECTS_SUFFIX2						:= $(subst -,,$(EHC_ASPECTS_SUFFIX))
+
+###########################################################################################
+# Additional packages depending on aspects
+###########################################################################################
+
+ifeq ($(filter corerun,$(EHC_ASPECTS)),corerun)
+CABAL_ENABLEDASPECT_LIB_DEPENDS		:= primitive
+else
+CABAL_ENABLEDASPECT_LIB_DEPENDS		:= 
+endif
 
 ###########################################################################################
 # variant, EHC_VARIANT to be configured at top level, by a recursive make invocation
@@ -85,7 +95,7 @@ ifeq ($(EHC_VARIANT),$(EHC_UHC_INSTALL_VARIANT))
 # uhc compiler
 LIB_EHC_QUAL							:= UHC.Compiler
 else
-ifeq ($(EHC_VARIANT),$(EHC_UHC_CABAL_VARIANT))
+ifeq ($(EHC_VARIANT),$(EHC_UHCLIGHT_CABAL_VARIANT))
 # uhc cabal/package installation
 LIB_EHC_QUAL							:= UHC.Light.Compiler
 else

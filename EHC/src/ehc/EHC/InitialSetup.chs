@@ -30,7 +30,7 @@ Initial values
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
-%%[(50 codegen) hs import({%{EH}CodeGen.ImportUsedModules})
+%%[(50 codegen) hs import({%{EH}CodeGen.ImportUsedModules}, {%{EH}CodeGen.ModuleImportExportImpl})
 %%]
 -- LamMp, SysF
 %%[(8 codegen) import({%{EH}LamInfo})
@@ -73,23 +73,27 @@ initialHSSem opts
 initialEHSem :: EHCOpts -> FPath -> EHSem.Inh_AGItf
 initialEHSem opts fp
   = EHSem.Inh_AGItf
-      { EHSem.moduleNm_Inh_AGItf        = mkHNm (fpathBase fp)
-      , EHSem.gUniq_Inh_AGItf           = uidStart
-      , EHSem.opts_Inh_AGItf            = opts
+      { EHSem.moduleNm_Inh_AGItf        		= mkHNm (fpathBase fp)
+      , EHSem.gUniq_Inh_AGItf           		= uidStart
+      , EHSem.opts_Inh_AGItf            		= opts
 %%[[50
-      , EHSem.isMainMod_Inh_AGItf       = False
-      , EHSem.idQualGam_Inh_AGItf       = emptyGam
+      , EHSem.isMainMod_Inh_AGItf       		= False
+      , EHSem.idQualGam_Inh_AGItf       		= emptyGam
 %%]]
 %%[[(50 hmtyinfer)
-      , EHSem.valGam_Inh_AGItf          = emptyGam
-      , EHSem.dataGam_Inh_AGItf         = emptyGam
-      , EHSem.tyGam_Inh_AGItf           = initTyGam
-      , EHSem.tyKiGam_Inh_AGItf         = initTyKiGam
-      , EHSem.polGam_Inh_AGItf          = initPolGam
-      , EHSem.kiGam_Inh_AGItf           = initKiGam
-      , EHSem.clGam_Inh_AGItf           = Pr.initClGam
-      , EHSem.clDfGam_Inh_AGItf         = emptyGam
-      , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
+      , EHSem.valGam_Inh_AGItf          		= emptyGam
+      , EHSem.dataGam_Inh_AGItf         		= emptyGam
+      , EHSem.tyGam_Inh_AGItf           		= initTyGam
+      , EHSem.tyKiGam_Inh_AGItf         		= initTyKiGam
+      , EHSem.polGam_Inh_AGItf          		= initPolGam
+      , EHSem.kiGam_Inh_AGItf           		= initKiGam
+      , EHSem.clGam_Inh_AGItf           		= Pr.initClGam
+      , EHSem.clDfGam_Inh_AGItf         		= emptyGam
+      , EHSem.chrStore_Inh_AGItf        		= initScopedPredStore
+%%]]
+%%[[(50 codegen)
+      , EHSem.importUsedModules_Inh_AGItf		= emptyImportUsedModules
+      , EHSem.moduleImportExportImpl_Inh_AGItf	= emptyModuleImportExportImpl
 %%]]
       }
 %%]

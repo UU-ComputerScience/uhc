@@ -23,7 +23,7 @@ Examples:
   (A/_ g b1 b2)     ==>  (A/app2_2 g b1 b2)
 
 
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]

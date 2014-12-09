@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 
@@ -43,11 +43,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.Substitutable
-infixr 6 {- |=>, -} `varUpd`
+infixr 6 {-- |=>, -} `varUpd`
 %%]
 
 %%[4
-infixr 6 {- |==>, -} `varUpdCyc`
+infixr 6 {-- |==>, -} `varUpdCyc`
 %%]
 
 %%[2 export(VarUpdatable(..))

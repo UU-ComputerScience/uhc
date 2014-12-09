@@ -22,7 +22,7 @@ Normalisation for the Heap-points-to analysis
 
 - do we need it after an FFI?
 
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]

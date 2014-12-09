@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -77,7 +77,7 @@ SEM CExpr
                 lhs         .   isStrictChain   =   @isStrictChain && @body.isStrictChain
   | * - Let Ann lhs         .   isStrictChain   =   @lhs.isStrictChain
 
-SEM CModule CAlt MbCExpr CPatFld
+SEM CModule CAlt CPatFld -- MbCExpr
   | *           loc         .   isStrictChain   =   False
 %%]
 

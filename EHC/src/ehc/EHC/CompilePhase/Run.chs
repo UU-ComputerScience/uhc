@@ -16,6 +16,8 @@
 %%]
 %%[(8 corerun) import(Control.Monad.State)
 %%]
+%%[(8 corerun) import(Control.Exception)
+%%]
 
 -- CoreRun
 %%[(8 corerun) import({%{EH}Core.ToCoreRun})
@@ -24,7 +26,11 @@
 %%]
 
 -- Running CoreRun
-%%[(8 corerun) import({%{EH}CoreRun.Run}, {%{EH}CoreRun.Run.Val})
+%%[(8 corerun) import({%{EH}CoreRun.Run})
+%%]
+%%[(8888 corerun) import({%{EH}CoreRun.Run.Val.RunImplStk} as RI)
+%%]
+%%[(8 corerun) import({%{EH}CoreRun.Run.Val.RunExplStk} as RE)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,8 +48,16 @@ cpRunCoreRun modNm = do
     cpMsg modNm VerboseNormal "Run Core"
     when (isJust mbCore) $ do
       let mod = cmod2CoreRun $ fromJust mbCore
-      res <- liftIO $ runCoreRun opts [] mod $ cmodRun mod
-      either (\e -> cpSetLimitErrsWhen 1 "Core running" [e]) (liftIO . putStrLn . show . pp) res
+      res <- liftIO $ catch
+        (runCoreRun opts [] mod $ cmodRun opts mod)
+        (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "cpRunCoreRun: " ++ show e))
+      either (\e -> cpSetLimitErrsWhen 1 "Run Core(Run) errors" [e])
+%%[[8
+             (liftIO . putStrLn . show . pp)
+%%][100
+             (\_ -> return ())
+%%]]
+             res
 %%]
 
 

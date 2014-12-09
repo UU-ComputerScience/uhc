@@ -37,7 +37,7 @@ ehcRunMain m = m
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
-# if defined(__UHC_TARGET_JS__)
+# if defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
     catchException m
       (\exc ->
 # else
@@ -53,6 +53,8 @@ ehcRunMain m =
             _ -> do {
 #                   if defined(__UHC_TARGET_JS__)
                       putStrLn ("Error: " ++ show exc)
+#                   elif defined(__UHC_TARGET_CR__)
+                      hPutStrLn stderr ("Error: " ++ show exc)
 #                   else
                       hPutStrLn stderr ("Error: " ++ show exc)
                     ; if null explTrace

@@ -85,6 +85,9 @@ Translation to another AST
 -- LamInfo
 %%[(50 codegen grin) import({%{EH}LamInfo})
 %%]
+-- ModuleImportExportImpl
+%%[(50 codegen) import({%{EH}EHC.CompilePhase.Common}, {%{EH}CodeGen.ModuleImportExportImpl})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: translations to another AST
@@ -236,7 +239,8 @@ cpTranslateCore2JavaScript modNm
 %%]
 
 %%[(50 codegen grin)
--- | Compute info for Grin based codegen
+-- | Compute info for Grin based codegen.
+-- TBD: can become obsolete
 cpGenGrinGenInfo
   :: HsName
   -> EHCompilePhase
@@ -246,30 +250,8 @@ cpGenGrinGenInfo
        , HsName2FldMp
        )
 cpGenGrinGenInfo modNm
-  = do { cr <- get
-       ; impNmL <- cpGenImpNmInfo modNm
-       ; let (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-             isWholeProg = ehcOptOptimizationScope opts > OptimizationScope_PerModule
-             expNmFldMp | ecuIsMainMod ecu = Map.empty
-                        | otherwise        = crsiExpNmOffMp modNm crsi
-             modOffMp   | isWholeProg = Map.filterWithKey (\n _ -> n == modNm) $ crsiModOffMp crsi
-                        | otherwise   = crsiModOffMp crsi
-       -- ; lift $ putStrLn $ "cpGenGrinGenInfo " ++ show impNmL
-       -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHSDeclImpNmS " ++ show (ecuHSDeclImpNmS ecu)
-       -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHIDeclImpNmS " ++ show (ecuHIDeclImpNmS ecu)
-       -- ; lift $ putStrLn $ "cpGenGrinGenInfo ecuHIUsedImpNmS " ++ show (ecuHIUsedImpNmS ecu)
-       -- ; lift $ putStrLn $ "cpGenGrinGenInfo modOffMp " ++ show modOffMp
-       -- ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu
-       ; return
-           ( Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
-           , if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst modOffMp ] else []
-           , Map.fromList [ (n,(o,mp))
-                          | (n,o) <- refGen 0 1 impNmL
-                          , let (_,mp) = panicJust ("cpGenGrinGenInfo: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
-                          ]
-           , expNmFldMp
-           )
-       }
+  = do mieimpl <- cpGenModuleImportExportImpl modNm
+       return (mieimplLamMp mieimpl, mieimplUsedModNmL mieimpl, mieimplHsName2FldMpMp mieimpl, mieimplHsName2FldMp mieimpl)
 %%]
 
 %%[(8 codegen grin cmm) export(cpTranslateGrin2Cmm)

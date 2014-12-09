@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -7,29 +7,32 @@
 %%% Check core module when provided as source
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs module {%{EH}Core.Check}
+%%[(8 codegen corein) hs module {%{EH}Core.Check}
 %%]
 
-%%[(50 codegen corein) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
+%%[(8 codegen corein) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
-%%[(50 codegen corein) hs import({%{EH}Base.TermLike},{%{EH}AbstractCore},{%{EH}Core})
+%%[(8 codegen corein) hs import({%{EH}Base.TermLike},{%{EH}AbstractCore},{%{EH}Core})
 %%]
 %%[(8888 codegen corein) hs import({%{EH}LamInfo})
 %%]
 %%[(8888 codegen corein) hs import({%{EH}Core.BindExtract},qualified {%{EH}Core.SysF.AsTy} as SysF)
 %%]
 
-%%[(50 codegen corein) hs import(qualified UHC.Util.FastSeq as Seq)
+%%[(8 codegen corein) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, qualified UHC.Util.FastSeq as Seq, qualified UHC.Util.Rel as Rel)
 %%]
 
-%%[(50 codegen corein) hs import(Data.Maybe, qualified Data.Map as Map, Control.Applicative)
+%%[(8 codegen corein) hs import(Control.Applicative)
 %%]
 
-%%[(50 codegen corein) hs import(UHC.Util.Pretty)
+%%[(8 codegen corein) hs import(UHC.Util.Pretty)
 %%]
 
-%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
+%%[(50 codegen corein) hs import({%{EH}Module.ImportExport})
+%%]
+
+%%[(8 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
 WRAPPER CodeAGItf
 %%]
 
@@ -42,7 +45,7 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs
+%%[(8 codegen corein) hs
 %%]
 data CheckEnv
   = CheckEnv
@@ -54,7 +57,17 @@ emptyCheckEnv
       -- emptyLamMp
 
 
-%%[(50 codegen corein) hs export(cmodCheck', Inh_CodeAGItf(..), Syn_CodeAGItf(..))
+%%[(8 codegen corein) hs export(NotYetTransformed(..), NotYetTransformedS)
+-- | What not yet has been transformed in the given Core, absence means some aspect has been transformed everywhere
+data NotYetTransformed
+  = NotYetTransformed_LambdaLifted
+  | NotYetTransformed_ANormal
+  deriving (Eq, Ord, Show, Enum, Bounded)
+
+type NotYetTransformedS = Set.Set NotYetTransformed
+%%]
+
+%%[(8 codegen corein) hs export(cmodCheck', Inh_CodeAGItf(..), Syn_CodeAGItf(..))
 cmodCheck'
   :: Inh_CodeAGItf
      -> CModule
@@ -86,38 +99,35 @@ cmodCheck opts env cmod
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR
   AllCodeNT CodeAGItf
     [ opts: EHCOpts
       -- env : CheckEnv
     | | ]
-%%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SELF
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen corein)
-ATTR AllCodeNT [ | | self: SELF ]
+ATTR
+  CodeAGItf CModule
+    [ moduleNm: HsName
+    | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR CodeAGItf CModule [ | | realModuleNm: HsName ]
 
 SEM CModule
-  | Mod         lhs         .   realModuleNm        =   @moduleNm
+  | Mod         loc         .   realModuleNm        =   @moduleNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Imported modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR CodeAGItf CModule AllImport [ | | impModNmL USE {++} {[]} : {[HsName]} ]
 
 SEM CImport
@@ -125,10 +135,43 @@ SEM CImport
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Module has 'main'?
+%%% Export info, similar to the extracted info from .hs source modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 codegen corein)
+ATTR AllExport [ | | modExpL USE {++} {[]} : {[ModExp]} ]
+
+SEM CExport
+  | Export		lhs			.   modExpL				=   [ModExpEnt (ModEntSpec @nm emptyRange Nothing)]
+%%]
+
+%%[(50 codegen corein)
+ATTR AllImport [ | | modImpL USE {++} {[]} : {[ModImp]} ]
+
+SEM CImport
+  | Import		lhs			.   modImpL				=   [ModImp True @nm @nm False [] emptyRange]
+%%]
+
+%%[(50 codegen corein)
+ATTR CExpr AllBindOnly [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
+
+SEM CBind
+  | Bind        lhs         .   modDefsRel          =   let o = IdOcc @nm IdOcc_Val
+                                                        in  Rel.fromList [ (hsnQualified (ioccNm o), ModEnt IdOcc_Val o Set.empty emptyRange) ]
+%%]
+
+%%[(50 codegen corein)
+ATTR CodeAGItf CModule [ | | mod: Mod ]
+
+SEM CModule
+  | Mod         lhs         .   mod			        =   Mod @realModuleNm {- @lhs.moduleNm -} (Just @realModuleNm) (Just @exports.modExpL) @imports.modImpL @expr.modDefsRel Rel.empty []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module has 'main'?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen corein)
 ATTR CodeAGItf CModule CExpr AllBindOnly [ | | hasMain USE {||} {False} : Bool ]
 
 SEM CBind
@@ -137,13 +180,41 @@ SEM CBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% That what not has been transformed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen corein)
+ATTR CodeAGItf CModule CExpr AllBind [ | | notYetTransformed USE {`Set.union`} {Set.empty} : NotYetTransformedS ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module is already in ANormal form?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen corein)
+ATTR CBound [ | | isSimple: Bool ]
+
+SEM CBound
+  | Bind Val    loc         .   isSimple            =   case @expr.whatBelow of
+                                                            ExprIsVar _     -> True
+                                                            ExprIsInt _     -> True
+                                                            ExprIsOtherWHNF -> True
+                                                            _               -> False
+  | * - Bind Val
+  				lhs         .   isSimple            =   False
+
+SEM CExpr
+  | App         loc         .   appNotYetTransformed=   if @arg.isSimple then Set.empty else Set.singleton NotYetTransformed_ANormal
+                lhs         .   notYetTransformed   =   Set.unions [@appNotYetTransformed, @func.notYetTransformed, @arg.notYetTransformed]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module is already lambda lifted?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR AllCodeNT [ | | isFreeOfLam USE {&&} {True} : Bool ]
 ATTR CExpr [ | | lamBodyIsFreeOfLam: Bool ]
-ATTR CodeAGItf CModule CExpr AllBind [ | | isLamLifted USE {&&} {True} : Bool ]
 
 SEM CExpr
   | Lam         lhs         .   isFreeOfLam         =   False
@@ -153,25 +224,24 @@ SEM CExpr
   | * - Lam     lhs         .   lamBodyIsFreeOfLam  =   False
 
 SEM CBound
+  | Bind Val    loc         .   bindNotYetTransformed
+                                                    =   if whatExprIsLam @expr.whatBelow
+                                                        then if @lhs.isGlobal && @expr.lamBodyIsFreeOfLam
+                                                             then Set.empty
+                                                             else Set.singleton NotYetTransformed_LambdaLifted
+                                                        else if @expr.isFreeOfLam
+                                                             then Set.empty
+                                                             else Set.singleton NotYetTransformed_LambdaLifted
+                lhs         .   notYetTransformed   =   Set.unions [@bindNotYetTransformed, @expr.notYetTransformed]
+
+%%]
+ATTR CodeAGItf CModule CExpr AllBind [ | | isLamLifted USE {&&} {True} : Bool ]
+
+SEM CBound
   | Bind Val    loc         .   isLamLifted         =   if whatExprIsLam @expr.whatBelow
                                                         then @lhs.isGlobal && @expr.lamBodyIsFreeOfLam
                                                         else @expr.isFreeOfLam
 
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Lists of XX
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen corein)
-ATTR CAltL [ | | stL: {[SysF.Ty]} ]
-%%]
-
-%%[(8888 codegen corein)
-SEM CAltL
-  | Nil         lhs         .   stL                 =   []
-  | Cons        lhs         .   stL                 =   @hd.st : @tl.stL
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type checking: errors
@@ -179,18 +249,18 @@ SEM CAltL
 
 No errors == ok
 
-%%[(50 codegen corein) hs
+%%[(8 codegen corein) hs
 type UndefNmMp = Map.Map MetaLev [ACoreBindRef]
 
 undefmpUnion :: UndefNmMp -> UndefNmMp -> UndefNmMp
 undefmpUnion = Map.unionWith (++)
 %%]
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR AllNT [ | | undefNmMp USE {`undefmpUnion`} {Map.empty} : UndefNmMp ]
 %%]
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR AllNT CodeAGItf [ | | errs USE {`Seq.union`} {Seq.empty} : ErrSq ]
 %%]
 

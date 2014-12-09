@@ -1,4 +1,0 @@
-let app = \f -> \a -> f a
-in
-let v = app 3 j
-in  v

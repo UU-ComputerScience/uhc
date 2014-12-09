@@ -93,6 +93,9 @@ data HsNameUniqifier
   | HsNameUniqifier_FFE                 -- name of value to be ff exported
   | HsNameUniqifier_FFECoerced          -- name of possibly coerced value to be ff exported
 %%]]
+%%[[(8 core)
+  | HsNameUniqifier_CoreAPI             -- Used by the Core API, to allow external programs to generate new identifiers.
+%%]]
   deriving (Eq,Ord,Enum)
 
 -- | The show of a HsNameUniqifier is found back in the pretty printed code, current convention is 3 uppercase letters, as a balance between size and clarity of meaning
@@ -133,6 +136,9 @@ instance Show HsNameUniqifier where
 %%[[90
   show HsNameUniqifier_FFE                  = "FFE"
   show HsNameUniqifier_FFECoerced           = "FFC"
+%%]]
+%%[[(8 core)
+  show HsNameUniqifier_CoreAPI              = "CRA"
 %%]]
 %%]
 

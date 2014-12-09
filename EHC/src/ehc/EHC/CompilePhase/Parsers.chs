@@ -286,7 +286,7 @@ cpDecodeHIInfo modNm
                      [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  , show $ HI.hiiTarget hiinfo, show $ HI.hiiTargetFlavor hiinfo]
                   ]
 %%]]
-           _ -> cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
+           _ -> cpUpdCU modNm (ecuStorePrevHIInfo {-- $ HI.hiiPostCheckValidity opts -} hiinfo)
        }
 %%]
 
@@ -321,6 +321,7 @@ cpDecodeCore suff = cpDecode suff ecuStoreCore
 cpGetPrevHI :: HsName -> EHCompilePhase ()
 cpGetPrevHI modNm
   = do { cr <- get
+       ; cpMsg modNm VerboseDebug "cpGetPrevHI"
        ; let  ecu        = crCU modNm cr
        -- ; when (isJust (ecuMbHITime ecu))
        --        (cpParseHI modNm)
@@ -333,6 +334,7 @@ cpGetPrevHI modNm
 cpGetPrevCore :: HsName -> EHCompilePhase ()
 cpGetPrevCore modNm
   = do { cr <- get
+       ; cpMsg modNm VerboseDebug "cpGetPrevCore"
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbCoreTime ecu) && isNothing (ecuMbCore ecu))
               (cpDecodeCore (Just Cfg.suffixDotlessBinaryCore) modNm)
@@ -344,6 +346,7 @@ cpGetPrevCore modNm
 cpGetPrevGrin :: HsName -> EHCompilePhase ()
 cpGetPrevGrin modNm
   = do { cr <- get
+       ; cpMsg modNm VerboseDebug "cpGetPrevGrin"
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbGrinTime ecu) && isNothing (ecuMbGrin ecu))
               (cpDecodeGrin modNm) -- (cpParseGrin modNm)

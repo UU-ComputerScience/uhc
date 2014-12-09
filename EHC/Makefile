@@ -57,7 +57,7 @@ include $(MK_PREFIX)shared.mk
 -include $(SRC_PREFIX)helium/files.mk
 -include $(SRC_PREFIX)lvm/files.mk
 -include $(SRC_PREFIX)text2text/files.mk
-include $(SRC_PREFIX)ruler2/files.mk
+#include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 include $(SRC_PREFIX)gen/files.mk
 include $(SRC_PREFIX)ehc/files1.mk
@@ -164,7 +164,7 @@ explanation:
 	echo  "" ; \
     echo  "Distribution" ; \
 	echo  "===========" ; \
-	echo  "make uhc-dist            : make platform specific binary distribution from uhc build in $(DISTABS_PREFIX)" ; \
+	echo  "make uhc-light           : make cabal version of a light UHC variant in $(CABALDIST_UHCLIGHT_PREFIX)" ; \
 	echo  "" ; \
     echo  "Cleaning up" ; \
 	echo  "===========" ; \
@@ -186,6 +186,7 @@ explanation:
 	echo  "make <n>/grini           : make grin interpreter variant <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)}) (obsolete)" ; \
 	echo  "make <n>/hdoc            : make Haddock documentation for variant <n> (in hdoc/)" ; \
 	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
+	echo  "make uhc-dist            : make platform specific binary distribution from uhc build in $(DISTABS_PREFIX)" ; \
 	echo  "" ; \
 
 ###########################################################################################
@@ -300,7 +301,16 @@ uhc-install-postprocess-llvm:
 ###########################################################################################
 
 uhc-light:
-	$(MAKE) ENABLE_JS= $(EHC_FOR_UHCLIGHT_BLD_EXEC)
+	$(MAKE) ENABLE_JS= EHC_VARIANT=$(EHC_UHCLIGHT_CABAL_VARIANT) uhc-light-dist
+	cd $(CABALDIST_UHCLIGHT_PREFIX) && cabal configure && cabal sdist
+
+uhc-light-tst:
+	$(MAKE) ENABLE_JS= EHC_VARIANT=$(EHC_UHCLIGHT_CABAL_VARIANT) INCLUDE_DERIVED_MK=yes uhc-light-cabal-dist
+
+uhc-light-dist:
+	$(MAKE) $(EHC_UHCLIGHT_CABAL_VARIANT)/ehc
+	$(MAKE) $(EHC_UHCLIGHT_CABAL_VARIANT)/ehclib
+	$(MAKE) INCLUDE_DERIVED_MK=yes uhc-light-cabal-dist
 
 ###########################################################################################
 # Target: UHC: binary distribution generation
@@ -422,8 +432,7 @@ test-all:
 
 clean:
 	$(MAKE) cleans
-	$(MAKE) ruler-clean
-	rm -rf $(DIST_PREFIX)
+	rm -rf $(DIST_PREFIX) $(CABALDIST_UHCLIGHT_PREFIX)
 
 #	$(MAKE) libutil-clean
 
@@ -483,9 +492,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHC_ASPECTS_SUFFIX2)
-	@echo $(EHC_ASPECTS_SUFFIX)
-	@echo $(EHC_BUILD_SUFFIX)
+	@echo $(EHC_ALL_LIB_FROMAG_HS)
 
 tstv:
 	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=100 tst

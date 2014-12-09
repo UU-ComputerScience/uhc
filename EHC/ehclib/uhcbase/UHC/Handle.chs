@@ -39,54 +39,82 @@ is functioning well.
 module UHC.Handle (
 {-
 -}
+#ifndef __UHC_TARGET_CR__
   withHandle, withHandle', withHandle_,
   wantWritableHandle, wantReadableHandle, wantSeekableHandle,
+#endif
 
+#ifndef __UHC_TARGET_CR__
   newEmptyBuffer, allocateBuffer, readCharFromBuffer, writeCharIntoBuffer,
   flushWriteBufferOnly, flushWriteBuffer, flushReadBuffer,
   fillReadBuffer, fillReadBufferWithoutBlocking,
   readRawBuffer, readRawBufferPtr,
   readRawBufferNoBlock, readRawBufferPtrNoBlock,
   writeRawBuffer, writeRawBufferPtr,
+#endif
 
-#ifndef mingw32_HOST_OS
+#if ! ( defined(mingw32_HOST_OS) || defined(__UHC_TARGET_CR__) )
   unlockFile,
 #endif
 
   ioe_closedHandle, ioe_EOF, ioe_notReadable, ioe_notWritable,
 
   stdin, stdout, stderr,
-  IOMode(..), openFile, openBinaryFile, fdToHandle_stat, fdToHandle, fdToHandle',
-  hFileSize, hSetFileSize, hIsEOF, isEOF, hLookAhead, hLookAhead', hSetBuffering,  hSetBinaryMode, 
-  hFlush,  hDuplicate, hDuplicateTo, 
+  IOMode(..), openFile, openBinaryFile,
+#ifndef __UHC_TARGET_CR__
+  fdToHandle_stat, fdToHandle, fdToHandle',
+#endif
+  hFileSize, hSetFileSize, hIsEOF, isEOF, hLookAhead,
+#ifndef __UHC_TARGET_CR__
+  hLookAhead',
+  hSetBuffering,
+#endif
+  hSetBinaryMode, 
+  hFlush,
+#ifndef __UHC_TARGET_CR__
+  hDuplicate, hDuplicateTo, 
+#endif
 
-  hClose, hClose_help,
+  hClose,
+#ifndef __UHC_TARGET_CR__
+  hClose_help,
+#endif
 
+#ifndef __UHC_TARGET_CR__
   HandlePosition, HandlePosn(..), hGetPosn, hSetPosn,
   SeekMode(..), hSeek, hTell,
+#endif
 
+#ifndef __UHC_TARGET_CR__
   hIsOpen, hIsClosed, hIsReadable, hIsWritable, hGetBuffering, hIsSeekable,
   hSetEcho, hGetEcho, hIsTerminalDevice,
+#endif
 
   hShow,
 
+#ifndef __UHC_TARGET_CR__
   unsafe_fdReady -- needed in UHC.IO
+#endif
  ) where
 
 import UHC.Base
+#ifndef __UHC_TARGET_CR__
 import UHC.MVar
 import UHC.ByteArray
+#endif
 import UHC.OldException
 import UHC.IOBase
+#ifndef __UHC_TARGET_CR__
 import UHC.Conc
 import Foreign.C
+import Foreign
+import System.Posix.Internals
+import System.Posix.Types
+#endif
 import Data.Bits
 import Control.Monad
 import Data.Maybe
-import Foreign
 import System.IO.Error
-import System.Posix.Internals
-import System.Posix.Types
 #ifdef __UHC__
 -- Low level functions should get/return a CSsize, but the original code does not do so, so mimic it here:
 #define CSsize		CInt
@@ -113,6 +141,7 @@ dEFAULT_OPEN_IN_BINARY_MODE = False
 
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- Creating a new handle
 
@@ -121,9 +150,11 @@ newFileHandle filepath finalizer hc = do
   m <- newMVar hc
   addMVarFinalizer m (finalizer m)
   return (FileHandle filepath m)
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- Working with Handles
 
@@ -208,9 +239,11 @@ augmentIOError (IOError _ iot _ str fp) fun h
           | otherwise = case h of
                           FileHandle path _     -> Just path
                           DuplexHandle path _ _ -> Just path
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- Wrapper for write operations.
 
@@ -244,9 +277,11 @@ checkWritableHandle act handle_
                 writeIORef ref new_buf
                 act handle_
       _other               -> act handle_
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- Wrapper for read operations.
 
@@ -278,9 +313,11 @@ checkReadableHandle act handle_ =
            writeIORef ref new_buf{ bufState=ReadBuffer }
         act handle_
       _other               -> act handle_
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- Wrapper for seek operations.
 
@@ -299,6 +336,7 @@ checkSeekableHandle act handle_ =
       AppendHandle      -> ioe_notSeekable
       _  | haIsBin handle_ || tEXT_MODE_SEEK_ALLOWED -> act handle_
          | otherwise                                 -> ioe_notSeekable_notBin
+#endif
 %%]
 
 %%[99
@@ -328,10 +366,12 @@ ioe_notSeekable_notBin = ioException
       "seek operations on text-mode handles are not allowed on this platform"
         Nothing)
 
+#ifndef __UHC_TARGET_CR__
 ioe_finalizedHandle :: FilePath -> Handle__
 ioe_finalizedHandle fp = throwIOError
    (IOError Nothing IllegalOperation ""
         "handle is finalized" (Just fp))
+#endif
 
 ioe_bufsiz :: Int -> IO a
 ioe_bufsiz n = ioException
@@ -341,6 +381,7 @@ ioe_bufsiz n = ioException
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- Handle Finalizers
 
@@ -378,9 +419,11 @@ handleFinalizer fp m = do
               return ()
   putMVar m (ioe_finalizedHandle fp)
 
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- Grimy buffer operations
 
@@ -871,6 +914,8 @@ foreign import ccall safe "__hscore_PrelHandle_write"
    safe_write_off :: CInt -> Ptr CChar -> Int -> CInt -> IO CInt
 
 #endif /* __UHC__ */
+
+#endif /* __UHC_TARGET_CR__ */
 %%]
 
 %%[99
@@ -882,6 +927,11 @@ foreign import ccall safe "__hscore_PrelHandle_write"
 -- or output channel respectively.  The third manages output to the
 -- standard error channel. These handles are initially open.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim stdin  :: Handle
+foreign import prim stdout :: Handle
+foreign import prim stderr :: Handle
+#else
 fd_stdin, fd_stdout, fd_stderr :: FD
 fd_stdin  = 0
 fd_stdout = 1
@@ -916,12 +966,17 @@ stderr = unsafePerformIO $ do
    -- see Note [nonblock]
    buf <- mkUnBuffer
    mkStdHandle fd_stderr "<stderr>" WriteHandle buf NoBuffering
+#endif
 %%]
 
 %%[99
 -- ---------------------------------------------------------------------------
 -- Opening and Closing Files
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim openFile       :: FilePath -> IOMode -> IO Handle
+foreign import prim openBinaryFile :: FilePath -> IOMode -> IO Handle
+#else
 addFilePathToIOError :: String -> FilePath -> IOException -> IOException
 addFilePathToIOError fun fp (IOError h iot _ str _)
   = IOError h iot fun str (Just fp)
@@ -1033,12 +1088,14 @@ read_flags   = std_flags    .|. o_RDONLY
 write_flags  = output_flags .|. o_WRONLY
 rw_flags     = output_flags .|. o_RDWR
 append_flags = write_flags  .|. o_APPEND
+#endif
 %%]
 
 %%[99
 -- ---------------------------------------------------------------------------
 -- fdToHandle
 
+#ifndef __UHC_TARGET_CR__
 fdToHandle_stat :: FD
             -> Maybe (FDType, CDev, CIno)
             -> Bool
@@ -1219,6 +1276,7 @@ mkDuplexHandle fd is_stream filepath binary = do
 initBufferState :: HandleType -> BufferState
 initBufferState ReadHandle = ReadBuffer
 initBufferState _          = WriteBuffer
+#endif
 %%]
 
 %%[99
@@ -1234,6 +1292,9 @@ initBufferState _          = WriteBuffer
 -- 'hClose') on the handle will still fail as if @hdl@ had been successfully
 -- closed.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hClose :: Handle -> IO ()
+#else
 hClose :: Handle -> IO ()
 hClose h@(FileHandle _ m)     = do 
   mb_exc <- hClose' h m
@@ -1306,6 +1367,8 @@ hClose_handle_ handle_ = do
 {-# NOINLINE noBuffer #-}
 noBuffer :: Buffer
 noBuffer = unsafePerformIO $ allocateBuffer 1 ReadBuffer
+
+#endif
 %%]
 
 %%[99
@@ -1315,6 +1378,9 @@ noBuffer = unsafePerformIO $ allocateBuffer 1 ReadBuffer
 -- | For a handle @hdl@ which attached to a physical file,
 -- 'hFileSize' @hdl@ returns the size of that file in 8-bit bytes.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hFileSize :: Handle -> IO Integer
+#else
 hFileSize :: Handle -> IO Integer
 hFileSize handle =
     withHandle_ "hFileSize" handle $ \ handle_ -> do
@@ -1327,10 +1393,13 @@ hFileSize handle =
                  then return r
                  else ioException (IOError Nothing InappropriateType "hFileSize"
                                    "not a regular file" Nothing)
-
+#endif
 
 -- | 'hSetFileSize' @hdl@ @size@ truncates the physical file with handle @hdl@ to @size@ bytes.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hSetFileSize :: Handle -> Integer -> IO ()
+#else
 hSetFileSize :: Handle -> Integer -> IO ()
 hSetFileSize handle size =
     withHandle_ "hSetFileSize" handle $ \ handle_ -> do
@@ -1341,6 +1410,7 @@ hSetFileSize handle size =
               throwErrnoIf (/=0) "hSetFileSize" 
                  (c_ftruncate (haFD handle_) (fromIntegral size))
               return ()
+#endif
 %%]
 
 %%[99
@@ -1355,6 +1425,9 @@ hSetFileSize handle size =
 -- NOTE: 'hIsEOF' may block, because it is the same as calling
 -- 'hLookAhead' and checking for an EOF exception.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hIsEOF :: Handle -> IO Bool
+#else
 hIsEOF :: Handle -> IO Bool
 hIsEOF handle =
   catch
@@ -1363,6 +1436,7 @@ hIsEOF handle =
 
 -- | The computation 'isEOF' is identical to 'hIsEOF',
 -- except that it works only on 'stdin'.
+#endif
 
 isEOF :: IO Bool
 isEOF = hIsEOF stdin
@@ -1380,6 +1454,9 @@ isEOF = hIsEOF stdin
 --
 --  * 'isEOFError' if the end of file has been reached.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hLookAhead :: Handle -> IO Char
+#else
 hLookAhead :: Handle -> IO Char
 hLookAhead handle =
   wantReadableHandle "hLookAhead"  handle hLookAhead'
@@ -1399,6 +1476,7 @@ hLookAhead' handle_ = do
 
   (c,_) <- readCharFromBuffer (bufBuf buf) (bufRPtr buf)
   return c
+#endif
 %%]
 
 %%[99
@@ -1425,6 +1503,7 @@ hLookAhead' handle_ = do
 --    or writing and the implementation does not allow the buffering mode
 --    to be changed.
 
+#ifndef __UHC_TARGET_CR__
 hSetBuffering :: Handle -> BufferMode -> IO ()
 hSetBuffering handle mode =
   withAllHandles__ "hSetBuffering" handle $ \ handle_ -> do
@@ -1474,6 +1553,7 @@ hSetBuffering handle mode =
           writeIORef (haBuffers handle_) BufferListNil
 
           return (handle_{ haBufferMode = mode })
+#endif
 %%]
 
 %%[99
@@ -1491,6 +1571,9 @@ hSetBuffering handle mode =
 --    It is unspecified whether the characters in the buffer are discarded
 --    or retained under these circumstances.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hFlush :: Handle -> IO () 
+#else
 hFlush :: Handle -> IO () 
 hFlush handle =
    wantWritableHandle "hFlush" handle $ \ handle_ -> do
@@ -1499,10 +1582,11 @@ hFlush handle =
         then do flushed_buf <- flushWriteBuffer (haFD handle_) (haIsStream handle_) buf
                 writeIORef (haBuffer handle_) flushed_buf
         else return ()
-
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- Repositioning Handles
 
@@ -1539,9 +1623,12 @@ hGetPosn handle = do
 
 hSetPosn :: HandlePosn -> IO () 
 hSetPosn (HandlePosn h i) = hSeek h AbsoluteSeek i
+
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- hSeek
 
@@ -1642,9 +1729,13 @@ hTell handle =
       puts ("   (bufWPtr, bufRPtr) = " ++ show (bufWPtr buf, bufRPtr buf) ++ "\n")
 #     endif
       return real_posn
+
+#endif /* __UHC_TARGET_CR__ */
+
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- Handle Properties
 
@@ -1718,9 +1809,11 @@ hIsSeekable handle =
       _                    -> do t <- fdType (haFD handle_)
                                  return ((t == RegularFile    || t == RawDevice)
                                          && (haIsBin handle_  || tEXT_MODE_SEEK_ALLOWED))
+#endif
 %%]
 
 %%[99 
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- Changing echo status (Non-standard GHC extensions)
 
@@ -1758,6 +1851,7 @@ hIsTerminalDevice handle = do
      case haType handle_ of 
        ClosedHandle -> ioe_closedHandle
        _            -> fdIsTTY (haFD handle_))
+#endif
 %%]
 
 %%[99
@@ -1767,6 +1861,9 @@ hIsTerminalDevice handle = do
 -- | Select binary mode ('True') or text mode ('False') on a open handle.
 -- (See also 'openBinaryFile'.)
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hSetBinaryMode :: Handle -> Bool -> IO ()
+#else
 hSetBinaryMode :: Handle -> Bool -> IO ()
 hSetBinaryMode handle bin =
   withAllHandles__ "hSetBinaryMode" handle $ \ handle_ ->
@@ -1784,9 +1881,11 @@ setmode fd b = return 0
 foreign import ccall unsafe "__hscore_setmode"
   setmode :: CInt -> Bool -> IO CInt
 #endif
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- Duplicating a Handle
 
@@ -1838,9 +1937,11 @@ dupHandle_ other_side h_ new_fd = do
                         haBuffers = ioref_buffers,
                         haOtherSide = other_side }
   return (h_, new_handle_)
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- Replacing a Handle
 
@@ -1869,6 +1970,7 @@ hDuplicateTo h1@(DuplexHandle _ r1 w1) h2@(DuplexHandle _ r2 w2)  = do
 hDuplicateTo h1 _ =
    ioException (IOError (Just h1) IllegalOperation "hDuplicateTo" 
                 "handles are incompatible" Nothing)
+#endif
 %%]
 
 %%[99
@@ -1878,6 +1980,9 @@ hDuplicateTo h1 _ =
 -- | 'hShow' is in the 'IO' monad, and gives more comprehensive output
 -- than the (pure) instance of 'Show' for 'Handle'.
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hShow :: Handle -> IO String
+#else
 hShow :: Handle -> IO String
 hShow h@(FileHandle path _) = showHandle' path False h
 hShow h@(DuplexHandle path _ _) = showHandle' path True h
@@ -1915,6 +2020,7 @@ showHandle' filepath is_duplex h =
       where
        def :: Int 
        def = bufSize buf
+#endif
 %%]
 
 %%[9999
@@ -1929,6 +2035,7 @@ puts s = do write_rawBuffer 1 (unsafeCoerce# (packCString# s)) 0 (fromIntegral (
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- utils
 
@@ -1945,9 +2052,11 @@ throwErrnoIfMinus1RetryOnBlock loc f on_block  =
                  then do on_block
                  else throwErrno loc
       else return res
+#endif
 %%]
 
 %%[99
+#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- wrappers to platform-specific constants:
 
@@ -1958,5 +2067,6 @@ foreign import ccall unsafe "HsBase.h __hscore_bufsiz"   dEFAULT_BUFFER_SIZE :: 
 foreign import ccall unsafe "HsBase.h __hscore_seek_cur" sEEK_CUR :: CInt
 foreign import ccall unsafe "HsBase.h __hscore_seek_set" sEEK_SET :: CInt
 foreign import ccall unsafe "HsBase.h __hscore_seek_end" sEEK_END :: CInt
+#endif
 %%]
 

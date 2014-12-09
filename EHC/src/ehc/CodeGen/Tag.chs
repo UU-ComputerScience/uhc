@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -87,6 +87,22 @@ ppCTagInt = ctag (pp "-1") (\_ _ t _ _ -> pp t)
 
 instance PP CTag where
   pp = ppCTag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hardcoded tag nrs, this should ideally be dependent on datatype defs themselves
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tagBoolTrue, tagBoolFalse)
+tagBoolTrue, tagBoolFalse :: Int
+tagBoolTrue  = 1 		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+tagBoolFalse = 0 		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+%%]
+
+%%[(8 codegen) hs export(tagListCons, tagListNil)
+tagListCons, tagListNil :: Int
+tagListCons = 0 		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+tagListNil  = 1 		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

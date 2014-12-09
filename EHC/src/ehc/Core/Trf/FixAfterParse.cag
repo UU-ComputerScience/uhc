@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -8,13 +8,13 @@
 %%% (1) CTag inlined info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs module {%{EH}Core.Trf.FixAfterParse} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegen corein) hs module {%{EH}Core.Trf.FixAfterParse} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
 %%]
 
-%%[(50 codegen corein) hs import({%{EH}AbstractCore})
+%%[(8 codegen corein) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(50 codegen corein).WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen corein).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
@@ -26,7 +26,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs export(cmodTrfFixAfterParse)
+%%[(8 codegen corein) hs export(cmodTrfFixAfterParse)
 cmodTrfFixAfterParse
   :: DataGam
      -> CModule
@@ -45,7 +45,7 @@ cmodTrfFixAfterParse dataGam cmod
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%]
 
@@ -53,18 +53,18 @@ ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen corein) hs
+%%[(8 codegen corein) hs
 fixCTag :: DataGam -> CTag -> CTag
 fixCTag g (t@(CTag {ctagTyNm=tn, ctagNm=cn})) = maybe t id $ dataGamLookupTag tn cn g
 fixCTag _  t                                  =       t
 %%]
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 ATTR AllNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
 
-%%[(50 codegen corein)
+%%[(8 codegen corein)
 SEM CExpr
   | Tup         lhs			.	cTrf			=	@cTrf {tag_CExpr_Tup = fixCTag @lhs.dataGam @tag}
 

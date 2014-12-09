@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -401,7 +401,7 @@ SEM CBound
   | Bind        lhs         .   altMbScrutTy    =   do v <- @expr.mbVar
                                                        renvLookup v @lhs.env Map.empty -- @lhs.lamMp
 
-SEM CAlt CBound CModule MbCExpr CPatFld
+SEM CAlt CBound CModule CPatFld -- MbCExpr
   | *           loc         .   altMbScrutTy    =   Nothing
 %%]
 
@@ -427,8 +427,8 @@ SEM CExpr
                                                       ExprIsApp _ _ -> RelevCoe_Id
                                                       _             -> @func.coe
   | Lam         loc         .   hereBodyCoe     =   case @body.whatBelow of
-                                                      ExprIsLam _ -> RelevCoe_Id
-                                                      _           -> @body.coe
+                                                      ExprIsLam _ _ -> RelevCoe_Id
+                                                      _             -> @body.coe
 
 SEM CBound
   | Bind        loc         .   hereBindCoe     =   @expr.coe <.> maybe RelevCoe_Id (@finalRVarMp `varUpd`) @mbBindCoe

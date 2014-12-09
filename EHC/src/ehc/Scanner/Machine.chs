@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -307,7 +307,7 @@ scan opts pos input
 %%[5 export(scanpredIsIdChar, scanpredIsKeywExtra)
 -- | Is base char for identifiers (and keywords)
 scanpredIsIdChar :: Char -> Bool
-scanpredIsIdChar  c = isAlphaNum c || c == '\'' || c == '_' -- || iskwextra c
+scanpredIsIdChar  c = isAlphaNum c || c == '\'' || c == '_' -- -|| iskwextra c
 
 -- | Is extra char for identifiers (and keywords)
 scanpredIsKeywExtra :: ScanOpts -> Char -> Bool

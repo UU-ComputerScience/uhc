@@ -30,6 +30,8 @@
 %%]
 
 -- Core check
+%%[(8 codegen corein) import({%{EH}Core.Check})
+%%]
 %%[(8 codegen coresysf) import({%{EH}Core.SysF.Check})
 %%]
 
@@ -58,7 +60,7 @@
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
 %%]
-%%[(50 codegen corein) import({%{EH}Core.Trf.FixAfterParse})
+%%[(8 codegen corein) import({%{EH}Core.Trf.FixAfterParse})
 %%]
 
 -- Misc
@@ -92,7 +94,10 @@ data TrfCoreExtra
       , trfcoreExtraExports     :: !FvS             -- extra exported names, introduced by transformations
 %%]]
       , trfcoreECUState			:: !EHCompileUnitState
-      , trfcoreIsLamLifted      :: !Bool
+      -- , trfcoreIsLamLifted      :: !Bool
+%%[[(8 corein)
+      , trfcoreNotYetTransformed:: !NotYetTransformedS
+%%]]
       }
 
 emptyTrfCoreExtra :: TrfCoreExtra
@@ -105,7 +110,10 @@ emptyTrfCoreExtra = TrfCoreExtra
                        Set.empty
 %%]]
                        ECUS_Unknown
-                       False
+                       -- False
+%%[[(8 corein)
+                       (Set.fromList [minBound .. maxBound])
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,10 +127,15 @@ trfCore :: EHCOpts -> OptimizationScope -> DataGam -> HsName -> TrfCore -> TrfCo
 trfCore opts optimScope dataGam modNm trfcore
   -- = execState trf trfcore
   = runTrf opts modNm ehcOptDumpCoreStages (optimScope `elem`) trfcore trf
-  where isFromCoreSrc = ecuStateIsCore $ trfcoreECUState    $ trfstExtra trfcore
-        isLamLifted   =                  trfcoreIsLamLifted $ trfstExtra trfcore
-        noOptims      = ehcOptOptimizationLevel opts <= OptimizationLevel_Off
-        isCoreTarget  = targetIsCore $ ehcOptTarget opts
+  where isFromCoreSrc 		= ecuStateIsCore $ trfcoreECUState $ trfstExtra trfcore
+        notYetTransformed	= trfcoreNotYetTransformed         $ trfstExtra trfcore
+        isNotLamLifted		= NotYetTransformed_LambdaLifted `Set.member` notYetTransformed
+        isNotANormal  		= NotYetTransformed_ANormal      `Set.member` notYetTransformed
+        isLamLifted   		= not isNotLamLifted
+        isANormal     		= not isNotANormal
+        noOptims      		= ehcOptOptimizationLevel opts <= OptimizationLevel_Off
+        isCoreTarget  		= targetIsCore $ ehcOptTarget opts
+        isUnOptimCoreTarget = isCoreTarget && noOptims
         trf
           = do { -- initial is just to obtain Core for dumping stages
                  t_initial
@@ -162,7 +175,7 @@ trfCore opts optimScope dataGam modNm trfcore
                ; unless isLamLifted $ do
                    {
 					 -- make names unique
-				   ; unless isCoreTarget $
+				   ; unless isUnOptimCoreTarget $
 				       t_ren_uniq emptyRenUniqOpts
 					 -- from now on INVARIANT: keep all names globally unique
 					 --             ASSUME   : no need to shadow identifiers
@@ -208,7 +221,7 @@ trfCore opts optimScope dataGam modNm trfcore
                    ; t_elim_trivapp
                    }
 
-               ; when (isCoreTarget || not isLamLifted) $ do
+               ; when (isUnOptimCoreTarget || isNotLamLifted || isNotANormal) $ do
                    {
 					 -- put in A-normal form, where args to app only may be identifiers
 				   ; u1 <- freshInfUID
@@ -220,7 +233,7 @@ trfCore opts optimScope dataGam modNm trfcore
                       t_fix_dictfld
 %%]]
                
-               ; when (not isLamLifted && not isCoreTarget) $ do
+               ; when (isNotLamLifted && not isUnOptimCoreTarget) $ do
                    {
 					 -- pass all globals used in lambda explicit as argument
 				   ; t_lam_asarg
@@ -263,7 +276,7 @@ trfCore opts optimScope dataGam modNm trfcore
 
         -- actual transformations
         t_initial       = liftTrfModPlain  osmw "initial"           $ id
-%%[[(50 corein)
+%%[[(8 corein)
         t_fix_postparse	= liftTrfModPlain  osm "fix-postparse"  	$ cmodTrfFixAfterParse dataGam
 %%]]
 %%[[(8 coresysf)

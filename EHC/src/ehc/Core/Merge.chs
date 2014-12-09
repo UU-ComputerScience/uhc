@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -45,10 +45,10 @@
 instance ModPuller
            CModule
            (CModuleDatabase, Map.Map HsName CModuleDatabase)
-           (HsName,CImportL,CDeclMetaL)
+           (HsName,CExportL,CImportL,CDeclMetaL)
            CModule CExpr CBindCateg CBind
   where
-    mpullSplit mmain@(CModule_Mod modNm _ _ _) mimpL =
+    mpullSplit mmain@(CModule_Mod modNm _ _ _ _) mimpL =
         ( cmoddbMainExpr modDbMain
         , 
 %%[[50
@@ -57,10 +57,12 @@ instance ModPuller
           Just (CBindCateg_FFE, [ (effeBind e, effeFvS e) | m <- mmain : mimpL, e <- cmodExtractFFE m ])
 %%]]
         , ( modDbMain
-          , Map.unions [ Map.singleton (cmoddbModNm db) db | db <- modDbMain : modDbImp ]
+          , modDbMp
           )
         , ( modNm
-          , Set.toList $ Set.fromList $ concatMap cmoddbImports $ modDbMain : modDbImp
+          -- TBD: combine this in some way with the FFE implicit exports...
+          , [] -- Set.toList $ Set.fromList $ concatMap cmoddbExports $ modDbMain : modDbImp
+          , [] -- Set.toList $ Set.fromList $ concatMap cmoddbImports $ modDbMain : modDbImp
           , concatMap cmoddbMeta $ modDbMain : modDbImp
         ) )
       where modDbMain =     cexprModAsDatabase mmain
@@ -81,7 +83,7 @@ instance ModPuller
     
     mpullFreeVars = cexprFvS
 
-    mpullBindingsAddToMod (modNm,allImports,allMeta) rootExpr bs _ = CModule_Mod modNm allImports allMeta (acoreLetN bs $ rootExpr)
+    mpullBindingsAddToMod (modNm,allExports,allImports,allMeta) rootExpr bs _ = CModule_Mod modNm allExports allImports allMeta (acoreLetN bs $ rootExpr)
 %%]
 
 %%[(50 core) hs export(cModMerge)

@@ -83,12 +83,16 @@ cpTransformCore optimScope modNm
                              , trfstExtra = emptyTrfCoreExtra
                                  { trfcoreECUState		= ecuState ecu
 %%[[8
-                                 , trfcoreIsLamLifted	= False
+                                 -- , trfcoreIsLamLifted	= False
 %%][(50 corein)
-                                 , trfcoreIsLamLifted	= maybe False Core2ChkSem.isLamLifted_Syn_CodeAGItf $ ecuMbCoreSemMod ecu
+                                 -- , trfcoreIsLamLifted	= maybe False Core2ChkSem.isLamLifted_Syn_CodeAGItf $ ecuMbCoreSemMod ecu
+%%]]
+%%[[(50 corein)
+                                 , trfcoreNotYetTransformed
+                                 						= maybe (trfcoreNotYetTransformed emptyTrfCoreExtra) Core2ChkSem.notYetTransformed_Syn_CodeAGItf $ ecuMbCoreSemMod ecu
 %%]]
 %%[[50
-                                 , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
+                                 , trfcoreExpNmOffMp    = crsiExpNmOffMpDbg "cpTransformCore" modNm crsi
 								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
 %%]]
                                  }
@@ -96,7 +100,7 @@ cpTransformCore optimScope modNm
               trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsiCoreInh crsi) modNm trfcoreIn
        
 %%[[(50 corein)
-       -- ; lift $ putStrLn $ "cpTransformCore trfcoreIsLamLifted: " ++ show (trfcoreIsLamLifted $ trfstExtra trfcoreIn)
+       -- ; lift $ putStrLn $ "cpTransformCore trfcoreNotYetTransformed: " ++ show (trfcoreNotYetTransformed $ trfstExtra trfcoreIn)
 %%]]
          -- put back result: Core
        ; cpUpdCU modNm $! ecuStoreCore (trfstMod trfcoreOut)

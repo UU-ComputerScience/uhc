@@ -4,6 +4,7 @@
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
+{-# EXCLUDE_IF_TARGET cr #-}
 
 module UHC.OldIO
   ( Handle

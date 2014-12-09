@@ -49,33 +49,48 @@ Module analysis
 %%% Module analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 export(cpCheckMods')
-cpCheckMods' :: (HsName -> ModMpInfo) -> [Mod] -> EHCompilePhase ()
-cpCheckMods' dfltMod modL@(Mod {modName = modNm} : _)
+%%[50 export(cpCheckModsModWith)
+-- | Check module dependencies for given 'Mod'
+cpCheckModsModWith :: (HsName -> ModMpInfo) -> [Mod] -> EHCompilePhase ()
+cpCheckModsModWith dfltMod modL@(Mod {modName = modNm} : _)
   = do { cr <- get
-       -- ; cpMsg modNm VerboseDebug $ "cpCheckMods' modL: " ++ show modL
+       ; cpMsg modNm VerboseDebug $ "cpCheckModsModWith modL: " ++ show modL
        ; let crsi   = crStateInfo cr
              (mm,e) = modMpCombine' dfltMod modL (crsiModMp crsi)
        ; cpUpdSI (\crsi -> crsi {crsiModMp = mm})
-%%[[50
+%%[[5050
        ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
-              (do { cpMsg modNm VerboseDebug "cpCheckMods'"
+              (do { cpMsg modNm VerboseDebug "cpCheckModsModWith"
                   ; lift $ putWidthPPLn 120 (pp modNm >-< pp modL >-< ppModMp mm)
                   })
-%%][99
+%%][10110
 %%]]
        ; cpSetLimitErrsWhen 5 "Module analysis" e
        }
 %%]
 
-%%[50 export(cpCheckMods)
-cpCheckMods :: [HsName] -> EHCompilePhase ()
-cpCheckMods modNmL
+%%[50 export(cpCheckModsWithOrWithoutBuiltin)
+cpCheckModsWithOrWithoutBuiltin :: Bool -> [HsName] -> EHCompilePhase ()
+cpCheckModsWithOrWithoutBuiltin bltin modNmL@(modNm:_)
   = do { cr <- get
+       ; cpMsg modNm VerboseDebug $ "cpCheckModsWithOrWithoutBuiltin modNmL: " ++ show modNmL
        ; let modL   = [ addBuiltin $ ecuMod $ crCU n cr | n <- modNmL ]
-       ; cpCheckMods' (\n -> panic $ "cpCheckMods: " ++ show n) modL
+       ; cpCheckModsModWith (\n -> panic $ "cpCheckModsWithOrWithoutBuiltin: " ++ show n) modL
        }
-  where addBuiltin m = m { modImpL = modImpBuiltin : modImpL m }
+  where addBuiltin | bltin     = \m -> m { modImpL = modImpBuiltin : modImpL m }
+                   | otherwise = id
+%%]
+
+%%[50 export(cpCheckModsWithBuiltin)
+cpCheckModsWithBuiltin :: [HsName] -> EHCompilePhase ()
+cpCheckModsWithBuiltin = cpCheckModsWithOrWithoutBuiltin True
+{-# INLINE cpCheckModsWithBuiltin #-}
+%%]
+
+%%[50 export(cpCheckModsWithoutBuiltin)
+cpCheckModsWithoutBuiltin :: [HsName] -> EHCompilePhase ()
+cpCheckModsWithoutBuiltin = cpCheckModsWithOrWithoutBuiltin False
+{-# INLINE cpCheckModsWithoutBuiltin #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,6 +126,7 @@ cpGetCoreModnameAndImports modNm
                  mbCrSemMod = ecuMbCoreSemMod ecu
                  crSemMod   = panicJust "cpGetCoreModnameAndImports" mbCrSemMod
                  modNm'     = Core2ChkSem.realModuleNm_Syn_CodeAGItf crSemMod
+         ;  cpMsg modNm VerboseDebug $ "cpGetCoreModnameAndImports: " ++ show modNm ++ " -> " ++ show modNm'
          ;  case mbCrSemMod of
               {-
               Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
@@ -239,8 +255,9 @@ cpGetDummyCheckSrcMod modNm
 
 %%[(50 codegen) export(cpUpdateModOffMp)
 cpUpdateModOffMp :: [HsName] -> EHCompilePhase ()
-cpUpdateModOffMp modNmL
+cpUpdateModOffMp modNmL@(modNm:_)
   = do { cr <- get
+       ; cpMsg modNm VerboseDebug "cpUpdateModOffMp"
        ; let crsi   = crStateInfo cr
              offMp  = crsiModOffMp crsi
              (offMp',_)

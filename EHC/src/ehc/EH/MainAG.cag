@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -117,6 +117,9 @@
 %%]
 
 %%[(50 hmtyinfer codegen) hs import({%{EH}Module.ImportExport},{%{EH}Ty.UsedNames})
+%%]
+
+%%[(50 codegen) hs import({%{EH}CodeGen.ImportUsedModules}, {%{EH}CodeGen.ModuleImportExportImpl})
 %%]
 
 %%[(40 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})

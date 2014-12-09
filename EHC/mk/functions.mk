@@ -6,7 +6,8 @@
 # $1: src dir
 # $2: dest dir
 # $3: src files relative to src dir
-FUN_COPY_FILES_BY_TAR			= ((cd $(1) && $(TAR) --ignore-failed-read -cf - $(3)) | (mkdir -p $(2) && cd $(2) && $(TAR) xf -))
+FUN_COPY_FILES_BY_TAR			= ((cd $(1) && $(TAR) -cf - $(3)) | (mkdir -p $(2) && cd $(2) && $(TAR) xf -))
+#FUN_COPY_FILES_BY_TAR			= ((cd $(1) && $(TAR) --ignore-failed-read -cf - $(3)) | (mkdir -p $(2) && cd $(2) && $(TAR) xf -))
 
 # copy files recursively while renaming the variant subdirectory
 # $1: src dir
@@ -47,4 +48,5 @@ FUN_INSTALLUHC_WRAPPER	= \
 # installation locations for ehc running time, as functions still depending on variant + target, see shared.mk for more
 ###########################################################################################
 
+FUN_VARIANT_PREFIX							= $(1)/
 FUN_DIR_VARIANT_PREFIX						= $(1)/$(2)/

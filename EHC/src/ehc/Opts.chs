@@ -1,5 +1,5 @@
 
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -84,7 +84,7 @@ ehcOptUpdateWithPragmas pragmas opts
               Pragma_ExtensibleRecords  	-> Just $ opts { ehcOptExtensibleRecords    = True  }
               Pragma_Fusion             	-> Just $ opts { ehcOptFusion               = True  }
               Pragma_OptionsUHC o       	-> fmap (\o -> o {ehcOptCmdLineOptsDoneViaPragma = True}) mo
-                                        	where (mo,_,_) = ehcCmdLineOptsApply (words o) opts
+                                        	where (mo,_,_) = ehcCmdLineOptsApply [] (words o) opts
               _                         	-> Nothing
 %%]
 
@@ -118,12 +118,17 @@ instance Show CoreOpt where
 %%[[(8 coreout)
   -- show CoreOpt_PPParseable      = "pp-parseable"
   show CoreOpt_Dump             	= "dump"
+%%[[50
   show CoreOpt_DumpBinary	      	= "dump-binary"
+%%]]
   show CoreOpt_DumpAlsoNonParseable	= "whendump-alsononparseable"
 %%]]
 %%[[(8 corerun)
-  show CoreOpt_DumpRun            	= "dump-run"
   show CoreOpt_Run            	    = "run"
+  show CoreOpt_RunDump            	= "dump-run"
+  show CoreOpt_RunTrace            	= "run-trace"
+  show CoreOpt_RunTraceExtensive	= "run-trace-extensive"
+  show CoreOpt_RunPPNames           = "run-ppnames"
 %%]]
 %%[[(8 coresysf)
   show CoreOpt_SysF             	= "sysf"
@@ -277,6 +282,7 @@ ehcOptOptimizes o opts = o `Set.member` ehcOptOptimizations opts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.defaultEHCOpts export(defaultEHCOpts)
+-- | The default EHC options.
 defaultEHCOpts
   = emptyEHCOpts
 %%[[99
@@ -880,10 +886,11 @@ oStopAtHIError       o b = o { ehcDebugStopAtHIError       = b }
 
 %%[1 export(ehcCmdLineOptsApply)
 -- | Apply the cmdline opts description to a EHCOpts, returning Nothing when there were no options
-ehcCmdLineOptsApply :: [String] -> EHCOpts -> (Maybe EHCOpts, [String], [String])
-ehcCmdLineOptsApply args opts
-  = (if null o then Nothing else Just (foldl (flip ($)) opts o),n,errs)
+ehcCmdLineOptsApply :: [EHCOpts -> EHCOpts] -> [String] -> EHCOpts -> (Maybe EHCOpts, [String], [String])
+ehcCmdLineOptsApply postopts args opts
+  = (if null o' then Nothing else Just (foldl (flip ($)) opts o'),n,errs)
   where oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
+        o' = o ++ postopts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

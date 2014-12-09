@@ -48,9 +48,9 @@ packages.
 
 %%[99
 -- | The config file name, wrapped inside a Maybe when it can indeed be created
-pkgCfgFPath :: FPath -> IO (Maybe (FPath, FilePath))
-pkgCfgFPath pkgfp = do
-    createDirectoryIfMissing True pkgdir
+pkgCfgFPath :: Bool -> FPath -> IO (Maybe (FPath, FilePath))
+pkgCfgFPath createIfAbsent pkgfp = do
+    when createIfAbsent $ createDirectoryIfMissing True pkgdir
     isDir <- doesDirectoryExist pkgdir		-- remove this...??
     if isDir
       then return $ Just (fpathSetDir pkgdir $ fpathFromStr Cfg.ehcPkgConfigfileName, pkgdir)
@@ -151,7 +151,7 @@ pkgDbSelectMpOnKey key@(pkgNm,mbVersion) db = pkgMpSelectMpOnKey key $ pkgDbPkgM
 -- | Write pkg config file into dir, using PkgOption
 pkgWritePkgOptionAsCfg :: PkgOption -> FPath -> IO ()
 pkgWritePkgOptionAsCfg pkgopt pkgfp
-  = do mbCfgFP@(~(Just (cfgFP, pkgdir))) <- pkgCfgFPath pkgfp
+  = do mbCfgFP@(~(Just (cfgFP, pkgdir))) <- pkgCfgFPath True pkgfp
        if isJust mbCfgFP
          then writeFile (fpathToStr cfgFP) $ unlines $ map (\(k,v) -> k ++ ": " ++ v)
                 [ ("exposed-modules", unwords $ pkgoptExposedModules pkgopt )
@@ -217,7 +217,7 @@ pkgMpFromDirFile opts pkgkey order pkgfp
   = do -- print pkgfp
        -- print mbKey
        -- isDir <- doesDirectoryExist pkgdir
-       mbCfgFP@(~(Just (cfgFP, pkgdir))) <- pkgCfgFPath pkgfp
+       mbCfgFP@(~(Just (cfgFP, pkgdir))) <- pkgCfgFPath False pkgfp
        if isJust mbCfgFP -- isDir
          then do { let fpCfg = fpathToStr cfgFP
                        pkgInfo = PackageInfo (mkPkgFileLoc pkgkey pkgdir) order Set.empty Set.empty True

@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -27,14 +27,14 @@
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 corein)
+%%[(8 corein)
 type CParser       hp     =    PlainParser Token hp
 
 pS :: CParser String
 pS = pStr
 %%]
 
-%%[(50 corein)
+%%[(8 corein)
 pINT		,
 %%[[97
   pINTEGER  ,
@@ -56,17 +56,22 @@ pCTy
          )
 %%]
 
-%%[(50 corein) export(pCModule,pCExpr)
+%%[(8 corein) export(pCModule,pCExpr)
 pCModule :: CParser CModule
 pCModule
-  = (\m mt e -> CModule_Mod m mt e)
+  = CModule_Mod
     <$  pMODULE <*> pDollNm <* pSEMI
+    <*> pE
     <*> pI
     <*> pM
     <*> pCExpr -- <*> pA (pA pCTag)
-  where -- pA pE = pOCURLY *> pListSep pSEMI ((,) <$> pDollNm <* pEQUAL <*> pE) <* pCCURLY
-        pM    = pList pCDeclMeta -- pMaybe [] id $ pOCURLY *> pListSep pSEMI pCDeclMeta <* pCCURLY
+  where pM    = pList pCDeclMeta -- pMaybe [] id $ pOCURLY *> pListSep pSEMI pCDeclMeta <* pCCURLY
         pI    = pList pCImport
+        pE    = pList pCExport
+
+pCExport :: CParser CExport
+pCExport
+  =   CExport_Export <$ pEXPORT <*> pDollNm <* pSEMI
 
 pCImport :: CParser CImport
 pCImport

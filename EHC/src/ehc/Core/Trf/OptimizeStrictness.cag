@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -120,7 +120,8 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr CBound MbCExpr AllAlt [ anaEvalCtxt: AnaEval | | ]
+ATTR CExpr CBound AllAlt -- MbCExpr
+  [ anaEvalCtxt: AnaEval | | ]
 
 SEM CBoundL
   | Cons        loc         .   anaEvalCtxt     =   top
@@ -177,7 +178,7 @@ SEM CBound
                                                 =   maybe ([],top) tup123to23 @lhs.mbStrictArgsRes
   | * - Bind    loc         .   lamArgAnaEvalL  =   []
 
-SEM CModule CPatFld MbCExpr CAlt
+SEM CModule CPatFld CAlt -- MbCExpr
   | *           loc         .   lamArgAnaEvalL  =   []
 
 SEM CExpr

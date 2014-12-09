@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -66,8 +66,8 @@ data ImmediateQuitOption
   | ImmediateQuitOption_Meta_Pkgdir_User                    -- print user package dir
   | ImmediateQuitOption_VersionDotted                       -- print version in dotted style, for external version comparison
   | ImmediateQuitOption_VersionAsNumber                     -- print version as number, for external version comparison
-  -- | ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
-  -- | ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
+  -- -| ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
+  -- -| ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
 %%]]
 %%]
 
@@ -113,12 +113,17 @@ data CoreOpt
 %%[[(8 coreout)
 --  | CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
   | CoreOpt_Dump 				-- dump textual core output
+%%[[50
   | CoreOpt_DumpBinary			-- dump binary core output
+%%]]
   | CoreOpt_DumpAlsoNonParseable-- dump also the parts which are not parseable
 %%]]
 %%[[(8 corerun)
   | CoreOpt_Run					-- run after compilation
-  | CoreOpt_DumpRun				-- dump CoreRun
+  | CoreOpt_RunDump				-- dump CoreRun
+  | CoreOpt_RunTrace			-- trace during running CoreRun
+  | CoreOpt_RunTraceExtensive	-- trace during running CoreRun, with extensive info, implies CoreOpt_RunTrace
+  | CoreOpt_RunPPNames			-- when dump/run CoreRun print names instead of
 %%]]
 %%[[(8 coresysf)
   | CoreOpt_SysF				-- 20120419, work in startup/progress: generate System F
@@ -188,6 +193,7 @@ execOptsPlain o = [ s | ExecOpt_Plain s <- o ]
 Convention: most option names/fields start with 'ehcOpt'
 
 %%[1.EHCOpts export(EHCOpts(..))
+-- | The options to use.
 data EHCOpts
   = EHCOpts
       {  ehcOptTrace          ::  forall a . String -> a -> a            -- tracing

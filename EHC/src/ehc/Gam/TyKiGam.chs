@@ -36,6 +36,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6 export(TyKiGamInfo(..),TyKiGam,emptyTKGI)
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data TyKiGamInfo
   = TyKiGamInfo
 %%[[(6 hmtyinfer || hmtyast)

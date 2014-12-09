@@ -32,6 +32,10 @@ here:
 Experimentation (optional)
 ==========================
 
+If you want to compile UHC Core files (e.g. generated using the uhc-light package), use the following configure invocation:
+./configure --enable-core-asinpoutp
+ 
+
 The following ./configure invocations lead to buildable compilers
 20140331:
 	./configure --with-aspects="base"							# only ASTs, parser, pretty printing

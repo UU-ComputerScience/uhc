@@ -34,6 +34,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6 export(KiGam, KiGamInfo(..))
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data KiGamInfo
   = KiGamInfo
 %%[[(6 hmtyinfer || hmtyast)

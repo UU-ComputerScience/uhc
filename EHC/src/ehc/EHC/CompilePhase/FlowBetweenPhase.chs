@@ -367,8 +367,6 @@ cpFlowCoreSemBeforeFold modNm
          }
 %%]
 
-cmodSetImports
-
 %%[(50 codegen) export(cpFlowHILamMp)
 cpFlowHILamMp :: HsName -> EHCompilePhase ()
 cpFlowHILamMp modNm

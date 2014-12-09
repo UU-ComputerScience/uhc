@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 {-# EXCLUDE_IF_TARGET js #-}
+{-# EXCLUDE_IF_TARGET cr #-}
 -- XXX -fno-warn-unused-binds stops us warning about unused constructors,
 -- but really we should just remove them if we don't want them
 -----------------------------------------------------------------------------

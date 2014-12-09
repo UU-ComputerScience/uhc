@@ -72,8 +72,8 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 EHC_PREL_VARIANT				:= 99
 EHC_UHC_VARIANT					:= 100
 EHC_UHC_INSTALL_VARIANT			:= 101
-EHC_UHC_CABAL_VARIANT			:= 103
-EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT)
+EHC_UHCLIGHT_CABAL_VARIANT		:= 103
+EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT) $(EHC_UHCLIGHT_CABAL_VARIANT)
 EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
 EHC_LTM_VARIANTS				:= $(EHC_GMP_VARIANTS)
 EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
@@ -85,7 +85,7 @@ EHC_OTHER_NOCODE_VARIANTS		:=
 EHC_OTHER_NOPREL_VARIANTS		:= 
 #EHC_OTHER_NOCODE_VARIANTS		:= 4_2 6_4 7_2
 #EHC_OTHER_NOPREL_VARIANTS		:= 8_2
-EHC_OTHER_PREL_VARIANTS			:= 102 $(EHC_UHC_CABAL_VARIANT)
+EHC_OTHER_PREL_VARIANTS			:= 102
 EHC_OTHER_CODE_VARIANTS			:= $(EHC_OTHER_NOPREL_VARIANTS) $(EHC_OTHER_PREL_VARIANTS) 
 EHC_OTHER_VARIANTS				:= $(EHC_OTHER_NOCODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
 EHC_CODE_VARIANTS				:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
@@ -200,20 +200,22 @@ INSTALL_UHC_LIB_PREFIX	:= $(INSTALL_UHC_PREFIX)lib/
 INSTALL_UHC_INC_PREFIX	:= $(INSTALL_UHC_PREFIX)include/
 
 # location for distribution construction
-DIST_PREFIX			:= $(TOP_PREFIX)dist$(EHC_BUILD_SUFFIX_DASH)/
-DISTABS_PREFIX		:= $(TOPABS_PREFIX)dist$(EHC_BUILD_SUFFIX_DASH)/
+DIST_PREFIX				:= $(TOP_PREFIX)dist$(EHC_BUILD_SUFFIX_DASH)/
+DISTABS_PREFIX			:= $(TOPABS_PREFIX)dist$(EHC_BUILD_SUFFIX_DASH)/
 
 # location for building
-BLD_PREFIX			:= $(TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
-BLDABS_PREFIX		:= $(TOPABS_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
-BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
-BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
+BLD_PREFIX				:= $(TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
+BLDABS_PREFIX			:= $(TOPABS_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
+BLD_BIN_PREFIX			:= $(BLD_PREFIX)bin/
+BLD_LIBUTIL_PREFIX		:= $(BLD_PREFIX)libutil/
 
 # location for barebones
-BARE_PREFIX			:= $(TOP_PREFIX)bare$(EHC_BUILD_SUFFIX_DASH)/
+BARE_PREFIX				:= $(TOP_PREFIX)bare$(EHC_BUILD_SUFFIX_DASH)/
 
 # location for cabal buildable distributions (in particular uhc light)
-CABALDIST_PREFIX	:= $(TOP_PREFIX)cabaldist$(EHC_BUILD_SUFFIX_DASH)/
+CABALDIST_UHCLIGHT_PREFIX		:= $(TOP_PREFIX)cabaldist$(EHC_BUILD_SUFFIX_DASH)/uhc-light/
+CABALDIST_UHCLIGHT_SRC_PREFIX	:= $(CABALDIST_UHCLIGHT_PREFIX)src/
+#CABALDIST_UHCLIGHT_LIB_PREFIX	:= $(CABALDIST_UHCLIGHT_PREFIX)lib/
 
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
@@ -236,6 +238,7 @@ EHCLIB_SHARED						:= @EHCLIB_SHARED@
 # compilers and tools used
 AGC							:= @UUAGC_CMD@
 SHUFFLE						:= @SHUFFLE_CMD@
+RULER2						:= @RULER_CMD@
 GHC							:= @GHC_CMD@
 GHC1						:= @GHC_CMD1@
 GHC_VERSION         		:= @GHC_VERSION@
@@ -265,7 +268,9 @@ BIBTEX						:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_
 MAKEINDEX					:= makeindex
 
 # shuffle
-SHUFFLE_HS					:= $(SHUFFLE) --hs --preamble=no --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
+SHUFFLE_HS_DFLT				:= $(SHUFFLE) --hs --preamble=no --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
+SHUFFLE_HS_ASIS				:= $(SHUFFLE) --plain --preamble=no --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
+SHUFFLE_HS					:= $(SHUFFLE_HS_DFLT)
 SHUFFLE_HS_PRE				:= $(SHUFFLE) --hs --preamble=yes --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
 SHUFFLE_AG					:= $(SHUFFLE) --ag --preamble=no --lhs2tex=no --line=no --compiler=$(GHC_VERSION)
 SHUFFLE_AG_PRE				:= $(SHUFFLE) --ag --preamble=yes --lhs2tex=no --line=no --compiler=$(GHC_VERSION)
@@ -285,6 +290,9 @@ endif
 ###########################################################################################
 # installation locations for ehc running time, as functions still depending on variant + target, see also functions.mk
 ###########################################################################################
+
+FUN_VARIANT_XXX_PREFIX						= $(call FUN_VARIANT_PREFIX,$(1))$(2)/
+FUN_VARIANT_LIB_PREFIX						= $(call FUN_VARIANT_XXX_PREFIX,$(1),lib)
 
 FUN_DIR_VARIANT_XXX_PREFIX					= $(call FUN_DIR_VARIANT_PREFIX,$(1),$(2))$(3)/
 FUN_DIR_VARIANT_SHARED_PREFIX				= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),shared)
@@ -390,7 +398,7 @@ SHUFFLE_OPTS_WHEN_UHC					:= --agmodheader=yes
 
 # UUAGC options
 UUAGC_OPTS_WHEN_EHC						:= @UUAGC_OPTIONS@
-UUAGC_OPTS_WHEN_EHC_AST_DATA			:= @UUAGC_EHC_AST_OPTIONS@
+UUAGC_OPTS_WHEN_EHC_AST_DATA			:= @UUAGC_EHC_AST_OPTIONS@ --datarecords
 UUAGC_OPTS_WHEN_EHC_AST_SEM				:= @UUAGC_EHC_SEM_OPTIONS@
 
 # UUAGC options for production version (i.e. uhc, ehc variant >= $(EHC_PREL_VARIANT))
@@ -484,10 +492,10 @@ FUN_GEN_CABAL		= \
 					echo   "Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group" ; \
 					echo   "Build-Type:			$(8)" ; \
 					echo   "license-file:		$(9)" ; \
-					echo   "Author:				UHC Team" ; \
+					echo   "Author:				$(UHC_TEAM)" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC" ; \
 					echo   "Category:			Testing" ; \
-					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(3)))" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "Build-Tools:		" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
@@ -526,12 +534,60 @@ FUN_GEN_CABAL_EXEC	= $(call FUN_GEN_CABAL,\
 						)
 
 # generate simplest cabal Setup.hs
-GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMain")
+GEN_CABAL_SETUP		= (echo "import Distribution.Simple" ; echo "main = defaultMain")
 
 # compile cabal setup
 # $1: src
 # $2: exec
 GHC_CABAL			= $(GHC) $(GHC_OPTS_GENERAL) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
+
+# generate cabal file for uhc-light cabal distr
+# $1: pkg name
+# $2: version
+# $3: build-depends (additional)
+# $4: extensions (additional)
+# $5: synopsis 
+# $6: description 
+# $7: exposed library modules
+# $8: other library modules
+# $9: executable Main
+# $10: executable name
+# $11: extra source files
+# $12: build type
+# $13: license
+# $14: change log
+FUN_GEN_CABAL_UHC_LIGHT		= \
+					( \
+					echo   "Name:				$(strip $(1))" ; \
+					echo   "Version:			$(strip $(2))" ; \
+					echo   "License:			BSD3" ; \
+					echo   "Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group" ; \
+					echo   "Build-Type:			$(12)" ; \
+					echo   "license-file:		$(13)" ; \
+					echo   "Author:				$(UHC_TEAM)" ; \
+					echo   "Maintainer:         uhc-developers@lists.science.uu.nl" ; \
+					echo   "Homepage:			https://github.com/UU-ComputerScience/uhc" ; \
+					echo   "Bug-Reports:        https://github.com/UU-ComputerScience/uhc/issues" ; \
+					echo   "Category:			Development" ; \
+					echo   "Synopsis:			$(strip $(5))" ; \
+					echo   "Description:		$(strip $(6))" ; \
+					echo   "Cabal-Version:      >= 1.8" ; \
+					echo   "data-files:         $(11)" ; \
+					echo   "extra-source-files: $(14)" ; \
+					echo   "" ; \
+					echo   "Library" ; \
+					echo   "  Hs-Source-Dirs:       src" ; \
+					echo   "  Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
+					echo   "  Exposed-Modules:		$(7)" ; \
+					echo   "  Other-Modules:		$(8)" ; \
+					echo   "" ; \
+					echo   "Executable $(strip $(10))" ; \
+					echo   "  Hs-Source-Dirs:       src" ; \
+					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
+					echo   "  Main-Is:           	$(strip $(9)).hs" ; \
+					)
 
 ###########################################################################################
 # Filter out empty files

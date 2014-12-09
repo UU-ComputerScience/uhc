@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -99,8 +99,8 @@ modMergeByPullingInM
      )
   => (modFr, [modFr])			    -- ^ main and imported
      -> ModMergeT cat bind m
-          ( (modTo -> modTo)        -- ^ conversion of resulting module
-          , HsNameS                 -- ^ modules from which something was taken
+          ( (modTo -> modTo)        -- conversion of resulting module
+          , HsNameS                 -- modules from which something was taken
           )
 modMergeByPullingInM (modMain,modImpL) = do
     let (rootExpr,mbExports,modDb,modRem) = mpullSplit modMain modImpL
@@ -148,8 +148,8 @@ modMergeByPullingInM (modMain,modImpL) = do
 modMergeByPullingIn
   :: ModPuller modFr modsDb modsRem modTo expr cat bind
   => (modFr, [modFr])		     	-- ^ main and imported
-     -> ( (modTo -> modTo)          -- ^ conversion of resulting module
-        , HsNameS                   -- ^ modules from which something was taken
+     -> ( (modTo -> modTo)          -- conversion of resulting module
+        , HsNameS                   -- modules from which something was taken
         )
 modMergeByPullingIn mods = flip evalState emptyPullState $ modMergeByPullingInM mods
 %%]

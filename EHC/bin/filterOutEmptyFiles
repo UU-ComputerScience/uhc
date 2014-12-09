@@ -1,5 +1,5 @@
 #!/bin/sh
-# Filter out files, based on a heuristic check on emptyness.
+# Filter out files, based on a heuristic check on emptiness.
 # One of the following file types are assumed to be checked:
 #   Haskell
 #   AG

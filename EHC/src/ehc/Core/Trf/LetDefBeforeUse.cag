@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -76,6 +76,7 @@ SEM CModule
                                                     mk    [d]     e = acoreLet    (defCateg d) [defCore d]      e
                                                 in  CModule_Mod
                                                       @moduleNm
+                                                      @exports.cTrf
                                                       @imports.cTrf
                                                       @declMetas.cTrf
                                                       (foldr mk @expr.letBody @sccDefs)

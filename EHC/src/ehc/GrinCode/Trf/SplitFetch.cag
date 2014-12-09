@@ -41,7 +41,7 @@ Also note that in the C2 branch, less fetchfield expressions are generated becau
 has lower arity than C1.
 
 
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]

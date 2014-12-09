@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -50,8 +50,8 @@ SEM CBound
   | Bind        lhs.cTrf  =  if  @lhs.lev == cLevModule+1
                              then let (metabind, metaval) = @bindMeta.cTrf
                                       newmetabind = case @expr.whatBelow of
-                                                       ExprIsLam _ -> CMetaBind_Function1
-                                                       _           -> CMetaBind_Function0
+                                                       ExprIsLam _ _ -> CMetaBind_Function1
+                                                       _             -> CMetaBind_Function0
                                   in  CBound_Bind (newmetabind, metaval) @expr.cTrf
                              else @loc.cTrf
 

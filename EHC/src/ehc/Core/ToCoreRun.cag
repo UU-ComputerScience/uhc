@@ -1,10 +1,10 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Code generation for jazy
+%%% Code generation for CoreRun
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[doesWhat doclatex
@@ -31,8 +31,10 @@ Offsets start at 0.
 
 %%[(8 corerun) hs import(qualified {%{EH}CoreRun} as CR)
 %%]
+%%[(8 corerun) hs import(qualified {%{EH}CoreRun.Prim} as CR)
+%%]
 
-%%[(8 corerun) hs import({%{EH}CodeGen.CVar})
+%%[(8888 corerun) hs import({%{EH}CodeGen.CVar})
 %%]
 
 %%[(8 corerun) hs import({%{EH}Foreign.Extract})
@@ -49,11 +51,11 @@ WRAPPER CodeAGItf
 %%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRun)
 cmod2CoreRun'
   :: EHCOpts
-     -> Int         	-- sequence nr of module (offset), used to create global per module references
-     -> CR.Nm2RefMp		-- outer bindings
+     -> Int             -- sequence nr of module (offset), used to create global per module references
+     -> CR.Nm2RefMp     -- outer bindings
      -> CModule
-     -> ( CR.Mod    	-- generated CoreRun
-        , CR.Nm2RefMp  	-- name to ref mapping of toplevel bindings
+     -> ( CR.Mod        -- generated CoreRun
+        , CR.Nm2RefMp   -- name to ref mapping of toplevel bindings
         )
 cmod2CoreRun' opts modNr nm2ref cmod
   =  ( crm_Syn_CodeAGItf t
@@ -111,6 +113,7 @@ data ToBe
 SEM CBound
   | Bind Val    loc         .   toBe            =   let mba@(~(Just (_,w))) = whatExprMbApp @expr.whatBelow
                                                         isVar     = isJust $ whatExprMbVar @expr.whatBelow
+                                                        isGlbVar  = isVar && @lhs.isGlobal
                                                         isApp     = isJust mba
                                                         isTup     = isApp && whatExprIsTup w
                                                         isWHNF    = whatExprIsWHNF @expr.whatBelow
@@ -122,10 +125,15 @@ SEM CBound
                                                             | isNotWHNF  -> ToBe_Forced
                                                           EvalCtx_Thunk 
                                                             | isTup      -> ToBe_LeftAsIs
+                                                            | isGlbVar   -> ToBe_Thunked
                                                             | isNotWHNF  -> ToBe_Thunked
                                                           _              -> ToBe_LeftAsIs
                             .   isToBeThunked   =   @toBe == ToBe_Thunked
+                            .   isToBeALam      =   @isToBeThunked || whatExprIsLam @expr.whatBelow
 %%]
+                            .   isToBeReturned  =   case @lhs.evalCtx of
+                                                          EvalCtx_Eval -> True
+                                                          _            -> False
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Level, see also Core/CommonLev
@@ -138,32 +146,79 @@ SEM CBound
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name mapping: references, gathering, and distribution
+%%% Is tail recursive position/context? Default: False
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs
+-- | Tail context
+data TailCtx
+  = TailCtx_Plain
+  | TailCtx_TailCall
+  | TailCtx_CaseAlt
+
+tailCtxIsTailRec :: TailCtx -> Bool
+tailCtxIsTailRec TailCtx_TailCall = True
+tailCtxIsTailRec _                = False
+
+-- | Wrap according to tail context
+cseCtxWrap :: TailCtx -> CR.Exp -> CR.Exp
+cseCtxWrap TailCtx_TailCall = CR.Exp_Tail
+cseCtxWrap _                = id
+%%]
+
+%%[(8 corerun)
+ATTR CExpr AllAlt [ tailCtx: TailCtx | | ]
+
+SEM CModule
+  | Mod         loc         .   tailCtx         =   TailCtx_Plain
+
+SEM CBound
+  | Bind Val    loc         .   tailCtx         =   if @isToBeThunked then TailCtx_TailCall else TailCtx_Plain
+%%[[90
+  | FFE         loc         .   tailCtx         =   TailCtx_Plain
+%%]]
+
+SEM CExpr
+  | Lam         body        .   tailCtx         =   TailCtx_TailCall
+  | App         loc         .   tailCtx         =   TailCtx_Plain
+  | Case        expr        .   tailCtx         =   TailCtx_Plain
+
+SEM CPatFld
+  | Fld         loc         .   tailCtx         =   TailCtx_Plain
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Offsets for references
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun)
 -- | Thread offset as state throughout places where bindings are introduced.
 -- Invariant: offset is reset to 0 whenever `lev` is incremented.
 -- Local offset for reference
+
 ATTR AllExpr [ | refOffset: Int | ]
 
 SEM CModule
   | Mod         expr        .   refOffset       =   0
 
 SEM CExpr
-  | Lam         (loc.refOffset, body.refOffset) =   if @isTopLam
+  | Lam         (loc.refOffset, loc.refOffsetBody)
+                                                =   if @isTopLam
                                                     then (0,1)
                                                     else (@lhs.refOffset, @lhs.refOffset + 1)
+                body        .   refOffset       =   @refOffsetBody
                 lhs         .   refOffset       =   @lhs.refOffset
 
 SEM CBind
-  | Bind        lhs         .   refOffset       =   @lhs.refOffset + 1
+  | Bind        loc         .   refOffsetHere   =   @lhs.refOffset + 1
+                lhs         .   refOffset       =   @refOffsetHere
                 loc         .   ref             =   if @lhs.isGlobal
                                                     then CR.RRef_Glb @lhs.modNr @lhs.refOffset
                                                     else CR.RRef_Loc @lhs.lev   @lhs.refOffset
 
 SEM CBound
-  | Bind Val    expr        .   refOffset       =   if @isToBeThunked then 0              else @lhs.refOffset
+  | Bind Val    loc         .   refOffsetExpr   =   if @isToBeThunked then 0              else @lhs.refOffset
+                expr        .   refOffset       =   @refOffsetExpr
                 lhs         .   refOffset       =   if @isToBeThunked then @lhs.refOffset else @expr.refOffset
 
 SEM CAlt
@@ -182,7 +237,73 @@ SEM CAlt
 
 SEM CBound
   | Bind Val    lhs         .   refOffsetMax    =   if @isToBeThunked then @lhs.refOffset else max @expr.refOffset @expr.refOffsetMax
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Stackdepth
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+-- | Stack starts where locals end.
+-- Invariant/assumption: expression leaves its result on the place allotted for a binding, i.e. the part used for stack changes with each binding into part used for bindings.
+-- Invariant/assumption: application first does the function, then its arguments in the order given; this corresponds to chained copyrule order in the AST
+-- Assumption: applications of Tup or FFI leave no result of function part on stack
+
+ATTR AllExpr [ | stackDepth: Int | ]
+
+SEM CModule
+  | Mod         expr        .   stackDepth      =   0
+
+SEM CBound
+  | Bind Val    expr        .   stackDepth      =   if @isToBeALam then 0                 else @lhs.stackDepth
+                loc         .   stackDepthExpr  =   if @isToBeALam then @lhs.stackDepth+1 else @expr.stackDepth
+                lhs         .   stackDepth      =   @stackDepthExpr
+
+{-
+SEM CBind
+  | Bind        lhs         .   stackDepth      =   @refOffsetHere
+-}
+
+SEM CExpr
+  | Lam         body        .   stackDepth      =   @refOffsetBody
+  | App         -- func        .   stackDepth      =   @lhs.stackDepth
+                loc         .   stackDepthFunc  =   if whatExprIsTup @func.whatBelow || whatExprIsFFI @func.whatBelow then @lhs.stackDepth else @func.stackDepth
+                arg         .   stackDepth      =   @stackDepthFunc
+                lhs         .   stackDepth      =   if @isTopApp' then @lhs.stackDepth + 1 else @arg.stackDepth
+  | Case        alts        .   stackDepth      =   @lhs.stackDepth
+  | * - Lam App Ann Let
+                loc         .   stackDepthHere  =   @lhs.stackDepth + 1
+                lhs         .   stackDepth      =   @stackDepthHere
+
+SEM CAlt
+  | Alt         expr        .   stackDepth      =   @lhs.stackDepth
+                lhs         .   stackDepth      =   @lhs.stackDepth
+
+-- Max stack depth encountered
+ATTR AllAlt CExpr AllBind [ | | stackDepthMax USE {`max`} {0} : Int ]
+
+SEM CExpr
+  | Let         loc         .   stackDepthMax   =   max @binds.stackDepthMax @body.stackDepthMax
+  | Lam         loc         .   stackDepthMax   =   max @body.stackDepth @body.stackDepthMax
+  | App         loc         .   stackDepthMax   =   max @arg.stackDepth @arg.stackDepthMax
+  | Case        loc         .   stackDepthMax   =   max @expr.stackDepthMax @alts.stackDepthMax
+  | * - Lam App Let Case Ann
+                lhs         .   stackDepthMax   =   @stackDepthHere
+
+SEM CAlt
+  | Alt         lhs         .   stackDepthMax   =   max @expr.stackDepth @expr.stackDepthMax
+
+SEM CBound
+  | Bind Val    loc         .   stackDepthMaxThunked
+                                                =   max @expr.stackDepth @expr.stackDepthMax
+                lhs         .   stackDepthMax   =   if @isToBeALam then @stackDepthExpr else @stackDepthMaxThunked
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name mapping: references, gathering, and distribution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
 -- Name gathering
 ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`Map.union`} {Map.empty} : {CR.Nm2RefMp} ]
 
@@ -242,16 +363,22 @@ SEM CExpr
 %%% Generation: App as args ++ func
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 corerun) hs
+-- | Construct application
+mkApp :: CR.Exp -> CR.CRArray CR.Exp -> CR.Exp
+mkApp f as = CR.Exp_App ({- CR.Exp_Ret $ -} CR.Exp_Force f) as
+%%]
+
 %%[(8 corerun)
-ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {CR.CRArray CR.Exp -> CR.Exp} ]
+ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {TailCtx -> CR.CRArray CR.Exp -> CR.Exp} ]
 
 SEM CExpr
   | App         loc         .   creAppArgL  =   (snd $ head @arg.crb) : @func.creAppArgL
                             .   creAppFun   =   @func.creAppFun
-  | Tup         loc         .   creAppFun   =   CR.Exp_Tup @tag
-  | FFI         loc         .   creAppFun   =   CR.Exp_FFI @callconv @impEnt @ty
+  | Tup         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . CR.Exp_Tup @tag
+  | FFI         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . @creMk
   | * - App Ann Tup FFI
-                loc         .   creAppFun   =   CR.Exp_App @cre
+                loc         .   creAppFun   =   \tailCtx -> cseCtxWrap tailCtx . tailrec tailCtx . mkApp @cre
   | * - App Ann loc         .   creAppArgL  =   []
 %%]
 
@@ -270,11 +397,25 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs
+-- | Wrap context saving if not at tail recursive position
+tailrec :: TailCtx -> CR.Exp -> CR.Exp
+tailrec tailCtx = if tailCtxIsTailRec tailCtx then id else id -- CR.Exp_Ret -- id
+
+-- | Wrap forcing if at tail recursive position
+taileval :: TailCtx -> CR.Exp -> CR.Exp
+taileval tailCtx = if tailCtxIsTailRec tailCtx then CR.Exp_Force else id
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun)
-ATTR CExpr [ | | cre: {CR.Exp} ]
+ATTR CExpr [ | | crse: {CR.SExp} ]
 %%]
 
 %%[(8 corerun)
@@ -294,46 +435,68 @@ SEM CExpr
 %%]
 
 %%[(8 corerun)
+ATTR CExpr [ | | cre: {CR.Exp} ]
+%%]
+
+%%[(8 corerun)
 SEM CExpr
-  | Int Char String Var
+  | Let Case App FFI Tup
+                loc         .   cre             =   @creBase
+  | * - Let Case App FFI Tup Ann
+                loc         .   cre             =   cseCtxWrap @lhs.tailCtx @creBase
+%%]
+
+%%[(8 corerun)
+SEM CExpr
+  | Int Char String
 %%[[97
     Integer
 %%]]
-                loc         .   cre             =   CR.Exp_SExp @crse
-  | Lam         loc         .   cre             =   if @isTopLam
-                                                    then CR.Exp_Lam @lev (length @creLamArgL) @refOffsetMax (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
+                loc         .   creBase         =   CR.Exp_SExp @crse
+  | Var         loc         .   creBase         =   taileval @lhs.tailCtx $ CR.Exp_SExp @crse
+  | Lam         loc         .   creBase         =   if @isTopLam
+                                                    then CR.Exp_Lam (whatExprMbBind @lhs.whatAbove) @lev (length @creLamArgL) (@refOffsetMax) (@stackDepthMax) (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
                                                     else dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
-  | App         loc         .   cre             =   if @isTopApp'
-                                                    then @creAppFun $ CR.mkCRArray $ reverse @creAppArgL
+  | App         loc         .   creBase         =   if @isTopApp'
+                                                    then @creAppFun @lhs.tailCtx $ CR.mkCRArray $ reverse @creAppArgL
                                                     else dbg "Core.ToCoreRun.CExpr.App.cre" -- TBD
-  | Tup         loc         .   cre             =   CR.Exp_Tup @tag CR.emptyCRArray
-  | Let         loc         .   cre             =   if @isGlobal
+  | Tup         loc         .   creBase         =   CR.Exp_Tup @tag CR.emptyCRArray
+  | Let         loc         .   creBase         =   if @isGlobal
                                                     then @body.cre
-                                                    else (case @categ of {CBindCateg_Strict -> CR.Exp_LetStr; _ -> CR.Exp_LetRec})
-                                                            @lhs.refOffset
-                                                            (CR.nm2RefMpInverse @nm2refNew)
-                                                            (CR.mkCRArray $ map snd @binds.crb)
-                                                            @body.cre
-  | Case        loc         .   cre             =   CR.Exp_Case @expr.cre $ CR.mkCRArray @alts.cra
-  | FFI         loc         .   cre             =   CR.Exp_FFI @callconv @impEnt @ty CR.emptyCRArray
-  | Ann         loc         .   cre             =   @expr.cre
+                                                    else CR.Exp_Let @lhs.lev @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.mkCRArray $ map snd @binds.crb) @body.cre
+  | Case        loc         .   creBase         =   CR.Exp_Case @expr.crse $ CR.mkCRArray @alts.cra
+  | FFI         loc         .   creEntMb        =   forextractMbEnt @foreignEntInfo >>= flip Map.lookup CR.allRunPrimMp
+                            .   creMk           =   \as -> maybe (dbg $ "Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) (\ent -> CR.Exp_FFI ent as) @creEntMb
+                            .   creBase         =   @creMk CR.emptyCRArray
+  | Ann         loc         .   creBase         =   @expr.cre
   | * - Int Char String Var
         Lam App Let Tup Case FFI
         Ann
 %%[[97
         Integer
 %%]]
-                loc         .   cre             =   dbg "Core.ToCoreRun.CExpr.cre"
+                loc         .   creBase         =   dbg "Core.ToCoreRun.CExpr.cre"
+%%]
+
+%%[(8 corerun)
+SEM CModule
+%%[[8
+  | Mod         loc         .   creMod          =   @expr.cre
+%%][99
+  | Mod         loc         .   creMod          =   mkApp @expr.cre $ CR.mkCRArray [CR.unit]
+%%]]
 %%]
 
 %%[(8 corerun)
 ATTR AllBind CExpr [ | | crb USE {++} {[]} : {[(HsName, CR.Bind)]} ]
 
 SEM CBound
-  | Bind Val    loc         .   creBind         =   case @toBe of
-                                                        ToBe_Forced   -> CR.Exp_Force @expr.cre
-                                                        ToBe_Thunked  -> CR.Exp_Lam @lev 0 @expr.refOffsetMax (CR.nm2RefMpInverse @nm2refNew) @expr.cre
-                                                        ToBe_LeftAsIs -> @expr.cre
+  | Bind Val    loc         .   creMkForce      =   case @toBe of
+                                                        ToBe_Forced   -> tailrec @tailCtx . CR.Exp_Force
+                                                        ToBe_Thunked  -> CR.Exp_Lam (Just @lhs.nm) @lev 0 (@expr.refOffsetMax) (@stackDepthMaxThunked) (CR.nm2RefMpInverse @nm2refNew)
+                                                        ToBe_LeftAsIs -> id
+                            -- .   creMkReturned   =   if @isToBeReturned then CR.Exp_Ret else id
+                            .   creBind         =   {- @creMkReturned $ -} @creMkForce @expr.cre
                 loc         .   crb             =   [( @lhs.nm, @creBind )]
 
 SEM CBind
@@ -372,7 +535,10 @@ SEM CPat
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
-  | Mod         lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew) @moduleNm @lhs.modNr (CR.mkCRArray $ map snd @expr.crb) @expr.cre
+  | Mod         loc         .   crmBinds        =   CR.mkCRArray $ map snd @expr.crb
+                lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew)
+                                                      @moduleNm @lhs.modNr (@expr.stackDepthMax + 2 {- - CR.craLength @crmBinds -})
+                                                      @crmBinds (CR.Exp_Force @creMod)
 %%]
 
 

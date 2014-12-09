@@ -1,6 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# EXCLUDE_IF_TARGET js #-}
+{-# EXCLUDE_IF_TARGET cr #-}
 
 --------------------------------------------------------------------------------
 -- |

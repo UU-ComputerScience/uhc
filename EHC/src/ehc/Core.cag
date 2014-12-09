@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -28,13 +28,15 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 core) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Utils,Control.Applicative((<|>)))
 %%]
 
-%%[(8 core) hs export(CodeAGItf(..), CModule(..), CExpr(..), MbCExpr, CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
+%%[(8 core) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
+%%]
+%%[(8888 core) hs export(MbCExpr) 
 %%]
 
 %%[(8 core) hs export(CBindAnn(..), CBindAnnL, CExprAnn(..))
 %%]
 
-%%[(8 core) hs export(CImport(..), CImportL)
+%%[(8 core) hs export(CExport(..), CExportL, CImport(..), CImportL)
 %%]
 
 %%[(8 core) hs export(CDeclMeta(..), CDeclMetaL, CDataCon(..), CDataConL)
@@ -99,12 +101,12 @@ instance Show CModule where
 
 
 %%[(8 core) ag
-DERIVING CImport AllExpr
+DERIVING CImport CExport AllExpr
   : Eq
 %%]
 
 %%[(8 core) ag
-DERIVING CImport
+DERIVING CImport CExport
   : Ord
 %%]
 
@@ -300,7 +302,7 @@ cmetaLiftDict = fmap2Tuple CMetaVal_Dict
 
 %%[(8 core) hs export(mkCMod,emptyCModule)
 mkCMod :: CExpr -> CModule
-mkCMod e = CModule_Mod (hsnFromString "") [] [] e -- []
+mkCMod e = CModule_Mod (hsnFromString "") [] [] [] e -- []
 
 emptyCModule :: CModule
 emptyCModule = mkCMod (CExpr_Int 0)
@@ -483,8 +485,8 @@ cModMerge mL
   = foldr1 cmb mL
   where get (CExpr_Let c b e) = CExpr_Let c b . get e
         get  _                = id
-        cmb (CModule_Mod m1 im1 mt1 e1) (CModule_Mod m2 im2 mt2 e2)
-          = CModule_Mod m2 (im1++im2) (mt1++mt2) (get e1 e2)
+        cmb (CModule_Mod m1 ex1 im1 mt1 e1) (CModule_Mod m2 ex2 im2 mt2 e2)
+          = CModule_Mod m2 (ex1++ex2) (im1++im2) (mt1++mt2) (get e1 e2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -516,12 +518,13 @@ data CModuleDatabase
       , cmoddbBindArr       :: !CDbBindArray        -- bindings
       , cmoddbBindMp        :: !CDbModuleBindMp     -- map of name to bindings
       , cmoddbMainExpr      :: !CExpr               -- the final expr of the module's let expr
+      , cmoddbExports       :: !CExportL            -- exports
       , cmoddbImports       :: !CImportL            -- imports
       , cmoddbMeta          :: !CDeclMetaL          -- meta info/decl
       }
 
 emptyCModuleDatabase :: CModuleDatabase
-emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (CExpr_Int 0) [] []
+emptyCModuleDatabase = CModuleDatabase hsnUnknown (array (1,0) []) Map.empty (CExpr_Int 0) [] [] []
 %%]
 
 %%[(50 core) hs export(cmoddbLookup)
@@ -793,11 +796,18 @@ data RRef
 
 %%[(50 core) hs
 instance Serialize CModule where
-  sput (CModule_Mod   a b c d) = {- sputWord8 0 >> -} sput a >> sput b >> sput c >> sput d
+  sput (CModule_Mod   a b c d e) = {- sputWord8 0 >> -} sput a >> sput b >> sput c >> sput d >> sput e
   sget
     = do {- t <- sgetWord8
          case t of
-            0 -> -} liftM4 CModule_Mod         sget sget sget sget
+            0 -> -} liftM5 CModule_Mod         sget sget sget sget sget
+
+instance Serialize CExport where
+  sput (CExport_Export a  ) = {- sputWord8 0 >> -} sput a
+  sget
+    = do {- t <- sgetWord8
+         case t of
+            0 -> -} liftM   CExport_Export       sget
 
 instance Serialize CImport where
   sput (CImport_Import a  ) = {- sputWord8 0 >> -} sput a

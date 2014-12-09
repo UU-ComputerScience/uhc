@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -31,7 +31,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%[(8888 corerun) hs import(Data.Array)
 %%]
 
-%%[(8 corerun) hs import(qualified Data.Vector as V)
+%%[(8 corerun) hs import(qualified Data.Vector as V, qualified Data.Vector.Mutable as MV)
 %%]
 
 %%[(8 corerun) hs import(Control.Applicative)
@@ -40,6 +40,8 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%[(90 corerun) hs import({%{EH}Foreign})
 %%]
 
+%%[(8 corerun) hs import({%{EH}CoreRun.Prim}(RunPrim)) export(module {%{EH}CoreRun.Prim})
+%%]
 %%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), Alt(..), Pat(..))
 %%]
 
@@ -54,10 +56,10 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%% CoreRun: Supporting types: fast access sequences/array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(CRArray, emptyCRArray, mkCRArray, craLength, craAssocs)
+%%[(8 corerun) hs export(CRArray, CRMArray, emptyCRArray, mkCRArray, craLength, craAssocs, craAssocs', craReverseAssocs')
 -- | Fast access sequence
--- type CRArray x = Array Int x
 type CRArray x = V.Vector x
+type CRMArray x = MV.IOVector x
 
 {-
 -- | Make array with lowerbound
@@ -69,21 +71,47 @@ mkCRArrayLwb lwb xs = listArray (lwb,lwb+l-1) xs
 mkCRArray :: [x] -> CRArray x
 -- mkCRArray = mkCRArrayLwb 0
 mkCRArray = V.fromList
+{-# INLINE mkCRArray #-}
 
 emptyCRArray :: CRArray x
 emptyCRArray = V.empty -- mkCRArray []
+{-# INLINE emptyCRArray #-}
 
 craLength :: CRArray x -> Int
 craLength = V.length -- a = h + 1 - l
 --  where (l,h) = bounds a
+{-# INLINE craLength #-}
 
+-- | Content of array as association list, starting index at 'lwb'
+craAssocs' :: Int -> CRArray x -> [(Int,x)]
+craAssocs' lwb = zip [lwb ..] . V.toList
+{-# INLINE craAssocs' #-}
+
+-- | Content of array as association list, starting index at 'lwb', but reversed
+craReverseAssocs' :: Int -> CRArray x -> [(Int,x)]
+craReverseAssocs' lwb v = zip [hi, hi-1  ..] $ V.toList v
+  where hi = lwb + V.length v - 1
+{-# INLINE craReverseAssocs' #-}
+
+-- | Content of array as association list, starting index at 0
 craAssocs :: CRArray x -> [(Int,x)]
-craAssocs = zip [0 ..] . V.toList
+craAssocs = craAssocs' 0
+{-# INLINE craAssocs #-}
 %%]
 
 %%[(8 corerun) hs export(Bind)
 -- | Bind, just an Exp, addressing is left implicit
 type Bind = Exp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(unit)
+-- | Equivalent of '()'
+unit :: Exp
+unit = Exp_Tup CTagRec emptyCRArray
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,23 +121,28 @@ type Bind = Exp
 %%[(8 corerun) hs export(RRef(..), noRRef)
 -- | Identifier references for use during running CoreRun
 data RRef
-  = RRef_Glb				-- ^ global reference to module and its entry
-      { rrefMod			:: !Int		-- ^ module
-      , rrefEntry		:: !Int		-- ^ entry inside module
+  -- | global reference to module and its entry
+  = RRef_Glb
+      { rrefMod         :: !Int     -- ^ module
+      , rrefEntry       :: !Int     -- ^ entry inside module
       }
-  | RRef_Loc				-- ^ local reference to on stack value
-      { rrefLev			:: !Int		-- ^ level
-      , rrefEntry		:: !Int		-- ^ entry inside level
+  -- | local reference to on stack value
+  | RRef_Loc
+      { rrefLev         :: !Int     -- ^ level
+      , rrefEntry       :: !Int     -- ^ entry inside level
       }
-  | RRef_Tag				-- ^ tag of memory/constructor node referred to by other ref (not yet used)
-      { rrefRef			:: !RRef	-- ^ of what this is the tag
+  -- | tag of memory/constructor node referred to by other ref (not yet used)
+  | RRef_Tag
+      { rrefRef         :: !RRef    -- ^ of what this is the tag
       }
-  | RRef_Fld				-- ^ fld of memory/constructor node referred to by other ref
-      { rrefRef			:: !RRef	-- ^ of what this is a field
-      , rrefEntry		:: !Int		-- ^ entry inside level
+  -- | fld of memory/constructor node referred to by other ref
+  | RRef_Fld
+      { rrefRef         :: !RRef    -- ^ of what this is a field
+      , rrefEntry       :: !Int     -- ^ entry inside level
       }
-  | RRef_Dbg				-- ^ debug variant, holding original name
-      { rrefNm			:: !HsName
+  -- | debug variant, holding original name
+  | RRef_Dbg
+      { rrefNm          :: !HsName
       }
   deriving (Eq,Ord)
 
@@ -129,7 +162,7 @@ noRRef = RRef_Dbg hsnUnknown
 type Ref2Nm = RRef -> Maybe HsName
 %%]
 
-%%[(8 corerun) hs export(Nm2RefMp, nm2RefMpInverse, ref2nmUnion)
+%%[(8 corerun) hs export(Nm2RefMp, nm2RefMpInverse, ref2nmEmpty, ref2nmUnion)
 -- | HsName to RRef mapping for resolving references during translation to CoreRun
 type Nm2RefMp = Map.Map HsName RRef
 
@@ -139,6 +172,10 @@ nm2RefMpInverse m
   | Map.null m = const Nothing
   | otherwise  = flip Map.lookup inv
   where inv = Map.fromList [ (r,n) | (n,r) <- Map.toList m ]
+
+-- | Empty Ref2Nm
+ref2nmEmpty :: Ref2Nm
+ref2nmEmpty = const Nothing
 
 -- | Union, left-biased
 ref2nmUnion :: Ref2Nm -> Ref2Nm -> Ref2Nm

@@ -34,6 +34,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(17 hmtyinfer || hmtyast) export(PolGamInfo(..), PolGam, mapPolGam,mkPGI)
+-- If this changes, also change {%{EH}ConfigInternalVersions}
 data PolGamInfo = PolGamInfo { pgiPol :: Polarity } deriving Show
 
 mkPGI :: Ty -> PolGamInfo

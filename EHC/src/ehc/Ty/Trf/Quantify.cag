@@ -1,4 +1,4 @@
-%%[0
+%%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -379,11 +379,11 @@ tvarsToQuant
      -> (TyVarId -> Bool)
      -> TvLevIsBound			-- ^ 'is already bound?'
      -> TyVarIdS
-     -> ( TyVarIdsToBind		-- ^ to bind universal, on this level
-        , TyVarIdsToBind		-- ^ to bind existential
-        , TyVarIdsToBind		-- ^ to bind universal, 1 level higher
-        , TvLevIsBound			-- ^ updated 'is already bound?'
-        , VarMp					-- ^ the tvars which are defaulted
+     -> ( TyVarIdsToBind		-- to bind universal, on this level
+        , TyVarIdsToBind		-- to bind existential
+        , TyVarIdsToBind		-- to bind universal, 1 level higher
+        , TvLevIsBound			-- updated 'is already bound?'
+        , VarMp					-- the tvars which are defaulted
         )
 tvarsToQuant opts isQuLoc _ mayQuFx tvIsBound tvS
   =  if isQuLoc

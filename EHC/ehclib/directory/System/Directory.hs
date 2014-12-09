@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -w #-}
+{-# EXCLUDE_IF_TARGET cr #-}
 
 -- XXX We get some warnings on Windows
 
