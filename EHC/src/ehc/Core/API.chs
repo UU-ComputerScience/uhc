@@ -46,6 +46,7 @@ module %%@{%{EH}%%}Core.API
 %%[[97
   , mkInteger
 %%]]
+  , mkChar
   , mkString
   , mkError
   , mkUndefined
@@ -155,6 +156,11 @@ mkInteger :: EHCOpts
 -- TODO acoreInt2 or acoreBuiltinInteger ?
 mkInteger = AC.acoreBuiltinInteger
 %%]]
+
+
+-- | Creates a char constant.
+mkChar :: Char -> EC.CExpr
+mkChar c = AC.acoreCharTy undefined c
 
 -- | Creates a string expression.
 -- The expression represents a packed String, which can be passed to Haskell generated Core functions.
@@ -396,7 +402,8 @@ mkMain main = mainEhc
 %%]]
 
 
--- | Parses an expression.
+-- | Parses an expression. The parser is not complete and may fail for complicated
+-- core code. For small fragments it should work.
 parseExpr :: EHCOpts -> String -> Either [String] EC.CExpr
 parseExpr ehcOpts str = case parseToResMsgs pCExpr tokens of
     (res, []) -> Right res
