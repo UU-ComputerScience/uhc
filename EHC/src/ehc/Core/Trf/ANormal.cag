@@ -102,6 +102,7 @@ ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
+  | Tup         (lhs.gUniq,loc.lUniq)       =   mkNewUID @lhs.gUniq
   | App         (func.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
   | Lam         (body.gUniq,loc.lUniq,loc.lUniq2)
                                             =   mkNewLevUID2 @lhs.gUniq
@@ -268,7 +269,7 @@ SEM CBoundL
 
 %%[(8 codegen)
 SEM CExpr
-  | App Lam Case TupDel TupIns TupUpd Let
+  | App Lam Case TupDel TupIns TupUpd Let Tup
                 loc         .   trNm        =   
 %%[[50
                                                 hsnQualUniqify @lhs.modNm $
@@ -314,7 +315,8 @@ SEM CAlt
 SEM CExpr
   | TupIns TupUpd TupDel
                 loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopTup
-  | App Case    loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopApp
+  | Tup App Case 
+  				loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopApp
   | Lam         loc         .   trfIsOk     =   @lhs.lamTrfIsOk == LamYesLet
   | Let         loc         .   trfIsOk     =   @lhs.letTrfIsOk
 %%]
@@ -323,7 +325,8 @@ SEM CExpr
 SEM CExpr
   | TupIns TupUpd TupDel
                 (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
-  | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
+  | Tup App Case
+                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
   | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm
                                                           . acoreLam1 @argNm
                                                           . mkLetTrf @hereBindSq
