@@ -44,19 +44,19 @@ fillFrameM lwb as (RVal_Frame {rvalFrVals=frArr}) = do
 
 %%[(8 corerun) hs
 -- | Allocate a new frame
-implStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m RVal) => Ref2Nm -> HpPtr -> Int -> Int -> RValMV -> RValT m HpPtr
-implStkAllocFrameM r2n sl lev sz as = do
+implStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m RVal) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> RValMV -> RValT m HpPtr
+implStkAllocFrameM r2n sl {- lev -} sz as = do
   a <- liftIO $ mvecAllocInit sz
   slref <- liftIO $ newIORef sl
   spref <- liftIO $ newIORef sz -- (MV.length as) -- stack is not used, GC looks up until this location
-  let fr = RVal_Frame r2n slref lev a spref
+  let fr = RVal_Frame r2n slref {- lev -} a spref
   fillFrameM 0 as fr
   heapAllocM fr
 
 -- | Allocate and push a new stack frame
-implStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m RVal) => Ref2Nm -> HpPtr -> Int -> Int -> RValMV -> RValT m ()
-implStkPushAllocFrameM r2n sl lev sz as = do
-  p <- implStkAllocFrameM r2n sl lev sz as
+implStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m RVal) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> RValMV -> RValT m ()
+implStkPushAllocFrameM r2n sl {- lev -} sz as = do
+  p <- implStkAllocFrameM r2n sl {- lev -} sz as
   (RValEnv {renvStack=st, renvTopFrame=tf}) <- get
   liftIO $ do
     t <- readIORef tf
@@ -65,9 +65,9 @@ implStkPushAllocFrameM r2n sl lev sz as = do
 {-# INLINE implStkPushAllocFrameM #-}
 
 -- | Allocate and replace top stack frame
-implStkReplaceAllocFrameM :: (RunSem RValCxt RValEnv RVal m RVal) => Ref2Nm -> HpPtr -> Int -> Int -> RValMV -> RValT m ()
-implStkReplaceAllocFrameM r2n sl lev sz as = do
-  p <- implStkAllocFrameM r2n sl lev sz as
+implStkReplaceAllocFrameM :: (RunSem RValCxt RValEnv RVal m RVal) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> RValMV -> RValT m ()
+implStkReplaceAllocFrameM r2n sl {- lev -} sz as = do
+  p <- implStkAllocFrameM r2n sl {- lev -} sz as
   (RValEnv {renvTopFrame=tf}) <- get
   liftIO $ writeIORef tf p
 {-# INLINE implStkReplaceAllocFrameM #-}
@@ -111,18 +111,18 @@ cmodRun opts (Mod_Mod {body_Mod_Mod=e}) = do
 rvalImplStkAppLam :: RunSem RValCxt RValEnv RVal m RVal => HpPtr -> Exp -> RValMV -> (Int -> RValT m RVal) -> RValT m RVal
 rvalImplStkAppLam sl f as failcont = do
   case f of
-    Exp_Lam {lev_Exp_Lam=l, nrArgs_Exp_Lam=narg, stkDepth_Exp_Lam=sz, ref2nm_Exp_Lam=r2n, body_Exp_Lam=b}
+    Exp_Lam {{- lev_Exp_Lam=l, -} nrArgs_Exp_Lam=narg, stkDepth_Exp_Lam=sz, ref2nm_Exp_Lam=r2n, body_Exp_Lam=b}
       | MV.length as == narg -> do
            -- rsemTr $ "V app lam =="
            needRet <- asks rcxtInRet
            if needRet
              then do
-               implStkPushAllocFrameM r2n sl l sz as
+               implStkPushAllocFrameM r2n sl {- l -} sz as
                v <- rsemExp b
                implStkPopFrameM
                return v
              else do
-               implStkReplaceAllocFrameM r2n sl l sz as
+               implStkReplaceAllocFrameM r2n sl {- l -} sz as
                mustReturn $ rsemExp b
       | otherwise -> failcont narg
     _   -> err $ "CoreRun.Run.Val.rvalImplStkAppLam:" >#< f
@@ -169,12 +169,12 @@ rvalImplStkExp e = do
     -- app, call
     Exp_App f as -> do
         f' <- mustReturn $ rsemExp f {- >>= rsemEvl -}
-        (mustReturn $ V.mapM rsemSExp as) >>= (liftIO . V.thaw) >>= rvalImplStkApp f'
+        V.mapM rsemSExp as >>= (liftIO . V.thaw) >>= rvalImplStkApp f'
     
     -- heap node
     Exp_Tup t as -> do
         as' <- V.mapM rsemSExp as >>= (liftIO . mvecAllocFillFromV)
-        rsemNode (ctagTag t) as'
+        rsemNode t as'
 
     -- lam as is, being a heap allocated thunk when 0 args are required
     Exp_Lam {nrArgs_Exp_Lam=na, mbNm_Exp_Lam=mn}
@@ -204,7 +204,7 @@ rvalImplStkExp e = do
     -- Exp_Ret e -> mustReturn $ rsemExp e
 
     -- setup for context requiring a return from case alternative
-    Exp_RetCase _ e -> rsemExp e
+    -- Exp_RetCase _ e -> rsemExp e
 
     -- setup for context not requiring a return
     Exp_Tail e -> needNotReturn $ rsemExp e
@@ -241,7 +241,7 @@ instance
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
         forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs}) -> do
           bs' <- (liftIO . V.thaw) =<< V.forM bs rsemExp
-          p <- implStkAllocFrameM r2n nullPtr 0 (MV.length bs') bs'
+          p <- implStkAllocFrameM r2n nullPtr {- 0 -} (MV.length bs') bs'
           liftIO $ MV.write ms nr p
         ms' <- liftIO $ V.freeze ms
         modify $ \env -> env {renvGlobals = ms'}

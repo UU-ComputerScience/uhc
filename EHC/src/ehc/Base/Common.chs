@@ -204,6 +204,11 @@ ppCmt :: PP_Doc -> PP_Doc
 ppCmt p = "{-" >#< p >#< "-}"
 %%]
 
+%%[8 hs export(ppSemi)
+ppSemi :: PP x => x -> PP_Doc
+ppSemi = (>|< ";")
+%%]
+
 %%[1.PP.Rest export(ppSpaced)
 
 ppSpaced :: PP a => [a] -> PP_Doc

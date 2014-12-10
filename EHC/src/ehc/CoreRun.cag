@@ -108,17 +108,17 @@ type Bind = Exp
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(unit)
+%%[(8 corerun) hs
 -- | Equivalent of '()'
 unit :: Exp
-unit = Exp_Tup CTagRec emptyCRArray
+unit = Exp_Tup 0 emptyCRArray
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Debugging
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(dbg)
+%%[(8 corerun) hs export(dbgs, dbg)
 -- | Debug info is embedded in SExp
 dbgs = SExp_Dbg
 dbg  = Exp_SExp . dbgs

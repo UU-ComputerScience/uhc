@@ -58,6 +58,14 @@ ppRRef inhpp r = ppMbPost ppCurly (r2nInhPP inhpp r) r
 %%]
 
 %%[(8 corerun) hs
+-- | Print extra/verbose info in cmt
+ppCmtExtra :: InhPP -> PP_Doc -> (PP_Doc -> PP_Doc)
+ppCmtExtra (InhPP {optsInhPP=opts}) x
+  | CoreOpt_RunPPVerbose `elem` ehcOptCoreOpts opts = (ppCmt x >#<)
+  | otherwise                                       = id
+%%]
+
+%%[(8 corerun) hs
 ppMod'' :: InhPP -> Mod -> PP_Doc
 ppMod'' inhpp x = pp_Syn_Mod $ wrap_Mod (sem_Mod x) (Inh_Mod {inhpp_Inh_Mod=inhpp})
 
@@ -153,20 +161,14 @@ SEM Alt
 
 %%[(8 corerun) hs
 ppBinds'' :: InhPP -> (Int -> RRef) -> Int -> CRArray Bind -> PP_Doc
-ppBinds'' inhpp mkr off bs = vlist [ (ppRRef inhpp $ mkr $ off+i) >|< ":" >#< ppExp'' inhpp e | (i,e) <- craAssocs bs ]
+ppBinds'' inhpp mkr off bs = vlist [ ppSemi $ ppCmtExtra inhpp ((ppRRef inhpp $ mkr $ off+i)) $ ppExp'' inhpp e | (i,e) <- craAssocs bs ]
 %%]
-
-ppBinds' :: Int -> CRArray Bind -> PP_Doc
-ppBinds' off bs = vlist [ off+i >|< ":" >#< e | (i,e) <- craAssocs bs ]
-
-ppBinds :: CRArray Bind -> PP_Doc
-ppBinds = ppBinds' 0
 
 %%[(8 corerun)
 ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
-  | Mod         lhs         .   pp          =   "module" >#< @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >|< ":" >#< @body.pp
+  | Mod         lhs         .   pp          =   (ppSemi $ "module" >#< @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >#< "->" >#< @body.pp)
                                                 >-< ppBinds'' @inhpp (RRef_Glb @moduleNr) 0 @binds
 
 SEM SExp
@@ -184,19 +186,19 @@ SEM Exp
   | Let         lhs         .   pp          =   "let" >#< ppBinds'' @inhpp (RRef_Loc @lev) @firstOff @binds >#< "in" >-< @body.pp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
   -- | Ret         lhs         .   pp          =   "ret" >|< ppParens @expr.pp
-  | RetCase     lhs         .   pp          =   "retcase" >|< @nrBinds >|< ppParens @expr.pp
+  -- | RetCase     lhs         .   pp          =   "retcase" >|< @nrBinds >|< ppParens @expr.pp
   | Tail        lhs         .   pp          =   "tail" >|< ppParens @expr.pp
   -- | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp
-  | Lam         lhs         .   pp          =   "\\" >|< "@" >|< @lev >#< ppCommas [if @nrArgs > 0 then pp @nrArgs else pp "thk", pp @nrBinds, pp @stkDepth] >#< "->" >#< @body.pp
+  | Lam         lhs         .   pp          =   "\\" >|< {- "@" >|< @lev >#< -} ppCommas [{- if @nrArgs == 0 then pp "thk" else -} pp @nrArgs, {- pp @nrBinds, -} pp @stkDepth] >#< "->" >#< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
                                                 >-< indent 1 (vlist $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
-  | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
+  | Tup         lhs         .   pp          =   "alloc" >#< @tag >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
   | FFI         lhs         .   pp          =   "ffi" >#< show @prim >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
 
 SEM Alt
-  | Alt         lhs         .   pp          =   @pat.pp >#< "->" >#< @expr.pp
+  | Alt         lhs         .   pp          =   ppSemi $ {- ppCmtExtra @lhs.inhpp @pat.pp $ -} "->" >#< @expr.pp
 
 SEM Pat
-  | Con         lhs         .   pp          =   pp $ ctagTag @tag
+  | Con         lhs         .   pp          =   pp @tag
 %%]
 

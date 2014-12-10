@@ -134,11 +134,6 @@ ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]
 
-%%[(8 coreout) hs
-ppSemi :: PP x => x -> PP_Doc
-ppSemi = (>|< ";")
-%%]
-
 %%[(9 coreout) hs
 ppOptCMetas :: CMetas -> PP_Doc
 ppOptCMetas x

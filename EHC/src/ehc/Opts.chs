@@ -129,6 +129,7 @@ instance Show CoreOpt where
   show CoreOpt_RunTrace            	= "run-trace"
   show CoreOpt_RunTraceExtensive	= "run-trace-extensive"
   show CoreOpt_RunPPNames           = "run-ppnames"
+  show CoreOpt_RunPPVerbose         = "run-ppverbose"
 %%]]
 %%[[(8 coresysf)
   show CoreOpt_SysF             	= "sysf"

@@ -54,7 +54,7 @@ DATA Exp
   | SExp        sexpr           : SExp
 
   -- node constructor, tuple or data constructor, determined by tag
-  | Tup         tag             : {CTag}
+  | Tup         tag             : {Int}
                 args			: {CRArray SExp}
 
   -- let bindings, recursiveness allowed, yes/no eval made explicit in rhs of binding
@@ -69,9 +69,9 @@ DATA Exp
   				func            : Exp
                 args            : {CRArray SExp}
   | Lam         mbNm			: {Maybe HsName}	-- possibly bound to name
-  				lev				: {Int}				-- lexical level
+  				-- lev				: {Int}				-- lexical level
   				nrArgs          : {Int}				-- nr of arguments, 0 means it is a thunk
-                nrBinds         : {Int}				-- nr stack frame locations to be allocated (excluding arguments) for locals
+                -- nrBinds         : {Int}				-- nr stack frame locations to be allocated (excluding arguments) for locals
                 stkDepth        : {Int}				-- max depth of stack
                 ref2nm			: {Ref2Nm}			-- inverse lookup of locally introduced binding RRef's
                 body            : Exp
@@ -82,9 +82,11 @@ DATA Exp
 
   -- expr in a context to which must be returned (i.e. no tail rec)
   -- | Ret			expr			: Exp
+  
   -- expr in a case alternative result context (with local bindings to be removed)
-  | RetCase		nrBinds			: {Int}
-  				expr			: Exp
+  -- | RetCase		nrBinds			: {Int}
+  -- 				expr			: Exp
+  
   -- Tail context
   | Tail		expr			: Exp
 
@@ -126,13 +128,13 @@ DATA Exp
 %%[(8 corerun)
 DATA Alt
   | Alt         ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
-                pat             : Pat
+                -- pat             : Pat
                 expr            : Exp
 %%]
 
 %%[(8 corerun)
 DATA Pat
-  | Con         tag             : {CTag}
+  | Con         tag             : {Int}
 %%[[97
   | BoolExpr    expr            : Exp
 %%]]

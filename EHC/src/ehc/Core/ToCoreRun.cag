@@ -31,6 +31,8 @@ Offsets start at 0.
 
 %%[(8 corerun) hs import(qualified {%{EH}CoreRun} as CR)
 %%]
+%%[(8 corerun) hs import(qualified {%{EH}CoreRun.API} as CR)
+%%]
 %%[(8 corerun) hs import(qualified {%{EH}CoreRun.Prim} as CR)
 %%]
 
@@ -153,7 +155,7 @@ tailCtxIsTailRec _                = False
 
 -- | Wrap according to tail context
 cseCtxWrap :: TailCtx -> CR.Exp -> CR.Exp
-cseCtxWrap TailCtx_TailCall = CR.Exp_Tail
+cseCtxWrap TailCtx_TailCall = CR.mkTail
 cseCtxWrap _                = id
 %%]
 
@@ -357,9 +359,9 @@ SEM CExpr
 %%[(8 corerun) hs
 -- | Construct application
 mkApp :: CR.Exp -> CR.CRArray CR.SExp -> CR.Exp
-mkApp f as = CR.Exp_App ({- CR.Exp_Ret $ -} CR.Exp_Force f) as
+mkApp f as = CR.mkApp' (CR.mkEval f) as
 %%]
-mkApp f as = CR.Exp_App ({- CR.Exp_Ret $ -} CR.Exp_Force f) as
+mkApp f as = CR.mkApp' (CR.mkEval f) as
 
 %%[(8 corerun)
 ATTR CExpr [ | | creAppArgL: {[CR.SExp]}  creAppFun: {TailCtx -> CR.CRArray CR.SExp -> CR.Exp} ]
@@ -367,7 +369,7 @@ ATTR CExpr [ | | creAppArgL: {[CR.SExp]}  creAppFun: {TailCtx -> CR.CRArray CR.S
 SEM CExpr
   | App         loc         .   creAppArgL  =   (CR.exp2sexp $ snd $ head @arg.crb) : @func.creAppArgL
                             .   creAppFun   =   @func.creAppFun
-  | Tup         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . CR.Exp_Tup @tag
+  | Tup         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . CR.mkTup' (ctagTag @tag)
   | FFI         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . @creMk
   | * - App Ann Tup FFI
                 loc         .   creAppFun   =   \tailCtx -> cseCtxWrap tailCtx . tailrec tailCtx . mkApp @cre
@@ -399,7 +401,7 @@ tailrec tailCtx = if tailCtxIsTailRec tailCtx then id else id -- CR.Exp_Ret -- i
 
 -- | Wrap forcing if at tail recursive position
 taileval :: TailCtx -> CR.Exp -> CR.Exp
-taileval tailCtx = if tailCtxIsTailRec tailCtx then CR.Exp_Force else id
+taileval tailCtx = if tailCtxIsTailRec tailCtx then CR.mkEval else id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -412,9 +414,9 @@ ATTR CExpr [ | | crse: {CR.SExp} ]
 
 %%[(8 corerun)
 SEM CExpr
-  | Int         loc         .   crse            =   CR.SExp_Int @int
-  | Char        loc         .   crse            =   CR.SExp_Char @char
-  | String      loc         .   crse            =   CR.SExp_String @str
+  | Int         loc         .   crse            =   CR.mkInt' @int
+  | Char        loc         .   crse            =   CR.mkChar' @char
+  | String      loc         .   crse            =   CR.mkString' @str
   | Var         loc         .   crse            =   CR.SExp_Var $ maybe (CR.RRef_Dbg @nm) (CR.rrefToDis @lhs.lev) $ Map.lookup @nm @lhs.nm2ref
 %%[[97
   | Integer     loc         .   crse            =   CR.SExp_Integer @integer
@@ -444,15 +446,15 @@ SEM CExpr
 %%[[97
     Integer
 %%]]
-                loc         .   creBase         =   CR.Exp_SExp @crse
-  | Var         loc         .   creBase         =   taileval @lhs.tailCtx $ CR.Exp_SExp @crse
+                loc         .   creBase         =   CR.mkExp @crse
+  | Var         loc         .   creBase         =   taileval @lhs.tailCtx $ CR.mkExp @crse
   | Lam         loc         .   creBase         =   if @isTopLam
-                                                    then CR.Exp_Lam (whatExprMbBind @lhs.whatAbove) @lev (length @creLamArgL) (@refOffsetMax) (@stackDepthMax) (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
+                                                    then CR.Exp_Lam (whatExprMbBind @lhs.whatAbove) {- @lev -} (length @creLamArgL) {- @refOffsetMax -} (@stackDepthMax) (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
                                                     else CR.dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
   | App         loc         .   creBase         =   if @isTopApp'
                                                     then @creAppFun @lhs.tailCtx $ CR.mkCRArray $ reverse @creAppArgL
                                                     else CR.dbg "Core.ToCoreRun.CExpr.App.cre" -- TBD
-  | Tup         loc         .   creBase         =   CR.Exp_Tup @tag CR.emptyCRArray
+  | Tup         loc         .   creBase         =   CR.mkTup (ctagTag @tag) []
   | Let         loc         .   creBase         =   if @isGlobal
                                                     then @body.cre
                                                     else CR.Exp_Let @lhs.lev @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.mkCRArray $ map snd @binds.crb) @body.cre
@@ -484,8 +486,8 @@ ATTR AllBind CExpr [ | | crb USE {++} {[]} : {[(HsName, CR.Bind)]} ]
 
 SEM CBound
   | Bind Val    loc         .   creMkForce      =   case @toBe of
-                                                        ToBe_Forced   -> tailrec @tailCtx . CR.Exp_Force
-                                                        ToBe_Thunked  -> CR.Exp_Lam (Just @lhs.nm) @lev 0 (@expr.refOffsetMax) (@stackDepthMaxThunked) (CR.nm2RefMpInverse @nm2refNew)
+                                                        ToBe_Forced   -> tailrec @tailCtx . CR.mkEval
+                                                        ToBe_Thunked  -> CR.Exp_Lam (Just @lhs.nm) {- @lev -} 0 {- @expr.refOffsetMax -} (@stackDepthMaxThunked) (CR.nm2RefMpInverse @nm2refNew)
                                                         ToBe_LeftAsIs -> id
                             -- .   creMkReturned   =   if @isToBeReturned then CR.Exp_Ret else id
                             .   creBind         =   {- @creMkReturned $ -} @creMkForce @expr.cre
@@ -505,14 +507,14 @@ SEM CExpr
 ATTR AllAlt [ | | cra USE {++} {[]} : {[CR.Alt]} ]
 
 SEM CAlt
-  | Alt         lhs         .   cra             =   [CR.Alt_Alt (CR.nm2RefMpInverse @nm2refNew) @pat.crp @expr.cre]
+  | Alt         lhs         .   cra             =   [CR.Alt_Alt (CR.nm2RefMpInverse @nm2refNew) {- @pat.crp -} @expr.cre]
 %%]
 
 %%[(8 corerun)
 ATTR CPat [ | | crp: {CR.Pat} ]
 
 SEM CPat
-  | Con         lhs         .   crp             =   CR.Pat_Con @tag
+  | Con         lhs         .   crp             =   CR.Pat_Con (ctagTag @tag)
 %%[[97
   -- | BoolExpr lhs         .   crp             =   CR.Pat_BoolExpr @cexpr.cre
 %%]]
@@ -520,7 +522,7 @@ SEM CPat
 %%[[97
        --  BoolExpr
 %%]]
-                lhs         .   crp             =   CR.Pat_Con CTagRec  -- TBD
+                lhs         .   crp             =   CR.Pat_Con 0  -- TBD
 %%]
 
 %%[(8 corerun)
@@ -530,7 +532,7 @@ SEM CModule
   | Mod         loc         .   crmBinds        =   CR.mkCRArray $ map snd @expr.crb
                 lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew)
                                                       @moduleNm @lhs.modNr (@expr.stackDepthMax + 2 {- - CR.craLength @crmBinds -})
-                                                      @crmBinds (CR.Exp_Force @creMod)
+                                                      @crmBinds (CR.mkEval @creMod)
 %%]
 
 

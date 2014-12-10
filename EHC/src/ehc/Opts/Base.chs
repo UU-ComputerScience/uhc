@@ -121,9 +121,11 @@ data CoreOpt
 %%[[(8 corerun)
   | CoreOpt_Run					-- run after compilation
   | CoreOpt_RunDump				-- dump CoreRun
+  | CoreOpt_RunDumpVerbose		-- dump CoreRun, more verbose
   | CoreOpt_RunTrace			-- trace during running CoreRun
   | CoreOpt_RunTraceExtensive	-- trace during running CoreRun, with extensive info, implies CoreOpt_RunTrace
   | CoreOpt_RunPPNames			-- when dump/run CoreRun print names instead of
+  | CoreOpt_RunPPVerbose		-- when dump CoreRun print more verbose info in comment
 %%]]
 %%[[(8 coresysf)
   | CoreOpt_SysF				-- 20120419, work in startup/progress: generate System F

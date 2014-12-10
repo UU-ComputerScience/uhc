@@ -110,7 +110,7 @@ data RVal
   | RVal_Frame
       { rvalRef2Nm		:: Ref2Nm					-- ^ ref to name mapping
       , rvalSLRef		:: !(IORef HpPtr)			-- ^ immediately outer lexical level frame
-      , rvalLev			:: !Int						-- ^ the lexical level this frame is on
+      -- , rvalLev			:: !Int						-- ^ the lexical level this frame is on
       , rvalFrVals		:: !RValMV					-- ^ actual frame values, either literals or pointers to heap locations (so we can update them, share them)
       , rvalFrSP		:: !(IORef Int)				-- ^ top of expr stack embedded in higher end of top frame
       }
@@ -167,12 +167,12 @@ ppRVal' lkptr rval = case rval of
                                        vpp <- lkptr p >>= maybe (return empty) (\v -> ppRVal' lkptr v >>= \vpp -> return $ " -> " >|< vpp)
                                        return $ "*"  >|< p >|< vpp
     RVal_Fwd   			p    		-> return $ "f*" >|< p
-    RVal_Frame 			_ slref lv vs spref -> do
+    RVal_Frame 			_ slref {- lv -} vs spref -> do
                                        sl <- readIORef slref
                                        sp <- readIORef spref
                                        vl <- mvecToList vs
                                        vlpp <- forM (zip [0..(sp-1)] vl) $ \(i,v) -> ppRVal' lkptr v >>= \vpp -> return $ i >|< ":" >#< vpp
-                                       return $ (ppBracketsCommas $ ["sl=" >|< sl, "lev=" >|< lv, "sz=" >|< MV.length vs, "sp=" >|< sp])
+                                       return $ (ppBracketsCommas $ ["sl=" >|< sl, {- "lev=" >|< lv, -} "sz=" >|< MV.length vs, "sp=" >|< sp])
                                                 >-< vlist vlpp
     RVal_BlackHole  				-> dfltpp "Hole"
     RVal_None       				-> dfltpp "None"

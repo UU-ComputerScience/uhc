@@ -64,15 +64,15 @@ renvFrStkEaPopMV ea@(ExplArgs {eaVec=v}) = (liftIO $ mvecAlloc eaLen) >>= \vs ->
 
 %%[(8 corerun) hs
 -- | Allocate a new frame
-explStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> Int -> Int -> ExplArgs -> RValT m HpPtr
-explStkAllocFrameM r2n sl lev sz as@(ExplArgs {eaVec=vsArgs, eaStk=nrArgs}) = do
+explStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> ExplArgs -> RValT m HpPtr
+explStkAllocFrameM r2n sl {- lev -} sz as@(ExplArgs {eaVec=vsArgs, eaStk=nrArgs}) = do
   a <- liftIO $ mvecAllocInit sz -- (sz+3)		-- TBD: stack overflow somewhere...
   let vsLen = V.length vsArgs
   when (vsLen  > 0) $ liftIO $ mvecFillFromV 0 a vsArgs
   when (nrArgs > 0) $ renvFrStkReversePopInMV vsLen nrArgs a
   slref <- liftIO $ newIORef sl
   spref <- liftIO $ newIORef (eaNrArgs as)
-  p <- heapAllocM $ RVal_Frame r2n slref lev a spref
+  p <- heapAllocM $ RVal_Frame r2n slref {- lev -} a spref
   return p
 
 -- | Push a new stack frame
@@ -86,16 +86,16 @@ explStkPushFrameM frptr = do
 {-# INLINE explStkPushFrameM #-}
 
 -- | Allocate and push a new stack frame
-explStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> Int -> Int -> ExplArgs -> RValT m ()
-explStkPushAllocFrameM r2n sl lev sz as = do
-  p <- explStkAllocFrameM r2n sl lev sz as
+explStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> ExplArgs -> RValT m ()
+explStkPushAllocFrameM r2n sl {- lev -} sz as = do
+  p <- explStkAllocFrameM r2n sl {- lev -} sz as
   explStkPushFrameM p
 {-# INLINE explStkPushAllocFrameM #-}
 
 -- | Allocate and replace top stack frame
-explStkReplaceAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> Int -> Int -> ExplArgs -> RValT m ()
-explStkReplaceAllocFrameM r2n sl lev sz as = do
-  p <- explStkAllocFrameM r2n sl lev sz as
+explStkReplaceAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> ExplArgs -> RValT m ()
+explStkReplaceAllocFrameM r2n sl {- lev -} sz as = do
+  p <- explStkAllocFrameM r2n sl {- lev -} sz as
   (RValEnv {renvTopFrame=tf}) <- get
   liftIO $ writeIORef tf p
 {-# INLINE explStkReplaceAllocFrameM #-}
@@ -143,20 +143,20 @@ rvalExplStkAppLam :: RunSem RValCxt RValEnv RVal m () => HpPtr -> Exp -> ExplArg
 rvalExplStkAppLam sl f as failcont = do
   let nrActualArgs = eaNrArgs as
   case f of
-    Exp_Lam {lev_Exp_Lam=l, mbNm_Exp_Lam=mn, nrArgs_Exp_Lam=nrRequiredArgs, stkDepth_Exp_Lam=sz, ref2nm_Exp_Lam=r2n, body_Exp_Lam=b}
+    Exp_Lam {{- lev_Exp_Lam=l, -} mbNm_Exp_Lam=mn, nrArgs_Exp_Lam=nrRequiredArgs, stkDepth_Exp_Lam=sz, ref2nm_Exp_Lam=r2n, body_Exp_Lam=b}
       | nrActualArgs == nrRequiredArgs -> do
            -- rsemTr $ ">V (" ++ show mn ++ ") app lam ==, na=" ++ show nrRequiredArgs ++ ", sz=" ++ show sz
            needRet <- asks rcxtInRet
            rvalTrEnterLam mn $ 
              if needRet
                then do
-                 explStkPushAllocFrameM r2n sl l sz as
+                 explStkPushAllocFrameM r2n sl {- l -} sz as
                  rsemExp b
                  v <- renvFrStkPop1
                  explStkPopFrameM
                  renvFrStkPush1 v
                else do
-                 explStkReplaceAllocFrameM r2n sl l sz as
+                 explStkReplaceAllocFrameM r2n sl {- l -} sz as
                  mustReturn $ rsemExp b
            -- rsemTr $ "<V (" ++ show mn ++ ")"
       | otherwise -> failcont nrRequiredArgs
@@ -204,15 +204,14 @@ rvalExplStkExp e = do
   case e of
     -- app, call
     Exp_App f as -> do
-        f' <- mustReturn $ do
-          vecReverseForM_ as rsemSExp
-          rsemExp f
+        vecReverseForM_ as rsemSExp
+        f' <- mustReturn $ rsemExp f
         rsemPop f' >>= ptr2valM >>= \f' -> rvalExplStkApp f' (emptyExplArgs {eaStk=V.length as})
     
     -- heap node
     Exp_Tup t as -> do
         V.forM_ as rsemSExp
-        renvFrStkPopMV (V.length as) >>= rsemNode (ctagTag t) >>= rsemPush
+        renvFrStkPopMV (V.length as) >>= rsemNode t >>= rsemPush
 
     -- lam as is, being a heap allocated thunk when 0 args are required
     Exp_Lam {nrArgs_Exp_Lam=na, mbNm_Exp_Lam=mn}
@@ -242,7 +241,7 @@ rvalExplStkExp e = do
     -- Exp_Ret e -> mustReturn $ rsemExp e
 
     -- setup for context requiring a return from case alternative
-    Exp_RetCase _ e -> rsemExp e
+    -- Exp_RetCase _ e -> rsemExp e
 
     -- setup for context not requiring a return
     Exp_Tail e -> needNotReturn $ rsemExp e
@@ -279,7 +278,7 @@ instance
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
         forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz}) -> do
           -- construct frame for each module
-          explStkPushAllocFrameM r2n nullPtr 0 sz emptyExplArgs
+          explStkPushAllocFrameM r2n nullPtr {- 0 -} sz emptyExplArgs
           -- holding all local defs
           V.forM_ bs rsemExp
           p <- explStkPopFrameM
