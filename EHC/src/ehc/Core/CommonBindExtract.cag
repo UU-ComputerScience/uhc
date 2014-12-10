@@ -32,11 +32,21 @@ SEM CPatFld
 
 Assumption: existence of local attr 'boundval'
 
+%%[(8 codegen) hs
+type StateSel = State ([SelVal],[SelVal]) ()
+
+-- | Return the selected, the not selected, and a function taking selected merging it back with the not selected
+mkSel :: Bool -> SelVal -> ([SelVal], [SelVal], [StateSel])
+mkSel isSelected boundval
+  | isSelected = ([boundval], []        , [modify (\(s:sel, acc) -> (sel, s       :acc))])
+  | otherwise  = ([]        , [boundval], [modify (\(  sel, acc) -> (sel, boundval:acc))])
+%%]
+
 %%[(8 codegen)
 ATTR
   AllBound CBind
-    [ | | selvalYesL USE {++} {[]}: {[SelVal]}
-          selvalNoL  USE {++} {[]}: {[SelVal]}
+    [ | | selvalYesL    USE {++} {[]}: {[SelVal]}
+          selvalNoL     USE {++} {[]}: {[SelVal]}
     ]
 
 SEM CBound
@@ -50,9 +60,16 @@ SEM CBound
 %%]]
 
 SEM CBound
-  | *           lhs         .   (selvalYesL,selvalNoL)
-                                                =   if @isSelected
-                                                    then ([@boundval],[])
-                                                    else ([],[@boundval])
+  | *           lhs         .   (selvalYesL, selvalNoL, selvalInsertYesM)
+                                                =   mkSel @isSelected @boundval
+%%]
+
+%%[(8 codegen)
+ATTR AllBound [ | | selvalInsertYesM USE {++} {[]} : {[StateSel]}           ]
+ATTR CBind    [ | | selvalInsertYes                : {[SelVal] -> [SelVal]} ]
+
+SEM CBind
+  | Bind		lhs			.	selvalInsertYes	=	\sel -> reverse $ snd $ execState (sequence_ @bindAspects.selvalInsertYesM) (sel,[])
+
 %%]
 

@@ -179,6 +179,16 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
         -> expr     -- ^ The value of this alternative.
         -> alt
   
+  ------------------------- constructing: top level -------------------------
+  -- | Wraps main expr into a form which can be directly run by evaluating
+  acoreRunMain :: expr     -- ^ main
+        -> expr
+%%[[8
+  acoreRunMain e = e
+%%][99
+  acoreRunMain e = acore1App e (acoreTup [])
+%%]]
+  
   ------------------------- type related -------------------------
   -- | construct ty from Ty, usable in Core context
   acoreTy2ty :: EHCOpts -> Ty -> ty

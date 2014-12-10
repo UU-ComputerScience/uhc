@@ -436,7 +436,8 @@ SEM CModule
   | Mod         loc         .   jmodStats       =   jsBody J.Stat_Expr @expr.jbinds @expr.jstats Nothing
                             .   jmodStatsMain   =   [ J.Stat_Expr $ J.evl $
 %%[[99
-                                                      (\m -> J.app m [J.arr []]) $
+                                                      -- 20141210: now part of Core gen
+                                                      id -- (\m -> J.app m [J.arr []]) $
 %%]]
                                                       @expr.js
                                                     ]

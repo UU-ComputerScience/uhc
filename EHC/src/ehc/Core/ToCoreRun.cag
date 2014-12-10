@@ -368,6 +368,7 @@ SEM CExpr
 mkApp :: CR.Exp -> CR.CRArray CR.Exp -> CR.Exp
 mkApp f as = CR.Exp_App ({- CR.Exp_Ret $ -} CR.Exp_Force f) as
 %%]
+mkApp f as = CR.Exp_App ({- CR.Exp_Ret $ -} CR.Exp_Force f) as
 
 %%[(8 corerun)
 ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {TailCtx -> CR.CRArray CR.Exp -> CR.Exp} ]
@@ -483,7 +484,7 @@ SEM CModule
 %%[[8
   | Mod         loc         .   creMod          =   @expr.cre
 %%][99
-  | Mod         loc         .   creMod          =   mkApp @expr.cre $ CR.mkCRArray [CR.unit]
+  | Mod         loc         .   creMod          =   @expr.cre -- mkApp @expr.cre $ CR.mkCRArray [CR.unit]
 %%]]
 %%]
 

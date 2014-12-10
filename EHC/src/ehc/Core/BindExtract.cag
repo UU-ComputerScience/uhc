@@ -13,6 +13,9 @@
 %%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
 
+%%[(8 codegen) hs import(Control.Monad.State)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,12 +52,19 @@ noBoundSel
 emptyBoundSel = noBoundSel
 %%]
 
-%%[(8 codegen) hs export(boundSelVal,boundSelMetaLev0,boundSelMetaLev01)
+%%[(8 codegen) hs export(boundSelVal,boundSelExpr,boundSelMetaLev0,boundSelMetaLev01)
 -- | Predefined selection: Val
 boundSelVal :: BoundSel
 boundSelVal
   = noBoundSel
       { selVal 			= \_ _ _ -> True
+      }
+
+-- | Predefined selection: Expr occurring in either Val or Bind or FFE
+boundSelExpr :: BoundSel
+boundSelExpr
+  = boundSelMetaLev0
+      { selBind			= True
       }
 
 -- | Predefined selection: same MetaLev (i.e. 0)
@@ -89,15 +99,24 @@ type SelVal = CBound
 WRAPPER CBind CBound
 %%]
 
-%%[(8 codegen) hs export(cbindExtract,cboundExtract)
--- | Extract CBounds for a binding, partitioned according to selection
-cbindExtract :: BoundSel -> CBind -> ([SelVal],[SelVal])
-cbindExtract sel b
-  = (selvalYesL_Syn_CBind t, selvalNoL_Syn_CBind t)
+%%[(8 codegen) hs export(cbindExtractMk,cbindExtract,cboundExtract)
+-- | Extract CBounds for a binding, partitioned according to selection, returning a reconstruction function taking mapped CBounds
+cbindExtractMk :: BoundSel -> CBind -> ([SelVal],[SelVal],[SelVal] -> CBind)
+cbindExtractMk sel b
+  = ( selvalYesL_Syn_CBind t
+    , selvalNoL_Syn_CBind t
+    , \yessel -> b {bindAspects_CBind_Bind = selvalInsertYes_Syn_CBind t yessel}
+    )
   where t = wrap_CBind (sem_CBind b)
               (Inh_CBind
                 { boundsel_Inh_CBind = sel
                 })
+
+-- | Extract CBounds for a binding, partitioned according to selection
+cbindExtract :: BoundSel -> CBind -> ([SelVal],[SelVal])
+cbindExtract sel b
+  = (yessel,nosel)
+  where (yessel,nosel,_) = cbindExtractMk sel b
 
 -- | Extract CBounds for a bound, partitioned according to selection
 cboundExtract :: BoundSel -> CBound -> ([SelVal],[SelVal])
@@ -107,6 +126,20 @@ cboundExtract sel b
               (Inh_CBound
                 { boundsel_Inh_CBound = sel
                 })
+%%]
+
+%%[(8 codegen) hs export(cbindExtractExprMk)
+-- | Extract (first) bound CExpr and reconstruction
+cbindExtractExprMk :: CBind -> (CExpr, CExpr -> CBind)
+cbindExtractExprMk bi
+  = case bo of
+      CBound_Val  {expr_CBound_Val =e} -> (e, mkbi $ \e' -> bo {expr_CBound_Val =e'})
+      CBound_Bind {expr_CBound_Bind=e} -> (e, mkbi $ \e' -> bo {expr_CBound_Bind=e'})
+%%[[90
+      CBound_FFE  {expr_CBound_FFE =e} -> (e, mkbi $ \e' -> bo {expr_CBound_FFE =e'})
+%%]]
+  where mkbi mke = \e' -> mks (mke e' : bos)
+        (bo : bos, _, mks) = cbindExtractMk boundSelExpr bi
 %%]
 
 %%[(8 codegen) hs export(cbindExtractVal',cbindExtractVal,cboundExtractVal',cboundExtractVal)

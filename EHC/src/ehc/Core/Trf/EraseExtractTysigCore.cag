@@ -19,6 +19,8 @@
 
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
+%%[(8 codegen) hs import(Control.Monad.State)
+%%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/CommonBindExtract})
 WRAPPER CodeAGItf

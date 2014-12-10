@@ -1,4 +1,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is module main module?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM AGItf
+  | AGItf       loc         .   isMainMod   =   
+%%[[8
+                                                True
+%%][50
+                                                @lhs.isMainMod
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is main body 'main'?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -9,10 +23,7 @@ SEM AGItf
                                                   Just n | n == hsnMain -> True
                                                   _                     -> False
                             .   insertMainUse
-                                            =   not @mainUseExists
-%%[[50
-                                                && @lhs.isMainMod
-%%]]
+                                            =   not @mainUseExists && @isMainMod
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,14 +33,13 @@ SEM AGItf
 %%[(8 codegen).mainDefExists
 SEM AGItf
   | AGItf       loc         .   mainDefExists
+                                            =   not $ null @expr.letValMainCBindL
+                            .   insertMainDef
+                                            =   not @mainDefExists && @isMainMod
+%%]
+                            .   mainDefExists
                                             =   let ds = [ b | (_,g) <- @expr.letValCBindL, b <- g, cbindNm b == hsnMain ]
                                                 in  not (null ds)
-                            .   insertMainDef
-                                            =   not @mainDefExists
-%%[[50
-                                                && @lhs.isMainMod
-%%]]
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation of core
@@ -48,14 +58,37 @@ ATTR
 ATTR AGItf [ | | cmodule: CModule ]
 
 SEM AGItf
-  | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then acoreVar hsnMain else @expr.letCBody
-                                                    d = if @insertMainDef then acoreLet CBindCateg_Plain [acoreBind1Ty hsnMain (acoreTyErr $ "EH.ToCore.AGItf.main") @expr.letCBody] else id
+  | AGItf       lhs         .   cmodule     =   let -- b = if @insertMainUse then acoreVar hsnMain else @expr.letCBody
+                                                    -- d = if @insertMainDef then acoreLet CBindCateg_Plain [acoreBind1Ty hsnMain (acoreTyErr $ "EH.ToCore.AGItf.main") @expr.letCBody] else id
+                                                    {-
+                                                    -}
+                                                    bm    = acoreVar hsnMain
+                                                    bb    = @expr.letCBody
+                                                    db    = acoreLet acoreBindcategPlain [acoreBind1Ty hsnMain (acoreTyErr $ "EH.ToCore.AGItf.main") $ acoreRunMain @expr.letCBody]
+                                                    mb m  = acoreLet acoreBindcategPlain [mkb $ acoreRunMain me]
+                                                          where (me,mkb) = cbindExtractExprMk m
+                                                    {-
+                                                    (b,d) = case (@insertMainUse, @insertMainDef) of
+                                                       (True , True ) -> (bm, db id)
+                                                       (True , False) -> (bm, dm)
+                                                       (False, True ) -> (bb, db acoreRunMain)
+                                                       (False, False) -> (bb, dm)
+                                                    -}
+                                                    {-
+                                                    -}
+                                                    (b,d) = case (@expr.letValMainCBindL, @mainUseExists, @isMainMod) of
+                                                        ([]   , False, True) -> (bm, db   )
+                                                        ((m:_), False, True) -> (bm, mb m )
+                                                        ([]   , True , True) -> (bb, db   )
+                                                        ((m:_), True , True) -> (bb, mb m )
+                                                        ((m:_), _    , _   ) -> (bb, mb m )
+                                                        (_    , _    , _   ) -> (bb, id   )
                                                 in  CModule_Mod @lhs.moduleNm
 %%[[8
                                                         [] []
 %%][50
-                                                        (map CExport_Export $ Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl) -- TBD: exports are filled in later
-                                                        (map CImport_Import $ Set.toList $ iumHSDeclModules @lhs.importUsedModules) -- TBD: imports are filled in later
+                                                        (map CExport_Export $ Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl)
+                                                        (map CImport_Import $ Set.toList $ iumHSDeclModules @lhs.importUsedModules)
 %%]]
                                                         [ CDeclMeta_Data tn
                                                             [ CDataCon_Con cn (ctagTag ctag) (ctagArity ctag)
@@ -984,12 +1017,32 @@ Merging is done to group all mutual recursive stuff together, in particular inst
 Reordering and splitting up in smaller groups is then done later by a Core transformation.
 
 %%[(8 codegen) hs
-mkLetCBodyBindL :: Bool -> CBindCateg -> [(CBindCateg,CBindL)] -> [(CBindCateg,CBindL)] -> [(CBindCateg,CBindL)] -> CExpr -> ([(CBindCateg,CBindL)],CExpr)
+-- | Combine bindings and extract main binding
+mkLetCBodyBindL
+  :: Bool
+     -> CBindCateg -> [(CBindCateg,CBindL)] -> [(CBindCateg,CBindL)] -> [(CBindCateg,CBindL)] -> CExpr
+     -> ( [(CBindCateg,CBindL)]		-- ^ all remaining let bindings not bound in body
+        , CBindL					-- ^ if non empty singleton list it holds the def for main
+        , CExpr						-- ^ bound bindings together with body
+        )
 mkLetCBodyBindL isStrict howToBind locBindL locOthBindL bodyBindL body
-  = if isStrict
-    then (locOthBindL,foldr (\(c,b) e -> acoreLet c b e) body (merge $ locBindL ++ bodyBindL))
-    else (merge $ locOthBindL ++ locBindL ++ bodyBindL, body)
-  where merge (cb1@(c1,b1) : tl)
+  | isStrict =
+         ( locOthBindL
+         , locMainBindL
+         , foldr (\(c,b) e -> acoreLet c b e) body (merge $ locNoMainBindL ++ bodyBindL)
+         )
+  | otherwise =
+         ( merge $ locOthBindL ++ locNoMainBindL ++ bodyBindL
+         , locMainBindL
+         , body
+         )
+  where (locMainBindL, locNoMainBindL)
+          = split locBindL
+          where split ((c,g):bs) = (m ++ mbs, (c,nm) : nmbs)
+                  where (m  ,nm  ) = partition (\b -> cbindNm b == hsnMain) g
+                        (mbs,nmbs) = split bs
+                split []         = ([], [])
+        merge (cb1@(c1,b1) : tl)
           = case merge tl of
               (c2,b2) : tl' | c1 == c2 && c1 == CBindCateg_Rec
                   -> (c1,b1++b2) : tl'
@@ -1007,12 +1060,15 @@ ATTR
         , backCBindL
 %%]]
             : {[(CBindCateg,CBindL)]}
+          letValMainCBindL: CBindL
           letCBody: CExpr
     ]
 
 SEM Expr
-  | Let         (loc.letCBindRemL,loc.letCBody) =   mkLetCBodyBindL @isStrict @howToBind @letValCBindL @letCBindOtherL @body.letValCBindL @body.letCBody
+  | Let         (loc.letCBindRemL, loc.letCBindMainL, loc.letCBody)
+                                                =   mkLetCBodyBindL @isStrict @howToBind @letValCBindL @letCBindOtherL @body.letValCBindL @body.letCBody
                 lhs         .   letValCBindL    =   @letCBindRemL
+                            .   letValMainCBindL=	@letCBindMainL ++ @body.letValMainCBindL
                             .   letTyCBindL     =   @letTyCBindL ++ @body.letTyCBindL
                             .   frontCBindL     =   @frontCBindL ++ @body.frontCBindL
 %%[[90
@@ -1020,6 +1076,7 @@ SEM Expr
 %%]]
   | * - Let     lhs         .   letCBody        =   @cexpr
                             .   letValCBindL    =   []
+                            .   letValMainCBindL=   []
                             .   letTyCBindL     =   []
                             .   frontCBindL     =   []
 %%[[90

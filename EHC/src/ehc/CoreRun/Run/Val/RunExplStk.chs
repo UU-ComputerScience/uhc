@@ -177,19 +177,12 @@ rvalExplStkApp f as = do
       rvalExplStkAppLam sl b as $ \narg -> do
         if nrActualArgs < narg 
           then do
-            -- rsemTr $ "V app lam <"
-            -- renvFrStkReversePopMV nrActualArgs >>= \as -> heapAllocAsPtrM (RVal_App f as) >>= renvFrStkPush1
             renvFrStkEaPopMV as >>= \as -> heapAllocAsPtrM (RVal_App f as) >>= renvFrStkPush1
           else do
-            -- rsemTr $ "V app lam >"
-            -- ap <- mustReturn $ rvalExplStkApp f (as {eaStk=narg}) >>= rsemPop >>= rsemDeref >>= rsemPop
-            -- rvalExplStkApp ap (as {eaStk=nrActualArgs - narg})
             ap <- mustReturn $ rvalExplStkApp f (eaSetNrArgs as narg) >>= rsemPop >>= rsemDeref >>= rsemPop
             rvalExplStkApp ap (eaSetNrArgs emptyExplArgs (nrActualArgs - narg))
     RVal_App appf appas
       | nrActualArgs > 0 -> do
-           -- rsemTr $ "V app app"
-           -- renvFrStkReversePushMV appas >> rvalExplStkApp appf (as {eaStk=nrActualArgs + MV.length appas})
            appas' <- liftIO $ V.freeze appas
            rvalExplStkApp appf (as {eaVec=appas' V.++ eaVec as})
     _   -> err $ "CoreRun.Run.Val.rvalExplStkApp:" >#< f
@@ -223,12 +216,12 @@ rvalExplStkExp e = do
 
     -- lam as is, being a heap allocated thunk when 0 args are required
     Exp_Lam {nrArgs_Exp_Lam=na, mbNm_Exp_Lam=mn}
-      | na == 0   -> mk RVal_Thunk
-      | otherwise -> mk RVal_Lam
-      where mk rv = do
+      | na == 0   -> mk heapAllocAsPtrM RVal_Thunk
+      | otherwise -> mk return          RVal_Lam
+      where mk alloc rv = do
              sl <- renvTopFrameM
              slref <- liftIO $ newIORef sl
-             heapAllocAsPtrM (rv mn e slref) >>= rsemPush
+             alloc (rv mn e slref) >>= rsemPush
 
     -- let
     Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
@@ -364,7 +357,7 @@ instance
     {-# INLINE rsemPush #-}
     rsemPop  = \_ -> renvFrStkPop1
     {-# INLINE rsemPop #-}
-    rsemNode t vs = heapAllocAsPtrM $ RVal_Node t vs
+    rsemNode t vs = {- heapAllocAsPtrM -} return $ RVal_Node t vs
     {-# INLINE rsemNode #-}
 
     

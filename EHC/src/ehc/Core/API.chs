@@ -386,7 +386,7 @@ mkMain :: HsName       -- ^ The function containing the user code to call.
     -> EC.CExpr
 mkMain main = mainEhc
   where mainEhc = AC.acoreLet1Plain mainNm
-            (mainWrap $ AC.acoreVar main)
+            (AC.acoreRunMain $ mainWrap $ AC.acoreVar main)
             (AC.acoreVar mainNm)
         mainNm = hsnMain
 %%[[8
