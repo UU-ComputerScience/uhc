@@ -169,11 +169,11 @@ rvalImplStkExp e = do
     -- app, call
     Exp_App f as -> do
         f' <- mustReturn $ rsemExp f {- >>= rsemEvl -}
-        (mustReturn $ V.mapM rsemExp as) >>= (liftIO . V.thaw) >>= rvalImplStkApp f'
+        (mustReturn $ V.mapM rsemSExp as) >>= (liftIO . V.thaw) >>= rvalImplStkApp f'
     
     -- heap node
     Exp_Tup t as -> do
-        as' <- V.mapM rsemExp as >>= (liftIO . mvecAllocFillFromV)
+        as' <- V.mapM rsemSExp as >>= (liftIO . mvecAllocFillFromV)
         rsemNode (ctagTag t) as'
 
     -- lam as is, being a heap allocated thunk when 0 args are required
@@ -213,7 +213,7 @@ rvalImplStkExp e = do
     Exp_SExp se -> rsemSExp se
 
     -- FFI
-    Exp_FFI pr as -> V.mapM rsemExp as >>= rsemPrim pr
+    Exp_FFI pr as -> V.mapM rsemSExp as >>= rsemPrim pr
 
     e -> err $ "CoreRun.Run.Val.RunExplStk.rvalImplStkExp:" >#< e
 

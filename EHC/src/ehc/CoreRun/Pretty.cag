@@ -177,9 +177,10 @@ SEM SExp
   | Integer     lhs         .   pp          =   pp @integer
 %%]
   | Var         lhs         .   pp          =   ppRRef @lhs.inhpp @ref
+  | Dbg         lhs         .   pp          =   ppCurly $ "dbg:" >#< @msg
 
 SEM Exp
-  | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (map (ppExp'' @lhs.inhpp) $ V.toList @args)
+  | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
   | Let         lhs         .   pp          =   "let" >#< ppBinds'' @inhpp (RRef_Loc @lev) @firstOff @binds >#< "in" >-< @body.pp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
   -- | Ret         lhs         .   pp          =   "ret" >|< ppParens @expr.pp
@@ -189,9 +190,8 @@ SEM Exp
   | Lam         lhs         .   pp          =   "\\" >|< "@" >|< @lev >#< ppCommas [if @nrArgs > 0 then pp @nrArgs else pp "thk", pp @nrBinds, pp @stkDepth] >#< "->" >#< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
                                                 >-< indent 1 (vlist $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
-  | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (map (ppExp'' @lhs.inhpp) $ V.toList @args)
-  | FFI         lhs         .   pp          =   "ffi" >#< show @prim >|< ppParensCommas (map (ppExp'' @lhs.inhpp) $ V.toList @args)
-  | Dbg         lhs         .   pp          =   ppCurly $ "dbg:" >#< @msg
+  | Tup         lhs         .   pp          =   "alloc" >#< ctagTag @tag >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
+  | FFI         lhs         .   pp          =   "ffi" >#< show @prim >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
 
 SEM Alt
   | Alt         lhs         .   pp          =   @pat.pp >#< "->" >#< @expr.pp

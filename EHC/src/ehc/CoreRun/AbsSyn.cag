@@ -44,6 +44,8 @@ DATA SExp
 %%[[97
   | Integer     integer         : {Integer}
 %%]]
+  -- Debug only
+  | Dbg			msg				: {String}
 %%]
 
 %%[(8 corerun)
@@ -53,7 +55,7 @@ DATA Exp
 
   -- node constructor, tuple or data constructor, determined by tag
   | Tup         tag             : {CTag}
-                args			: {CRArray Exp}
+                args			: {CRArray SExp}
 
   -- let bindings, recursiveness allowed, yes/no eval made explicit in rhs of binding
   | Let         lev				: {Int}
@@ -65,7 +67,7 @@ DATA Exp
   -- application, abstraction
   | App         -- isTailRec		: {Bool}
   				func            : Exp
-                args            : {CRArray Exp}
+                args            : {CRArray SExp}
   | Lam         mbNm			: {Maybe HsName}	-- possibly bound to name
   				lev				: {Int}				-- lexical level
   				nrArgs          : {Int}				-- nr of arguments, 0 means it is a thunk
@@ -92,7 +94,7 @@ DATA Exp
 
   -- FFI call
   | FFI         prim        	: {RunPrim}
-                args			: {CRArray Exp}
+                args			: {CRArray SExp}
 {-
   | FFI         callconv        : {FFIWay}
 %%[[8
@@ -111,8 +113,6 @@ DATA Exp
                 expr            : Exp
                 ty              : {Ty}
 %%]]
-  -- Debug only
-  | Dbg			msg				: {String}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

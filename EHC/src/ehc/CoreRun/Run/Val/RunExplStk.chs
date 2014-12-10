@@ -205,13 +205,13 @@ rvalExplStkExp e = do
     -- app, call
     Exp_App f as -> do
         f' <- mustReturn $ do
-          vecReverseForM_ as rsemExp
+          vecReverseForM_ as rsemSExp
           rsemExp f
         rsemPop f' >>= ptr2valM >>= \f' -> rvalExplStkApp f' (emptyExplArgs {eaStk=V.length as})
     
     -- heap node
     Exp_Tup t as -> do
-        V.forM_ as rsemExp
+        V.forM_ as rsemSExp
         renvFrStkPopMV (V.length as) >>= rsemNode (ctagTag t) >>= rsemPush
 
     -- lam as is, being a heap allocated thunk when 0 args are required
@@ -251,7 +251,7 @@ rvalExplStkExp e = do
     Exp_SExp se -> rsemSExp se
 
     -- FFI
-    Exp_FFI pr as -> V.mapM_ rsemExp as >> renvFrStkPopMV (V.length as) >>= (liftIO . V.freeze) >>= rsemPrim pr
+    Exp_FFI pr as -> V.mapM_ rsemSExp as >> renvFrStkPopMV (V.length as) >>= (liftIO . V.freeze) >>= rsemPrim pr
 
     e -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp:" >#< e
 

@@ -115,6 +115,33 @@ unit = Exp_Tup CTagRec emptyCRArray
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Debugging
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(dbg)
+-- | Debug info is embedded in SExp
+dbgs = SExp_Dbg
+dbg  = Exp_SExp . dbgs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inspection/deconstruction/conversion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(mbSExpr)
+-- | Is exp a SExp?
+mbSExpr :: Exp -> Maybe SExp
+mbSExpr (Exp_SExp s) = Just s
+mbSExpr _            = Nothing
+%%]
+
+%%[(8 corerun) hs export(exp2sexp)
+-- | Convert to SExp
+exp2sexp :: Exp -> SExp
+exp2sexp = maybe (dbgs "CoreRun.exp2sexp") id . mbSExpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Running Core: runtime references
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

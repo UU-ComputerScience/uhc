@@ -74,15 +74,6 @@ cmod2CoreRun m = m'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Debugging
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 corerun) hs
--- | Debug info is embedded in Exp
-dbg = CR.Exp_Dbg
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -365,16 +356,16 @@ SEM CExpr
 
 %%[(8 corerun) hs
 -- | Construct application
-mkApp :: CR.Exp -> CR.CRArray CR.Exp -> CR.Exp
+mkApp :: CR.Exp -> CR.CRArray CR.SExp -> CR.Exp
 mkApp f as = CR.Exp_App ({- CR.Exp_Ret $ -} CR.Exp_Force f) as
 %%]
 mkApp f as = CR.Exp_App ({- CR.Exp_Ret $ -} CR.Exp_Force f) as
 
 %%[(8 corerun)
-ATTR CExpr [ | | creAppArgL: {[CR.Exp]}  creAppFun: {TailCtx -> CR.CRArray CR.Exp -> CR.Exp} ]
+ATTR CExpr [ | | creAppArgL: {[CR.SExp]}  creAppFun: {TailCtx -> CR.CRArray CR.SExp -> CR.Exp} ]
 
 SEM CExpr
-  | App         loc         .   creAppArgL  =   (snd $ head @arg.crb) : @func.creAppArgL
+  | App         loc         .   creAppArgL  =   (CR.exp2sexp $ snd $ head @arg.crb) : @func.creAppArgL
                             .   creAppFun   =   @func.creAppFun
   | Tup         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . CR.Exp_Tup @tag
   | FFI         loc         .   creAppFun   =   \_ -> cseCtxWrap TailCtx_Plain . @creMk
@@ -457,17 +448,17 @@ SEM CExpr
   | Var         loc         .   creBase         =   taileval @lhs.tailCtx $ CR.Exp_SExp @crse
   | Lam         loc         .   creBase         =   if @isTopLam
                                                     then CR.Exp_Lam (whatExprMbBind @lhs.whatAbove) @lev (length @creLamArgL) (@refOffsetMax) (@stackDepthMax) (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
-                                                    else dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
+                                                    else CR.dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
   | App         loc         .   creBase         =   if @isTopApp'
                                                     then @creAppFun @lhs.tailCtx $ CR.mkCRArray $ reverse @creAppArgL
-                                                    else dbg "Core.ToCoreRun.CExpr.App.cre" -- TBD
+                                                    else CR.dbg "Core.ToCoreRun.CExpr.App.cre" -- TBD
   | Tup         loc         .   creBase         =   CR.Exp_Tup @tag CR.emptyCRArray
   | Let         loc         .   creBase         =   if @isGlobal
                                                     then @body.cre
                                                     else CR.Exp_Let @lhs.lev @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.mkCRArray $ map snd @binds.crb) @body.cre
   | Case        loc         .   creBase         =   CR.Exp_Case @expr.crse $ CR.mkCRArray @alts.cra
   | FFI         loc         .   creEntMb        =   forextractMbEnt @foreignEntInfo >>= flip Map.lookup CR.allRunPrimMp
-                            .   creMk           =   \as -> maybe (dbg $ "Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) (\ent -> CR.Exp_FFI ent as) @creEntMb
+                            .   creMk           =   \as -> maybe (CR.dbg $ "Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) (\ent -> CR.Exp_FFI ent as) @creEntMb
                             .   creBase         =   @creMk CR.emptyCRArray
   | Ann         loc         .   creBase         =   @expr.cre
   | * - Int Char String Var
@@ -476,7 +467,7 @@ SEM CExpr
 %%[[97
         Integer
 %%]]
-                loc         .   creBase         =   dbg "Core.ToCoreRun.CExpr.cre"
+                loc         .   creBase         =   CR.dbg "Core.ToCoreRun.CExpr.cre"
 %%]
 
 %%[(8 corerun)
