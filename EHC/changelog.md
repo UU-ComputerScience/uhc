@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.1.7.5
+## 1.1.8.1
+
+- 
+
+## 1.1.8.0 - 20141212
 
 - [corerun, api] CoreRun has its own API.
 - [core, api] Interface to Core main changed in that the state parameter is already passed explicitly (not implicitly added during later compiler pipeline stages), influences the api.

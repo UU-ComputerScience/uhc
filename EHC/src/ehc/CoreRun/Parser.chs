@@ -81,7 +81,7 @@ pRRef
   where pB = (   RRef_LDf <$ pKeyTk "d"
              <|> RRef_Glb <$ pKeyTk "g"
              <|> RRef_Loc <$ pKeyTk "l"
-             ) pDOT <* <*> pInt <* pDOT <*> pInt
+             ) <* pDOT <*> pInt <* pDOT <*> pInt
         pS = pDOT
               *> (   RRef_Tag <$ pKeyTk "tag"
                  <|> flip RRef_Fld <$> pInt

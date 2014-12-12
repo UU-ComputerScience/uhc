@@ -13,10 +13,12 @@ module %%@{%{EH}%%}Base.API
   -- | Names in UHC have to be of the form P1.P2....Pn.Ident . All names
   -- in module M must have the form M.Ident . Datatype and constructor names
   -- have to start with an uppercase letter, functions with a lowercase letter.
+%%[[(8 core)
   , mkUniqueHsName
+  , addHsNamePrefix
+%%]]
   , mkHsName
   , mkHsName1
-  , addHsNamePrefix
 
   -- * Constructor Tags
   -- From Base.Common
@@ -50,6 +52,7 @@ import qualified Data.Map as M
 -- Names
 -- **************************************
 
+%%[[(8 core)
 -- | Creates a new Core name. All names generated with this function live in
 -- the "Core API" namespace and will not collide with names in other namespaces.
 -- Names in the "Core API" namespace cannot be called from Haskell code.
@@ -65,6 +68,7 @@ mkUniqueHsName :: String    -- ^ Name prefix. Used to distinguish names generate
 -- UHC expects names to be of the _Modf variety. If _Base/hsnFromString is used
 -- instead things start to break, e.g. calling functions defined in other packages.
 mkUniqueHsName prefix = hsnMkModf1 (M.singleton HsNameUniqifier_CoreAPI [HsNameUnique_String prefix])
+%%]]
 
 -- | Creates a new Core name. The generated name lives in the default namespace,
 -- hence may clash with Haskell-defined names.
@@ -83,10 +87,12 @@ mkHsName1 nm = mkHsName (init xs) (last xs)
         splitBy :: Eq a => a -> [a] -> [[a]]
         splitBy sep = (foldr (\x (a1:as) -> if x == sep then ([]:a1:as) else ((x:a1):as)) [[]])
 
+%%[[(8 core)
 -- | Adds an additional prefix to a 'HsName'. This can be used to derive a new
 -- unique name from an existing name.
 addHsNamePrefix :: String -> HsName -> HsName
 addHsNamePrefix prefix name = hsnUniqifyStr HsNameUniqifier_CoreAPI prefix name
+%%]]
 
 -- | Local helper function. Converts string names to HsNames.
 hsnMkModf1 :: HsNameUniqifierMp -> [String] -> String -> HsName
