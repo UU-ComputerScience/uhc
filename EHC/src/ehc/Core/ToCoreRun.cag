@@ -409,6 +409,17 @@ taileval tailCtx = if tailCtxIsTailRec tailCtx then CR.mkEval else id
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun)
+ATTR CExpr [ | | vref: {CR.RRef} ]
+%%]
+
+%%[(8 corerun)
+SEM CExpr
+  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (CR.rrefToDis @lhs.lev) $ Map.lookup @nm @lhs.nm2ref
+  | * - Var
+                loc         .   vref            =   panic "Core.ToCoreRun.CExpr.ref"
+%%]
+
+%%[(8 corerun)
 ATTR CExpr [ | | crse: {CR.SExp} ]
 %%]
 
@@ -417,7 +428,7 @@ SEM CExpr
   | Int         loc         .   crse            =   CR.mkInt' @int
   | Char        loc         .   crse            =   CR.mkChar' @char
   | String      loc         .   crse            =   CR.mkString' @str
-  | Var         loc         .   crse            =   CR.SExp_Var $ maybe (CR.RRef_Dbg @nm) (CR.rrefToDis @lhs.lev) $ Map.lookup @nm @lhs.nm2ref
+  | Var         loc         .   crse            =   CR.mkVar' @vref
 %%[[97
   | Integer     loc         .   crse            =   CR.SExp_Integer @integer
 %%]]
@@ -457,10 +468,11 @@ SEM CExpr
   | Tup         loc         .   creBase         =   CR.mkTup (ctagTag @tag) []
   | Let         loc         .   creBase         =   if @isGlobal
                                                     then @body.cre
-                                                    else CR.Exp_Let @lhs.lev @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.mkCRArray $ map snd @binds.crb) @body.cre
-  | Case        loc         .   creBase         =   CR.Exp_Case @expr.crse $ CR.mkCRArray @alts.cra
-  | FFI         loc         .   creEntMb        =   forextractMbEnt @foreignEntInfo >>= flip Map.lookup CR.allRunPrimMp
-                            .   creMk           =   \as -> maybe (CR.dbg $ "Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) (\ent -> CR.Exp_FFI ent as) @creEntMb
+                                                    else CR.Exp_Let {- @lhs.lev -} @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.mkCRArray $ map snd @binds.crb) @body.cre
+  -- | Case        loc         .   creBase         =   CR.Exp_Case @expr.crse $ CR.mkCRArray @alts.cra
+  | Case        loc         .   creBase         =   CR.Exp_Case (CR.mkVar' $ CR.RRef_Tag @expr.vref) $ CR.mkCRArray @alts.cra
+  | FFI         loc         .   creEntMb        =   forextractMbEnt @foreignEntInfo -- >>= flip Map.lookup CR.allRunPrimMp
+                            .   creMk           =   \as -> maybe (CR.dbg $ "Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) (\ent -> CR.mkFFI' ent as) @creEntMb
                             .   creBase         =   @creMk CR.emptyCRArray
   | Ann         loc         .   creBase         =   @expr.cre
   | * - Int Char String Var

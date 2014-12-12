@@ -194,7 +194,7 @@ rvalImplStkExp e = do
 
     -- case, scrutinee already evaluated
     Exp_Case e as -> do
-      (RVal_Node {rvalTag=tg}) <- {- rsemDeref =<< -} rsemSExp e
+      RVal_Int tg <- {- rsemDeref =<< -} rsemSExp e
       rsemAlt $ as V.! tg
     
     -- force evaluation immediately

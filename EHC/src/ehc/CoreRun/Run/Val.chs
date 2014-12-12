@@ -100,7 +100,7 @@ data RVal
       , rvalSLRef		:: !(IORef HpPtr)			-- ^ static link to enclosing stack frame
       }
   | RVal_Node
-      { rvalTag			:: !Int						-- ^ node tag
+      { rvalTag			:: !Int -- {-# UNPACK #-} !RVal		-- ^ node tag
       , rvalNdVals		:: !RValMV					-- ^ fields
       }
   | RVal_App
@@ -729,6 +729,11 @@ ref2valM r = do
         case v of
           RVal_Node _ vs -> liftIO $ MV.read vs e
           _              -> err $ "CoreRun.Run.Val.ref2valM.RRef_Fld:" >#< e >#< "in" >#< v
+    RRef_Tag r -> do
+        v <- ptr2valM =<< ref2valM r -- >>= rsemDeref
+        case v of
+          RVal_Node t _ -> return $ RVal_Int t
+          _             -> err $ "CoreRun.Run.Val.ref2valM.RRef_Tag:" >#< v
     _ -> err $ "CoreRun.Run.Val.ref2valM.r:" >#< r
 {-# INLINE ref2valM #-}
 %%]

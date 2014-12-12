@@ -40,7 +40,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%[(90 corerun) hs import({%{EH}Foreign})
 %%]
 
-%%[(8 corerun) hs import({%{EH}CoreRun.Prim}(RunPrim)) export(module {%{EH}CoreRun.Prim})
+%%[(8 corerun) hs import({%{EH}CoreRun.Prim}) export(module {%{EH}CoreRun.Prim})
 %%]
 %%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), Alt(..), Pat(..))
 %%]
@@ -153,7 +153,7 @@ data RRef
       { rrefMod         :: !Int     -- ^ module
       , rrefEntry       :: !Int     -- ^ entry inside module
       }
-  -- | local reference to on stack value
+  -- | local reference to on stack value, not interpreted during running
   | RRef_Loc
       { rrefLev         :: !Int     -- ^ level when used statically
       , rrefEntry       :: !Int     -- ^ entry inside level
@@ -222,4 +222,179 @@ ref2nmUnion :: Ref2Nm -> Ref2Nm -> Ref2Nm
 ref2nmUnion m1 m2 = \r -> m1 r <|> m2 r
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(mkExp, mkVar, mkVar', mkInt, mkInt', mkChar, mkChar', mkString, mkString')
+-- **************************************
+-- Construction: constants as SExp or Exp
+-- **************************************
+
+-- | Lift 'SExp' into 'Exp'
+mkExp :: SExp -> Exp
+mkExp = Exp_SExp
+
+-- | Var ref as 'SExp'
+mkVar' :: RRef -> SExp
+mkVar' = SExp_Var
+
+-- | Var ref as 'Exp'
+mkVar :: RRef -> Exp
+mkVar = mkExp . mkVar'
+
+-- | Int constant as 'SExp'
+mkInt' :: Int -> SExp
+mkInt' = SExp_Int
+
+-- | Int constant as 'Exp'
+mkInt :: Int -> Exp
+mkInt = mkExp . mkInt'
+
+-- | Char constant as 'SExp'
+mkChar' :: Char -> SExp
+mkChar' = SExp_Char
+
+-- | Char constant as 'Exp'
+mkChar :: Char -> Exp
+mkChar = mkExp . mkChar'
+
+-- | String constant as 'SExp'
+mkString' :: String -> SExp
+mkString' = SExp_String
+
+-- | String constant as 'Exp'
+mkString :: String -> Exp
+mkString = mkExp . mkString'
+%%]
+
+%%[(8 corerun) hs export(mkDbg, mkDbg')
+-- | Debug info as 'SExp', will make an interpreter stop with displaying the message
+mkDbg' :: String -> SExp
+mkDbg' = dbgs
+
+-- | Debug info as 'Exp'
+mkDbg :: String -> Exp
+mkDbg = dbg
+%%]
+
+%%[(97 corerun) hs export(mkInteger, mkInteger')
+-- | Integer constant as 'SExp'
+mkInteger' :: Integer -> SExp
+mkInteger' = SExp_Integer
+
+-- | Integer constant as 'Exp'
+mkInteger :: Integer -> Exp
+mkInteger = mkExp . mkInteger'
+%%]
+
+%%[(8 corerun) hs export(mkApp, mkApp', mkTup, mkTup', mkEval, mkTail, mkCase, mkLam, mkLam', mkLet, mkLet', mkFFI, mkFFI')
+-- **************************************
+-- Construction: Exp
+-- **************************************
+
+-- | Application
+mkApp' :: Exp -> CRArray SExp -> Exp
+mkApp' = Exp_App
+
+-- | Application
+mkApp :: Exp -> [SExp] -> Exp
+mkApp f as = mkApp' f (mkCRArray as)
+
+-- | Tuple, Node
+mkTup' :: Int -> CRArray SExp -> Exp
+mkTup' = Exp_Tup
+
+-- | Tuple, Node
+mkTup :: Int -> [SExp] -> Exp
+mkTup t as = mkTup' t (mkCRArray as)
+
+-- | Force evaluation
+mkEval :: Exp -> Exp
+mkEval = Exp_Force
+
+-- | Set tail call context
+mkTail :: Exp -> Exp
+mkTail = Exp_Tail
+
+-- | Case
+mkCase :: SExp -> [Exp] -> Exp
+mkCase scrut alts = Exp_Case scrut $ mkCRArray $ map (Alt_Alt ref2nmEmpty) alts
+
+-- | Lambda
+mkLam'
+  :: Maybe HsName	-- ^ a name for this lambda, to be used for pretty printing
+     -> Int			-- ^ nr of arguments, 0 encodes a thunk/CAF
+     -> Int			-- ^ total stack size, including arguments, locals, expression calculation
+     -> Exp 		-- ^ body
+     -> Exp
+mkLam' mbNm nrArgs stackDepth body = Exp_Lam mbNm nrArgs stackDepth ref2nmEmpty body
+
+-- | Lambda
+mkLam
+  :: Int	-- ^ nr of arguments, 0 encodes a thunk/CAF
+     -> Int	-- ^ total stack size, including arguments, locals, expression calculation
+     -> Exp -- ^ body
+     -> Exp
+mkLam nrArgs stackDepth body = mkLam' Nothing nrArgs stackDepth body
+
+-- | Let
+mkLet'
+  :: Int				-- ^ stackoffset to place bound value
+     -> CRArray Exp		-- ^ bound terms
+     -> Exp				-- ^ body
+     -> Exp
+mkLet' firstoff bs b = Exp_Let firstoff ref2nmEmpty bs b
+
+-- | Let
+mkLet
+  :: Int				-- ^ stackoffset to place bound value
+     -> [Exp]			-- ^ bound terms
+     -> Exp				-- ^ body
+     -> Exp
+mkLet firstoff bs b = mkLet' firstoff (mkCRArray bs) b
+
+-- | FFI
+mkFFI'
+  :: String				-- ^ name of foreign entity, if unknown results in debug expr
+     -> CRArray SExp	-- ^ args
+     -> Exp
+mkFFI' fe as = case Map.lookup fe allRunPrimMp of
+  Just p -> Exp_FFI p as
+  _      -> dbg $ "CoreRun.mkFFI: " ++ fe
+
+-- | FFI
+mkFFI
+  :: String				-- ^ name of foreign entity, if unknown results in debug expr
+     -> [SExp]			-- ^ args
+     -> Exp
+mkFFI fe as = mkFFI' fe (mkCRArray as)
+%%]
+
+
+%%[(8 corerun) hs export(mkMod, mkMod')
+-- **************************************
+-- Construction: Top level module
+-- **************************************
+
+-- | Module
+mkMod'
+  :: HsName				-- ^ module name
+     -> Int				-- ^ module number
+     -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
+     -> CRArray Bind	-- ^ bound expressions
+     -> Exp				-- ^ body of main
+     -> Mod
+mkMod' modNm modNr stkDepth binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth binds body
+
+-- | Module
+mkMod
+  :: HsName				-- ^ module name
+     -> Int				-- ^ module number
+     -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
+     -> [Bind]			-- ^ bound expressions
+     -> Exp				-- ^ body of main
+     -> Mod
+mkMod modNm modNr stkDepth binds body = mkMod' modNm modNr stkDepth (mkCRArray binds) body
+%%]
 

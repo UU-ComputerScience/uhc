@@ -2,7 +2,11 @@
 
 ## 1.1.7.5
 
-- 
+- [corerun, api] CoreRun has its own API.
+- [core, api] Interface to Core main changed in that the state parameter is already passed explicitly (not implicitly added during later compiler pipeline stages), influences the api.
+- [corerun] Cleaned up CoreRun AST, spec of the operational semantics under development (separate outside src/doc tree).
+- [feature] Separate executable 'uhcr' as part of uhc-light for running CoreRun file .rcr as pretty printed by dump, a temporary solution.
+- [corerun] Parser for CoreRun.
 
 ## 1.1.7.4 - 20141203
 

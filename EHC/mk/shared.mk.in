@@ -550,12 +550,14 @@ GHC_CABAL			= $(GHC) $(GHC_OPTS_GENERAL) -package Cabal -o $(2) $(1)  ; $(STRIP_
 # $6: description 
 # $7: exposed library modules
 # $8: other library modules
-# $9: executable Main
-# $10: executable name
+# $9: executable Main: compiler
+# $10: executable name: compiler
 # $11: extra source files
 # $12: build type
 # $13: license
 # $14: change log
+# $15: executable Main: runner
+# $16: executable name: runner
 FUN_GEN_CABAL_UHC_LIGHT		= \
 					( \
 					echo   "Name:				$(strip $(1))" ; \
@@ -587,6 +589,12 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Main-Is:           	$(strip $(9)).hs" ; \
+					echo   "" ; \
+					echo   "Executable $(strip $(16))" ; \
+					echo   "  Hs-Source-Dirs:       src" ; \
+					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
+					echo   "  Main-Is:           	$(strip $(15)).hs" ; \
 					)
 
 ###########################################################################################

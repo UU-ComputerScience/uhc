@@ -5,7 +5,7 @@
 -- Intended for constructing basic CoreRun Programs.
 --
 -- CoreRun is a simplified Core intended to be used for direct interpretation/execution.
--- See TBD for semantics.
+-- For semantics, see TBD
 --
 
 module %%@{%{EH}%%}CoreRun.API
@@ -17,6 +17,7 @@ module %%@{%{EH}%%}CoreRun.API
   , SExp
   , Alt
   -- , Pat
+  , Bind
 
   -- * Utilities
   , CRArray
@@ -25,6 +26,7 @@ module %%@{%{EH}%%}CoreRun.API
   -- * Construction functions
   , mkExp
   
+  , mkVar, mkVar'
   , mkInt, mkInt'
   , mkChar, mkChar'
 %%[[97
@@ -38,101 +40,43 @@ module %%@{%{EH}%%}CoreRun.API
   , mkEval
   , mkTail
   , mkCase
-  , mkLam
+  , mkLam, mkLam'
+  , mkLet, mkLet'
+  , mkFFI, mkFFI'
+  
+  , mkMod, mkMod'
+  
+  -- * Parsing
+  , parseModFromString
 
+  -- * Running
+  , runCoreRunIO
   )
   where
 
+import %%@{%{EH}%%}Base.API
 import %%@{%{EH}%%}CoreRun as CR
+import %%@{%{EH}%%}CoreRun.Parser as CR
+import %%@{%{EH}%%}CoreRun.Run as CR
+import %%@{%{EH}%%}CoreRun.Run.Val as CR
+import %%@{%{EH}%%}CoreRun.Run.Val.RunExplStk as CR
+
+import System.IO
+import Control.Exception
 
 -- **************************************
--- Construction: constants as SExp or Exp
+-- Running
 -- **************************************
 
--- | Lift 'SExp' into 'Exp'
-mkExp :: SExp -> Exp
-mkExp = Exp_SExp
-
--- | Int constant as 'SExp'
-mkInt' :: Int -> SExp
-mkInt' = SExp_Int
-
--- | Int constant as 'Exp'
-mkInt :: Int -> Exp
-mkInt = mkExp . mkInt'
-
--- | Char constant as 'SExp'
-mkChar' :: Char -> SExp
-mkChar' = SExp_Char
-
--- | Char constant as 'Exp'
-mkChar :: Char -> Exp
-mkChar = mkExp . mkChar'
-
-%%[[97
--- | Integer constant as 'SExp'
-mkInteger' :: Integer -> SExp
-mkInteger' = SExp_Integer
-
--- | Integer constant as 'Exp'
-mkInteger :: Integer -> Exp
-mkInteger = mkExp . mkInteger'
-%%]]
-
--- | String constant as 'SExp'
-mkString' :: String -> SExp
-mkString' = SExp_String
-
--- | String constant as 'Exp'
-mkString :: String -> Exp
-mkString = mkExp . mkString'
-
--- | Debug info as 'SExp', will make an interpreter stop with displaying the message
-mkDbg' :: String -> SExp
-mkDbg' = dbgs
-
--- | Debug info as 'Exp'
-mkDbg :: String -> Exp
-mkDbg = dbg
-
--- **************************************
--- Construction: Exp
--- **************************************
-
--- | Application
-mkApp' :: Exp -> CRArray SExp -> Exp
-mkApp' = Exp_App
-
--- | Application
-mkApp :: Exp -> [SExp] -> Exp
-mkApp f as = mkApp' f (mkCRArray as)
-
--- | Tuple, Node
-mkTup' :: Int -> CRArray SExp -> Exp
-mkTup' = Exp_Tup
-
--- | Tuple, Node
-mkTup :: Int -> [SExp] -> Exp
-mkTup t as = mkTup' t (mkCRArray as)
-
--- | Force evaluation
-mkEval :: Exp -> Exp
-mkEval = Exp_Force
-
--- | Set tail call context
-mkTail :: Exp -> Exp
-mkTail = Exp_Tail
-
--- | Case
-mkCase :: SExp -> [Exp] -> Exp
-mkCase scrut alts = Exp_Case scrut $ mkCRArray $ map (Alt_Alt ref2nmEmpty) alts
-
--- | Lambda
-mkLam
-  :: Int	-- ^ nr of arguments, 0 encodes a thunk/CAF
-     -> Int	-- ^ total stack size, including arguments, locals, expression calculation
-     -> Exp -- ^ body
-     -> Exp
-mkLam nrArgs stackDepth body = Exp_Lam Nothing nrArgs stackDepth ref2nmEmpty body
+-- | Run CoreRun in IO
+-- TBD: fix dependence on whole program linked
+runCoreRunIO
+  :: EHCOpts		-- ^ options, e.g. for turning on tracing (if supported by runner)
+     -> Mod			-- ^ the module to run
+     -> IO (Either Err RVal)
+runCoreRunIO opts mod = do
+    catch
+      (runCoreRun opts [] mod $ cmodRun opts mod)
+      (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "cpRunCoreRun: " ++ show e))
 
 %%]

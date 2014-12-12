@@ -11,7 +11,7 @@ Pretty printing for CoreRun
 %%% CoreRun Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs module {%{EH}CoreRun.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Target},{%{EH}Ty},{%{EH}CoreRun})
+%%[(8 corerun) hs module {%{EH}CoreRun.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Target},{%{EH}Ty},{%{EH}CoreRun},{%{EH}CoreRun.Prim})
 %%]
 %%[(8 corerun) hs import({%{EH}Ty.Pretty})
 %%]
@@ -39,18 +39,23 @@ WRAPPER
 -- | Not all AST datatypes are expressed as AG, inherited info therefore implemented manually
 data InhPP
   = InhPP
-      { r2nInhPP	:: Ref2Nm
-      , optsInhPP	:: EHCOpts
+      { r2nInhPP	:: Ref2Nm		-- ^ ref to name mapping
+      , optsInhPP	:: EHCOpts		-- ^ global options
+      , letoffInhPP	:: Int			-- ^ offset of first binding for next let
       }
 
 mkEmptyInhPP :: EHCOpts -> InhPP
-mkEmptyInhPP opts = InhPP ref2nmEmpty opts
+mkEmptyInhPP opts = InhPP ref2nmEmpty opts 0
 
 -- | Add new 
 r2nAdd :: Ref2Nm -> InhPP -> InhPP
 r2nAdd r2n i@(InhPP {r2nInhPP=r2n', optsInhPP=opts})
   | CoreOpt_RunPPNames `elem` ehcOptCoreOpts opts = i {r2nInhPP = ref2nmUnion r2n r2n'}
   | otherwise                                     = i
+
+-- | Update let offset
+letoffUpd :: (Int -> Int) -> InhPP -> InhPP
+letoffUpd upd i@(InhPP {letoffInhPP=o}) = i {letoffInhPP = upd o}
 
 -- | PP using InhPP
 ppRRef :: InhPP -> RRef -> PP_Doc
@@ -59,10 +64,14 @@ ppRRef inhpp r = ppMbPost ppCurly (r2nInhPP inhpp r) r
 
 %%[(8 corerun) hs
 -- | Print extra/verbose info in cmt
-ppCmtExtra :: InhPP -> PP_Doc -> (PP_Doc -> PP_Doc)
-ppCmtExtra (InhPP {optsInhPP=opts}) x
-  | CoreOpt_RunPPVerbose `elem` ehcOptCoreOpts opts = (ppCmt x >#<)
+ppCmtExtra' :: (PP_Doc -> PP_Doc -> PP_Doc) -> InhPP -> PP_Doc -> (PP_Doc -> PP_Doc)
+ppCmtExtra' align (InhPP {optsInhPP=opts}) x
+  | CoreOpt_RunPPVerbose `elem` ehcOptCoreOpts opts = (ppCmt x `align`)
   | otherwise                                       = id
+
+-- | Print extra/verbose info in cmt
+ppCmtExtra :: InhPP -> PP_Doc -> (PP_Doc -> PP_Doc)
+ppCmtExtra = ppCmtExtra' (>#<)
 %%]
 
 %%[(8 corerun) hs
@@ -123,12 +132,12 @@ instance PP Alt where
 
 %%[(8 corerun) hs
 instance PP RRef where
-  pp (RRef_Glb m e) = "#g" >|< ppDots [m,e]
-  pp (RRef_Loc l e) = "#l" >|< ppDots [l,e]
-  pp (RRef_LDf l e) = "#d" >|< ppDots [l,e]
-  pp (RRef_Tag r  ) = ppDots [pp r, pp "tg"]
+  pp (RRef_Glb m e) = ppDots [pp "g", pp m, pp e]
+  pp (RRef_Loc l e) = ppDots [pp "l", pp l, pp e]
+  pp (RRef_LDf l e) = ppDots [pp "d", pp l, pp e]
+  pp (RRef_Tag r  ) = ppDots [pp r, pp "tag"]
   pp (RRef_Fld r e) = ppDots [pp r, pp e]
-  pp (RRef_Dbg n  ) = "##" >|< n
+  pp (RRef_Dbg n  ) = "dbg" >#< pp ("RRef_Dbg: " ++ show n)				-- intentionally the same PP as Exp_Dbg so it will parse to Exp_Dbg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,7 +157,8 @@ SEM Mod
   | Mod			loc			.	inhpp		=	r2nAdd @ref2nm @lhs.inhpp
 
 SEM Exp
-  | Let Lam  	loc			.	inhpp		=	r2nAdd @ref2nm @lhs.inhpp
+  | Let      	loc			.	inhpp		=	letoffUpd (+ V.length @binds) $ r2nAdd @ref2nm @lhs.inhpp
+  | Lam 	 	loc			.	inhpp		=	letoffUpd (const @nrArgs) $ r2nAdd @ref2nm @lhs.inhpp
 
 SEM Alt
   | Alt			loc			.	inhpp		=	r2nAdd @ref2nm @lhs.inhpp
@@ -160,8 +170,11 @@ SEM Alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun) hs
+ppBinds''' :: InhPP -> (Int -> PP_Doc) -> Int -> AssocL Int PP_Doc -> PP_Doc
+ppBinds''' inhpp mkr off bs = vlist [ ppSemi $ ppCmtExtra inhpp ((mkr $ off+i)) e | (i,e) <- bs ]
+
 ppBinds'' :: InhPP -> (Int -> RRef) -> Int -> CRArray Bind -> PP_Doc
-ppBinds'' inhpp mkr off bs = vlist [ ppSemi $ ppCmtExtra inhpp ((ppRRef inhpp $ mkr $ off+i)) $ ppExp'' inhpp e | (i,e) <- craAssocs bs ]
+ppBinds'' inhpp mkr off bs = ppBinds''' inhpp (ppRRef inhpp . mkr) off [ (i, ppExp'' inhpp e) | (i,e) <- craAssocs bs ]
 %%]
 
 %%[(8 corerun)
@@ -179,24 +192,21 @@ SEM SExp
   | Integer     lhs         .   pp          =   pp @integer
 %%]
   | Var         lhs         .   pp          =   ppRRef @lhs.inhpp @ref
-  | Dbg         lhs         .   pp          =   ppCurly $ "dbg:" >#< @msg
+  | Dbg         lhs         .   pp          =   ppParens $ "dbg" >#< show @msg
 
 SEM Exp
   | App         lhs         .   pp          =   "app" >#< ppParens @func.pp >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
-  | Let         lhs         .   pp          =   "let" >#< ppBinds'' @inhpp (RRef_Loc @lev) @firstOff @binds >#< "in" >-< @body.pp
+  | Let         lhs         .   pp          =   "let" >#< letoffInhPP @lhs.inhpp >#< "->" >#< ppBinds'' @inhpp (RRef_LDf 0) (letoffInhPP @lhs.inhpp) @binds >#< "in" >-< @body.pp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
-  -- | Ret         lhs         .   pp          =   "ret" >|< ppParens @expr.pp
-  -- | RetCase     lhs         .   pp          =   "retcase" >|< @nrBinds >|< ppParens @expr.pp
   | Tail        lhs         .   pp          =   "tail" >|< ppParens @expr.pp
-  -- | Thunk       lhs         .   pp          =   "thunk" >|< ppParens @expr.pp
   | Lam         lhs         .   pp          =   "\\" >|< {- "@" >|< @lev >#< -} ppCommas [{- if @nrArgs == 0 then pp "thk" else -} pp @nrArgs, {- pp @nrBinds, -} pp @stkDepth] >#< "->" >#< @body.pp
-  | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of"
-                                                >-< indent 1 (vlist $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
+  -- | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of" >-< indent 1 (vlist $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
+  | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of" >-< indent 1 (ppBinds''' @lhs.inhpp pp 0 $ zip [0..] $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
   | Tup         lhs         .   pp          =   "alloc" >#< @tag >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
-  | FFI         lhs         .   pp          =   "ffi" >#< show @prim >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
+  | FFI         lhs         .   pp          =   "ffi" >#< show (showRunPrim @prim) >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
 
 SEM Alt
-  | Alt         lhs         .   pp          =   ppSemi $ {- ppCmtExtra @lhs.inhpp @pat.pp $ -} "->" >#< @expr.pp
+  | Alt         lhs         .   pp          =   {- ppCmtExtra @lhs.inhpp @pat.pp $ -} "->" >#< @expr.pp
 
 SEM Pat
   | Con         lhs         .   pp          =   pp @tag

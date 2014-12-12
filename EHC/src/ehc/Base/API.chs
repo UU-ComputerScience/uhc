@@ -25,6 +25,9 @@ module %%@{%{EH}%%}Base.API
   -- * Names
   , HsName
 
+  -- * Error
+  , Err
+
   -- * Misc
 %%[[99
   , hsnEhcRunMain
@@ -39,6 +42,8 @@ import %%@{%{EH}%%}Base.Common
 import %%@{%{EH}%%}Base.HsName
 import %%@{%{EH}%%}Base.HsName.Builtin
 import %%@{%{EH}%%}Opts
+import %%@{%{EH}%%}Error
+
 import qualified Data.Map as M
 
 -- **************************************

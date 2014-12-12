@@ -194,7 +194,7 @@ uhc-light-cabal-dist: # $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)
 	ehc_nomain_exposed_names="`echo $${ehc_nomain_exposed_hs_files} | sed -e 's/\.hs//g' -e 's/ /,/g' -e 's+$(PATH_SEP)+.+g'`" ; \
 	ehc_nomain_nonexposed_hs_files="$(filter-out %Paths_uhc_light.hs dist%, $(subst $(EHC_BLD_LIBEHC_VARIANT_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(filter-out %API.hs,$(shell find $(call FUN_PREFIX2DIR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX)) \( -name '*.hs'  \))))))" ; \
 	ehc_nomain_nonexposed_names="Paths_uhc_light,`echo $${ehc_nomain_nonexposed_hs_files} | sed -e 's/\.hs//g' -e 's/ /,/g' -e 's+$(PATH_SEP)+.+g'`" ; \
-	ehc_main_hs_files="$(subst $(EHC_BLD_VARIANT_ASPECTS_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(EHC_HS_MAIN_DRV_HS)))" ; \
+	ehc_main_hs_files="$(subst $(EHC_BLD_VARIANT_ASPECTS_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(EHC_HS_MAIN_DRV_HS) $(EHCRUN_HS_MAIN_DRV_HS)))" ; \
 	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX),$(CABALDIST_UHCLIGHT_SRC_PREFIX),$${ehc_nomain_exposed_hs_files} $${ehc_nomain_nonexposed_hs_files}) ; \
 	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_VARIANT_ASPECTS_PREFIX),$(CABALDIST_UHCLIGHT_SRC_PREFIX),$${ehc_main_hs_files}) ; \
 	$(call FUN_COPY_FILES_BY_TAR,$${ehc_ehclib_lib_dir},$(CABALDIST_UHCLIGHT_VARIANT_LIB_PREFIX),$${ehc_ehclib_files}) ; \
@@ -213,6 +213,8 @@ uhc-light-cabal-dist: # $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)
 		, Simple \
 		, LICENSE \
 		, changelog.md \
+		, $(EHCRUN_MAIN) \
+		, uhcr \
 	) > $(CABALDIST_UHCLIGHT_PREFIX)uhc-light.cabal ; \
 	(echo "module $(LIB_EHC_QUAL_PREFIX)ConfigCabal" ; \
 	  echo "  (module Paths_uhc_light)" ; \

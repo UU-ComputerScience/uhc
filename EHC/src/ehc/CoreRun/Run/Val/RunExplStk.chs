@@ -232,6 +232,7 @@ rvalExplStkExp e = do
       v <- ptr2valM =<< rsemPop =<< rsemSExp e
       case v of
         RVal_Node {rvalTag=tg} -> rsemAlt $ as V.! tg
+        RVal_Int  tg           -> rsemAlt $ as V.! tg
         _ -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp.Case: scrutinee:" >#< v
     
     -- force evaluation immediately

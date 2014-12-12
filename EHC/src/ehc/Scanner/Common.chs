@@ -261,6 +261,7 @@ hsScanOpts opts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+-- | 'ScanOpts' for 'Core' tokenization before parsing
 coreScanOpts :: EHCOpts -> ScanOpts
 coreScanOpts opts
   =  grinScanOpts
@@ -293,6 +294,22 @@ coreScanOpts opts
         }
   where hsScanOpts' = hsScanOpts opts
         ehScanOpts' = ehScanOpts opts
+%%]
+
+%%[8
+-- | 'ScanOpts' for 'CoreRun' tokenization before parsing
+corerunScanOpts :: {- EHCOpts -> -} ScanOpts
+corerunScanOpts -- opts
+  =  defaultScanOpts
+        {   scoKeywordsTxt      =   Set.fromList $
+                                        [ "alloc", "module", "tail", "eval", "case", "of", "let", "in", "app", "ffi", "dbg", "tag"
+                                        , "g", "d", "l"
+                                        ]
+        ,   scoKeywordsOps      =   Set.fromList [ "->", "\\" ]
+        ,   scoSpecChars        =   Set.fromList "();,."
+        ,   scoOpChars          =   Set.fromList "->\\"
+        ,   scoAllowFloat       =   False
+        }
 %%]
 
 Todo:

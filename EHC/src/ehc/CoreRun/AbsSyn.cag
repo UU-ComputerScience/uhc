@@ -58,7 +58,7 @@ DATA Exp
                 args			: {CRArray SExp}
 
   -- let bindings, recursiveness allowed, yes/no eval made explicit in rhs of binding
-  | Let         lev				: {Int}
+  | Let         -- lev				: {Int}
   				firstOff		: {Int}			-- offset of first binding
   				ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 binds           : {CRArray Bind}
