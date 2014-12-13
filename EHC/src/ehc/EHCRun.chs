@@ -33,7 +33,7 @@ main = do
           Right mod -> do
             res <- runCoreRunIO defaultEHCOpts mod
             case res of
-              Left  e   -> putStrLn $ show e
+              Left  e   -> putStrLn $ show $ pp e
               Right val -> putStrLn $ show $ pp val
 
       _       ->

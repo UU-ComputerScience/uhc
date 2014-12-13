@@ -4,7 +4,7 @@
 
 # for (e.g.) 99/ehc, shorthand notation for ehc binaries
 $(patsubst %,%/ehc,$(EHC_VARIANTS)): %/ehc: $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,%)
-#$(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(EHC_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)
+$(patsubst %,%/ehcr,$(EHC_CODE_VARIANTS)): %/ehcr: $(call FUN_EHCRUN_INSTALL_VARIANT_ASPECTS_EXEC,%)
 
 # for (e.g.) install/99/bin/ehc, ehc binaries
 $(EHC_ALL_EXECS): %: \
@@ -14,6 +14,14 @@ $(EHC_ALL_EXECS): %: \
 		$(RTS_ALL_SRC)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=`echo $@ | sed -n -e 's+$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,\([0-9_]*\)).*+\1+p'` ehc-variant
+
+# for (e.g.) install/99/bin/ehcr, ehcr binaries
+$(EHCRUN_ALL_EXECS): %: \
+		$(EHC_ALL_SRC_FIND) \
+		$(if $(EHC_CFG_USE_RULER),$(RULER2),) \
+		$(EHC_MKF)
+	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
+	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=`echo $@ | sed -n -e 's+$(call FUN_EHCRUN_INSTALL_VARIANT_ASPECTS_EXEC,\([0-9_]*\)).*+\1+p'` ehcr-variant
 
 # for haddock
 $(EHC_ALL_HADDOCKS): %: $(EHC_ALL_SRC) $(EHC_MKF)
@@ -70,12 +78,21 @@ ehc-variant-dflt: \
 	  fi \
 	,)
 
-#ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) \
-#			$(if $(EHC_CFG_USE_GRIN) \
-#				,$(if $(EHC_CFG_USE_CODEGEN),$(INSTALLFORBLDABS_LIB_RTS),),)
-#	mkdir -p $(dir $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)) && \
-#	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) \
-#	       -i$(EHC_BLD_VARIANT_ASPECTS_PREFIX) $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_MAIN).hs -o $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
+###########################################################################################
+# rules for ehcr runner
+###########################################################################################
+
+ehcr-variant:
+	$(MAKE) \
+	  $(if $(EHC_CFG_USE_RULER),EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))",) \
+	  ehcr-variant-dflt
+
+ehcr-variant-dflt: \
+		$(EHC_ALL_DPDS) \
+		$(LIB_EHC_INS_FLAG)
+	mkdir -p $(dir $(EHCRUN_INSTALL_VARIANT_ASPECTS_EXEC)) && \
+	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EHC_PKG_NAME) \
+	       -i$(EHC_BLD_VARIANT_ASPECTS_PREFIX) $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHCRUN_MAIN).hs -o $(EHCRUN_INSTALL_VARIANT_ASPECTS_EXEC)
 
 ###########################################################################################
 # code generation target specific make targets, for each $(EHC_TARGETS)
@@ -208,13 +225,13 @@ uhc-light-cabal-dist: # $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)
 		, $${ehc_nomain_exposed_names} \
 		, $${ehc_nomain_nonexposed_names} \
 		, $(EHC_MAIN) \
-		, uhcl \
+		, $(UHCLIGHT_EXEC_NAME) \
 		, $${ehc_ehclib_names} \
 		, Simple \
 		, LICENSE \
 		, changelog.md \
 		, $(EHCRUN_MAIN) \
-		, uhcr \
+		, $(UHCRUN_EXEC_NAME) \
 	) > $(CABALDIST_UHCLIGHT_PREFIX)uhc-light.cabal ; \
 	(echo "module $(LIB_EHC_QUAL_PREFIX)ConfigCabal" ; \
 	  echo "  (module Paths_uhc_light)" ; \

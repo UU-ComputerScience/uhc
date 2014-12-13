@@ -184,12 +184,12 @@ instance Show RRef where
 noRRef = RRef_Dbg hsnUnknown
 %%]
 
-%%[(8 corerun) hs export(rrefToDis)
+%%[(8 corerun) hs export(rrefToDif)
 -- | Convert to RRef_Loc to RRef_LDf, i.e. absolute level to relative (to current) level
-rrefToDis curlev r@(RRef_Loc l o         ) = RRef_LDf (curlev - l) o
-rrefToDis curlev r@(RRef_Fld {rrefRef=r'}) = r {rrefRef = rrefToDis curlev r'}
-rrefToDis curlev r@(RRef_Tag {rrefRef=r'}) = r {rrefRef = rrefToDis curlev r'}
-rrefToDis _      r                         = r
+rrefToDif curlev r@(RRef_Loc l o         ) = RRef_LDf (curlev - l) o
+rrefToDif curlev r@(RRef_Fld {rrefRef=r'}) = r {rrefRef = rrefToDif curlev r'}
+rrefToDif curlev r@(RRef_Tag {rrefRef=r'}) = r {rrefRef = rrefToDif curlev r'}
+rrefToDif _      r                         = r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -225,6 +225,24 @@ ref2nmUnion m1 m2 = \r -> m1 r <|> m2 r
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs export(mkLocLevRef, mkLocDifRef, mkGlobRef)
+-- **************************************
+-- Construction: references
+-- **************************************
+
+-- | 'RRef' to local or outside scoped, using absolute level and offset (this is to be converted to a level difference + offset encoding for running, see 'mkLocDifRef')
+mkLocLevRef :: Int -> Int -> RRef
+mkLocLevRef = RRef_Loc
+
+-- | 'RRef' to local or outside scoped, using level difference (to a current) and offset
+mkLocDifRef :: Int -> Int -> RRef
+mkLocDifRef = RRef_LDf
+
+-- | 'RRef' to global from module, using module nr and offset
+mkGlobRef :: Int -> Int -> RRef
+mkGlobRef = RRef_Glb
+%%]
 
 %%[(8 corerun) hs export(mkExp, mkVar, mkVar', mkInt, mkInt', mkChar, mkChar', mkString, mkString')
 -- **************************************

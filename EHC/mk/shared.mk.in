@@ -140,8 +140,10 @@ endif
 ###########################################################################################
 
 EHC_EXEC_NAME			:= @EHC_EXEC_NAME@
+EHCRUN_EXEC_NAME		:= $(EHC_EXEC_NAME)r
 UHC_EXEC_NAME			:= @UHC_EXEC_NAME@
 UHCLIGHT_EXEC_NAME		:= $(UHC_EXEC_NAME)l
+UHCRUN_EXEC_NAME		:= $(UHC_EXEC_NAME)r
 
 ###########################################################################################
 # GIT revision nr, and cmd to extract, if present

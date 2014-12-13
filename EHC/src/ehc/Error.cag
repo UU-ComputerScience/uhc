@@ -33,7 +33,7 @@
 %%[9999 hs import({%{EH}Base.ForceEval})
 %%]
 
-%%[9
+%%[8
 DERIVING *     : Show
 %%]
 

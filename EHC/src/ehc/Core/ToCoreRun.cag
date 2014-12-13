@@ -414,7 +414,7 @@ ATTR CExpr [ | | vref: {CR.RRef} ]
 
 %%[(8 corerun)
 SEM CExpr
-  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (CR.rrefToDis @lhs.lev) $ Map.lookup @nm @lhs.nm2ref
+  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (CR.rrefToDif @lhs.lev) $ Map.lookup @nm @lhs.nm2ref
   | * - Var
                 loc         .   vref            =   panic "Core.ToCoreRun.CExpr.ref"
 %%]

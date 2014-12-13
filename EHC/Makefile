@@ -136,6 +136,7 @@ explanation:
     echo  "EHC & tools" ; \
 	echo  "===========" ; \
 	echo  "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
+	echo  "make <n>/ehcr            : make runner (of CoreRun) variant <n> (in bin/, where <n> in {$(EHC_CODE_VARIANTS)})" ; \
 	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) variant <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
 	echo  "make <n>/ehclibs         : make ehc libraries for all codegen targets" ; \
 	echo  "make <n>/rts             : make only the rts part of a library" ; \

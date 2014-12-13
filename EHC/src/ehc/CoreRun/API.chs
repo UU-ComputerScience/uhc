@@ -24,6 +24,10 @@ module %%@{%{EH}%%}CoreRun.API
   , mkCRArray
   
   -- * Construction functions
+  , mkLocLevRef
+  , mkLocDifRef
+  , mkGlobRef
+  
   , mkExp
   
   , mkVar, mkVar'
@@ -46,16 +50,23 @@ module %%@{%{EH}%%}CoreRun.API
   
   , mkMod, mkMod'
   
+  -- * Conversion
+  , rrefToDif
+  
   -- * Parsing
   , parseModFromString
 
   -- * Running
   , runCoreRunIO
+  
+  -- * Misc utils
+  , printModule
   )
   where
 
 import %%@{%{EH}%%}Base.API
 import %%@{%{EH}%%}CoreRun as CR
+import %%@{%{EH}%%}CoreRun.Pretty as CR
 import %%@{%{EH}%%}CoreRun.Parser as CR
 import %%@{%{EH}%%}CoreRun.Run as CR
 import %%@{%{EH}%%}CoreRun.Run.Val as CR
@@ -63,6 +74,9 @@ import %%@{%{EH}%%}CoreRun.Run.Val.RunExplStk as CR
 
 import System.IO
 import Control.Exception
+
+import UHC.Util.Pretty
+
 
 -- **************************************
 -- Running
@@ -78,5 +92,13 @@ runCoreRunIO opts mod = do
     catch
       (runCoreRun opts [] mod $ cmodRun opts mod)
       (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "cpRunCoreRun: " ++ show e))
+
+-- **************************************
+-- Utilities (i.e. other stuff)
+-- **************************************
+
+-- | Pretty print 'Mod'
+printModule :: EHCOpts -> Mod -> PP_Doc
+printModule = ppMod'
 
 %%]
