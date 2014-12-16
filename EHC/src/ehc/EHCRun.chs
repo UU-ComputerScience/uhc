@@ -5,6 +5,9 @@
 %%[(8 corerun) module Main
 %%]
 
+%%[(8 corerun) import({%{EH}EHC.Main.Utils})
+%%]
+
 %%[(8 corerun) import(qualified {%{EH}Config} as Cfg)
 %%]
 
@@ -14,7 +17,7 @@
 %%[(8 corerun) import({%{EH}Opts})
 %%]
 
-%%[(8 corerun) import(UHC.Util.Pretty)
+%%[(8 corerun) import(UHC.Util.Pretty, UHC.Util.FPath)
 %%]
 
 %%[(8 corerun) import(System.Exit, System.Console.GetOpt, System.IO, Control.Monad, System.Environment, Data.List, qualified Data.ByteString.Char8 as B)
@@ -30,11 +33,15 @@ main :: IO ()
 main = do
     args <- getArgs
     progName <- getProgName
-    let oo@(o,n,errs) = ehcrunCmdLineOptsApply args defaultEHCOpts
-        opts          = maybe defaultEHCOpts id o
+    let opts0         = defaultEHCOpts
+%%[[99
+                          {ehcProgName = mkFPath progName}
+%%]]
+        oo@(o,n,errs) = ehcrunCmdLineOptsApply args opts0
+        opts          = maybe opts0 id o
     
     case ehcOptImmQuit opts of
-      Just immq     -> handleImmQuitOption immq opts
+      Just immq     -> handleImmQuitOption ehcrunCmdLineOpts ["rcr"] immq opts
       _             -> case (n,errs) of
         ([fname], []) -> run opts fname
         (_      , es) -> do
@@ -56,19 +63,3 @@ main = do
 -}
 %%]
 
-%%[(8 corerun)
-handleImmQuitOption :: ImmediateQuitOption -> EHCOpts -> IO ()
-handleImmQuitOption immq opts
-  = case immq of
-      ImmediateQuitOption_Help
-        -> do {
-                progName  <- getProgName
-              ; let inputSuffixes = ["rcr"]
-              ; putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version
-                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[" ++ (concat $ intersperse "|" $ map ('.':) inputSuffixes) ++ "]]\n\noptions:"
-                                    )
-                                    ehcrunCmdLineOpts)
-              }
-      ImmediateQuitOption_Version
-        -> putStrLn $ Cfg.verInfo Cfg.version
-%%]

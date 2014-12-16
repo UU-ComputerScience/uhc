@@ -82,6 +82,10 @@
 %%[103 import(qualified {%{EH}ConfigCabal} as Cfg (getDataDir))
 %%]
 
+-- Utils
+%%[1 import({%{EH}EHC.Main.Utils})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main, compiling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,6 +115,8 @@ mainEHC
                                 where p = mkFPath progName
 %%][101
                                 where p = mkFPath "uhc"     -- hardbaked name
+%%][103
+                                where p = mkFPath "uhcl"     -- hardbaked name
 %%]]
 %%[[1
                  oo@(o,n,errs)  = ehcCmdLineOptsApply [] args opts1
@@ -147,7 +153,13 @@ mainEHC
                               }
 %%]]
          ;  case ehcOptImmQuit opts3 of
-              Just immq     -> handleImmQuitOption immq opts3
+              Just immq     -> let
+%%[[1
+                                   inputSuffixes = ["hs", "eh"]
+%%][8
+                                   inputSuffixes = catMaybes [ s | (s,_,vis) <- mkFileSuffMpHs opts3, vis ]
+%%]]
+                               in  handleImmQuitOption ehcCmdLineOpts inputSuffixes immq opts3
               _ | null errs ->
 %%[[1
                                doCompileRun (if null n then "" else head n) opts3
@@ -177,139 +189,6 @@ mainEHC
 defaultEHCEnvironment :: EHCEnvironment
 defaultEHCEnvironment
   = EHCEnvironment Cfg.ehcDefaultVariant Cfg.ehcDefaultInplaceInstallDir
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Handling of immediate quit options
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-handleImmQuitOption :: ImmediateQuitOption -> EHCOpts -> IO ()
-handleImmQuitOption immq opts
-  = case immq of
-      ImmediateQuitOption_Help
-        -> do {
-%%[[1
-                progName  <- getProgName
-%%][99
-                let progName = fpathToStr (ehcProgName opts)
-%%]]
-%%[[1
-              ; let inputSuffixes = ["hs", "eh"]
-%%][8
-              ; let inputSuffixes = catMaybes [ s | (s,_,vis) <- mkFileSuffMpHs opts, vis ]
-%%]]
-              ; putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[" ++ (concat $ intersperse "|" $ map ('.':) inputSuffixes) ++ "] ...]\n\noptions:"
-                                    )
-                                    ehcCmdLineOpts)
-%%[[(8 codegen)
-              -- ; putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
-%%][100
-%%]]
-              }
-      ImmediateQuitOption_Version
-        -> putStrLn $ Cfg.verInfo Cfg.version
-%%[[50
-                      ++ ", timestamp " ++ Sig.timestamp
-%%]]
-      ImmediateQuitOption_Meta_Variant
-        -> putStrLn Cfg.ehcDefaultVariant
-%%[[1
-      ImmediateQuitOption_Meta_Targets
-        -> putStr ""
-      ImmediateQuitOption_Meta_TargetDefault
-        -> putStr "no-target"
-%%][(8 codegen)
-      ImmediateQuitOption_Meta_Targets
-        -> putStr showSupportedTargets
-      ImmediateQuitOption_Meta_TargetDefault
-        -> putStr (show defaultTarget)
-      ImmediateQuitOption_Meta_Optimizations
-        -> putStr (showStringMapKeys allOptimizeMp " ")
-%%]]
-%%[[99
-      ImmediateQuitOption_VersionDotted
-        -> putStrLn (Cfg.verFull Cfg.version)
-      ImmediateQuitOption_VersionAsNumber
-        -> putStrLn (Cfg.verAsNumber Cfg.version)
-{-
-      ImmediateQuitOption_Meta_ExportEnv mvEnvOpt
-        -> exportEHCEnvironment
-             (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
-             (env {ehcenvInstallRoot = installRootDir, ehcenvVariant = variant})
-        where env = ehcOptEnvironment opts
-              (installRootDir,variant)
-                = case fmap (wordsBy (`elem` ",;")) mvEnvOpt of
-                    Just (d:v:_) -> (d,v)
-                    Just (d:_)   -> (d,ehcenvVariant env)
-                    _            -> (ehcenvInstallRoot env,ehcenvVariant env)
-      ImmediateQuitOption_Meta_DirEnv
-        -> do { d <- ehcenvDir (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
-              ; putStrLn d
-              }
--}
-      ImmediateQuitOption_Meta_Pkgdir_System
-        -> do { let d = Cfg.mkInstallPkgdirSystem opts
-              ; putStrLn d
-              }
-      ImmediateQuitOption_Meta_Pkgdir_User
-        -> do { let d = Cfg.mkInstallPkgdirUser opts
-              ; putStrLn d
-              }
-%%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Suffix search path
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-type FileSuffMp =
-  [( FileSuffix				-- suffix
-   , EHCompileUnitState		-- initial state
-   , Bool					-- visible from commandline
-   )]
-
--- | Allowed suffixes, order is significant.
-mkFileSuffMpHs :: EHCOpts -> FileSuffMp
-mkFileSuffMpHs opts
-  = [ ( Just "hs"  , ECUS_Haskell HSStart, True )
-%%[[99
-    , ( Just "lhs" , ECUS_Haskell LHSStart, True )
-%%]]
-    , ( Just "eh"  , ECUS_Eh EHStart, True )
-%%[[50
-    , ( Just "hi"  , ECUS_Haskell HIStart, False )
-%%]]
-%%[[(8 grin)
-    -- currently not supported
-    -- , ( Just "grin", ECUS_Grin, True )
-%%]]
-%%[[(50 corein)
-    , ( Just Cfg.suffixDotlessInputOutputTextualCore, ECUS_Core CRStartText, True   )
-    , ( Just Cfg.suffixDotlessInputOutputBinaryCore , ECUS_Core CRStartBinary, True )
-%%]]
-%%[[(50 corebackend)
-    , ( Just Cfg.suffixDotlessBinaryCore , ECUS_Core CRStartBinary, False )
-%%]]
-    ]
-%%[[(90 codegen)
-    ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts)
-        then [ ( Just "c"   , ECUS_C CStart, True )
-             , ( Just "o"   , ECUS_O OStart, True )
-             ]
-        else []
-       )
-%%]]
-%%]
-
-%%[8
--- Suffix map for empty suffix, defaults to .hs
-fileSuffMpHsNoSuff :: FileSuffMp
-fileSuffMpHsNoSuff
-  = [ ( Nothing  , ECUS_Haskell HSStart, False )
-    ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

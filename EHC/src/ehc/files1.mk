@@ -90,6 +90,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix TyCore/Trf/,Common) \
 													$(addprefix GrinCode/,Common SolveEqs) \
 													$(addprefix EHC/,Main Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
+														$(addprefix Main/,Utils) \
 														$(addprefix CompilePhase/,Common Run Parsers Output Translations Transformations \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM CompileJavaScript Link \

@@ -300,7 +300,7 @@ defaultEHCOpts
 
 %%[1 export(ehcCmdLineOpts)
 -- | Commandline opts for ehc/uhc (EHC)
-ehcCmdLineOpts :: [OptDescr (EHCOpts -> EHCOpts)]
+ehcCmdLineOpts :: GetOptCmdLineOpts
 ehcCmdLineOpts = sharedCmdLineOpts ++
      [
 %%[[1
@@ -777,7 +777,7 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
 
 %%[1 export(ehcrunCmdLineOpts)
 -- | Commandline opts for ehcr/uhcr (EHCRun)
-ehcrunCmdLineOpts :: [OptDescr (EHCOpts -> EHCOpts)]
+ehcrunCmdLineOpts :: GetOptCmdLineOpts
 ehcrunCmdLineOpts
      =  sharedCmdLineOpts
 %%[[(8 corerun)
@@ -793,8 +793,12 @@ ehcrunCmdLineOpts
 %%% Options (shared) as passed on the command line for EHCRun and EHC
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1 export(GetOptCmdLineOpts)
+-- | The description for GetOpt
+type GetOptCmdLineOpts = [OptDescr (EHCOpts -> EHCOpts)]
+
 -- | Commandline opts shared between main invocations
+sharedCmdLineOpts :: GetOptCmdLineOpts
 sharedCmdLineOpts
   =  [  Option "h"  ["help"]                (NoArg oHelp)                           "print this help (then stop)"
      ,  Option ""   ["version"]             (NoArg oVersion)                        "print version info (then stop)"

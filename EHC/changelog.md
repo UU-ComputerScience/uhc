@@ -2,7 +2,7 @@
 
 ## 1.1.8.1
 
-- [build] Separate target in makefiles for 'ehcr'.
+- [build] Separate target in makefiles for 'ehcr', with trace option.
 - [corerun, api] CoreRun API extended to be usable by CCO lab exercise.
 
 ## 1.1.8.0 - 20141212
