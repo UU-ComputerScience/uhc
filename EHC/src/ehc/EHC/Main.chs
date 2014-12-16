@@ -208,7 +208,6 @@ handleImmQuitOption immq opts
 %%][100
 %%]]
               }
-        where
       ImmediateQuitOption_Version
         -> putStrLn $ Cfg.verInfo Cfg.version
 %%[[50

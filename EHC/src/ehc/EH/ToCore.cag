@@ -1021,9 +1021,9 @@ Reordering and splitting up in smaller groups is then done later by a Core trans
 mkLetCBodyBindL
   :: Bool
      -> CBindCateg -> [(CBindCateg,CBindL)] -> [(CBindCateg,CBindL)] -> [(CBindCateg,CBindL)] -> CExpr
-     -> ( [(CBindCateg,CBindL)]		-- ^ all remaining let bindings not bound in body
-        , CBindL					-- ^ if non empty singleton list it holds the def for main
-        , CExpr						-- ^ bound bindings together with body
+     -> ( [(CBindCateg,CBindL)]		-- all remaining let bindings not bound in body
+        , CBindL					-- if non empty singleton list it holds the def for main
+        , CExpr						-- bound bindings together with body
         )
 mkLetCBodyBindL isStrict howToBind locBindL locOthBindL bodyBindL body
   | isStrict =

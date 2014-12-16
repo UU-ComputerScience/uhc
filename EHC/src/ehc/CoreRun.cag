@@ -56,7 +56,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%% CoreRun: Supporting types: fast access sequences/array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(CRArray, CRMArray, emptyCRArray, mkCRArray, craLength, craAssocs, craAssocs', craReverseAssocs')
+%%[(8 corerun) hs export(CRArray, CRMArray, emptyCRArray, crarrayToList, crarrayFromList, craLength, craAssocs, craAssocs', craReverseAssocs')
 -- | Fast access sequence
 type CRArray x = V.Vector x
 type CRMArray x = MV.IOVector x
@@ -68,10 +68,16 @@ mkCRArrayLwb lwb xs = listArray (lwb,lwb+l-1) xs
   where l = length xs
 -}
 
-mkCRArray :: [x] -> CRArray x
--- mkCRArray = mkCRArrayLwb 0
-mkCRArray = V.fromList
-{-# INLINE mkCRArray #-}
+-- | Wrapper (rename) around vector<->list conversion
+crarrayFromList :: [x] -> CRArray x
+-- crarrayFromList = mkCRArrayLwb 0
+crarrayFromList = V.fromList
+{-# INLINE crarrayFromList #-}
+
+-- | Wrapper (rename) around vector<->list conversion
+crarrayToList :: CRArray x -> [x]
+crarrayToList = V.toList
+{-# INLINE crarrayToList #-}
 
 emptyCRArray :: CRArray x
 emptyCRArray = V.empty -- mkCRArray []
@@ -84,7 +90,7 @@ craLength = V.length -- a = h + 1 - l
 
 -- | Content of array as association list, starting index at 'lwb'
 craAssocs' :: Int -> CRArray x -> [(Int,x)]
-craAssocs' lwb = zip [lwb ..] . V.toList
+craAssocs' lwb = zip [lwb ..] . crarrayToList
 {-# INLINE craAssocs' #-}
 
 -- | Content of array as association list, starting index at 'lwb', but reversed
@@ -317,7 +323,7 @@ mkApp' = Exp_App
 
 -- | Application
 mkApp :: Exp -> [SExp] -> Exp
-mkApp f as = mkApp' f (mkCRArray as)
+mkApp f as = mkApp' f (crarrayFromList as)
 
 -- | Tuple, Node
 mkTup' :: Int -> CRArray SExp -> Exp
@@ -325,7 +331,7 @@ mkTup' = Exp_Tup
 
 -- | Tuple, Node
 mkTup :: Int -> [SExp] -> Exp
-mkTup t as = mkTup' t (mkCRArray as)
+mkTup t as = mkTup' t (crarrayFromList as)
 
 -- | Force evaluation
 mkEval :: Exp -> Exp
@@ -337,7 +343,7 @@ mkTail = Exp_Tail
 
 -- | Case
 mkCase :: SExp -> [Exp] -> Exp
-mkCase scrut alts = Exp_Case scrut $ mkCRArray $ map (Alt_Alt ref2nmEmpty) alts
+mkCase scrut alts = Exp_Case scrut $ crarrayFromList $ map (Alt_Alt ref2nmEmpty) alts
 
 -- | Lambda
 mkLam'
@@ -370,7 +376,7 @@ mkLet
      -> [Exp]			-- ^ bound terms
      -> Exp				-- ^ body
      -> Exp
-mkLet firstoff bs b = mkLet' firstoff (mkCRArray bs) b
+mkLet firstoff bs b = mkLet' firstoff (crarrayFromList bs) b
 
 -- | FFI
 mkFFI'
@@ -386,7 +392,7 @@ mkFFI
   :: String				-- ^ name of foreign entity, if unknown results in debug expr
      -> [SExp]			-- ^ args
      -> Exp
-mkFFI fe as = mkFFI' fe (mkCRArray as)
+mkFFI fe as = mkFFI' fe (crarrayFromList as)
 %%]
 
 
@@ -413,6 +419,6 @@ mkMod
      -> [Bind]			-- ^ bound expressions
      -> Exp				-- ^ body of main
      -> Mod
-mkMod modNm modNr stkDepth binds body = mkMod' modNm modNr stkDepth (mkCRArray binds) body
+mkMod modNm modNr stkDepth binds body = mkMod' modNm modNr stkDepth (crarrayFromList binds) body
 %%]
 

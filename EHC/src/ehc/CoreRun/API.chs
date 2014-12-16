@@ -10,7 +10,7 @@
 
 module %%@{%{EH}%%}CoreRun.API
   (
-  -- * Core AST
+  -- * CoreRun AST
   -- | The datatypes making up a CoreRun program.
     Mod
   , Exp
@@ -21,7 +21,6 @@ module %%@{%{EH}%%}CoreRun.API
 
   -- * Utilities
   , CRArray
-  , mkCRArray
   
   -- * Construction functions
   , mkLocLevRef

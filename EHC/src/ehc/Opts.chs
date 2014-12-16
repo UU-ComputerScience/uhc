@@ -295,13 +295,22 @@ defaultEHCOpts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Options as passed on the command line
+%%% Options as passed on the command line for EHC
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 export(ehcCmdLineOpts)
-ehcCmdLineOpts
-  =  [  Option "h"  ["help"]                (NoArg oHelp)                           "print this help (then stop)"
-     ,  Option ""   ["version"]             (NoArg oVersion)                        "print version info (then stop)"
+-- | Commandline opts for ehc/uhc (EHC)
+ehcCmdLineOpts :: [OptDescr (EHCOpts -> EHCOpts)]
+ehcCmdLineOpts = sharedCmdLineOpts ++
+     [
+%%[[1
+        Option "t"  ["target"]              (OptArg oTarget "")                     "code generation not available"
+%%][(8 codegen)
+        Option "t"  ["target"]              (ReqArg oTarget (showSupportedTargets'  "|"))
+                                                                                    ("generate code for target, default=" ++ show defaultTarget)
+     ,  Option ""   ["target-flavor"]       (ReqArg oTargetFlavor (showAllTargetFlavors' "|"))
+                                                                                    ("generate code for target flavor, default=" ++ show defaultTargetFlavor)
+%%]]
 %%[[99
      ,  Option ""   ["version-dotted"]      (NoArg oNumVersion)                     ("print version in \"x.y.z\" style (then stop)")
      ,  Option ""   ["version-asnumber"]    (NoArg oVersionAsNumber)                ("print version in \"xyz\" style (then stop)")
@@ -315,14 +324,6 @@ ehcCmdLineOpts
                                                                                     ++ "default=1"
 %%]]
                                                                                     )
-%%]]
-%%[[1
-     ,  Option "t"  ["target"]              (OptArg oTarget "")                     "code generation not available"
-%%][(8 codegen)
-     ,  Option "t"  ["target"]              (ReqArg oTarget (showSupportedTargets'  "|"))
-                                                                                    ("generate code for target, default=" ++ show defaultTarget)
-     ,  Option ""   ["target-flavor"]       (ReqArg oTargetFlavor (showAllTargetFlavors' "|"))
-                                                                                    ("generate code for target flavor, default=" ++ show defaultTargetFlavor)
 %%]]
 %%[[1
      ,  Option "p"  ["pretty"]              (OptArg oPretty "hs|eh|ast|-")          "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
@@ -496,8 +497,6 @@ ehcCmdLineOpts
                                 Just "yes"  -> o { ehcOptShowTopTyPP   = True      }
                                 _           -> o
 %%]]
-         oHelp           o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Help    }
-         oVersion        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Version }
          oVariant        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_Variant }
          oDebug          o =  o { ehcOptDebug         = True
 %%[[1
@@ -772,9 +771,57 @@ ehcCmdLineOpts
 %%]]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options as passed on the command line for EHCRun
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(ehcrunCmdLineOpts)
+-- | Commandline opts for ehcr/uhcr (EHCRun)
+ehcrunCmdLineOpts :: [OptDescr (EHCOpts -> EHCOpts)]
+ehcrunCmdLineOpts
+     =  sharedCmdLineOpts
+%%[[(8 corerun)
+     ++ [  Option ""   ["trace"]               (boolArg optTrace)                      "corerun: trace execution"
+        ]
+%%]]
+  where optTrace o b = o { ehcOptCoreOpts = upd $ ehcOptCoreOpts o }
+          where upd | b         = (CoreOpt_RunTrace :)
+                    | otherwise = (\\ [CoreOpt_RunTrace])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options (shared) as passed on the command line for EHCRun and EHC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+-- | Commandline opts shared between main invocations
+sharedCmdLineOpts
+  =  [  Option "h"  ["help"]                (NoArg oHelp)                           "print this help (then stop)"
+     ,  Option ""   ["version"]             (NoArg oVersion)                        "print version info (then stop)"
+     ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Factored out EHCOpts updaters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+-- | Help
+oHelp           o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Help    }
+
+--  Version
+oVersion        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Version }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utiltities for commandline options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[99
+-- | Int option
 intArg  tr = ReqArg (optInt tr) "<nr>"
 
+-- | EHCOpts updater for Int option
 optInt :: (EHCOpts -> Int -> EHCOpts) -> String -> EHCOpts -> EHCOpts
 optInt tr s o
  = tr o $ read s
@@ -885,13 +932,21 @@ oStopAtHIError       o b = o { ehcDebugStopAtHIError       = b }
 %%% Apply the options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(ehcCmdLineOptsApply)
+%%[1 export(ehcCmdLineOptsApply, ehcrunCmdLineOptsApply)
 -- | Apply the cmdline opts description to a EHCOpts, returning Nothing when there were no options
-ehcCmdLineOptsApply :: [EHCOpts -> EHCOpts] -> [String] -> EHCOpts -> (Maybe EHCOpts, [String], [String])
-ehcCmdLineOptsApply postopts args opts
+cmdlineOptsApply :: [OptDescr (EHCOpts -> EHCOpts)] -> [EHCOpts -> EHCOpts] -> [String] -> EHCOpts -> (Maybe EHCOpts, [String], [String])
+cmdlineOptsApply cmdlopts postopts args opts
   = (if null o' then Nothing else Just (foldl (flip ($)) opts o'),n,errs)
-  where oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
+  where oo@(o,n,errs)  = getOpt Permute cmdlopts args
         o' = o ++ postopts
+
+-- | Apply the cmdline opts description for 'EHC' to a EHCOpts, returning Nothing when there were no options
+ehcCmdLineOptsApply :: [EHCOpts -> EHCOpts] -> [String] -> EHCOpts -> (Maybe EHCOpts, [String], [String])
+ehcCmdLineOptsApply = cmdlineOptsApply ehcCmdLineOpts
+
+-- | Apply the cmdline opts description for 'EHCRun' to a EHCOpts, returning Nothing when there were no options
+ehcrunCmdLineOptsApply :: [String] -> EHCOpts -> (Maybe EHCOpts, [String], [String])
+ehcrunCmdLineOptsApply = cmdlineOptsApply ehcrunCmdLineOpts []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

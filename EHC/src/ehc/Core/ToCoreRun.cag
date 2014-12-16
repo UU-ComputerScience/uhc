@@ -463,14 +463,14 @@ SEM CExpr
                                                     then CR.Exp_Lam (whatExprMbBind @lhs.whatAbove) {- @lev -} (length @creLamArgL) {- @refOffsetMax -} (@stackDepthMax) (CR.nm2RefMpInverse @nm2refNew) @body.creLamBody
                                                     else CR.dbg "Core.ToCoreRun.CExpr.Lam.cre" -- TBD
   | App         loc         .   creBase         =   if @isTopApp'
-                                                    then @creAppFun @lhs.tailCtx $ CR.mkCRArray $ reverse @creAppArgL
+                                                    then @creAppFun @lhs.tailCtx $ CR.crarrayFromList $ reverse @creAppArgL
                                                     else CR.dbg "Core.ToCoreRun.CExpr.App.cre" -- TBD
   | Tup         loc         .   creBase         =   CR.mkTup (ctagTag @tag) []
   | Let         loc         .   creBase         =   if @isGlobal
                                                     then @body.cre
-                                                    else CR.Exp_Let {- @lhs.lev -} @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.mkCRArray $ map snd @binds.crb) @body.cre
-  -- | Case        loc         .   creBase         =   CR.Exp_Case @expr.crse $ CR.mkCRArray @alts.cra
-  | Case        loc         .   creBase         =   CR.Exp_Case (CR.mkVar' $ CR.RRef_Tag @expr.vref) $ CR.mkCRArray @alts.cra
+                                                    else CR.Exp_Let {- @lhs.lev -} @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.crarrayFromList $ map snd @binds.crb) @body.cre
+  -- | Case        loc         .   creBase         =   CR.Exp_Case @expr.crse $ CR.crarrayFromList @alts.cra
+  | Case        loc         .   creBase         =   CR.Exp_Case (CR.mkVar' $ CR.RRef_Tag @expr.vref) $ CR.crarrayFromList @alts.cra
   | FFI         loc         .   creEntMb        =   forextractMbEnt @foreignEntInfo -- >>= flip Map.lookup CR.allRunPrimMp
                             .   creMk           =   \as -> maybe (CR.dbg $ "Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) (\ent -> CR.mkFFI' ent as) @creEntMb
                             .   creBase         =   @creMk CR.emptyCRArray
@@ -489,7 +489,7 @@ SEM CModule
 %%[[8
   | Mod         loc         .   creMod          =   @expr.cre
 %%][99
-  | Mod         loc         .   creMod          =   @expr.cre -- mkApp @expr.cre $ CR.mkCRArray [CR.unit]
+  | Mod         loc         .   creMod          =   @expr.cre -- mkApp @expr.cre $ CR.crarrayFromList [CR.unit]
 %%]]
 %%]
 
@@ -541,7 +541,7 @@ SEM CPat
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
-  | Mod         loc         .   crmBinds        =   CR.mkCRArray $ map snd @expr.crb
+  | Mod         loc         .   crmBinds        =   CR.crarrayFromList $ map snd @expr.crb
                 lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew)
                                                       @moduleNm @lhs.modNr (@expr.stackDepthMax + 2 {- - CR.craLength @crmBinds -})
                                                       @crmBinds (CR.mkEval @creMod)

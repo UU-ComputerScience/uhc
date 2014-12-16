@@ -195,7 +195,7 @@ instance PP RVal where
 
 %%[(8 corerun) hs export(mkTuple, mkUnit)
 mkTuple :: (RunSem RValCxt RValEnv RVal m a) => [RVal] -> RValT m a
-mkTuple vs = liftIO (mvecAllocFillFromV $ mkCRArray vs) >>= rsemNode 0 >>= rsemPush
+mkTuple vs = liftIO (mvecAllocFillFromV $ crarrayFromList vs) >>= rsemNode 0 >>= rsemPush
 {-# INLINE mkTuple #-}
 
 mkUnit :: (RunSem RValCxt RValEnv RVal m a) => RValT m a
@@ -262,7 +262,7 @@ instance HSMarshall [RVal] where
   hsMarshall _   v     = err $ "CoreRun.Run.Val.HSMarshall [RVal]:" >#< v
 
   hsUnmarshall []      = liftIO (mvecAllocFillFromV emptyCRArray) >>= rsemNode tagListNil >>= rsemPush
-  hsUnmarshall (h:t)   = hsUnmarshall t >>= rsemPop >>= \t' -> (liftIO $ mvecAllocFillFromV $ mkCRArray [h, t']) >>= rsemNode tagListCons >>= rsemPush
+  hsUnmarshall (h:t)   = hsUnmarshall t >>= rsemPop >>= \t' -> (liftIO $ mvecAllocFillFromV $ crarrayFromList [h, t']) >>= rsemNode tagListCons >>= rsemPush
 
 instance HSMarshall x => HSMarshall [x] where
   hsMarshall evl x = hsMarshall evl x >>= mapM (\v -> evl v >>= rsemPop >>= hsMarshall evl)

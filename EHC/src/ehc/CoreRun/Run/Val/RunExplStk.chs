@@ -199,6 +199,8 @@ rvalExplStkExp e = do
 %%[[8
   rsemTr $ ">E:" >#< e
 %%][100
+%%][103
+  rsemTr $ ">E:" >#< e
 %%]]
   -- e' <- case e of
   case e of
@@ -231,7 +233,7 @@ rvalExplStkExp e = do
     Exp_Case e as -> do
       v <- ptr2valM =<< rsemPop =<< rsemSExp e
       case v of
-        RVal_Node {rvalTag=tg} -> rsemAlt $ as V.! tg
+        -- RVal_Node {rvalTag=tg} -> rsemAlt $ as V.! tg
         RVal_Int  tg           -> rsemAlt $ as V.! tg
         _ -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp.Case: scrutinee:" >#< v
     
@@ -258,6 +260,8 @@ rvalExplStkExp e = do
 %%[[8
   rsemTr $ "<E:" >#< (e) -- >-< e')
 %%][100
+%%][103
+  rsemTr $ "<E:" >#< (e) -- >-< e')
 %%]]
   -- return e'
 %%]

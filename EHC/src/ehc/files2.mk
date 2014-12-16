@@ -203,7 +203,7 @@ ehc-barebones-variant: $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG) $(EHC
 # target assumes files found by wildcards/shell/find are present and already built
 uhc-light-cabal-dist: # $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)		
 	@rm -rf $(CABALDIST_UHCLIGHT_PREFIX) ; \
-	mkdir -p $(CABALDIST_UHCLIGHT_SRC_ALL_DRV_NO_MAIN_PREFIX) $(CABALDIST_UHCLIGHT_SRC_PREFIX) $(CABALDIST_UHCLIGHT_VARIANT_LIB_PREFIX) ; \
+	mkdir -p $(CABALDIST_UHCLIGHT_SRC_ALL_DRV_NO_MAIN_PREFIX) $(CABALDIST_UHCLIGHT_SRC_PREFIX) $(CABALDIST_UHCLIGHT_SRCMAIN_PREFIX) $(CABALDIST_UHCLIGHT_VARIANT_LIB_PREFIX) ; \
 	ehc_ehclib_lib_dir="$(EHCLIB_INS_LIB_DIR)" ; \
 	ehc_ehclib_files="$(filter-out $(EHCLIB_INS_LIB_DIR) %DS_Store,$(subst $(EHCLIB_INS_LIB_PREFIX),,$(shell find $(call FUN_PREFIX2DIR,$(EHCLIB_INS_LIB_PREFIX)) \( -name '*' -type f \) )))" ; \
 	ehc_ehclib_names="`echo $${ehc_ehclib_files} | sed -e 's=\([^ ]*\)=$(call FUN_VARIANT_LIB_PREFIX,$(EHC_VARIANT))\1=g' -e 's/ /,/g'`" ; \
@@ -213,7 +213,7 @@ uhc-light-cabal-dist: # $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)
 	ehc_nomain_nonexposed_names="Paths_uhc_light,`echo $${ehc_nomain_nonexposed_hs_files} | sed -e 's/\.hs//g' -e 's/ /,/g' -e 's+$(PATH_SEP)+.+g'`" ; \
 	ehc_main_hs_files="$(subst $(EHC_BLD_VARIANT_ASPECTS_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(EHC_HS_MAIN_DRV_HS) $(EHCRUN_HS_MAIN_DRV_HS)))" ; \
 	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX),$(CABALDIST_UHCLIGHT_SRC_PREFIX),$${ehc_nomain_exposed_hs_files} $${ehc_nomain_nonexposed_hs_files}) ; \
-	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_VARIANT_ASPECTS_PREFIX),$(CABALDIST_UHCLIGHT_SRC_PREFIX),$${ehc_main_hs_files}) ; \
+	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_VARIANT_ASPECTS_PREFIX),$(CABALDIST_UHCLIGHT_SRCMAIN_PREFIX),$${ehc_main_hs_files}) ; \
 	$(call FUN_COPY_FILES_BY_TAR,$${ehc_ehclib_lib_dir},$(CABALDIST_UHCLIGHT_VARIANT_LIB_PREFIX),$${ehc_ehclib_files}) ; \
 	$(call FUN_GEN_CABAL_UHC_LIGHT \
 		, uhc-light \
@@ -232,6 +232,8 @@ uhc-light-cabal-dist: # $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)
 		, changelog.md \
 		, $(EHCRUN_MAIN) \
 		, $(UHCRUN_EXEC_NAME) \
+		, $(call FUN_PREFIX2DIR,$(CABALDIST_SRC_PREFIX)) \
+		, $(call FUN_PREFIX2DIR,$(CABALDIST_SRCMAIN_PREFIX)) \
 	) > $(CABALDIST_UHCLIGHT_PREFIX)uhc-light.cabal ; \
 	(echo "module $(LIB_EHC_QUAL_PREFIX)ConfigCabal" ; \
 	  echo "  (module Paths_uhc_light)" ; \
