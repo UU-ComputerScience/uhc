@@ -2,7 +2,7 @@
 
 ## 1.1.8.2
 
-- 
+- [build] Fixes some GHC 7.8.3 Typeable warnings
 
 ## 1.1.8.1 - 20141217
 

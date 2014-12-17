@@ -597,7 +597,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "  Main-Is:           	$(strip $(9)).hs" ; \
 					echo   "" ; \
 					echo   "Executable $(strip $(16))" ; \
-					echo   "  Hs-Source-Dirs:       $(18), $(17)" ; \
+					echo   "  Hs-Source-Dirs:       $(18)" ; \
 					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Main-Is:           	$(strip $(15)).hs" ; \

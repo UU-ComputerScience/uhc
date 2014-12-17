@@ -1,3 +1,7 @@
+%%[0 hs
+{-# LANGUAGE CPP #-}
+%%]
+
 %%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -118,7 +122,11 @@ instance Show a => Show (RLList a) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
+#if __GLASGOW_HASKELL__ >= 708
+deriving instance Typeable  RLList
+#else
 deriving instance Typeable1 RLList
+#endif
 deriving instance Data x => Data (RLList x)
 
 %%]

@@ -57,7 +57,7 @@ Currently the following is maintained:
 
 %%[(50 codegen) import(Control.Monad, UHC.Util.Serialize)
 %%]
-%%[(50 codegen) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
+%%[(50 codegen) import(Data.Typeable, Data.Generics(Data))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -18,6 +18,8 @@
 
 %%[1 import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[1 import({%{EH}Opts}) export(module {%{EH}Opts})
+%%]
 %%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 

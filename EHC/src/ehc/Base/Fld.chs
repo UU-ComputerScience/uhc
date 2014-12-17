@@ -1,3 +1,7 @@
+%%[0 hs
+{-# LANGUAGE CPP #-}
+%%]
+
 %%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -123,7 +127,11 @@ instance HSNM inx => RefOfFld (Fld' inx) HsName where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
+#if __GLASGOW_HASKELL__ >= 708
+deriving instance Typeable  Fld'
+#else
 deriving instance Typeable1 Fld'
+#endif
 deriving instance Data x => Data (Fld' x)
 %%]
 

@@ -255,7 +255,8 @@ rvalExplStkExp e = do
     -- FFI
     Exp_FFI pr as -> V.mapM_ rsemSExp as >> renvFrStkPopMV (V.length as) >>= (liftIO . V.freeze) >>= rsemPrim pr
 
-    e -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp:" >#< e
+    -- necessary only when case is non-saturated w.r.t. alternatives of datatype Exp
+    -- e -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp:" >#< e
 
 %%[[8
   rsemTr $ "<E:" >#< (e) -- >-< e')

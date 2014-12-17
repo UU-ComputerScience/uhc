@@ -1,3 +1,7 @@
+%%[0 hs
+{-# LANGUAGE CPP #-}
+%%]
+
 %%[0 lhs2tex
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -1074,7 +1078,11 @@ deriving instance Data TagDataInfo
 deriving instance Typeable Fixity
 deriving instance Data Fixity
 
+#if __GLASGOW_HASKELL__ >= 708
+deriving instance Typeable  AlwaysEq
+#else
 deriving instance Typeable1 AlwaysEq
+#endif
 deriving instance Data x => Data (AlwaysEq x)
 
 deriving instance Typeable PredOccId

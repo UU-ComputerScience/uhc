@@ -23,7 +23,7 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(UHC.Util.Pretty as Pretty)
 %%]
 
-%%[50 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
+%%[50 import(Data.Typeable, Data.Generics(Data))
 %%]
 %%[(50 hmtyinfer || hmtyast) import(UHC.Util.Serialize)
 %%]

@@ -215,7 +215,8 @@ rvalImplStkExp e = do
     -- FFI
     Exp_FFI pr as -> V.mapM rsemSExp as >>= rsemPrim pr
 
-    e -> err $ "CoreRun.Run.Val.RunExplStk.rvalImplStkExp:" >#< e
+    -- necessary only when case is non-saturated w.r.t. alternatives of datatype Exp
+    -- e -> err $ "CoreRun.Run.Val.RunExplStk.rvalImplStkExp:" >#< e
 
 %%[[8
   rsemTr $ "<E:" >#< e -- (e >-< e')
