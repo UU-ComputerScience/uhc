@@ -1,7 +1,8 @@
 # Changelog
 
-## 1.1.8.1
+## 1.1.8.1 - 20141217
 
+- [core] Core prettyprinting/parsing changed such that bindings (in a let) and alternatives (of a case) now are semicolon terminated instead of curly embraced semicolon separated; should improve readability.
 - [build] Separate target in makefiles for 'ehcr', with trace option.
 - [corerun, api] CoreRun API extended to be usable by CCO lab exercise.
 

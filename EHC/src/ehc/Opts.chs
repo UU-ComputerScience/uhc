@@ -784,9 +784,12 @@ ehcrunCmdLineOpts
      ++ [  Option ""   ["trace"]               (boolArg optTrace)                      "corerun: trace execution"
         ]
 %%]]
-  where optTrace o b = o { ehcOptCoreOpts = upd $ ehcOptCoreOpts o }
+  where
+%%[[(8 corerun)
+        optTrace o b = o { ehcOptCoreOpts = upd $ ehcOptCoreOpts o }
           where upd | b         = (CoreOpt_RunTrace :)
                     | otherwise = (\\ [CoreOpt_RunTrace])
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
