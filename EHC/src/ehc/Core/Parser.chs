@@ -56,6 +56,16 @@ pCTy
          )
 %%]
 
+%%[(8 corein)
+-- | Parse something which is semicolon terminated
+pSemiTerminated :: CParser x -> CParser x
+pSemiTerminated p = p <* pSEMI
+
+-- | Parse list of something which is semicolon terminated
+pListSemiTerminated :: CParser x -> CParser [x]
+pListSemiTerminated p = pList (pSemiTerminated p)
+%%]
+
 %%[(8 corein) export(pCModule,pCExpr)
 pCModule :: CParser CModule
 pCModule
@@ -153,12 +163,12 @@ pCExpr
   =   (\f as -> acoreApp f as)
                      <$> pCExprSel <*> pList pCExprSel -- pCExprSelMeta
   <|> mkLam          <$  pLAM <*> pList1 (pDollNm) <* pRARROW <*> pCExpr
-  <|> CExpr_Let      <$  pLET <*> pMaybe CBindCateg_Plain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
+  <|> CExpr_Let      <$  pLET <*> pMaybe CBindCateg_Plain id pCBindCateg <*> pListSemiTerminated pCBind <* pIN <*> pCExpr
   <|> (\(c,_) s i t -> CExpr_FFI c s (mkImpEnt c i) t)
                      <$  pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
-      <* pOCURLY <*> pListSep pSEMI pCAlt <* pCCURLY
-      <* pOCURLY <*  pDEFAULT <*> {- pMb -} pCExpr <* pCCURLY
+      <*> pListSemiTerminated pCAlt
+      <* pDEFAULT <*> {- pMb -} pSemiTerminated pCExpr
   where pCBindCateg
           =   CBindCateg_Rec    <$ pKeyTk "rec"
           <|> CBindCateg_FFI    <$ pFOREIGN

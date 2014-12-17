@@ -32,7 +32,9 @@
 main :: IO ()
 main = do
     args <- getArgs
+%%[[99
     progName <- getProgName
+%%]]
     let opts0         = defaultEHCOpts
 %%[[99
                           {ehcProgName = mkFPath progName}

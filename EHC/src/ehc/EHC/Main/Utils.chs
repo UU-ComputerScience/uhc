@@ -21,7 +21,7 @@
 %%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
-%%[1 import(System.Console.GetOpt)
+%%[1 import(System.Console.GetOpt, System.Environment)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
