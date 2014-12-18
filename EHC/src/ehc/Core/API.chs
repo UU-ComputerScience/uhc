@@ -23,6 +23,13 @@
 --  - Calling Haskell functions which use the haskell class system is not (yet?) supported.
 --  - Avoiding name clashes is the responsibility of the user. The behaviour if duplicate
 --    names exists is undefined.
+--
+--
+-- TODO:
+--
+--  - Should we add PatRest_Var? Does it actually work? (The HS frontend doesn't seem to use it?)
+--  - Float, Double literals
+--
 module %%@{%{EH}%%}Core.API
   (
   -- * Core AST
@@ -83,7 +90,7 @@ module %%@{%{EH}%%}Core.API
   -- ** Case
   -- | Scrutinizes an expression and executes the appropriate alternative.
   -- The scrutinee of a case statement is required to be in WHNF (weak head normal form).
-  , mkCaseDflt
+  , mkCase
 
   , mkAlt
   , mkPatCon
@@ -284,13 +291,13 @@ ctagNil = AC.ctagNil
 -- **************************************
 
 -- TODO verify that this sorting is always correct (see also AbstractCore/Utils.chs)
--- | A Case expression, possibly with a default value.
-mkCaseDflt  :: EC.CExpr        -- ^ The scrutinee. Required to be in WHNF.
+-- | A Case expression. The alternatives must be exhaustive, they must cover
+-- all possible constructors.
+mkCase  :: EC.CExpr        -- ^ The scrutinee. Required to be in WHNF.
         -> [EC.CAlt]      -- ^ The alternatives.
-        -> Maybe EC.CExpr  -- ^ The default value. (TODO what is the behaviour if it is Nothing?)
         -> EC.CExpr
-mkCaseDflt e as def =
-  AC.acoreCaseDflt e (sortBy (comparing (getTag . fst . AC.acoreUnAlt)) as) def
+mkCase e as =
+  AC.acoreCaseDflt e (sortBy (comparing (getTag . fst . AC.acoreUnAlt)) as) Nothing
   where -- gets the tag for constructors, or returns 0 if this is not a constructor pattern
         -- TODO is this always safe?
         getTag t = case AC.acorePatMbCon t of
@@ -310,7 +317,8 @@ mkPatCon :: CTag   -- ^ The constructor to match.
     -> EC.CPat
 mkPatCon = AC.acorePatCon
 
--- | patrest, empty TODO what does it mean?
+-- | The whole case scrutinee has already been matched on. There is nothing left.
+-- (If there is still something left, runtime behaviour is undefined)
 mkPatRestEmpty :: EC.CPatRest
 mkPatRestEmpty = AC.acorePatRestEmpty
 

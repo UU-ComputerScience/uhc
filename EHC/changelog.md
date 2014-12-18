@@ -2,7 +2,7 @@
 
 ## 1.1.8.2
 
-- 
+- [core, api] Removed broken default alternative from case expressions API
 
 ## 1.1.8.1 - 20141217
 
