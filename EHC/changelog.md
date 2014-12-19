@@ -3,6 +3,7 @@
 ## 1.1.8.2
 
 - [build] Fixes some GHC 7.8.3 Typeable warnings
+- [core, api] Removed broken default alternative from case expressions API
 
 ## 1.1.8.1 - 20141217
 
