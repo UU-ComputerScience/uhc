@@ -19,6 +19,7 @@ module %%@{%{EH}%%}CoreRun.API.Internal
   , SExp(..)
   , Alt(..)
   , Pat(..)
+  , RRef(..)
 
   -- * Utilities
   , crarrayFromList

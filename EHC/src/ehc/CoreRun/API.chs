@@ -18,6 +18,7 @@ module %%@{%{EH}%%}CoreRun.API
   , Alt
   -- , Pat
   , Bind
+  , RRef
 
   -- * Utilities
   , CRArray

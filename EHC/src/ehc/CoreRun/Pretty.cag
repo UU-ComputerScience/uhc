@@ -137,7 +137,7 @@ instance PP RRef where
   pp (RRef_LDf l e) = ppDots [pp "d", pp l, pp e]
   pp (RRef_Tag r  ) = ppDots [pp r, pp "tag"]
   pp (RRef_Fld r e) = ppDots [pp r, pp e]
-  pp (RRef_Dbg n  ) = "dbg" >#< pp ("RRef_Dbg: " ++ show n)				-- intentionally the same PP as Exp_Dbg so it will parse to Exp_Dbg
+  pp (RRef_Dbg n  ) = "dbg" >#< pp (show $ "RRef_Dbg: " ++ show n)				-- intentionally the same PP as Exp_Dbg so it will parse to Exp_Dbg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

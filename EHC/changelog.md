@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.8.4 - 
+
+- 
+
+## 1.1.8.3 - 20141226
+
+- [corerun, api] Changes required for CCO.
+
 ## 1.1.8.2 - 20141219
 
 - [build] Fixes some GHC 7.8.3 Typeable warnings

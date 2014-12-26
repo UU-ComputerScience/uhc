@@ -26,6 +26,7 @@ module %%@{%{EH}%%}Base.API
 
   -- * Names
   , HsName
+  , HSNM(mkHNm)
 
   -- * Error
   , Err
