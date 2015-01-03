@@ -156,7 +156,7 @@ supportedTargetMp :: Map.Map String Target
   where (ts,is) = unzip
           [ ((show t, t),(t,i))
           | (t,i)
-              <- []
+              <- [ mk Target_None [] ]
 %%[[(8 corebackend)
                  ++ [ mk Target_None_Core_AsIs [] ]
 %%]]
