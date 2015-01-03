@@ -1192,10 +1192,12 @@ case $HostPlatform in
         shellrun="/bin/bash "
         ;;
   *-*-msys)
-        # convert the POSIX path to Windows paths so cabal can find the paths.
+        # convert the root POSIX path to Windows paths so cabal can find the paths.
         # internally these will be converted back to posix paths by the msys shell
-        hardtop_plat=`echo ${hardtop} | sed -e 's%^/%%' -e 's%/%\\\\%g' -e 's%^.%\0:%' `
-        hardtop_plat2=`echo ${hardtop} | sed -e 's%^/%%' -e 's%/%\\\\%g' -e 's%^.%\0:%' `
+        # to prevent issues with escaping just transform the root e.g /c/ to c:/
+        # Windows natively supports both \ and / for paths so this is not an issue
+        hardtop_plat=`echo ${hardtop} | sed -e 's%^/%%' -e 's%^.%\0:%' `
+        hardtop_plat2=`echo ${hardtop} | sed -e 's%^/%%' -e 's%^.%\0:%' `
         shellrun=""
         ;;
   *)
