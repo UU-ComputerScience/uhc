@@ -1,5 +1,6 @@
 %%[0 hs
 {-# LANGUAGE MagicHash #-}
+{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators #-}
 -- {-# OPTIONS_GHC -O3 #-}
 %%]
 
@@ -21,7 +22,7 @@
 %%[(8 corerun) hs import({%{EH}CoreRun}, {%{EH}CoreRun.Run})
 %%]
 
-%%[(8 corerun) hs import({%{EH}CoreRun.Pretty}, UHC.Util.Pretty)
+%%[(8 corerun) hs import({%{EH}CoreRun.Pretty}, UHC.Util.Pretty as PP)
 %%]
 
 %%[(8 corerun) hs import(Control.Monad.Primitive)
@@ -41,11 +42,15 @@
 %%]
 %%[(8 corerun) hs import(Data.IORef) export(module Data.IORef)
 %%]
-%%[(8 corerun) hs import(Data.Int, Data.Word) export(module Data.Int, module Data.Word)
+%%[(8 corerun) hs import(Data.Int, Data.Word, Data.Bits) export(module Data.Int, module Data.Word)
 %%]
 %%[(8 corerun) hs import(qualified Data.ByteString.Char8 as BSC8)
 %%]
 %%[(8 corerun) hs import(GHC.Ptr(Ptr(..)), GHC.Exts({Addr#})) export(module GHC.Ptr)
+%%]
+%%[(8 corerun) hs import(GHC.Generics)
+%%]
+%%[(8 corerun) hs import(Control.Applicative)
 %%]
 
 -- old
@@ -99,10 +104,16 @@ data RVal
       , rvalBody		:: !Exp						-- ^ Exp taking no arguments (thunk)
       , rvalSLRef		:: !(IORef HpPtr)			-- ^ static link to enclosing stack frame
       }
-  | RVal_Node
+  | RVal_NodeMV
       { rvalTag			:: !Int -- {-# UNPACK #-} !RVal		-- ^ node tag
-      , rvalNdVals		:: !RValMV					-- ^ fields
+      , rvalNdMVals		:: !RValMV					-- ^ fields, mutable
       }
+{-
+  | RVal_NodeV
+      { rvalTag			:: !Int -- {-# UNPACK #-} !RVal		-- ^ node tag
+      , rvalNdVals		:: !RValV					-- ^ fields, immutable
+      }
+-}
   | RVal_App
       { rvalFun			:: !RVal					-- ^ a RVal_App or RVal_PApp
       , rvalArgs		:: !RValMV					-- ^ already applied args
@@ -158,13 +169,13 @@ ppRVal' lkptr rval = case rval of
     RVal_PackedString	v    		-> dfltpp $ show v
     RVal_Lam   			mn b slref	-> dfltpp b
     RVal_Thunk 			mn e slref 	-> return $ ppBrackets e
-    RVal_Node  			t vs 		-> do
+    RVal_NodeMV 		t vs 		-> do
                                        vl <- mvecToList vs
                                        return $ t >|< ppBracketsCommas vl
     RVal_App   			f as 		-> dfltpp f -- return $ ppBrackets $ f >|< "@"  >|< (ppParensCommas $ V.toList as)
     RVal_Ptr   			pref    	-> do
                                        p <- readIORef pref
-                                       vpp <- lkptr p >>= maybe (return empty) (\v -> ppRVal' lkptr v >>= \vpp -> return $ " -> " >|< vpp)
+                                       vpp <- lkptr p >>= maybe (return PP.empty) (\v -> ppRVal' lkptr v >>= \vpp -> return $ " -> " >|< vpp)
                                        return $ "*"  >|< p >|< vpp
     RVal_Fwd   			p    		-> return $ "f*" >|< p
     RVal_Frame 			_ slref {- lv -} vs spref -> do
@@ -238,8 +249,8 @@ instance HSMarshall Integer where
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall Bool where
-  hsMarshall _ (RVal_Node t _) = return $ t == tagBoolTrue
-  hsMarshall _ v               = err $ "CoreRun.Run.Val.HSMarshall Bool:" >#< v
+  hsMarshall _ (RVal_NodeMV t _) = return $ t == tagBoolTrue
+  hsMarshall _ v                 = err $ "CoreRun.Run.Val.HSMarshall Bool:" >#< v
   hsUnmarshall b = liftIO (mvecAllocFillFromV emptyCRArray) >>= rsemNode (if b then tagBoolTrue else tagBoolFalse) >>= rsemPush
   {-# INLINE hsUnmarshall #-}
 
@@ -256,7 +267,7 @@ instance HSMarshall (Ptr a) where
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall [RVal] where
-  hsMarshall evl (RVal_Node t as)
+  hsMarshall evl (RVal_NodeMV t as)
     | t == tagListCons = liftIO (MV.read as 1) >>= evl >>= rsemPop >>= hsMarshall evl >>= \tl -> liftIO (MV.read as 0) >>= \hd -> return (hd : tl)
     | otherwise        = return []
   hsMarshall _   v     = err $ "CoreRun.Run.Val.HSMarshall [RVal]:" >#< v
@@ -271,6 +282,50 @@ instance HSMarshall x => HSMarshall [x] where
   hsUnmarshall v       = forM v (\e -> hsUnmarshall e >>= rsemPop) >>= hsUnmarshall
   {-# INLINE hsUnmarshall #-}
 %%]
+
+%%[(8 corerun) hs
+-- Generic variant of marshalling to cater for arbitrary datatype; 20141227 under construction
+
+-- | Generic marshalling from/to Haskell values
+class GHSMarshall hs where
+  -- | Marshall to Haskell value, also parameterized by evaluator
+  ghsMarshall :: (RunSem RValCxt RValEnv RVal m a) => (RVal -> RValT m a) -> RVal -> RValT m (hs x)
+
+  -- | Unmarshall from Haskell value
+  ghsUnmarshall :: (RunSem RValCxt RValEnv RVal m a) => hs x -> RValT m a
+  
+  -- | The tag as used for dispatching in generic code, which is different from the one used at runtime (hence a mapping between these is used elsewhere).
+  --   The returned value should be the same as computed during (un)marshall (bit of code duplication thus).
+  ghsMarshallTag :: hs x -> Int
+
+instance GHSMarshall U1 where
+  ghsMarshall   _ _ = return U1
+  ghsUnmarshall  U1 = mkUnit
+  ghsMarshallTag U1 = 0
+
+instance (GHSMarshall a, GHSMarshall b) => GHSMarshall (a :+: b) where
+  -- TBD: dispatch on tag
+  ghsMarshall evl v@(RVal_NodeMV {rvalTag=t})
+    | even t    = L1 <$> ghsMarshall evl v'
+    | otherwise = R1 <$> ghsMarshall evl v'
+    where v' = v {rvalTag = t `shiftR` 1}
+  -- TBD: set tag
+  ghsUnmarshall (L1 x) = ghsUnmarshall x >>= (rsemTopUpd $ \v -> v {rvalTag = (rvalTag v `shiftL` 1)    })
+  ghsUnmarshall (R1 x) = ghsUnmarshall x >>= (rsemTopUpd $ \v -> v {rvalTag = (rvalTag v `shiftL` 1) + 1})
+  --
+  ghsMarshallTag (L1 x) =  ghsMarshallTag x `shiftL` 1
+  ghsMarshallTag (R1 x) = (ghsMarshallTag x `shiftL` 1) + 1
+
+%%]
+instance (GHSMarshall a, GHSMarshall b) => GHSMarshall (a :*: b) where
+  --
+  ghsUnmarshall (a :*: b) = do
+    a' <- rsemPop =<< ghsUnmarshall a
+    b' <- rsemPop =<< ghsUnmarshall b
+    -- TBD: append
+    rsemPush a'
+  --
+  ghsMarshallTag (a :*: _) =  ghsMarshallTag a
 
 %%[(8888 corerun) hs
 -- | Datatype relation between Haskell and RVal encodings
@@ -371,7 +426,7 @@ heapGcM curV = do
               RVal_Ptr pref                               	-> modifyIORefM pref copyp
               RVal_Frame {rvalSLRef=slref, rvalFrVals=vs, rvalFrSP=spref}
               												-> modifyIORefM slref copyp >> readIORef spref >>= \sp -> mvecForM_' 0 sp vs copyv
-              RVal_Node {rvalNdVals=vs} 					-> mvecForM_ vs copyv
+              RVal_NodeMV {rvalNdMVals=vs} 					-> mvecForM_ vs copyv
               RVal_App {rvalFun=f, rvalArgs=as} 			-> copyv f >> mvecForM_ as copyv
               RVal_Thunk {rvalSLRef=slref}					-> modifyIORefM slref copyp
               RVal_Lam {rvalSLRef=slref}					-> modifyIORefM slref copyp
@@ -727,13 +782,13 @@ ref2valM r = do
     RRef_Fld r e -> do
         v <- ptr2valM =<< ref2valM r -- >>= rsemDeref
         case v of
-          RVal_Node _ vs -> liftIO $ MV.read vs e
-          _              -> err $ "CoreRun.Run.Val.ref2valM.RRef_Fld:" >#< e >#< "in" >#< v
+          RVal_NodeMV _ vs -> liftIO $ MV.read vs e
+          _                -> err $ "CoreRun.Run.Val.ref2valM.RRef_Fld:" >#< e >#< "in" >#< v
     RRef_Tag r -> do
         v <- ptr2valM =<< ref2valM r -- >>= rsemDeref
         case v of
-          RVal_Node t _ -> return $ RVal_Int t
-          _             -> err $ "CoreRun.Run.Val.ref2valM.RRef_Tag:" >#< v
+          RVal_NodeMV t _ -> return $ RVal_Int t
+          _               -> err $ "CoreRun.Run.Val.ref2valM.RRef_Tag:" >#< v
     _ -> err $ "CoreRun.Run.Val.ref2valM.r:" >#< r
 {-# INLINE ref2valM #-}
 %%]

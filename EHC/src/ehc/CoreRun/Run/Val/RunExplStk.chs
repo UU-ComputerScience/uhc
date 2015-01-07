@@ -233,7 +233,7 @@ rvalExplStkExp e = do
     Exp_Case e as -> do
       v <- ptr2valM =<< rsemPop =<< rsemSExp e
       case v of
-        -- RVal_Node {rvalTag=tg} -> rsemAlt $ as V.! tg
+        -- RVal_NodeMV {rvalTag=tg} -> rsemAlt $ as V.! tg
         RVal_Int  tg           -> rsemAlt $ as V.! tg
         _ -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp.Case: scrutinee:" >#< v
     
@@ -362,7 +362,7 @@ instance
     {-# INLINE rsemPush #-}
     rsemPop  = \_ -> renvFrStkPop1
     {-# INLINE rsemPop #-}
-    rsemNode t vs = {- heapAllocAsPtrM -} return $ RVal_Node t vs
+    rsemNode t vs = {- heapAllocAsPtrM -} return $ RVal_NodeMV t vs
     {-# INLINE rsemNode #-}
 
     

@@ -136,7 +136,10 @@ class (Monad m, MonadIO m, Functor m) => RunSem r s v m a
   {-# INLINE rsemGcLeaveRootLevel #-}
 %%]
 
-%%[(8 corerun) hs
+%%[(8 corerun) hs export(rsemTopUpd)
+-- | Update the top value of the maintained stack
+rsemTopUpd :: RunSem r s v m a => (v -> v) -> a -> RunT' r s v m a
+rsemTopUpd upd x = rsemPop x >>= (rsemPush . upd)
 %%]
 
 %%[(8 corerun) hs export(RunT', RunT)

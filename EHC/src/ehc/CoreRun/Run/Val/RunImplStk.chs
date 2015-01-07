@@ -304,7 +304,7 @@ instance
     {-# INLINE rsemPush #-}
     rsemPop  = return
     {-# INLINE rsemPop #-}
-    rsemNode t vs = return $ RVal_Node t vs
+    rsemNode t vs = return $ RVal_NodeMV t vs
     {-# INLINE rsemNode #-}
 
 %%]

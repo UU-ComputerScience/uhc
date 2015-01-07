@@ -515,8 +515,10 @@ type TargInfoMp = Map.Map Target TargetInfo
 %%[8 export(allTargetInfoMp,allFFIWays)
 allTargetInfoMp :: TargInfoMp
 
+-- | All allowed platform dependent ways to do a FFI call, a primitive 'FFIWay_Prim' is always allowed even though there might be no backend for it.
+-- This allows code still to compile when no target/backend is available.
 allFFIWays :: [FFIWay]
-allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
+allFFIWays = nub $ (FFIWay_Prim :) $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
