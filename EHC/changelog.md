@@ -1,8 +1,13 @@
 # Changelog
 
-## 1.1.8.4 - 
+## 1.1.8.5
 
 - 
+
+## 1.1.8.4 - 20150120
+
+- [corerun] Fix for module references during module setup (came up during CCO)
+- [corerun] work on FFI bindings
 
 ## 1.1.8.3 - 20141226
 

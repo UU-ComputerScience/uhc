@@ -221,7 +221,7 @@ uhc-light-cabal-dist: # $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_MAIN_DRV_HS)
 		, $(CABAL_EHCLIB_DEPENDS_ON) \
 		, $(CABAL_EHCLIB_EXTENSIONS) \
 		, Part of UHC packaged as cabal/hackage installable library \
-		, A 'light' variant of UHC including only an API and an executable for compiling to Core representation. This version is just to test the infrastructure. Later versions will provide a fleshing out of the API and completion of the now rudimentary platform independent (Haskell) interpreted running etc.. \
+		, A 'light' variant of UHC including only an API and executables for compiling to Core representation ($(UHCLIGHT_EXEC_NAME)) and running CoreRun ($(UHCRUN_EXEC_NAME)). This version is just to test the infrastructure. Later versions will provide a fleshing out of the API and completion of the now rudimentary platform independent (Haskell) interpreted running etc.. \
 		, $${ehc_nomain_exposed_names} \
 		, $${ehc_nomain_nonexposed_names} \
 		, $(EHC_MAIN) \
