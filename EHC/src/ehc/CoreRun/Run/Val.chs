@@ -380,7 +380,10 @@ heapGcM curV = do
     -- rsemSetTrace True
     -- rsemTr' True $ "GC starts, curV=" >#< curV
     -- rsemTr $ "GC starts"
-    env@(RValEnv {renvHeap=hp@(Heap {hpVals=vsOld, hpSemispaceMultiplier=mlRef, hpFirst=offOld, hpFree=hpFrRef}), renvGcRootStack=rootStkRef, renvTopFrame=topFrRef, renvStack=stkRef, renvGlobals=globals}) <- get
+    env@(RValEnv {renvHeap=hp@(Heap {hpVals=vsOld, hpSemispaceMultiplier=mlRef, hpFirst=offOld, hpFree=hpFrRef})
+                 , renvGcRootStack=rootStkRef, renvTopFrame=topFrRef, renvStack=stkRef
+                 , renvGlobalsMV=globals
+                 }) <- get
     env' <- liftIO $ do
       ml <- readIORef mlRef
       let szOld  = MV.length vsOld
@@ -447,7 +450,7 @@ heapGcM curV = do
       modifyIORefM stkRef $ mapM copyp
         
       -- initial copy: globals
-      globals' <- V.forM globals copyp
+      mvecLoop 0 (MV.length globals) (\v i -> MV.read v i >>= copyp >>= MV.write v i) globals
       
       -- initial copy: the RVal to be put on the heap
       copyv curV
@@ -459,7 +462,7 @@ heapGcM curV = do
       readIORef greyref >>= follow offNew >>= \p -> writeIORef hpFrRef (p - offNew)
         
       -- final: 
-      return $ env {renvGlobals = globals', renvHeap = hp {hpVals=vsNew, hpFirst=offNew}}
+      return $ env { renvHeap = hp {hpVals=vsNew, hpFirst=offNew}}
 
     put env'
     -- rsemTr $ "GC done"
@@ -748,7 +751,7 @@ ref2valM r = do
   env <- get
   case r of
     RRef_Glb m e -> do
-        modFrame <- heapGetM (renvGlobals env V.! m)
+        modFrame <- heapGetM =<< liftIO (MV.read (renvGlobalsMV env) m)
         liftIO $ MV.read (rvalFrVals modFrame) e
 {-
     RRef_Loc l o -> do
@@ -808,7 +811,7 @@ type RValStack = [RValFrame]
 -- | Environment: state
 data RValEnv
   = RValEnv
-      { renvGlobals		:: !(CRArray RValFrame)			-- ^ per module frame of globals
+      { renvGlobalsMV	:: !(CRMArray RValFrame)		-- ^ per module frame of globals
       , renvStack		:: !(IORef RValStack)			-- ^ stack of frames, except for the top
       , renvTopFrame	:: !(IORef RValFrame)			-- ^ current frame, the actual top of the stack
       -- , renvFrSP		:: !(IORef Int)					-- ^ top of expr stack embedded in higher end of top frame
@@ -825,7 +828,8 @@ newRValEnv hpSz = do
   hp <- newHeap hpSz
   -- sp <- newIORef 0
   rtst <- newIORef []
-  return $ RValEnv V.empty st tp hp False False rtst
+  gl <- MV.new 0
+  return $ RValEnv gl st tp hp False False rtst
 %%]
 
 %%[(8 corerun) hs export(renvTopFrameM)
@@ -869,7 +873,7 @@ dumpPpEnvM extensive = do
         header2 = ppCurly $ "Heap =" >|< hpfr >|< "/" >|< MV.length (hpVals hp) >|< ", CallCxt=" >|< ppBracketsCommas callcxt >|< ", Stack=" >|< ppBracketsCommas stkfrspp
         footer1 = dash
     hpPP <- dumpHeap hp hpfr
-    glPP <- dumpGlobals hp (renvGlobals env)
+    glPP <- dumpGlobalsMV hp (renvGlobalsMV env)
     frPPs <- forM stkfrs $ dumpFrame hp
     if extensive
       then return $ header1 >-< header2 >-< hpPP >-< glPP >-< "====== Frames ======" >-< (indent 2 $ vlist frPPs) >-< footer1
@@ -884,9 +888,8 @@ dumpPpEnvM extensive = do
       sp  <- liftIO $ readIORef spref
       -- pps <- ppa 0 hp sp vs
       (liftIO $ ppRValWithHp hp fr) >>= \frpp -> return $ "Frame ptr=" >|< fp >|< " sp=" >|< sp >-< (indent 2 $ frpp) --  >-< (indent 2 $ vlist pps))
-    dumpGlobals hp glbls = do
-      pps <- forM [0 .. V.length glbls - 1] $ \i -> do
-        dumpFrame hp (glbls V.! i)
+    dumpGlobalsMV hp glbls = do
+      pps <- liftIO (mvecToList glbls) >>= \l -> forM l $ dumpFrame hp
       return $ "====== Globals ======" >-< indent 2 (vlist pps)
     dumpHeap hp@(Heap {hpFirst=off}) hpfr = do
       pps <- ppa off hp hpfr (hpVals hp)

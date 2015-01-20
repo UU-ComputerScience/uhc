@@ -240,14 +240,12 @@ instance
         -- (liftIO $ newRValEnv 100000) >>= put
         let modAllL = mod : modImpL
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
+        modify $ \env -> env {renvGlobalsMV = ms}
         forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs}) -> do
           bs' <- (liftIO . V.thaw) =<< V.forM bs rsemExp
           p <- implStkAllocFrameM r2n nullPtr {- 0 -} (MV.length bs') bs'
           liftIO $ MV.write ms nr p
-        ms' <- liftIO $ V.freeze ms
-        modify $ \env -> env {renvGlobals = ms'}
         rsemSetupTracing opts
-        -- return RVal_None
 
     rsemSetTrace doTrace doExtensive = modify $ \env ->
       env {renvDoTrace = doTrace, renvDoTraceExt = doExtensive}

@@ -283,23 +283,18 @@ instance
         rsemGcEnterRootLevel
         let modAllL = modImpL ++ [mod]
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
+        modify $ \env -> env {renvGlobalsMV = ms}
         forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz}) -> do
           -- construct frame for each module
-          p <- explStkPushAllocFrameM r2n nullPtr {- 0 -} sz emptyExplArgs
+          p <- explStkPushAllocFrameM r2n nullPtr sz emptyExplArgs
           -- and store the frame into the array holding module frames
           (liftIO $ MV.write ms nr p >> newIORef p) >>= \r -> rsemGcPushRoot (RVal_Ptr r)
-          -- get the module array and store it as the globals (TBD: fix freeze everytime...)
-          ms' <- liftIO $ V.freeze ms
-          modify $ \env -> env {renvGlobals = ms'}
           -- holding all local defs
           V.forM_ bs rsemExp
           -- p <- 
           explStkPopFrameM
-        -- get the module array and store it as the globals
-        ms' <- liftIO $ V.freeze ms
-        modify $ \env -> env {renvGlobals = ms'}
         -- use the main module's stackframe for evaluating 'main'
-        explStkPushFrameM $ ms' V.! mainModNr
+        liftIO (MV.read ms mainModNr) >>= explStkPushFrameM
         rsemGcLeaveRootLevel
         rsemSetupTracing opts
 

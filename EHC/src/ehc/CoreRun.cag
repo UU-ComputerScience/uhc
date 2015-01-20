@@ -58,15 +58,8 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 
 %%[(8 corerun) hs export(CRArray, CRMArray, emptyCRArray, crarrayToList, crarrayFromList, craLength, craAssocs, craAssocs', craReverseAssocs')
 -- | Fast access sequence
-type CRArray x = V.Vector x
+type CRArray  x =  V.Vector   x
 type CRMArray x = MV.IOVector x
-
-{-
--- | Make array with lowerbound
-mkCRArrayLwb :: Int -> [x] -> CRArray x
-mkCRArrayLwb lwb xs = listArray (lwb,lwb+l-1) xs
-  where l = length xs
--}
 
 -- | Wrapper (rename) around vector<->list conversion
 crarrayFromList :: [x] -> CRArray x
