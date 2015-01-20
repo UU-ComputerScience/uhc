@@ -78,18 +78,19 @@ explStkAllocFrameM r2n sl {- lev -} sz as@(ExplArgs {eaVec=vsArgs, eaStk=nrArgs}
 -- | Push a new stack frame
 explStkPushFrameM :: (RunSem RValCxt RValEnv RVal m x) => HpPtr -> RValT m ()
 explStkPushFrameM frptr = do
-  (RValEnv {renvStack=st, renvTopFrame=tf}) <- get
+  (RValEnv {renvStack=st, renvTopFrame=tfref}) <- get
   liftIO $ do
-    t <- readIORef tf
-    unless (isNullPtr t) $ modifyIORef st (t:)
-    writeIORef tf frptr
+    tf <- readIORef tfref
+    unless (isNullPtr tf) $ modifyIORef st (tf:)
+    writeIORef tfref frptr
 {-# INLINE explStkPushFrameM #-}
 
 -- | Allocate and push a new stack frame
-explStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> ExplArgs -> RValT m ()
+explStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> ExplArgs -> RValT m HpPtr
 explStkPushAllocFrameM r2n sl {- lev -} sz as = do
   p <- explStkAllocFrameM r2n sl {- lev -} sz as
   explStkPushFrameM p
+  return p
 {-# INLINE explStkPushAllocFrameM #-}
 
 -- | Allocate and replace top stack frame
@@ -284,12 +285,16 @@ instance
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
         forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz}) -> do
           -- construct frame for each module
-          explStkPushAllocFrameM r2n nullPtr {- 0 -} sz emptyExplArgs
-          -- holding all local defs
-          V.forM_ bs rsemExp
-          p <- explStkPopFrameM
+          p <- explStkPushAllocFrameM r2n nullPtr {- 0 -} sz emptyExplArgs
           -- and store the frame into the array holding module frames
           (liftIO $ MV.write ms nr p >> newIORef p) >>= \r -> rsemGcPushRoot (RVal_Ptr r)
+          -- get the module array and store it as the globals (TBD: fix freeze everytime...)
+          ms' <- liftIO $ V.freeze ms
+          modify $ \env -> env {renvGlobals = ms'}
+          -- holding all local defs
+          V.forM_ bs rsemExp
+          -- p <- 
+          explStkPopFrameM
         -- get the module array and store it as the globals
         ms' <- liftIO $ V.freeze ms
         modify $ \env -> env {renvGlobals = ms'}
