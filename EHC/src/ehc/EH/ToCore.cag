@@ -74,12 +74,13 @@ SEM AGItf
                                                       [ (tn, [ (cn, dtiCTag dti) | (cn,dti) <- Map.toList $ dgiConstrTagMp dgi ])
                                                       | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi)
                                                       ]
+                                                    allConNmS = Set.fromList [ cn | (_,cs) <- alldata, (cn,_) <- cs ]
                                                 in  CModule_Mod @lhs.moduleNm
 %%[[8
                                                         [] []
 %%][50
-                                                        (   [ CExport_ExportData tn (Just [ cn | (cn,_) <- cs ]) | (tn,cs) <- alldata ]
-                                                         ++ [ CExport_Export n | n <- Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl ]
+                                                        (   [ CExport_ExportData (hsnQualified tn) (Just [ hsnQualified cn | (cn,_) <- cs ]) | (tn,cs) <- alldata ]
+                                                         ++ [ CExport_Export (hsnQualified n) | n <- Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl, n `Set.notMember` allConNmS ]
                                                         )
                                                         (map CImport_Import $ Set.toList $ iumHSDeclModules @lhs.importUsedModules)
 %%]]

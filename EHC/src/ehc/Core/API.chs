@@ -368,11 +368,14 @@ mkImport :: HsName -- ^ The module to import.
     -> EC.CImport
 mkImport = EC.CImport_Import
 
--- | Create a plain export
+-- | Create a plain export.
+-- Exported names are unqualified, implicitly qualified by module name.
 mkExport :: HsName -> EC.CExport
 mkExport = EC.CExport_Export
 
--- | Create an export for data
+-- | Create an export for data.
+-- Exported names are unqualified, implicitly qualified by module name.
+-- Constructor name exports may not overlap with plain exported names.
 mkExportData
   :: HsName				-- ^ type name
   -> Maybe [HsName]		-- ^ constructor names, if Nothing then all are exported
