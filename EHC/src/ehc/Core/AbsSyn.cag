@@ -56,7 +56,12 @@ DATA CModule
 
 %%[(8 core)
 DATA CExport
+  -- export of plain (value) identifiers
   | Export		nm				: {HsName}
+  
+  -- export of data types with (optional) list of constructors also exported (absent means all of them are exported)
+  | ExportData	nm				: {HsName}
+  				mbConNmL		: {Maybe [HsName]}
 
 TYPE CExportL	= [CExport]
 

@@ -81,7 +81,12 @@ pCModule
 
 pCExport :: CParser CExport
 pCExport
-  =   CExport_Export <$ pEXPORT <*> pDollNm <* pSEMI
+  -- =   CExport_Export <$ pEXPORT <*> pDollNm <* pSEMI
+  = pEXPORT *>
+        (   CExport_ExportData <$ pDATA <*> pDollNm <*> pMb (pParens_pCommas pDollNm)
+        <|> CExport_Export              <$> pDollNm
+        )
+    <* pSEMI
 
 pCImport :: CParser CImport
 pCImport

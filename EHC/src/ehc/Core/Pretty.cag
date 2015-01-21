@@ -329,6 +329,9 @@ SEM CImport
 
 SEM CExport
   | Export		lhs			.	pp			=	"export" >#< ppCNm @nm
+  | ExportData	lhs			.	pp			=	"export data" >#< ppMbPost ppParensCommas @mbConNmL (ppCNm @nm)
+  
+  -- ppMbPost :: (PP x, PP r) => (a -> x) -> Maybe a -> r -> PP_Doc
 
 SEM CDataCon
   | Con			lhs			.	pp			=	ppCNm @conNm >#< "=" >#< ppCurlysCommas [pp @tagNr, pp @arity]

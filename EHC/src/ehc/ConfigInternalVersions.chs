@@ -25,6 +25,6 @@ mkInternalVersion = id
 internalVersionHI = mkInternalVersion 1
 
 -- | For binary/serialized Core .cr/.bcr etc files
-internalVersionCore = mkInternalVersion 11
+internalVersionCore = mkInternalVersion 12
 %%]
 

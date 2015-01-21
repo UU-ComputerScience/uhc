@@ -58,24 +58,11 @@ ATTR
 ATTR AGItf [ | | cmodule: CModule ]
 
 SEM AGItf
-  | AGItf       lhs         .   cmodule     =   let -- b = if @insertMainUse then acoreVar hsnMain else @expr.letCBody
-                                                    -- d = if @insertMainDef then acoreLet CBindCateg_Plain [acoreBind1Ty hsnMain (acoreTyErr $ "EH.ToCore.AGItf.main") @expr.letCBody] else id
-                                                    {-
-                                                    -}
-                                                    bm    = acoreVar hsnMain
+  | AGItf       lhs         .   cmodule     =   let bm    = acoreVar hsnMain
                                                     bb    = @expr.letCBody
                                                     db    = acoreLet acoreBindcategPlain [acoreBind1Ty hsnMain (acoreTyErr $ "EH.ToCore.AGItf.main") $ acoreRunMain @expr.letCBody]
                                                     mb m  = acoreLet acoreBindcategPlain [mkb $ acoreRunMain me]
                                                           where (me,mkb) = cbindExtractExprMk m
-                                                    {-
-                                                    (b,d) = case (@insertMainUse, @insertMainDef) of
-                                                       (True , True ) -> (bm, db id)
-                                                       (True , False) -> (bm, dm)
-                                                       (False, True ) -> (bb, db acoreRunMain)
-                                                       (False, False) -> (bb, dm)
-                                                    -}
-                                                    {-
-                                                    -}
                                                     (b,d) = case (@expr.letValMainCBindL, @mainUseExists, @isMainMod) of
                                                         ([]   , False, True) -> (bm, db   )
                                                         ((m:_), False, True) -> (bm, mb m )
@@ -83,20 +70,21 @@ SEM AGItf
                                                         ((m:_), True , True) -> (bb, mb m )
                                                         ((m:_), _    , _   ) -> (bb, mb m )
                                                         (_    , _    , _   ) -> (bb, id   )
+                                                    alldata =
+                                                      [ (tn, [ (cn, dtiCTag dti) | (cn,dti) <- Map.toList $ dgiConstrTagMp dgi ])
+                                                      | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi)
+                                                      ]
                                                 in  CModule_Mod @lhs.moduleNm
 %%[[8
                                                         [] []
 %%][50
-                                                        (map CExport_Export $ Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl)
+                                                        (   [ CExport_ExportData tn (Just [ cn | (cn,_) <- cs ]) | (tn,cs) <- alldata ]
+                                                         ++ [ CExport_Export n | n <- Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl ]
+                                                        )
                                                         (map CImport_Import $ Set.toList $ iumHSDeclModules @lhs.importUsedModules)
 %%]]
-                                                        [ CDeclMeta_Data tn
-                                                            [ CDataCon_Con cn (ctagTag ctag) (ctagArity ctag)
-                                                            | (cn,dti) <- Map.toList $ dgiConstrTagMp dgi
-                                                            , let ctag = dtiCTag dti
-                                                            ]
-                                                        | (tn,dgi) <- gamToAssocL @expr.gathDataGam
-                                                        , not (dgiIsNewtype dgi)
+                                                        [ CDeclMeta_Data tn [ CDataCon_Con cn (ctagTag ctag) (ctagArity ctag) | (cn,ctag) <- cs ]
+                                                        | (tn,cs) <- alldata
                                                         ]
                                                         (
 %%[[9

@@ -106,6 +106,7 @@ module %%@{%{EH}%%}Core.API
   , mkModule
   , mkImport
   , mkExport
+  , mkExportData
   , mkMetaData
   , mkMetaDataCon
   , mkMetaDataConFromCTag
@@ -367,8 +368,16 @@ mkImport :: HsName -- ^ The module to import.
     -> EC.CImport
 mkImport = EC.CImport_Import
 
+-- | Create a plain export
 mkExport :: HsName -> EC.CExport
 mkExport = EC.CExport_Export
+
+-- | Create an export for data
+mkExportData
+  :: HsName				-- ^ type name
+  -> Maybe [HsName]		-- ^ constructor names, if Nothing then all are exported
+  -> EC.CExport
+mkExportData = EC.CExport_ExportData
 
 -- | Creates the metadata for one datatype.
 mkMetaData :: HsName  -- ^ The name of the dataype.

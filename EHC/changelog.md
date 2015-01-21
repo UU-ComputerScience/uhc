@@ -2,12 +2,13 @@
 
 ## 1.1.8.5
 
-- 
+- [core, api] Export of data types, new Core AST/API to express this.
+- [corerun] Better fix for CoreRun access of globals during global init.
 
 ## 1.1.8.4 - 20150120
 
-- [corerun] Fix for module references during module setup (came up during CCO)
-- [corerun] work on FFI bindings
+- [corerun] Fix for module references during module setup (came up during CCO).
+- [corerun] Work on FFI bindings.
 
 ## 1.1.8.3 - 20141226
 

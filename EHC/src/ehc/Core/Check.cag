@@ -142,7 +142,11 @@ SEM CImport
 ATTR AllExport [ | | modExpL USE {++} {[]} : {[ModExp]} ]
 
 SEM CExport
-  | Export		lhs			.   modExpL				=   [ModExpEnt (ModEntSpec @nm emptyRange Nothing)]
+  | Export      lhs         .   modExpL             =   [ModExpEnt (ModEntSpec @nm emptyRange Nothing)]
+  | ExportData  lhs         .   modExpL             =   [case @mbConNmL of
+                                                           Just ns -> ModExpEnt (ModEntSpec @nm emptyRange (Just (ModEntSubs $ map hsnQualified ns)))
+                                                           Nothing -> ModExpEnt (ModEntSpec @nm emptyRange Nothing)
+                                                        ]
 %%]
 
 %%[(50 codegen corein)
@@ -153,18 +157,32 @@ SEM CImport
 %%]
 
 %%[(50 codegen corein)
-ATTR CExpr AllBindOnly [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
+ATTR CExpr AllBindOnly AllDeclMeta [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
 
 SEM CBind
   | Bind        lhs         .   modDefsRel          =   let o = IdOcc @nm IdOcc_Val
-                                                        in  Rel.fromList [ (hsnQualified (ioccNm o), ModEnt IdOcc_Val o Set.empty emptyRange) ]
+                                                        in  Rel.fromList [ (hsnQualified (ioccNm o), ModEnt (ioccKind o) o Set.empty emptyRange) ]
+
+SEM CDeclMeta
+  | Data        lhs         .   modDefsRel          =   let to = IdOcc (hsnQualified @tyNm) IdOcc_Data
+                                                            subs = [ ModEnt (ioccKind o) o Set.empty emptyRange | cn <- @dataCons.dataConNmL, let o = IdOcc (hsnQualified cn) IdOcc_Val ]
+                                                        in  Rel.singleton ( (ioccNm to)) (ModEnt (ioccKind to) to (Set.fromList subs) emptyRange)
+%%]
+
+%%[(50 codegen corein)
+ATTR AllDataCon [ | | dataConNmL USE {++} {[]} : {[HsName]} ]
+
+SEM CDataCon
+  | Con			lhs			.	dataConNmL			=	[@conNm]
 %%]
 
 %%[(50 codegen corein)
 ATTR CodeAGItf CModule [ | | mod: Mod ]
 
 SEM CModule
-  | Mod         lhs         .   mod			        =   Mod @realModuleNm {- @lhs.moduleNm -} (Just @realModuleNm) (Just @exports.modExpL) @imports.modImpL @expr.modDefsRel Rel.empty []
+  | Mod         lhs         .   mod                 =   Mod @realModuleNm {- @lhs.moduleNm -} (Just @realModuleNm) (Just @exports.modExpL) @imports.modImpL
+                                                            (@declMetas.modDefsRel `Rel.union` @expr.modDefsRel)
+                                                            Rel.empty []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -152,7 +152,7 @@ data RRef
       { rrefMod         :: !Int     -- ^ module
       , rrefEntry       :: !Int     -- ^ entry inside module
       }
-  -- | local reference to on stack value, not interpreted during running
+  -- | local reference to on stack value, not interpreted during running, if used must be converted with 'rrefToDif' before running; may become obsolete.
   | RRef_Loc
       { rrefLev         :: !Int     -- ^ level when used statically
       , rrefEntry       :: !Int     -- ^ entry inside level
@@ -162,7 +162,7 @@ data RRef
       { rrefLevDiff		:: !Int     -- ^ offset/difference in levels when used at runtime
       , rrefEntry       :: !Int     -- ^ entry inside level
       }
-  -- | tag of memory/constructor node referred to by other ref (not yet used)
+  -- | tag of memory/constructor node referred to by other ref
   | RRef_Tag
       { rrefRef         :: !RRef    -- ^ of what this is the tag
       }
