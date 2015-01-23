@@ -26,8 +26,35 @@ DATA Mod
                 moduleNm        : {HsName}
                 moduleNr        : {Int}			-- sequence nr, index later into global table of modules
                 stkDepth        : {Int}			-- max depth of stack for setting up globals
+                metas           : MetaL
                 binds           : {CRArray Bind}
                 body			: Exp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+DATA Meta
+  | Data		tyNm			: {HsName}
+  				dataCons		: DataConL
+
+TYPE MetaL		= [Meta]
+
+SET AllMeta		= Meta MetaL
+
+-- Equivalent of data type def holding the minimal pieces of info required for codegen
+DATA DataCon
+  | Con			conNm			: {HsName}
+  				tagNr			: {Int}				-- runtime tag
+  				-- arity			: {Int}				-- nr of fields, excluding tag
+
+TYPE DataConL	= [DataCon]
+
+SET AllDataCon	= DataCon DataConL
+
+SET AllMetaNT 	= AllMeta AllDataCon
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,6 +1,6 @@
 %%[0 hs
 {-# LANGUAGE MagicHash #-}
-{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators #-}
+{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, KindSignatures #-}
 -- {-# OPTIONS_GHC -O3 #-}
 %%]
 
@@ -316,31 +316,132 @@ instance (GHSMarshall a, GHSMarshall b) => GHSMarshall (a :+: b) where
   ghsMarshallTag (L1 x) =  ghsMarshallTag x `shiftL` 1
   ghsMarshallTag (R1 x) = (ghsMarshallTag x `shiftL` 1) + 1
 
-%%]
-instance (GHSMarshall a, GHSMarshall b) => GHSMarshall (a :*: b) where
+instance (ProductBetweenMVec a, ProductBetweenMVec b, ProductSize a, ProductSize b)
+    => GHSMarshall (a :*: b)
+ where
+  ghsMarshall = undefined
+  ghsUnmarshall x = do
+      v <- liftIO $ MV.unsafeNew len
+      productFillMVec v 0 len x
+      rsemNode 0 v >>= rsemPush
+    where
+      len = (unTagged2 :: Tagged2 (a :*: b) Int -> Int) productSize
   --
-  ghsUnmarshall (a :*: b) = do
-    a' <- rsemPop =<< ghsUnmarshall a
-    b' <- rsemPop =<< ghsUnmarshall b
-    -- TBD: append
-    rsemPush a'
-  --
-  ghsMarshallTag (a :*: _) =  ghsMarshallTag a
+  ghsMarshallTag = undefined
 
-%%[(8888 corerun) hs
--- | Datatype relation between Haskell and RVal encodings
-class Data hs => HSMarshallData hs where
-  hsMarshallConstrMp :: (Map.Map hs Int)
-  hsMarshallTyped :: hs
-  hsMarshallTyped = undefined
-
-instance HSMarshallData IOMode where
-  hsMarshallConstrMp = map showConstr $ dataTypeConstrs $ dataTypeOf hsMarshallTyped
 %%]
 
 %%[(8 corerun) hs
-deriving instance Typeable IOMode
-deriving instance Data IOMode
+-- | Marshall util: extract values from product (inspired by Aeson library)
+class ProductBetweenMVec hs where
+  -- | Fill vector from product
+  productFillMVec
+    :: (RunSem RValCxt RValEnv RVal m a)
+    => CRMArray RVal	-- ^ fields vector
+       -> Int 			-- ^ index
+       -> Int 			-- ^ length
+       -> hs x 			-- ^ Haskell value
+       -> RValT m ()
+  -- | Extract product from vector
+  productExtrMVec
+    :: (RunSem RValCxt RValEnv RVal m a)
+    => (RVal -> RValT m a)		-- ^ force evaluation for nested fields
+       -> CRMArray RVal			-- ^ fields vector
+       -> Int					-- ^ index
+       -> Int					-- ^ length
+       -> RValT m (hs x)
+
+instance (ProductBetweenMVec a, ProductBetweenMVec b) => ProductBetweenMVec (a :*: b) where
+  productFillMVec mv ix len (a :*: b) = do
+      productFillMVec mv ix  lenL a
+      productFillMVec mv ixR lenR b
+    where
+      lenL = len `unsafeShiftR` 1
+      ixR  = ix + lenL
+      lenR = len - lenL
+  {-# INLINE productFillMVec #-}
+
+  productExtrMVec evl mv ix len =
+      (:*:) <$> productExtrMVec evl mv ix  lenL
+            <*> productExtrMVec evl mv ixR lenR
+    where
+      lenL = len `unsafeShiftR` 1
+      ixR  = ix + lenL
+      lenR = len - lenL
+  {-# INLINE productExtrMVec #-}
+
+instance GHSMarshall a => ProductBetweenMVec a where
+  productFillMVec mv ix _ x = do
+    x' <- rsemPop =<< ghsUnmarshall x
+    liftIO $ MV.unsafeWrite mv ix x'
+  {-# INLINE productFillMVec #-}
+
+  productExtrMVec evl mv ix _ = do
+    v <- liftIO $ MV.read mv ix
+    ghsMarshall evl v
+  {-# INLINE productExtrMVec #-}
+%%]
+
+%%[(8 corerun) hs
+-- | Phantom type tagging (from Aeson lib)
+newtype Tagged s b = Tagged {unTagged :: b}
+
+-- | Phantom type tagging for higher kinds (from Aeson lib)
+newtype Tagged2 (s :: * -> *) b = Tagged2 {unTagged2 :: b}
+%%]
+
+%%[(8 corerun) hs
+-- | Size (nr of fields) of data type constructors (from Aeson lib)
+class ProductSize f where
+  productSize :: Tagged2 f Int
+
+instance (ProductSize a, ProductSize b) => ProductSize (a :*: b) where
+  productSize = Tagged2 $ unTagged2 (productSize :: Tagged2 a Int) +
+                          unTagged2 (productSize :: Tagged2 b Int)
+  {-# INLINE productSize #-}
+
+instance ProductSize (S1 s a) where
+  productSize = Tagged2 1
+  {-# INLINE productSize #-}
+%%]
+
+%%[(8 corerun) hs
+-- | Get the RVal level tag
+class ConTag hs where
+  rvalConTag
+    :: (RunSem RValCxt RValEnv RVal m a)
+    => RValT m (Maybe (Tagged2 hs Int))
+%%]
+
+class FromTaggedObject f where
+    parseFromTaggedObject :: Options -> String -> Object -> Text
+                          -> Maybe (Parser (f a))
+
+instance (FromTaggedObject a, FromTaggedObject b) =>
+    FromTaggedObject (a :+: b) where
+        parseFromTaggedObject opts contentsFieldName obj tag =
+            (fmap L1 <$> parseFromTaggedObject opts contentsFieldName obj tag) <|>
+            (fmap R1 <$> parseFromTaggedObject opts contentsFieldName obj tag)
+        {-# INLINE parseFromTaggedObject #-}
+
+instance ( FromTaggedObject' f
+         , Constructor c ) => FromTaggedObject (C1 c f) where
+    parseFromTaggedObject opts contentsFieldName obj tag
+        | tag == name = Just $ M1 <$> parseFromTaggedObject'
+                                        opts contentsFieldName obj
+        | otherwise = Nothing
+        where
+          name = pack $ constructorTagModifier opts $
+                          conName (undefined :: t c f p)
+    {-# INLINE parseFromTaggedObject #-}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) hs
+-- deriving instance Typeable IOMode
+-- deriving instance Data IOMode
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

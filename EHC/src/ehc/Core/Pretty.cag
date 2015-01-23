@@ -109,7 +109,7 @@ instance PP CTy where
 
 %%[(8 coreout) hs
 ppCNm :: HsName -> PP_Doc
-ppCNm = cfgppHsName CfgPP_Core
+ppCNm = ppCoreNm
 %%]
 ppCNm :: EHCOpts -> HsName -> PP_Doc
 ppCNm _ n = fst $ ppHsnEscapeWith '$' (hsnOkChars '$' $ copts) (hsnNotOkStrs copts) n

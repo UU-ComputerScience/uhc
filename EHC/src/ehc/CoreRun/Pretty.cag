@@ -13,7 +13,7 @@ Pretty printing for CoreRun
 
 %%[(8 corerun) hs module {%{EH}CoreRun.Pretty} import(UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Opts},{%{EH}Base.Target},{%{EH}Ty},{%{EH}CoreRun},{%{EH}CoreRun.Prim})
 %%]
-%%[(8 corerun) hs import({%{EH}Ty.Pretty})
+%%[(8 corerun) hs import({%{EH}Ty.Pretty}, {%{EH}Base.CfgPP})
 %%]
 
 %%[(8888 corerun) hs import(Data.Array)
@@ -60,6 +60,11 @@ letoffUpd upd i@(InhPP {letoffInhPP=o}) = i {letoffInhPP = upd o}
 -- | PP using InhPP
 ppRRef :: InhPP -> RRef -> PP_Doc
 ppRRef inhpp r = ppMbPost ppCurly (r2nInhPP inhpp r) r
+%%]
+
+%%[(8 corerun) hs
+ppDifficultNm :: HsName -> PP_Doc
+ppDifficultNm = pp . show . show . ppCoreNm
 %%]
 
 %%[(8 corerun) hs
@@ -170,18 +175,22 @@ SEM Alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun) hs
+ppBindItems :: [PP_Doc] -> PP_Doc
+ppBindItems bs = vlist [ ppSemi b | b <- bs ]
+
 ppBinds''' :: InhPP -> (Int -> PP_Doc) -> Int -> AssocL Int PP_Doc -> PP_Doc
-ppBinds''' inhpp mkr off bs = vlist [ ppSemi $ ppCmtExtra inhpp ((mkr $ off+i)) e | (i,e) <- bs ]
+ppBinds''' inhpp mkr off bs = ppBindItems [ ppCmtExtra inhpp ((mkr $ off+i)) e | (i,e) <- bs ]
 
 ppBinds'' :: InhPP -> (Int -> RRef) -> Int -> CRArray Bind -> PP_Doc
 ppBinds'' inhpp mkr off bs = ppBinds''' inhpp (ppRRef inhpp . mkr) off [ (i, ppExp'' inhpp e) | (i,e) <- craAssocs bs ]
 %%]
 
 %%[(8 corerun)
-ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR AllNT AllMetaNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
-  | Mod         lhs         .   pp          =   (ppSemi $ "module" >#< @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >#< "->" >#< @body.pp)
+  | Mod         lhs         .   pp          =   (ppSemi $ "module" >#< ppCoreNm @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >#< "->" >#< @body.pp)
+                                                >-< ppBindItems @metas.ppL
                                                 >-< ppBinds'' @inhpp (RRef_Glb @moduleNr) 0 @binds
 
 SEM SExp
@@ -210,5 +219,19 @@ SEM Alt
 
 SEM Pat
   | Con         lhs         .   pp          =   pp @tag
+
+SEM Meta
+  | Data		lhs			.	pp			=	"data" >#< ppDifficultNm @tyNm >#< "=" >#< ppBlockWithStringsH "" "" ", " @dataCons.ppL
+
+SEM DataCon
+  | Con			lhs			.	pp			=	ppDifficultNm @conNm >#< "->" >#< @tagNr
+%%]
+
+%%[(8 corerun)
+ATTR MetaL DataConL [ | | ppL: {[PP_Doc]} ]
+
+SEM MetaL DataConL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 %%]
 

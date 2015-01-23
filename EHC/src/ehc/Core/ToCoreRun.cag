@@ -538,13 +538,25 @@ SEM CPat
 %%]
 
 %%[(8 corerun)
+ATTR AllDeclMeta [ | | crmt USE {++} {[]} : {[CR.Meta]} ]
+
+SEM CDeclMeta
+  | Data		lhs			.	crmt			=	[CR.Meta_Data @tyNm @dataCons.crdc]
+
+ATTR AllDataCon [ | | crdc USE {++} {[]} : {[CR.DataCon]} ]
+
+SEM CDataCon
+  | Con			lhs			.	crdc			=	[CR.DataCon_Con (hsnQualified @conNm) @tagNr]
+%%]
+
+%%[(8 corerun)
 ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
   | Mod         loc         .   crmBinds        =   CR.crarrayFromList $ map snd @expr.crb
                 lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew)
                                                       @moduleNm @lhs.modNr (@expr.stackDepthMax + 2 {- - CR.craLength @crmBinds -})
-                                                      @crmBinds (CR.mkEval @creMod)
+                                                      @declMetas.crmt @crmBinds (CR.mkEval @creMod)
 %%]
 
 

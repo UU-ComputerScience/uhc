@@ -19,6 +19,8 @@ module %%@{%{EH}%%}CoreRun.API
   -- , Pat
   , Bind
   , RRef
+  , Meta
+  , DataCon
 
   -- * Utilities
   , CRArray
@@ -48,7 +50,7 @@ module %%@{%{EH}%%}CoreRun.API
   , mkLet, mkLet'
   , mkFFI, mkFFI'
   
-  , mkMod, mkMod'
+  , mkMod, mkMod', mkMod''
   
   -- * Conversion
   , rrefToDif

@@ -44,6 +44,8 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%]
 %%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), Alt(..), Pat(..))
 %%]
+%%[(8 corerun) hs export(Meta(..), MetaL, DataCon(..), DataConL)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CoreRun: AG AST
@@ -389,10 +391,21 @@ mkFFI fe as = mkFFI' fe (crarrayFromList as)
 %%]
 
 
-%%[(8 corerun) hs export(mkMod, mkMod')
+%%[(8 corerun) hs export(mkMod, mkMod', mkMod'')
 -- **************************************
 -- Construction: Top level module
 -- **************************************
+
+-- | Module, with meta info
+mkMod''
+  :: HsName				-- ^ module name
+     -> Int				-- ^ module number
+     -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
+     -> [Meta]			-- ^ meta info
+     -> CRArray Bind	-- ^ bound expressions
+     -> Exp				-- ^ body of main
+     -> Mod
+mkMod'' modNm modNr stkDepth metas binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth metas binds body
 
 -- | Module
 mkMod'
@@ -402,7 +415,7 @@ mkMod'
      -> CRArray Bind	-- ^ bound expressions
      -> Exp				-- ^ body of main
      -> Mod
-mkMod' modNm modNr stkDepth binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth binds body
+mkMod' modNm modNr stkDepth binds body = mkMod'' modNm modNr stkDepth [] binds body
 
 -- | Module
 mkMod

@@ -304,11 +304,14 @@ corerunScanOpts -- opts
         {   scoKeywordsTxt      =   Set.fromList $
                                         [ "alloc", "module", "tail", "eval", "case", "of", "let", "in", "app", "ffi", "dbg", "tag"
                                         , "g", "d", "l"
+                                        , "data"
                                         ]
-        ,   scoKeywordsOps      =   Set.fromList [ "->", "\\" ]
-        ,   scoSpecChars        =   Set.fromList "();,."
-        ,   scoOpChars          =   Set.fromList "->\\"
+        -- ,	scoKeywExtraChars	=	Set.fromList "."
+        ,   scoKeywordsOps      =   Set.fromList [ "->", "." ]
+        ,   scoSpecChars        =   Set.fromList "();,=\\"
+        ,   scoOpChars          =   Set.fromList "->."
         ,   scoAllowFloat       =   False
+        ,   scoDollarIdent      =   True
         }
 %%]
 

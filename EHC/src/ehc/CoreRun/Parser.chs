@@ -34,6 +34,15 @@ parseModFromString str = case parseToResMsgs pMod $ scan corerunScanOpts (initPo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+pDifficultNm :: CRParser HsName
+pDifficultNm = (\s -> parseHsName [s]) <$> pStr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -45,9 +54,19 @@ type CRParser hp = PlainParser Token hp
 -- | Parse module 'Mod'
 pMod :: CRParser Mod
 pMod
-  = (\nm nr sz main bs -> mkMod nm nr sz bs main)
+  = (\nm nr sz main ms bs -> mkMod'' nm nr sz ms (crarrayFromList bs) main)
     <$  pMODULE <*> pMaybe (mkHNm "Main") id pDollNm <*> pInt <* pCOMMA <*> pInt <* pRARROW <*> pExp <* pSEMI
+    <*> pList (pMeta <* pSEMI)
     <*> pList (pExp <* pSEMI)
+
+-- | Parse 'Meta'
+pMeta :: CRParser Meta
+pMeta
+  = Meta_Data <$ pDATA <*> pDifficultNm <* pEQUAL <*> pListSep pCOMMA pDataCon
+
+-- | Parse 'DataCon'
+pDataCon :: CRParser DataCon
+pDataCon = DataCon_Con <$> pDifficultNm <* pRARROW <*> pInt
 
 -- | Parse simple expression 'SExp'
 pSExp :: CRParser SExp
