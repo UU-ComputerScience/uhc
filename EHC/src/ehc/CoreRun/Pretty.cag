@@ -15,6 +15,8 @@ Pretty printing for CoreRun
 %%]
 %%[(8 corerun) hs import({%{EH}Ty.Pretty}, {%{EH}Base.CfgPP})
 %%]
+%%[(8 corerun) hs import({%{EH}Scanner.Common})
+%%]
 
 %%[(8888 corerun) hs import(Data.Array)
 %%]
@@ -64,7 +66,7 @@ ppRRef inhpp r = ppMbPost ppCurly (r2nInhPP inhpp r) r
 
 %%[(8 corerun) hs
 ppDifficultNm :: HsName -> PP_Doc
-ppDifficultNm = pp . show . show . ppCoreNm
+ppDifficultNm = pp . show . show . ppCoreNm -- ppScanoptsNm corerunScanOpts
 %%]
 
 %%[(8 corerun) hs

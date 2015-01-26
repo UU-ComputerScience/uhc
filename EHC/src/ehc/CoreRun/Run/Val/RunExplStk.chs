@@ -297,6 +297,7 @@ instance
         liftIO (MV.read ms mainModNr) >>= explStkPushFrameM
         rsemGcLeaveRootLevel
         rsemSetupTracing opts
+        rcxtUpdDatatypes modAllL
 
     rsemSetTrace doTrace doExtensive = modify $ \env ->
       env {renvDoTrace = doTrace, renvDoTraceExt = doExtensive}

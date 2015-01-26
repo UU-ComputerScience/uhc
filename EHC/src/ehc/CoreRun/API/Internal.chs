@@ -19,6 +19,8 @@ module %%@{%{EH}%%}CoreRun.API.Internal
   , SExp(..)
   , Alt(..)
   , Pat(..)
+  , DataCon(..)
+  , Meta(..)
   , RRef(..)
 
   -- * Utilities

@@ -246,6 +246,7 @@ instance
           p <- implStkAllocFrameM r2n nullPtr {- 0 -} (MV.length bs') bs'
           liftIO $ MV.write ms nr p
         rsemSetupTracing opts
+        rcxtUpdDatatypes modAllL
 
     rsemSetTrace doTrace doExtensive = modify $ \env ->
       env {renvDoTrace = doTrace, renvDoTraceExt = doExtensive}

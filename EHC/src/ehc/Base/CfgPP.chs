@@ -28,6 +28,19 @@ As class variations on PP
 
 %%[8 import(UHC.Util.Pretty)
 %%]
+%%[8 import(UHC.Util.ScanUtils)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ppScanoptsNm)
+-- | Prettyprint 'HsName' with scanopts, taking care of properly escaping based on scan info (used when parsing)
+ppScanoptsNm :: ScanOpts -> HsName -> PP_Doc
+ppScanoptsNm copts n = fst $ ppHsnEscapeWith '$' (hsnOkChars '$' $ copts) (hsnNotOkStrs copts) (`Set.member` leaveAsIs) n
+    where leaveAsIs = Set.fromList [hsnRowEmpty]
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CfgPP
@@ -69,9 +82,12 @@ instance CfgPP CfgPP_Plain
 
 %%[8
 instance CfgPP CfgPP_Core where
+  {-
   cfgppHsName    _ n 				= fst $ ppHsnEscapeWith '$' (hsnOkChars '$' $ copts) (hsnNotOkStrs copts) (`Set.member` leaveAsIs) n
     where copts = coreScanOpts emptyEHCOpts
           leaveAsIs = Set.fromList [hsnRowEmpty]
+  -}
+  cfgppHsName    _ n 				= ppScanoptsNm (coreScanOpts emptyEHCOpts) n
   cfgppConHsName     				= cfgppHsName
   cfgppFollowAST     				= const True
   cfgppUID _       u 				= ppUIDParseable u

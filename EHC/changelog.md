@@ -2,6 +2,7 @@
 
 ## 1.1.8.5
 
+- [corerun] Generic (un)marshalling for CoreRun FFI.
 - [core, api] Export of data types, new Core AST/API to express this.
 - [corerun] Better fix for CoreRun access of globals during global init.
 

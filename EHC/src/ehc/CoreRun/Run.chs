@@ -80,7 +80,7 @@ class (Monad m, MonadIO m, Functor m) => RunSem r s v m a
   rsemInitial :: m (r,s,a)
 
   -- | Setup whatever needs to be setup
-  rsemSetup :: EHCOpts -> [Mod] -> Mod -> RunT' r s v m ()
+  rsemSetup :: EHCOpts -> [Mod] -> Mod -> RunT' r s v m r
 
   -- | Setup tracing
   rsemSetupTracing :: EHCOpts -> RunT' r s v m ()
@@ -179,8 +179,9 @@ runCoreRun opts modImpL mod m = do
   --     r = error "runCoreRun.Reader"
   (e, _, _) <-
     runRWST (runErrorT $ do
-              rsemSetup opts modImpL mod
-              (m >>= rsemPop >>= rsemDeref >>= rsemPop))
+              r' <- rsemSetup opts modImpL mod
+              local (const r') $
+                (m >>= rsemPop >>= rsemDeref >>= rsemPop))
             r s
   return e
 %%]
