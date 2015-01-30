@@ -26,10 +26,13 @@ module %%@{%{EH}%%}CoreRun.API
   , CRArray
   
   -- * Construction functions
+  
+  -- ** References
   , mkLocLevRef
   , mkLocDifRef
   , mkGlobRef
   
+  -- ** Expressions
   , mkExp
   
   , mkVar, mkVar'
@@ -50,6 +53,10 @@ module %%@{%{EH}%%}CoreRun.API
   , mkLet, mkLet'
   , mkFFI, mkFFI'
   
+  -- ** Meta
+  , mkMetaDataCon, mkMetaDataType
+  
+  -- ** Modules
   , mkMod, mkMod', mkMod''
   
   -- * Conversion

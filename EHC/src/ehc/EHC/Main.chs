@@ -91,8 +91,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.main export(mainEHC)
-mainEHC :: IO ()
-mainEHC
+mainEHC :: EHCOpts -> IO ()
+mainEHC opts0
   =  do  {  args      <- getArgs
          ;  progName  <- getProgName
 %%[[99
@@ -102,7 +102,7 @@ mainEHC
          -- an empty data dir means we are running as cabal installed exec
          ;  mbDataDir <- Cfg.getDataDir >>= \d -> return $ if null d then Nothing else Just d
 %%]]
-         ;  let  opts1          = defaultEHCOpts
+         ;  let  opts1          = opts0
 %%[[8
                                     { ehcOptEnvironment     = defaultEHCEnvironment
 %%[[99

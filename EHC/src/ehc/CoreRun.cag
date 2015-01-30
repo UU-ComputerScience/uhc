@@ -391,6 +391,28 @@ mkFFI fe as = mkFFI' fe (crarrayFromList as)
 %%]
 
 
+%%[(8 corerun) hs export(mkMetaDataCon, mkMetaDataType)
+-- **************************************
+-- Construction: Meta info
+-- **************************************
+
+-- | Meta: datatype constructor info
+mkMetaDataCon
+  :: HsName		-- ^ constructor name (without module qualifier, name must be globally unique)
+     -> Int		-- ^ constructor tag
+     -> DataCon
+mkMetaDataCon = DataCon_Con
+
+-- | Meta: datatype constructor info
+mkMetaDataType
+  :: HsName				-- ^ datatype name (fully qualified)
+     -> [DataCon]		-- ^ constructor tag
+     -> Meta
+mkMetaDataType = Meta_Data
+
+%%]
+
+
 %%[(8 corerun) hs export(mkMod, mkMod', mkMod'')
 -- **************************************
 -- Construction: Top level module

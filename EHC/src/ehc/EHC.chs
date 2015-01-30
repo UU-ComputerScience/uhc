@@ -10,7 +10,7 @@
 %%[1 module Main
 %%]
 
-%%[1 import({%{EH}EHC.Main})
+%%[1 import({%{EH}EHC.Main}, {%{EH}Opts})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,6 +20,6 @@
 %%[1.main
 -- | Top level main. TBD: hooks & customization
 main :: IO ()
-main = mainEHC
+main = mainEHC defaultEHCOpts
 %%]
 

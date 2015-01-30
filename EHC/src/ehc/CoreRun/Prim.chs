@@ -22,24 +22,69 @@
 -- Assumption: name of primitive starts with 3 choosable char + exact name of prim
 data RunPrim
   = 
-    -- Int arithmetic
-    RP_primAddInt
+    -- Unsafe stuff
+    RP_primUnsafeId
+
+    -- Char
+  | RP_primEqChar    
+  | RP_primCmpChar 
+  
+  | RP_primCharToInt 
+  | RP_primIntToChar 
+
+    -- Int
+  | RP_primAddInt
   | RP_primSubInt
   | RP_primMulInt
   | RP_primDivInt
+  | RP_primQuotInt
+  | RP_primRemInt
+  | RP_primModInt
+  | RP_primNegInt
+  
+  | RP_primDivModInt
+  | RP_primQuotRemInt
+  
+  | RP_primMinInt
+  | RP_primMaxInt
+
   | RP_primEqInt
-  | RP_primLeInt
   | RP_primNeInt
+
+  | RP_primCmpInt
+  | RP_primLeInt
+  | RP_primLtInt
+  | RP_primGeInt
+  | RP_primGtInt
+  
+  | RP_primIntToInteger
+  | RP_primIntegerToInt
+
+    -- Integer
+  | RP_primAddInteger
+  | RP_primSubInteger
+  | RP_primMulInteger
+  | RP_primDivInteger
+  | RP_primQuotInteger
+  | RP_primRemInteger
+  | RP_primModInteger
+  | RP_primNegInteger
+  
+  | RP_primDivModInteger
+  | RP_primQuotRemInteger
+  
+  | RP_primEqInteger
+  | RP_primNeInteger
+
+  | RP_primCmpInteger
+  | RP_primLeInteger
+  | RP_primLtInteger
+  | RP_primGeInteger
+  | RP_primGtInteger
   
     -- UHC.IOBase: Exception handling
   | RP_primCatchException
-  
-    -- UHC.MutVar
-  | RP_primNewMutVar
-  | RP_primReadMutVar
-  | RP_primWriteMutVar
-  | RP_primSameMutVar
-  
+    
     -- UHC.Base
   | RP_primPackedStringToInteger
   | RP_primPackedStringNull -- :: PackedString -> Bool
@@ -47,20 +92,11 @@ data RunPrim
   | RP_primPackedStringTail -- :: PackedString -> PackedString
   | RP_primShowInteger
 
-    -- UHC.Base: Bounded
-  | RP_primMaxInt
-  | RP_primMinInt
-  
     -- UHC.Prims: conversion
   | RP_primIntegerToInt32
-  | RP_primIntToInteger
-  | RP_primIntegerToInt
   
     -- System.IO
     --- * The IO monad
-
-  -- IO                        -- instance MonadFix
-  | RP_fixIO                     -- :: (a -> IO a) -> IO a
 
     --- * Files and handles
 
@@ -81,7 +117,7 @@ data RunPrim
 
     --- ** Opening files
 
-  | RP_withFile
+  -- | RP_withFile
   | RP_openFile                  -- :: FilePath -> IOMode -> IO Handle
   -- IOMode(ReadMode,WriteMode,AppendMode,ReadWriteMode),
 
@@ -93,9 +129,9 @@ data RunPrim
 
     -- | These functions are also exported by the "Prelude".
 
-  | RP_readFile                  -- :: FilePath -> IO String
-  | RP_writeFile                 -- :: FilePath -> String -> IO ()
-  | RP_appendFile                -- :: FilePath -> String -> IO ()
+  -- | RP_readFile                  -- :: FilePath -> IO String
+  -- | RP_writeFile                 -- :: FilePath -> String -> IO ()
+  -- | RP_appendFile                -- :: FilePath -> String -> IO ()
 
     --- ** File locking
 
@@ -124,8 +160,6 @@ data RunPrim
 
     --- ** Repositioning handles
 
-  | RP_hGetPosn                  -- :: Handle -> IO HandlePosn
-  | RP_hSetPosn                  -- :: HandlePosn -> IO ()
   -- HandlePosn,                -- abstract, instance of: Eq, Show.
 
   | RP_hSeek                     -- :: Handle -> SeekMode -> Integer -> IO ()
@@ -161,7 +195,6 @@ data RunPrim
 
     --- ** Text input
   | RP_hWaitForInput             -- :: Handle -> Int -> IO Bool
-  | RP_hReady                    -- :: Handle -> IO Bool
   | RP_hGetChar                  -- :: Handle -> IO Char
   | RP_hGetLine                  -- :: Handle -> IO [Char]
   | RP_hLookAhead                -- :: Handle -> IO Char
@@ -170,14 +203,11 @@ data RunPrim
 
   | RP_hPutChar                  -- :: Handle -> Char -> IO ()
   | RP_hPutStr                   -- :: Handle -> [Char] -> IO ()
-  | RP_hPutStrLn                 -- :: Handle -> [Char] -> IO ()
-  | RP_hPrint                    -- :: Show a => Handle -> a -> IO ()
 
     --- ** Special cases for standard input and output
 
     -- | These functions are also exported by the "Prelude".
 
-  | RP_interact                  -- :: (String -> String) -> IO ()
   -- putChar                   -- :: Char   -> IO ()
   -- putStr                    -- :: String -> IO () 
   -- putStrLn                  -- :: String -> IO ()
@@ -185,11 +215,8 @@ data RunPrim
   -- getChar                   -- :: IO Char
   -- getLine                   -- :: IO String
   -- getContents               -- :: IO String
-  | RP_readIO                    -- :: Read a => String -> IO a
-  | RP_readLn                    -- :: Read a => IO a
 
     --- * Binary input and output
-  | RP_withBinaryFile
   | RP_openBinaryFile            -- :: FilePath -> IOMode -> IO Handle
   | RP_hSetBinaryMode            -- :: Handle -> Bool -> IO ()
   | RP_hPutBuf                   -- :: Handle -> Ptr a -> Int -> IO ()

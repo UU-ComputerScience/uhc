@@ -684,7 +684,7 @@ instance Bounded Bool where
 -- type Char builtin
 type String = [Char]    -- strings are lists of characters
 
-#ifdef __UHC_TARGET_JAZY__
+#if defined(__UHC_TARGET_JAZY__) || defined(__UHC_TARGET_CR__)
 foreign import prim   primEqChar    :: Char -> Char -> Bool
 foreign import prim   primCmpChar   :: Char -> Char -> Ordering
 foreign import prim   primCharToInt   :: Char -> Int

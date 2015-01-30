@@ -17,9 +17,10 @@ module UHC.IOBase
     -- IOArray(..), newIOArray, readIOArray, writeIOArray, unsafeReadIOArray, unsafeWriteIOArray,
     -- MVar(..),
 
-#ifndef __UHC_TARGET_CR__
         -- Buffers
-    Buffer(..), RawBuffer, BufferState(..), BufferList(..), BufferMode(..),
+    BufferMode(..),
+#ifndef __UHC_TARGET_CR__
+    Buffer(..), RawBuffer, BufferState(..), BufferList(..),
     bufferIsWritable, bufferEmpty, bufferFull, 
     -- extra:
     -- rawBufferContents,
@@ -305,6 +306,8 @@ isReadWriteHandleType ReadWriteHandle{} = True
 isReadWriteHandleType _                 = False
 
 
+#endif
+
 -- ---------------------------------------------------------------------------
 -- Buffering modes
 
@@ -357,7 +360,6 @@ data BufferMode
                 -- The size of the buffer is @n@ items if the argument
                 -- is 'Just' @n@ and is otherwise implementation-dependent.
    deriving (Eq, Ord, Read, Show)
-#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -366,6 +368,12 @@ data BufferMode
 
 %%[99
 data IOMode             -- alphabetical order of constructors required, assumed Int encoding in comment
+#if defined( __UHC_TARGET_CR__ )
+  = AppendMode          
+  | ReadMode            
+  | ReadWriteMode       
+  | WriteMode           
+#else
   = AppendBinaryMode    -- 0
   | AppendMode          -- 1
   | ReadBinaryMode      -- 2
@@ -374,6 +382,7 @@ data IOMode             -- alphabetical order of constructors required, assumed 
   | ReadWriteMode       -- 5
   | WriteBinaryMode     -- 6
   | WriteMode           -- 7
+#endif
     deriving (Eq, Ord, Bounded, Enum, Show)
 
 %%]

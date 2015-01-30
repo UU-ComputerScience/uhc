@@ -76,14 +76,11 @@ module System.IO (
 
     -- ** Buffering operations
 
-#ifndef __UHC_TARGET_CR__
     BufferMode(NoBuffering,LineBuffering,BlockBuffering),
     hSetBuffering,             -- :: Handle -> BufferMode -> IO ()
     hGetBuffering,             -- :: Handle -> IO BufferMode
-#endif
     hFlush,                    -- :: Handle -> IO ()
 
-#ifndef __UHC_TARGET_CR__
     -- ** Repositioning handles
 
     hGetPosn,                  -- :: Handle -> IO HandlePosn
@@ -95,15 +92,12 @@ module System.IO (
 #if !defined(__NHC__)
     hTell,                     -- :: Handle -> IO Integer
 #endif
-#endif
 
-#ifndef __UHC_TARGET_CR__
     -- ** Handle properties
 
     hIsOpen, hIsClosed,        -- :: Handle -> IO Bool
     hIsReadable, hIsWritable,  -- :: Handle -> IO Bool
     hIsSeekable,               -- :: Handle -> IO Bool
-#endif
 
     -- ** Terminal operations (not portable: GHC\/Hugs only)
 
@@ -164,12 +158,10 @@ module System.IO (
     hGetBufNonBlocking,        -- :: Handle -> Ptr a -> Int -> IO Int
 #endif
 
-#ifndef __UHC_TARGET_CR__
     -- * Temporary files
 
     openTempFile,
     openBinaryTempFile,
-#endif
   ) where
 
 #ifndef __NHC__
@@ -433,7 +425,15 @@ openBinaryFile = openFile
 hSetBinaryMode _ _ = return ()
 #endif
 
-#ifndef __UHC_TARGET_CR__
+#ifdef __UHC_TARGET_CR__
+foreign import prim openTempFile
+             :: FilePath   -- ^ Directory in which to create the file
+             -> String     -- ^ File name template. If the template is \"foo.ext\" then
+                           -- the created file will be \"fooXXX.ext\" where XXX is some
+                           -- random number.
+             -> IO (FilePath, Handle)
+foreign import prim openBinaryTempFile :: FilePath -> String -> IO (FilePath, Handle)
+#else
 -- | The function creates a temporary file in ReadWrite mode.
 -- The created file isn\'t deleted automatically, so you need to delete it manually.
 --

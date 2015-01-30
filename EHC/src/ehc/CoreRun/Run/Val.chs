@@ -239,21 +239,25 @@ class HSMarshall hs where
   hsMarshall :: (RunSem RValCxt RValEnv RVal m a) => (RVal -> RValT m a) -> RVal -> RValT m hs
   default hsMarshall :: (Generic hs, GHSMarshall (Rep hs), RunSem RValCxt RValEnv RVal m a) => (RVal -> RValT m a) -> RVal -> RValT m hs
   hsMarshall evl v = to <$> ghsMarshall evl v
+  {-# INLINE hsMarshall #-}
 
   -- | Unmarshall from Haskell value
   hsUnmarshall :: (RunSem RValCxt RValEnv RVal m a) => hs -> RValT m a
   default hsUnmarshall :: (Generic hs, GHSMarshall (Rep hs), RunSem RValCxt RValEnv RVal m a) => hs -> RValT m a
   hsUnmarshall = ghsUnmarshall . from
+  {-# INLINE hsUnmarshall #-}
 %%]
 
 %%[(8 corerun) hs
 instance HSMarshall Int where
   hsMarshall _ (RVal_Int v) = return v
+  hsMarshall _ v            = err $ "CoreRun.Run.Val.HSMarshall Int:" >#< v
   hsUnmarshall v = rsemPush $ RVal_Int v
   {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall Integer where
   hsMarshall _ (RVal_Integer v) = return v
+  hsMarshall _ v                = err $ "CoreRun.Run.Val.HSMarshall Integer:" >#< v
   hsUnmarshall v = rsemPush $ RVal_Integer v
   {-# INLINE hsUnmarshall #-}
 
@@ -276,6 +280,13 @@ instance HSMarshall (Ptr a) where
   hsUnmarshall (Ptr v) = rsemPush $ RHsV_Addr v
   {-# INLINE hsUnmarshall #-}
 
+instance HSMarshall Handle where
+  hsMarshall _ (RHsV_Handle v) = return v
+  hsMarshall _ v               = err $ "CoreRun.Run.Val.HSMarshall Handle:" >#< v
+  hsUnmarshall v = rsemPush $ RHsV_Handle v
+  {-# INLINE hsUnmarshall #-}
+
+{-
 instance HSMarshall [RVal] where
   hsMarshall evl (RVal_NodeMV t as)
     | t == tagListCons = liftIO (MV.read as 1) >>= evl >>= rsemPop >>= hsMarshall evl >>= \tl -> liftIO (MV.read as 0) >>= \hd -> return (hd : tl)
@@ -291,11 +302,14 @@ instance HSMarshall x => HSMarshall [x] where
 
   hsUnmarshall v       = forM v (\e -> hsUnmarshall e >>= rsemPop) >>= hsUnmarshall
   {-# INLINE hsUnmarshall #-}
+-}
+
+{-
+-}
+instance HSMarshall x => HSMarshall [x]
 %%]
 
 %%[(8 corerun) hs
--- Generic variant of marshalling to cater for arbitrary datatype; 20141227 under construction
-
 -- | Generic marshalling from/to Haskell values
 class GHSMarshall hs where
   -- | Marshall to Haskell value, also parameterized by evaluator
@@ -304,33 +318,6 @@ class GHSMarshall hs where
   -- | Unmarshall from Haskell value
   ghsUnmarshall :: (RunSem RValCxt RValEnv RVal m a) => hs x -> RValT m a
   
-{-
-instance GHSMarshall U1 where
-  ghsMarshall   _ _ = return U1
-  ghsUnmarshall  U1 = mkUnit
-
-instance (GHSMarshall a, GHSMarshall b) => GHSMarshall (a :+: b) where
-  -- TBD: dispatch on tag
-  ghsMarshall evl v@(RVal_NodeMV {rvalTag=t})
-    | even t    = L1 <$> ghsMarshall evl v'
-    | otherwise = R1 <$> ghsMarshall evl v'
-    where v' = v {rvalTag = t `shiftR` 1}
-  -- TBD: set tag
-  ghsUnmarshall (L1 x) = ghsUnmarshall x >>= (rsemTopUpd $ \v -> v {rvalTag = (rvalTag v `shiftL` 1)    })
-  ghsUnmarshall (R1 x) = ghsUnmarshall x >>= (rsemTopUpd $ \v -> v {rvalTag = (rvalTag v `shiftL` 1) + 1})
-
-instance (MarshallProduct a, MarshallProduct b, ProductSize a, ProductSize b)
-    => GHSMarshall (a :*: b)
- where
-  ghsMarshall = undefined
-  ghsUnmarshall x = do
-      v <- liftIO $ MV.unsafeNew len
-      productFillMVec v 0 len x
-      rsemNode 0 v >>= rsemPush
-    where
-      len = (unTagged2 :: Tagged2 (a :*: b) Int -> Int) productSize
--}
-
 instance (Datatype d, MarshallSum hs) => GHSMarshall (D1 d hs) where
   --
   ghsMarshall evl v = do
@@ -342,7 +329,7 @@ instance (Datatype d, MarshallSum hs) => GHSMarshall (D1 d hs) where
           err $ "Marshall to HS datatype info in multiple modules, datatype=" ++ nm ++ ", mods=" ++ show mods
         Just (RValDataconstrInfo {rdciTg2Nm=tg2con}) -> do
           r <- sumExtrTagged evl tg2con v
-          either err (return . M1) r
+          maybe (err $ "sumExtrTagged") (return . M1) r
   --
   ghsUnmarshall (M1 x) = do
       dtmp <- asks rcxtDatatypeMp
@@ -370,7 +357,7 @@ class MarshallSum hs where
     => (RVal -> RValT m a)		-- ^ force evaluation for nested fields
        -> RValDataconstrInfoTg2Nm	-- ^ mapping from constructor name to tag
        -> RVal					-- ^ the 'RVal_NodeMV' holding tag and fields
-       -> RValT m (Either String (hs x))
+       -> RValT m (Maybe (hs x))
 
 instance ( MarshallProduct hs, ProductSize hs, Constructor c ) => MarshallSum (C1 c hs) where
   --
@@ -387,9 +374,9 @@ instance ( MarshallProduct hs, ProductSize hs, Constructor c ) => MarshallSum (C
   {-# INLINE sumFillTagged #-}
   --
   sumExtrTagged evl tg2con v@(RVal_NodeMV {rvalTag=t, rvalNdMVals=mv})
-    | t < V.length tg2con = return $ Left $ "Marshall to HS illegal tag value, con=" ++ nmc ++ ", tag=" ++ show t
-    | nmc == nmt          = (Right . M1) <$> productExtrMVec evl mv 0 len
-    | otherwise           = return $ Left $ "Marshall to HS lacks constructor info, con=" ++ nmc ++ ", tag=" ++ show t
+    | t >= V.length tg2con = err $ "Marshall to HS illegal tag value, con=" ++ nmc ++ ", tag=" ++ show t
+    | nmc == nmt           = (Just . M1) <$> productExtrMVec evl mv 0 len
+    | otherwise            = return $ Nothing -- Left $ "Marshall to HS lacks constructor info, con=" ++ nmc ++ "/" ++ nmt ++ ", tag=" ++ show t
     where
       len = (unTagged2 :: Tagged2 hs Int -> Int) productSize
       nmc = conName (undefined :: t c hs p)
@@ -402,7 +389,12 @@ instance ( MarshallSum a, MarshallSum b ) => MarshallSum (a :+: b) where
   sumFillTagged con2tg (R1 x) = sumFillTagged con2tg x
   {-# INLINE sumFillTagged #-}
   --
-  sumExtrTagged evl tg2con v = (fmap L1 <$> sumExtrTagged evl tg2con v) <|> (fmap R1 <$> sumExtrTagged evl tg2con v)
+  -- sumExtrTagged evl tg2con v = (fmap L1 <$> sumExtrTagged evl tg2con v) <|> (fmap R1 <$> sumExtrTagged evl tg2con v)
+  sumExtrTagged evl tg2con v = do
+    l <- sumExtrTagged evl tg2con v
+    case l of
+      Just l' -> return $ fmap L1 l
+      _       -> fmap R1 <$> sumExtrTagged evl tg2con v
   {-# INLINE sumExtrTagged #-}
 
 %%]
@@ -446,6 +438,13 @@ instance (MarshallProduct a, MarshallProduct b) => MarshallProduct (a :*: b) whe
       lenR = len - lenL
   {-# INLINE productExtrMVec #-}
 
+instance MarshallProduct hs => MarshallProduct (S1 s hs) where
+  productFillMVec mv ix l (M1 x) = productFillMVec mv ix l x
+  {-# INLINE productFillMVec #-}
+
+  productExtrMVec evl mv ix l = M1 <$> productExtrMVec evl mv ix l
+  {-# INLINE productExtrMVec #-}
+
 instance HSMarshall x => MarshallProduct (K1 i x) where
   productFillMVec mv ix _ (K1 x) = do
     x' <- rsemPop =<< hsUnmarshall x
@@ -453,7 +452,7 @@ instance HSMarshall x => MarshallProduct (K1 i x) where
   {-# INLINE productFillMVec #-}
 
   productExtrMVec evl mv ix _ = do
-    v <- liftIO $ MV.read mv ix
+    v <- (liftIO $ MV.read mv ix) >>= evl >>= rsemPop
     K1 <$> hsMarshall evl v
   {-# INLINE productExtrMVec #-}
 
@@ -464,17 +463,6 @@ instance MarshallProduct U1 where
   productExtrMVec evl mv ix _ = return U1
   {-# INLINE productExtrMVec #-}
 %%]
-
-instance GHSMarshall a => MarshallProduct a where
-  productFillMVec mv ix _ x = do
-    x' <- rsemPop =<< ghsUnmarshall x
-    liftIO $ MV.unsafeWrite mv ix x'
-  {-# INLINE productFillMVec #-}
-
-  productExtrMVec evl mv ix _ = do
-    v <- liftIO $ MV.read mv ix
-    ghsMarshall evl v
-  {-# INLINE productExtrMVec #-}
 
 %%[(8 corerun) hs
 -- | Phantom type tagging (from Aeson lib)
@@ -508,14 +496,15 @@ instance ProductSize U1 where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun) hs
--- instance Generic IOMode
--- instance HSMarshall IOMode
+%%]
+-- Ok:
+deriving instance Generic IOMode
+instance HSMarshall IOMode
 -- deriving instance Typeable IOMode
 -- deriving instance Data IOMode
 
-data X = Y | Z deriving Generic
+data X = Y | Z Int deriving Generic
 instance HSMarshall X
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Heap
@@ -729,6 +718,7 @@ data RValDataconstrInfo
       , rdciTg2Nm 	:: RValDataconstrInfoTg2Nm		-- from tag to constructor Name
       , rdciMods	:: [HsName]						-- modules (if any in which possibly multiple defs occur, >1 being an error when actually used)
       }
+      deriving Show
 
 emptyRValDataconstrInfo = RValDataconstrInfo Map.empty emptyCRArray []
 
@@ -741,6 +731,10 @@ type RValDatatypeMp
 -- | Union
 rvalDatatypeMpUnion :: RValDatatypeMp -> RValDatatypeMp -> RValDatatypeMp
 rvalDatatypeMpUnion = Map.unionWith (\l r -> l {rdciMods = rdciMods l ++ rdciMods r})
+
+-- | Unions
+rvalDatatypeMpUnions1 :: [RValDatatypeMp] -> RValDatatypeMp
+rvalDatatypeMpUnions1 = foldr1 rvalDatatypeMpUnion
 
 -- | Extract datatype mapping from module
 rvalDatatypeMpFromMod :: Mod -> RValDatatypeMp
@@ -776,9 +770,14 @@ data RValCxt
       , rcxtCallCxt		:: [Maybe HsName]				-- ^ calling context stack, for debugging only
       , rcxtDatatypeMp	:: RValDatatypeMp				-- ^ dataype info for ffi
       }
+      deriving Show
 
 emptyRValCxt :: RValCxt
-emptyRValCxt = RValCxt True [] Map.empty
+emptyRValCxt = RValCxt True [] m
+  where m = rvalDatatypeMpUnions1
+              [ Map.singleton n (emptyRValDataconstrInfo {rdciNm2Tg = Map.singleton n 0, rdciTg2Nm = crarrayFromList [n]})
+              | tuparity <- [2..15], let n = "(" ++ replicate (tuparity-1) ',' ++ ")"
+              ]
 %%]
 
 %%[(8 corerun) hs export(rvalTrEnterLam)
@@ -811,7 +810,11 @@ rvalPrimargEvl x = rvalRetEvl x >>= rsemPop >>= rsemDeref
 %%[(8 corerun) hs export(rcxtUpdDatatypes)
 -- | Update with datatype info
 rcxtUpdDatatypes :: RunSem RValCxt RValEnv RVal m x => [Mod] -> RValT m RValCxt
-rcxtUpdDatatypes mods = ask >>= \cx@(RValCxt {rcxtDatatypeMp=m}) -> return $ cx {rcxtDatatypeMp = foldr1 rvalDatatypeMpUnion $ m : map rvalDatatypeMpFromMod mods}
+rcxtUpdDatatypes mods = do
+  cx@(RValCxt {rcxtDatatypeMp=m}) <- ask 
+  let cx' = cx {rcxtDatatypeMp = rvalDatatypeMpUnions1 $ m : map rvalDatatypeMpFromMod mods}
+  -- liftIO $ print cx'
+  return cx'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

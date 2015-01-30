@@ -67,8 +67,8 @@ module UHC.Handle (
   hFileSize, hSetFileSize, hIsEOF, isEOF, hLookAhead,
 #ifndef __UHC_TARGET_CR__
   hLookAhead',
-  hSetBuffering,
 #endif
+  hSetBuffering,
   hSetBinaryMode, 
   hFlush,
 #ifndef __UHC_TARGET_CR__
@@ -80,13 +80,13 @@ module UHC.Handle (
   hClose_help,
 #endif
 
-#ifndef __UHC_TARGET_CR__
-  HandlePosition, HandlePosn(..), hGetPosn, hSetPosn,
+  HandlePosition, HandlePosn(..),
+  hGetPosn, hSetPosn,
   SeekMode(..), hSeek, hTell,
-#endif
 
+  hIsOpen, hIsClosed, hIsReadable, hIsWritable, hIsSeekable,
+  hGetBuffering,
 #ifndef __UHC_TARGET_CR__
-  hIsOpen, hIsClosed, hIsReadable, hIsWritable, hGetBuffering, hIsSeekable,
   hSetEcho, hGetEcho, hIsTerminalDevice,
 #endif
 
@@ -1503,7 +1503,9 @@ hLookAhead' handle_ = do
 --    or writing and the implementation does not allow the buffering mode
 --    to be changed.
 
-#ifndef __UHC_TARGET_CR__
+#ifdef __UHC_TARGET_CR__
+foreign import prim hSetBuffering :: Handle -> BufferMode -> IO ()
+#else
 hSetBuffering :: Handle -> BufferMode -> IO ()
 hSetBuffering handle mode =
   withAllHandles__ "hSetBuffering" handle $ \ handle_ -> do
@@ -1586,7 +1588,6 @@ hFlush handle =
 %%]
 
 %%[99
-#ifndef __UHC_TARGET_CR__
 -- -----------------------------------------------------------------------------
 -- Repositioning Handles
 
@@ -1624,11 +1625,9 @@ hGetPosn handle = do
 hSetPosn :: HandlePosn -> IO () 
 hSetPosn (HandlePosn h i) = hSeek h AbsoluteSeek i
 
-#endif
 %%]
 
 %%[99
-#ifndef __UHC_TARGET_CR__
 -- ---------------------------------------------------------------------------
 -- hSeek
 
@@ -1641,6 +1640,10 @@ data SeekMode
                         -- from the end of the file.
     deriving (Eq, Ord, {- Ix, -} Enum, Read, Show)
 
+#ifdef __UHC_TARGET_CR__
+foreign import prim hSeek :: Handle -> SeekMode -> Integer -> IO ()
+foreign import prim hTell :: Handle -> IO Integer
+#else
 {- Note: 
  - when seeking using `SeekFromEnd', positive offsets (>=0) means
    seeking at or past EOF.
@@ -1735,7 +1738,14 @@ hTell handle =
 %%]
 
 %%[99
-#ifndef __UHC_TARGET_CR__
+#ifdef __UHC_TARGET_CR__
+foreign import prim hIsOpen :: Handle -> IO Bool
+foreign import prim hIsClosed :: Handle -> IO Bool
+foreign import prim hIsReadable :: Handle -> IO Bool
+foreign import prim hIsWritable :: Handle -> IO Bool
+foreign import prim hIsSeekable :: Handle -> IO Bool
+foreign import prim hGetBuffering :: Handle -> IO BufferMode
+#else
 -- -----------------------------------------------------------------------------
 -- Handle Properties
 

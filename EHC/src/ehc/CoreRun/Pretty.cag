@@ -66,7 +66,7 @@ ppRRef inhpp r = ppMbPost ppCurly (r2nInhPP inhpp r) r
 
 %%[(8 corerun) hs
 ppDifficultNm :: HsName -> PP_Doc
-ppDifficultNm = pp . show . show . ppCoreNm -- ppScanoptsNm corerunScanOpts
+ppDifficultNm = pp . show . show -- . ppCoreNm -- ppScanoptsNm corerunScanOpts
 %%]
 
 %%[(8 corerun) hs

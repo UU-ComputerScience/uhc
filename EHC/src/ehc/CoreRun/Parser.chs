@@ -39,7 +39,7 @@ parseModFromString str = case parseToResMsgs pMod $ scan corerunScanOpts (initPo
 
 %%[(8 corerun)
 pDifficultNm :: CRParser HsName
-pDifficultNm = (\s -> parseHsName [s]) <$> pStr
+pDifficultNm = (\s -> {- parseHsName [s] -} mkHNm s) <$> pStr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
