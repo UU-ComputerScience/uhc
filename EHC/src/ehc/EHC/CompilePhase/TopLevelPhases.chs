@@ -84,7 +84,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 
 -- Language syntax: Core
-%%[(50 codegen) import(qualified {%{EH}Core} as Core(cModMerge))
+%%[(50 codegen) import(qualified {%{EH}Core} as Core(cModMergeByConcat))
 %%]
 %%[(50 codegen) import(qualified {%{EH}Core.Merge} as CMerge (cModMerge))
 %%]
@@ -113,7 +113,7 @@ Top level entry point into compilation by the compiler driver, apart from import
 cpEhcFullProgLinkAllModules :: [HsName] -> EHCompilePhase ()
 cpEhcFullProgLinkAllModules modNmL
  = do { cr <- get
-      ; let (mainModNmL,impModNmL) = splitMain cr modNmL
+      ; let (mainModNmL,impModNmL) = crPartitionMainAndImported cr modNmL
             (_,opts) = crBaseInfo' cr   -- '
       ; when (not $ null modNmL)
              (cpMsg (head modNmL) VerboseDebug ("Main mod split: " ++ show mainModNmL ++ ": " ++ show impModNmL))
@@ -163,7 +163,6 @@ cpEhcFullProgLinkAllModules modNmL
                         _ -> return ()
 %%]]   
       }
-  where splitMain cr = partition (\n -> ecuHasMain $ crCU n cr)
 %%]
 
 %%[50 export(cpEhcCheckAbsenceOfMutRecModules)
@@ -266,7 +265,7 @@ cpEnsureGrin nm
 %%[(50 codegen)
 cpEhcCoreFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
 cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
-  = cpSeq ([ cpSeq [cpGetPrevCore m | m <- modNmL]
+  = cpSeq ([ cpSeq [void $ cpGetPrevCore m | m <- modNmL]
            , mergeIntoOneBigCore
            , cpTransformCore OptimizationScope_WholeCore mainModNm
            , cpFlowHILamMp mainModNm
@@ -1226,7 +1225,7 @@ cpProcessCoreRest modNm
                     then [void $ cpOutputCore CPOutputCoreHow_Run [] "" Cfg.suffixDotlessInputOutputCoreRun modNm]
                     else [])
                 ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
-                    then [cpRunCoreRun modNm]
+                    then [cpRunCoreRun{-2-} modNm]
                     else [])
 %%]]
 %%[[99

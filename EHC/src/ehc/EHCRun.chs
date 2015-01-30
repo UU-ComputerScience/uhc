@@ -14,7 +14,7 @@
 %%[(8 corerun) import({%{EH}Base.API}, {%{EH}CoreRun.API})
 %%]
 
-%%[(8 corerun) import({%{EH}Opts})
+%%[(8888 corerun) import({%{EH}Opts})
 %%]
 
 %%[(8 corerun) import(UHC.Util.Pretty, UHC.Util.FPath)
@@ -49,7 +49,12 @@ main = do
           let (bname,ext) = splitExtension fname
           case ext of
             ".rcr" -> runRCR opts fname
-            ".cr"  -> mainEHC opts
+            ".cr"  -> mainEHC $ opts
+                        { ehcOptMbTarget = JustOk Target_None_Core_AsIs
+                        , ehcOptCoreOpts = CoreOpt_Run : ehcOptCoreOpts opts
+                        , ehcOptOptimizationScope = OptimizationScope_WholeCore
+                        , ehcOptVerbosity = VerboseQuiet
+                        }
             _      -> return ()
         (_      , es) -> do
           putStr (head errs)

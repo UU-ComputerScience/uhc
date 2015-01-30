@@ -426,6 +426,16 @@ crPartitionNewerOlderImports modNm cr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Partition imports into main and non main module names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50 export(crPartitionMainAndImported)
+-- | Partition modules into main and non main (i.e. imported) module names
+crPartitionMainAndImported :: EHCompileRun -> [HsName] -> ([HsName], [HsName])
+crPartitionMainAndImported cr modNmL = partition (\n -> ecuHasMain $ crCU n cr) modNmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module needs recompilation?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

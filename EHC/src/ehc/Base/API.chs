@@ -6,7 +6,7 @@ module %%@{%{EH}%%}Base.API
   (
   -- * Opts
   -- | Options to the compiler.
-    EHCOpts
+    EHCOpts(..)
   , defaultEHCOpts
 
   -- * Names
@@ -27,10 +27,18 @@ module %%@{%{EH}%%}Base.API
   -- * Names
   , HsName
   , HSNM(mkHNm)
+  
+  -- * Possible targets, optimization, ...
+  , Target(..)
+  , OptimizationScope(..)
 
   -- * Error
   , Err
 
+  -- * Utility datatypes
+  , MaybeOk(..)
+  , Verbosity(..)
+  
   -- * Misc
 %%[[99
   , hsnEhcRunMain
@@ -44,6 +52,8 @@ module %%@{%{EH}%%}Base.API
 import %%@{%{EH}%%}Base.Common
 import %%@{%{EH}%%}Base.HsName
 import %%@{%{EH}%%}Base.HsName.Builtin
+import %%@{%{EH}%%}Base.Target
+import %%@{%{EH}%%}Base.Optimize
 import %%@{%{EH}%%}Opts
 import %%@{%{EH}%%}Error
 

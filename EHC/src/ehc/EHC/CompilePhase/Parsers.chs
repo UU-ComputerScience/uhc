@@ -331,7 +331,7 @@ cpGetPrevHI modNm
 %%]
 
 %%[(50 codegen) export(cpGetPrevCore)
-cpGetPrevCore :: HsName -> EHCompilePhase ()
+cpGetPrevCore :: HsName -> EHCompilePhase Core.CModule
 cpGetPrevCore modNm
   = do { cr <- get
        ; cpMsg modNm VerboseDebug "cpGetPrevCore"
@@ -339,6 +339,7 @@ cpGetPrevCore modNm
        ; when (isJust (ecuMbCoreTime ecu) && isNothing (ecuMbCore ecu))
               (cpDecodeCore (Just Cfg.suffixDotlessBinaryCore) modNm)
               -- (cpParseCore modNm)
+       ; fmap (fromJust . ecuMbCore) $ gets (crCU modNm)
        }
 %%]
 

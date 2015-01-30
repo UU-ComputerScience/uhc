@@ -2,6 +2,7 @@
 
 ## 1.1.8.5
 
+- [uhcr] Can run Core directly, on the fly compilation to CoreRun.
 - [corerun] Generic (un)marshalling for CoreRun FFI.
 - [core, api] Export of data types, new Core AST/API to express this.
 - [corerun] Better fix for CoreRun access of globals during global init.

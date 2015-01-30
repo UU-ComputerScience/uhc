@@ -203,9 +203,15 @@ rrefToDif _      r                         = r
 type Ref2Nm = RRef -> Maybe HsName
 %%]
 
-%%[(8 corerun) hs export(Nm2RefMp, nm2RefMpInverse, ref2nmEmpty, ref2nmUnion)
+%%[(8 corerun) hs export(Nm2RefMp, emptyNm2RefMp, nm2refUnion, nm2RefMpInverse, ref2nmEmpty, ref2nmUnion)
 -- | HsName to RRef mapping for resolving references during translation to CoreRun
 type Nm2RefMp = Map.Map HsName RRef
+
+emptyNm2RefMp :: Nm2RefMp
+emptyNm2RefMp = Map.empty
+
+nm2refUnion :: Nm2RefMp -> Nm2RefMp -> Nm2RefMp
+nm2refUnion = Map.union
 
 -- | Inverse of a `Nm2RefMp`
 nm2RefMpInverse :: Nm2RefMp -> Ref2Nm

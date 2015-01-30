@@ -478,10 +478,10 @@ fvsLev lm lDflt fvs = foldr (\n l -> fvLev n lm `max` l) lDflt $ Set.toList $ fv
 %%% Module merge
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 core) hs export(cModMerge)
+%%[(50 core) hs export(cModMergeByConcat)
 -- | merge by concatenation
-cModMerge :: [CModule] -> CModule
-cModMerge mL
+cModMergeByConcat :: [CModule] -> CModule
+cModMergeByConcat mL
   = foldr1 cmb mL
   where get (CExpr_Let c b e) = CExpr_Let c b . get e
         get  _                = id

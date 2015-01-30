@@ -927,7 +927,7 @@ genNmMap mk xs m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Variation of Maybe
+%%% Variation of Maybe, isomorphic to Either, but better naming
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(MaybeOk(..),isJustOk,isNotOk,maybeOk,fromJustOk,fromNotOk)

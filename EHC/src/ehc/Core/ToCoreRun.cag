@@ -50,7 +50,7 @@ Offsets start at 0.
 WRAPPER CodeAGItf
 %%]
 
-%%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRun)
+%%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRunWithModNr, cmod2CoreRun)
 cmod2CoreRun'
   :: EHCOpts
      -> Int             -- sequence nr of module (offset), used to create global per module references
@@ -70,9 +70,12 @@ cmod2CoreRun' opts modNr nm2ref cmod
                  , nm2ref_Inh_CodeAGItf = nm2ref
                  })
 
+cmod2CoreRunWithModNr :: Int -> CModule -> CR.Mod
+cmod2CoreRunWithModNr nr m = m'
+  where (m',_) = cmod2CoreRun' defaultEHCOpts nr Map.empty m
+
 cmod2CoreRun :: CModule -> CR.Mod
-cmod2CoreRun m = m'
-  where (m',_) = cmod2CoreRun' defaultEHCOpts 0 Map.empty m
+cmod2CoreRun = cmod2CoreRunWithModNr 0
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
