@@ -52,7 +52,9 @@ main = do
             ".cr"  -> mainEHC $ opts
                         { ehcOptMbTarget = JustOk Target_None_Core_AsIs
                         , ehcOptCoreOpts = CoreOpt_Run : ehcOptCoreOpts opts
+%%[[50
                         , ehcOptOptimizationScope = OptimizationScope_WholeCore
+%%]]
                         , ehcOptVerbosity = VerboseQuiet
                         }
             _      -> return ()

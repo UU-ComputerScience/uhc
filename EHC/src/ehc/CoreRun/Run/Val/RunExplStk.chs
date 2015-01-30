@@ -275,7 +275,7 @@ instance
   where
     {-# SPECIALIZE instance RunSem RValCxt RValEnv RVal IO () #-}
     rsemInitial = do
-      s <- liftIO $ newRValEnv 1000 -- 100000 --  
+      s <- liftIO $ newRValEnv 100000 -- 100000 --  
       return (emptyRValCxt, s, undefined)
   
     rsemSetup opts modImpL mod@(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) = do

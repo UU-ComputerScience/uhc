@@ -76,15 +76,20 @@ cpRunCoreRun2 modNm = do
     cr <- get
     let (ecu,_,opts,_) = crBaseInfo modNm cr
         mbCore = ecuMbCore ecu
-    (impModL, mainMod) <- fmap (fromJust . initlast) $ case crPartitionMainAndImported cr $ map head $ crCompileOrder cr of
-      (_, impl) -> do
-        cores <- forM (impl ++ [modNm]) cpGetPrevCore
-        return $ flip evalState emptyNm2RefMp $ do
-          forM (zip cores [0..]) $ \(cr,modnr) -> do
-            prevNm2Ref <- get
-            let (m,nm2ref) = cmod2CoreRun' opts modnr prevNm2Ref cr
-            put $ nm2refUnion nm2ref prevNm2Ref
-            return m
+%%[[8
+    let (impModL, mainMod) = ([], cmod2CoreRun $ fromJust mbCore)
+%%][50
+    (impModL, mainMod) <- fmap (fromJust . initlast) $
+      case crPartitionMainAndImported cr $ map head $ crCompileOrder cr of
+        (_, impl) -> do
+          cores <- forM (impl ++ [modNm]) cpGetPrevCore
+          return $ flip evalState emptyNm2RefMp $ do
+            forM (zip cores [0..]) $ \(cr,modnr) -> do
+              prevNm2Ref <- get
+              let (m,nm2ref) = cmod2CoreRun' opts modnr prevNm2Ref cr
+              put $ nm2refUnion nm2ref prevNm2Ref
+              return m
+%%]]
     cpMsg modNm VerboseNormal "Run Core"
     res <- liftIO $ catch
       (runCoreRun opts impModL mainMod $ cmodRun opts mainMod)
