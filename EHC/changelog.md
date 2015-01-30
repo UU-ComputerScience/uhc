@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.8.6
+
+- 
+
 ## 1.1.8.5
 
 - [uhcr] Can run Core directly, on the fly compilation to CoreRun.
