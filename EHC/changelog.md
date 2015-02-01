@@ -1,8 +1,12 @@
 # Changelog
 
-## 1.1.8.6
+## 1.1.8.7
 
 - 
+
+## 1.1.8.6
+
+- [build] fix for uhc-light-1.1.8.5 package build failure.
 
 ## 1.1.8.5
 
