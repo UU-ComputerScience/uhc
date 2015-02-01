@@ -106,7 +106,7 @@ data RunPrim
 
     --- ** Standard handles
 
-    -- | Three handles are allocated during program initialisation,
+    --- | Three handles are allocated during program initialisation,
     -- and are initially open.
 
   | RP_stdin
@@ -117,7 +117,7 @@ data RunPrim
 
     --- ** Opening files
 
-  -- | RP_withFile
+  --- | RP_withFile
   | RP_openFile                  -- :: FilePath -> IOMode -> IO Handle
   -- IOMode(ReadMode,WriteMode,AppendMode,ReadWriteMode),
 
@@ -127,11 +127,11 @@ data RunPrim
 
     --- ** Special cases
 
-    -- | These functions are also exported by the "Prelude".
+    --- | These functions are also exported by the "Prelude".
 
-  -- | RP_readFile                  -- :: FilePath -> IO String
-  -- | RP_writeFile                 -- :: FilePath -> String -> IO ()
-  -- | RP_appendFile                -- :: FilePath -> String -> IO ()
+  --- | RP_readFile                  -- :: FilePath -> IO String
+  --- | RP_writeFile                 -- :: FilePath -> String -> IO ()
+  --- | RP_appendFile                -- :: FilePath -> String -> IO ()
 
     --- ** File locking
 
@@ -206,7 +206,7 @@ data RunPrim
 
     --- ** Special cases for standard input and output
 
-    -- | These functions are also exported by the "Prelude".
+    --- | These functions are also exported by the "Prelude".
 
   -- putChar                   -- :: Char   -> IO ()
   -- putStr                    -- :: String -> IO () 
