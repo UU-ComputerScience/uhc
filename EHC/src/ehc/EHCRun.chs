@@ -8,13 +8,7 @@
 %%[(8 corerun) import({%{EH}EHC.Main}, {%{EH}EHC.Main.Utils})
 %%]
 
-%%[(8888 corerun) import(qualified {%{EH}Config} as Cfg)
-%%]
-
 %%[(8 corerun) import({%{EH}Base.API}, {%{EH}CoreRun.API})
-%%]
-
-%%[(8888 corerun) import({%{EH}Opts})
 %%]
 
 %%[(8 corerun) import(UHC.Util.Pretty, UHC.Util.FPath)
