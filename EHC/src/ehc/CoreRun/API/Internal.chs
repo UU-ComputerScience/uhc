@@ -1,5 +1,4 @@
 %%[(8 corerun)
-
 -- | CoreRun Internal API
 --
 -- Intended for implementing stuff that has to know about internals (i.e. class instances).
@@ -14,12 +13,14 @@ module %%@{%{EH}%%}CoreRun.API.Internal
   (
   -- * CoreRun AST
   -- | The datatypes making up a CoreRun program, with constructors
-    Mod(..)
+    AGItf(..)
+  , Mod(..)
   , Exp(..)
   , SExp(..)
   , Alt(..)
   , Pat(..)
   , DataCon(..)
+  , Import(..)
   , Meta(..)
   , RRef(..)
 

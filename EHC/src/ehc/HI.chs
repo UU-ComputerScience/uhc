@@ -91,9 +91,7 @@ type HIInfoUsedModMp = (Map.Map HsName (Set.Set HsName))
 data HIInfo
   = HIInfo
       { hiiValidity             :: !HIValidity                              -- a valid HI info?
-      , hiiInternalVersions		:: !( Cfg.InternalVersionHI					-- internal version
-      								, Cfg.InternalVersionCore
-      								) 
+      , hiiInternalVersions		:: !Cfg.InternalVersionCombined				-- internal version
       , hiiOrigin               :: !HIOrigin                                -- where did the HI come from
       , hiiSrcSig               :: !String                                  -- compiler source signature (md5)
       , hiiTarget               :: !Target                                  -- for which backend the hi is generated
@@ -147,7 +145,7 @@ data HIInfo
 emptyHIInfo :: HIInfo
 emptyHIInfo 
   = HIInfo HIValidity_Absent
-           (Cfg.internalVersionHI, Cfg.internalVersionCore)
+           Cfg.internalVersionCombined
            HIOrigin_FromFile
            "" defaultTarget defaultTargetFlavor "" "" False hsnUnknown "" "" "" "" ""
            Rel.empty Rel.empty emptyGam

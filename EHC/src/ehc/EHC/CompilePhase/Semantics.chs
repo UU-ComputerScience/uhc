@@ -35,6 +35,11 @@ Folding over AST to compute semantics
 %%]
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]
+-- CoreRun syntax and semantics
+%%[(8 corerun) import(qualified {%{EH}CoreRun} as CoreRun)
+%%]
+%%[(50 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
+%%]
 -- TyCore syntax and semantics
 %%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
@@ -77,6 +82,30 @@ cpFoldCore2Grin modNm
                                        })
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem
+                                ))
+         }
+%%]
+
+%%[(50 codegen corerunin) export(cpFoldCoreRunMod)
+cpFoldCoreRunMod :: HsName -> EHCompilePhase ()
+cpFoldCoreRunMod modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
+                 mbCoreRun= ecuMbCoreRun ecu
+                 core     = panicJust "cpFoldCoreRunMod" mbCoreRun
+                 inh      = CoreRun2ChkSem.Inh_AGItf
+                                { CoreRun2ChkSem.opts_Inh_AGItf = opts
+                                , CoreRun2ChkSem.moduleNm_Inh_AGItf = modNm
+                                -- , CoreRun2ChkSem.dataGam_Inh_AGItf = EHSem.dataGam_Inh_AGItf $ crsiEHInh crsi
+                                }
+                 crrSem   = CoreRun2ChkSem.crmodCheck' inh core
+                 hasMain  = CoreRun2ChkSem.hasMain_Syn_AGItf crrSem
+                 mod      = CoreRun2ChkSem.mod_Syn_AGItf crrSem
+         -- ;  lift $ putStrLn $ "cpFoldCoreRunMod " ++ show hasMain
+         ;  when (isJust mbCoreRun)
+                 (cpUpdCU modNm ( ecuStoreCoreRunSemMod crrSem
+                                . ecuSetHasMain hasMain
+                                . ecuStoreMod mod
                                 ))
          }
 %%]

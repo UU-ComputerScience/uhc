@@ -38,6 +38,8 @@ Module analysis
 
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]
+%%[(50 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
+%%]
 
 %%[(50 codegen) hs import({%{EH}CodeGen.RefGenerator})
 %%]
@@ -118,6 +120,25 @@ allGetMeta
 
 %%]
 
+%%[(50 corerunin) export(cpGetCoreRunModnameAndImports)
+cpGetCoreRunModnameAndImports :: HsName -> EHCompilePhase HsName
+cpGetCoreRunModnameAndImports modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
+                 mbCrSemMod = ecuMbCoreRunSemMod ecu
+                 crSemMod   = panicJust "cpGetCoreRunModnameAndImports" mbCrSemMod
+                 modNm'     = CoreRun2ChkSem.realModuleNm_Syn_AGItf crSemMod
+         ;  cpMsg modNm VerboseDebug $ "cpGetCoreRunModnameAndImports: " ++ show modNm ++ " -> " ++ show modNm'
+         ;  case mbCrSemMod of
+              Just _ -> cpUpdCUWithKey modNm $ \_ ecu ->
+                          ( modNm'
+                          , ecuStoreHSDeclImpS (Set.fromList $ CoreRun2ChkSem.impModNmL_Syn_AGItf crSemMod )
+                            $ cuUpdKey modNm' ecu
+                          )
+              _      -> return modNm
+         }
+%%]
+
 %%[(50 corein) export(cpGetCoreModnameAndImports)
 cpGetCoreModnameAndImports :: HsName -> EHCompilePhase HsName
 cpGetCoreModnameAndImports modNm
@@ -128,10 +149,6 @@ cpGetCoreModnameAndImports modNm
                  modNm'     = Core2ChkSem.realModuleNm_Syn_CodeAGItf crSemMod
          ;  cpMsg modNm VerboseDebug $ "cpGetCoreModnameAndImports: " ++ show modNm ++ " -> " ++ show modNm'
          ;  case mbCrSemMod of
-              {-
-              Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
-                     | otherwise       -> do { cpUpdCU modNm upd ; return modNm }
-              -}
               Just _ -> cpUpdCUWithKey modNm $ \_ ecu ->
                           ( modNm'
                           , ecuStoreHSDeclImpS (Set.fromList $ Core2ChkSem.impModNmL_Syn_CodeAGItf crSemMod )

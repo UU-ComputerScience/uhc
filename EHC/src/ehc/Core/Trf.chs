@@ -134,7 +134,7 @@ trfCore opts optimScope dataGam modNm trfcore
         isLamLifted   		= not isNotLamLifted
         isANormal     		= not isNotANormal
         noOptims      		= ehcOptOptimizationLevel opts <= OptimizationLevel_Off
-        isCoreTarget  		= targetIsCore $ ehcOptTarget opts
+        isCoreTarget  		= targetIsCoreVariation $ ehcOptTarget opts
         isUnOptimCoreTarget = isCoreTarget && noOptims
         trf
           = do { -- initial is just to obtain Core for dumping stages

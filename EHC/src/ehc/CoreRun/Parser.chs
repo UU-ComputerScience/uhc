@@ -54,10 +54,16 @@ type CRParser hp = PlainParser Token hp
 -- | Parse module 'Mod'
 pMod :: CRParser Mod
 pMod
-  = (\nm nr sz main ms bs -> mkMod'' nm nr sz ms (crarrayFromList bs) main)
-    <$  pMODULE <*> pMaybe (mkHNm "Main") id pDollNm <*> pInt <* pCOMMA <*> pInt <* pRARROW <*> pExp <* pSEMI
+  = (\nm nr sz main is ms bs -> mkModWithImportsMetas nm nr sz is ms (crarrayFromList bs) main)
+    <$  pMODULE <*> pMaybe (mkHNm "Main") id pDollNm <*> pInt <* pCOMMA <*> pInt <*> pMb (pRARROW *> pExp) <* pSEMI
+    <*> pList (pImport <* pSEMI)
     <*> pList (pMeta <* pSEMI)
     <*> pList (pExp <* pSEMI)
+
+-- | Parse 'Import'
+pImport :: CRParser Import
+pImport
+  = Import_Import <$ pIMPORT <*> pDollNm
 
 -- | Parse 'Meta'
 pMeta :: CRParser Meta

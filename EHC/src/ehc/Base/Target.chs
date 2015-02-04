@@ -80,6 +80,7 @@ data Target
   = Target_None								-- no codegen
 %%[[(8 codegen)
   | Target_None_Core_AsIs					-- only Core
+  | Target_None_Core_CoreRun				-- CoreRun via Core
   | Target_None_TyCore_None					-- only TyCore
 
   -- jazy
@@ -119,6 +120,7 @@ instance Show Target where
   show Target_None							= "NONE"
 %%[[(8 codegen)
   show Target_None_Core_AsIs				= "cr"
+  show Target_None_Core_CoreRun				= "crr"
   show Target_None_TyCore_None				= "tycore"
   show Target_Interpreter_Core_Jazy			= "jazy"
   show Target_Interpreter_Core_JavaScript	= "js"
@@ -159,6 +161,9 @@ supportedTargetMp :: Map.Map String Target
               <- []
 %%[[(8 corebackend)
                  ++ [ mk Target_None_Core_AsIs [] ]
+%%[[(8 corerun)
+                 -- ++ [ mk Target_None_Core_CoreRun [] ]
+%%]]
 %%]]
 %%[[(8 jazy)
                  ++ [ mk Target_Interpreter_Core_Jazy [FFIWay_Jazy] ]
@@ -348,13 +353,28 @@ targetAllowsJarLinking t
 {-# INLINE targetAllowsJarLinking #-}
 %%]
 
-%%[(8 codegen) export(targetIsCore)
-targetIsCore :: Target -> Bool
-targetIsCore t
+%%[(8 codegen) export(targetIsCoreVariation)
+-- | Is a variation of direct Core running, without further platform dependent translation
+targetIsCoreVariation :: Target -> Bool
+targetIsCoreVariation t
   = case t of
       Target_None_Core_AsIs				-> True
+%%[[(8 corerun)
+      Target_None_Core_CoreRun			-> True
+%%]]
       _ 								-> False
-{-# INLINE targetIsCore #-}
+{-# INLINE targetIsCoreVariation #-}
+%%]
+
+%%[(8 codegen) export(targetIsCoreRun)
+-- | Is CoreRun target
+targetIsCoreRun :: Target -> Bool
+targetIsCoreRun t
+  = case t of
+%%[[(8 corerun)
+      Target_None_Core_CoreRun			-> True
+%%]]
+      _ 								-> False
 %%]
 
 %%[(8 codegen) export(targetIsTyCore)

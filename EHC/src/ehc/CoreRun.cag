@@ -42,9 +42,16 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 
 %%[(8 corerun) hs import({%{EH}CoreRun.Prim}) export(module {%{EH}CoreRun.Prim})
 %%]
-%%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), Alt(..), Pat(..))
+%%[(8 corerun) hs export(AGItf(..))
 %%]
-%%[(8 corerun) hs export(Meta(..), MetaL, DataCon(..), DataConL)
+%%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), MbExp, Alt(..), Pat(..))
+%%]
+%%[(8 corerun) hs export(Meta(..), MetaL, DataCon(..), DataConL, Import(..), ImportL)
+%%]
+
+%%[(50 corerun) hs import (Control.Monad)
+%%]
+%%[(50 corerun) hs import (UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,10 +156,19 @@ exp2sexp = maybe (dbgs "CoreRun.exp2sexp") id . mbSExpr
 %%[(8 corerun) hs export(RRef(..), noRRef)
 -- | Identifier references for use during running CoreRun
 data RRef
-  -- | global reference to module and its entry
+  -- | global reference to module and its entry, will become obsolete, to be replaced by 'RRef_Mod' and 'RRef_Glb'
   = RRef_Glb
       { rrefMod         :: !Int     -- ^ module
       , rrefEntry       :: !Int     -- ^ entry inside module
+      }
+  -- | entry of current module reference
+  | RRef_Mod
+      { rrefEntry       :: !Int     -- ^ entry inside module, in its frame
+      }
+  -- | imported entry of module reference
+  | RRef_Imp
+      { rrefMod         :: !Int     -- ^ module (sequence) nr as it appears in the imported module list
+      , rrefEntry       :: !Int     -- ^ entry inside module, in its frame
       }
   -- | local reference to on stack value, not interpreted during running, if used must be converted with 'rrefToDif' before running; may become obsolete.
   | RRef_Loc
@@ -227,6 +243,120 @@ ref2nmEmpty = const Nothing
 -- | Union, left-biased
 ref2nmUnion :: Ref2Nm -> Ref2Nm -> Ref2Nm
 ref2nmUnion m1 m2 = \r -> m1 r <|> m2 r
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Serialization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 corerun) hs
+instance Binary Mod where
+  put (Mod_Mod _ a b c d e f g) = put a >> put b >> put c >> put d >> put e >> put f >> put g
+  get = liftM8 Mod_Mod (return ref2nmEmpty) get get get get get get get
+
+instance Serialize Mod where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary Meta where
+  put (Meta_Data a b) = putWord8 0 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> liftM2 Meta_Data get get
+
+instance Binary Import where
+  put (Import_Import a) = {- putWord8 0 >> -} put a
+  get = {- do t <- getWord8
+           case t of
+             0 -> -} liftM  Import_Import get
+
+instance Binary DataCon where
+  put (DataCon_Con a b) = putWord8 0 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> liftM2 DataCon_Con get get
+
+instance Binary Exp where
+  put (Exp_SExp 	a  			) = putWord8 0 >> put a
+  put (Exp_Tup 		a b			) = putWord8 1 >> put a >> put b
+  put (Exp_Let 		a _ c d		) = putWord8 2 >> put a >> put c >> put d
+  put (Exp_App 		a b			) = putWord8 3 >> put a >> put b
+  put (Exp_Lam 		a b c _	e	) = putWord8 4 >> put a >> put b >> put c >> put e
+  put (Exp_Force 	a  			) = putWord8 5 >> put a
+  put (Exp_Tail 	a  			) = putWord8 6 >> put a
+  put (Exp_Case		a b			) = putWord8 7 >> put a >> put b
+  put (Exp_FFI		a b			) = putWord8 8 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> liftM  Exp_SExp 		get
+             1 -> liftM2 Exp_Tup 		get get
+             2 -> liftM4 Exp_Let 		get (return ref2nmEmpty) get get
+             3 -> liftM2 Exp_App 		get get
+             4 -> liftM5 Exp_Lam 		get get get (return ref2nmEmpty) get
+             5 -> liftM  Exp_Force 		get
+             6 -> liftM  Exp_Tail 		get
+             7 -> liftM2 Exp_Case 		get get
+             8 -> liftM2 Exp_FFI 		get get
+
+instance Binary SExp where
+  put (SExp_Var 	a  			) = putWord8 0 >> put a
+  put (SExp_Int   	a  			) = putWord8 1 >> put a
+  put (SExp_Char  	a  			) = putWord8 2 >> put a
+  put (SExp_String	a  			) = putWord8 3 >> put a
+%%[[97
+  put (SExp_Integer	a  			) = putWord8 4 >> put a
+%%]]
+  put (SExp_Dbg		a  			) = putWord8 5 >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> liftM  SExp_Var 		get
+             1 -> liftM  SExp_Int   	get
+             2 -> liftM  SExp_Char  	get
+             3 -> liftM  SExp_String	get
+%%[[97
+             4 -> liftM  SExp_Integer	get
+%%]]
+             5 -> liftM  SExp_Dbg 		get
+
+instance Binary Alt where
+  put (Alt_Alt _ b) = putWord8 0 >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> liftM2 Alt_Alt (return ref2nmEmpty) get
+
+instance Binary Pat where
+  put (Pat_Con 			a  			) = putWord8 0 >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> liftM  Pat_Con 		get
+
+instance Binary RunPrim where
+  put = putEnum
+  get = getEnum
+
+instance Binary RRef where
+  put (RRef_Glb 		a b			) = putWord8 0 >> put a >> put b
+  put (RRef_Loc 		a b			) = putWord8 1 >> put a >> put b
+  put (RRef_LDf 		a b			) = putWord8 2 >> put a >> put b
+  put (RRef_Tag 		a  			) = putWord8 3 >> put a
+  put (RRef_Fld 		a b			) = putWord8 4 >> put a >> put b
+  put (RRef_Dbg 		a  			) = putWord8 5 >> put a
+  put (RRef_Mod 		a  			) = putWord8 6 >> put a
+  put (RRef_Imp 		a b			) = putWord8 7 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> liftM2 RRef_Glb 		get get
+             1 -> liftM2 RRef_Loc 		get get
+             2 -> liftM2 RRef_LDf 		get get
+             3 -> liftM  RRef_Tag 		get
+             4 -> liftM2 RRef_Fld 		get get
+             5 -> liftM  RRef_Dbg 		get
+             6 -> liftM  RRef_Mod 		get
+             7 -> liftM2 RRef_Imp 		get get
+
+instance Binary a => Binary (CRArray a) where
+  put = put . crarrayToList 
+  get = fmap crarrayFromList get
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -397,6 +527,19 @@ mkFFI fe as = mkFFI' fe (crarrayFromList as)
 %%]
 
 
+%%[(8 corerun) hs export(mkImport)
+-- **************************************
+-- Construction: Import
+-- **************************************
+
+-- | Meta: datatype constructor info
+mkImport
+  :: HsName		-- ^ name of imported module
+     -> Import
+mkImport = Import_Import
+%%]
+
+
 %%[(8 corerun) hs export(mkMetaDataCon, mkMetaDataType)
 -- **************************************
 -- Construction: Meta info
@@ -419,13 +562,25 @@ mkMetaDataType = Meta_Data
 %%]
 
 
-%%[(8 corerun) hs export(mkMod, mkMod', mkMod'')
+%%[(8 corerun) hs export(mkMod, mkMod', mkModWithMetas, mkModWithImportsMetas)
 -- **************************************
 -- Construction: Top level module
 -- **************************************
 
+-- | Module, with imports, with meta info
+mkModWithImportsMetas
+  :: HsName				-- ^ module name
+     -> Int				-- ^ module number
+     -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
+     -> [Import]		-- ^ imports
+     -> [Meta]			-- ^ meta info
+     -> CRArray Bind	-- ^ bound expressions
+     -> Maybe Exp		-- ^ body of main, absence of main indicated by Nothing
+     -> Mod
+mkModWithImportsMetas modNm modNr stkDepth imports metas binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth imports metas binds body
+
 -- | Module, with meta info
-mkMod''
+mkModWithMetas
   :: HsName				-- ^ module name
      -> Int				-- ^ module number
      -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
@@ -433,7 +588,7 @@ mkMod''
      -> CRArray Bind	-- ^ bound expressions
      -> Exp				-- ^ body of main
      -> Mod
-mkMod'' modNm modNr stkDepth metas binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth metas binds body
+mkModWithMetas modNm modNr stkDepth metas binds body = mkModWithImportsMetas modNm modNr stkDepth [] metas binds (Just body)
 
 -- | Module
 mkMod'
@@ -443,7 +598,7 @@ mkMod'
      -> CRArray Bind	-- ^ bound expressions
      -> Exp				-- ^ body of main
      -> Mod
-mkMod' modNm modNr stkDepth binds body = mkMod'' modNm modNr stkDepth [] binds body
+mkMod' modNm modNr stkDepth binds body = mkModWithMetas modNm modNr stkDepth [] binds body
 
 -- | Module
 mkMod

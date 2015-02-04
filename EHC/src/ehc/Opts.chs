@@ -254,11 +254,11 @@ ehcOptEmitCLR :: EHCOpts -> Bool
 ehcOptEmitCLR = targetIsCLR . ehcOptTarget
 %%]
 
-%%[(8 codegen) export(ehcOptEmitCore)
+%%[(8888 codegen) export(ehcOptEmitCore)
 -- generate Core
 ehcOptEmitCore :: EHCOpts -> Bool
 ehcOptEmitCore opts
-  = ehcOptWholeProgHPTAnalysis opts || targetIsCore (ehcOptTarget opts)
+  = ehcOptWholeProgHPTAnalysis opts || targetIsCoreVariation (ehcOptTarget opts)
 %%]
 
 %%[(8 codegen tycore) export(ehcOptEmitTyCore,ehcOptTyCore)

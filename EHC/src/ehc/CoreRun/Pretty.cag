@@ -140,6 +140,8 @@ instance PP Alt where
 %%[(8 corerun) hs
 instance PP RRef where
   pp (RRef_Glb m e) = ppDots [pp "g", pp m, pp e]
+  pp (RRef_Imp m e) = ppDots [pp "m", pp m, pp e]
+  pp (RRef_Mod e  ) = ppDots [pp "g", pp e]
   pp (RRef_Loc l e) = ppDots [pp "l", pp l, pp e]
   pp (RRef_LDf l e) = ppDots [pp "d", pp l, pp e]
   pp (RRef_Tag r  ) = ppDots [pp r, pp "tag"]
@@ -160,6 +162,9 @@ ATTR AllNT [ inhpp: InhPP | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun)
+SEM AGItf
+  | AGItf		loc			.	inhpp		=	mkEmptyInhPP defaultEHCOpts
+
 SEM Mod
   | Mod			loc			.	inhpp		=	r2nAdd @ref2nm @lhs.inhpp
 
@@ -188,10 +193,11 @@ ppBinds'' inhpp mkr off bs = ppBinds''' inhpp (ppRRef inhpp . mkr) off [ (i, ppE
 %%]
 
 %%[(8 corerun)
-ATTR AllNT AllMetaNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR AllNT AllMetaNT AllImport [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
-  | Mod         lhs         .   pp          =   (ppSemi $ "module" >#< ppCoreNm @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >#< "->" >#< @body.pp)
+  | Mod         lhs         .   pp          =   (ppSemi $ "module" >#< ppCoreNm @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >|< maybe empty (" ->" >#<) @mbbody.ppMb)
+                                                >-< ppBindItems @imports.ppL
                                                 >-< ppBindItems @metas.ppL
                                                 >-< ppBinds'' @inhpp (RRef_Glb @moduleNr) 0 @binds
 
@@ -211,7 +217,6 @@ SEM Exp
   | Force       lhs         .   pp          =   "eval" >|< ppParens @expr.pp
   | Tail        lhs         .   pp          =   "tail" >|< ppParens @expr.pp
   | Lam         lhs         .   pp          =   "\\" >|< {- "@" >|< @lev >#< -} ppCommas [{- if @nrArgs == 0 then pp "thk" else -} pp @nrArgs, {- pp @nrBinds, -} pp @stkDepth] >#< "->" >#< @body.pp
-  -- | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of" >-< indent 1 (vlist $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
   | Case        lhs         .   pp          =   "case" >#< @expr.pp >#< "of" >-< indent 1 (ppBinds''' @lhs.inhpp pp 0 $ zip [0..] $ map (ppAlt'' @lhs.inhpp) $ V.toList @alts)
   | Tup         lhs         .   pp          =   "alloc" >#< @tag >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
   | FFI         lhs         .   pp          =   "ffi" >#< show (showRunPrim @prim) >|< ppParensCommas (map (ppSExp'' @lhs.inhpp) $ V.toList @args)
@@ -227,13 +232,22 @@ SEM Meta
 
 SEM DataCon
   | Con			lhs			.	pp			=	ppDifficultNm @conNm >#< "->" >#< @tagNr
+
+SEM Import
+  | Import		lhs			.	pp			=	"import" >#< ppCoreNm @nm
 %%]
 
 %%[(8 corerun)
-ATTR MetaL DataConL [ | | ppL: {[PP_Doc]} ]
+ATTR ImportL MetaL DataConL [ | | ppL: {[PP_Doc]} ]
 
-SEM MetaL DataConL
+SEM MetaL DataConL ImportL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+ATTR MbExp [ | | ppMb: {Maybe PP_Doc} ]
+
+SEM MbExp
+  | Nothing		lhs         .   ppMb        =   Nothing
+  | Just        lhs         .   ppMb        =   Just @just.pp
 %%]
 

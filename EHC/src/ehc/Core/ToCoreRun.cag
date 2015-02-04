@@ -51,15 +51,17 @@ WRAPPER CodeAGItf
 %%]
 
 %%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRunWithModNr, cmod2CoreRun)
+-- | Translate to CoreRun
 cmod2CoreRun'
   :: EHCOpts
-     -> Int             -- sequence nr of module (offset), used to create global per module references
-     -> CR.Nm2RefMp     -- outer bindings
+     -> Bool			-- ^ has main?
+     -> Int             -- ^ sequence nr of module (offset), used to create global per module references
+     -> CR.Nm2RefMp     -- ^ outer bindings
      -> CModule
      -> ( CR.Mod        -- generated CoreRun
         , CR.Nm2RefMp   -- name to ref mapping of toplevel bindings
         )
-cmod2CoreRun' opts modNr nm2ref cmod
+cmod2CoreRun' opts hasMain modNr nm2ref cmod
   =  ( crm_Syn_CodeAGItf t
      , nm2refGath_Syn_CodeAGItf t
      )
@@ -67,12 +69,13 @@ cmod2CoreRun' opts modNr nm2ref cmod
               (Inh_CodeAGItf
                  { modNr_Inh_CodeAGItf = modNr
                  , opts_Inh_CodeAGItf = opts
+                 , hasMain_Inh_CodeAGItf = hasMain
                  , nm2ref_Inh_CodeAGItf = nm2ref
                  })
 
 cmod2CoreRunWithModNr :: Int -> CModule -> CR.Mod
 cmod2CoreRunWithModNr nr m = m'
-  where (m',_) = cmod2CoreRun' defaultEHCOpts nr Map.empty m
+  where (m',_) = cmod2CoreRun' defaultEHCOpts True nr Map.empty m
 
 cmod2CoreRun :: CModule -> CR.Mod
 cmod2CoreRun = cmod2CoreRunWithModNr 0
@@ -85,6 +88,8 @@ cmod2CoreRun = cmod2CoreRunWithModNr 0
 %%[(8 corerun)
 -- | Options
 ATTR CodeAGItf AllCodeNT [ opts: EHCOpts | | ]
+-- | Has main?
+ATTR CodeAGItf CModule [ hasMain: Bool | | ]
 %%]
 
 %%[(8 corerun)
@@ -541,6 +546,11 @@ SEM CPat
 %%]
 
 %%[(8 corerun)
+ATTR AllImport [ | | crim USE {++} {[]} : {[CR.Import]} ]
+
+SEM CImport
+  | Import		lhs			.	crim			=	[CR.Import_Import @nm]
+
 ATTR AllDeclMeta [ | | crmt USE {++} {[]} : {[CR.Meta]} ]
 
 SEM CDeclMeta
@@ -559,7 +569,7 @@ SEM CModule
   | Mod         loc         .   crmBinds        =   CR.crarrayFromList $ map snd @expr.crb
                 lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew)
                                                       @moduleNm @lhs.modNr (@expr.stackDepthMax + 2 {- - CR.craLength @crmBinds -})
-                                                      @declMetas.crmt @crmBinds (CR.mkEval @creMod)
+                                                      @imports.crim @declMetas.crmt @crmBinds (if @lhs.hasMain then (Just $ CR.mkEval @creMod) else Nothing)
 %%]
 
 

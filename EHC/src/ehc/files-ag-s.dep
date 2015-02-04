@@ -66,6 +66,7 @@ Core/Trf/ElimNonCodegenConstructs.cag
 Core/Trf/FixAfterParse.cag
 Core/SysF/Check.cag
 CoreRun/Pretty.cag
+CoreRun/Check.cag
 GrinCode/Pretty.cag
 GrinCode/FreeVars.cag
 GrinCode/PointsToAnalysis.cag

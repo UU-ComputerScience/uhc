@@ -125,6 +125,9 @@ mkFileSuffMpHs opts
     -- currently not supported
     -- , ( Just "grin", ECUS_Grin, True )
 %%]]
+%%[[(50 corerunin)
+    , ( Just Cfg.suffixDotlessBinaryCoreRun , ECUS_CoreRun CRRStartBinary, True )
+%%]]
 %%[[(50 corein)
     , ( Just Cfg.suffixDotlessInputOutputTextualCore, ECUS_Core CRStartText, True   )
     , ( Just Cfg.suffixDotlessInputOutputBinaryCore , ECUS_Core CRStartBinary, True )

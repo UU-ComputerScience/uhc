@@ -296,19 +296,13 @@ cpFlowCoreModSem :: HsName -> EHCompilePhase ()
 cpFlowCoreModSem modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 -- ehInh        = crsiEHInh crsi
                  coreInh  = crsiCoreInh crsi
                  mbCoreModSem = ecuMbCoreSemMod ecu
          ;  when (isJust mbCoreModSem) $ do
               { let coreModSem = fromJust mbCoreModSem
-                    -- ehInh' = ehInh
-                    --   { EHSem.dataGam_Inh_AGItf    = EHSem.dataGam_Inh_AGItf ehInh `gamUnionFlow` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreModSem
-                    --   }
                     coreInh' = coreInh
                       { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnionFlow` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreModSem
                       }
-              -- ; lift $ putStrLn $ "cpFlowCoreModSem" ++ (show $ gamKeys $ Core2ChkSem.gathDataGam_Syn_CodeAGItf coreModSem)
-              -- ; cpUpdSI (\crsi -> crsi { crsiEHInh = ehInh' })
               ; cpUpdSI (\crsi -> crsi { crsiCoreInh = coreInh' })
               }
          }

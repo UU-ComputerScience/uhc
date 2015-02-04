@@ -37,6 +37,9 @@ CompilePhase building blocks: parsers
 -- Core parser
 %%[(8 corein) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
 %%]
+-- CoreRun parser
+%%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
+%%]
 -- TyCore parser
 %%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
@@ -313,6 +316,11 @@ cpDecodeCore :: Maybe String -> HsName -> EHCompilePhase ()
 cpDecodeCore suff = cpDecode suff ecuStoreCore
 %%]
 
+%%[(50 corerun) export(cpDecodeCoreRun)
+cpDecodeCoreRun :: Maybe String -> HsName -> EHCompilePhase ()
+cpDecodeCoreRun suff = cpDecode suff ecuStoreCore
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: on top of parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -340,6 +348,18 @@ cpGetPrevCore modNm
               (cpDecodeCore (Just Cfg.suffixDotlessBinaryCore) modNm)
               -- (cpParseCore modNm)
        ; fmap (fromJust . ecuMbCore) $ gets (crCU modNm)
+       }
+%%]
+
+%%[(50 corerun) export(cpGetPrevCoreRun)
+cpGetPrevCoreRun :: HsName -> EHCompilePhase CoreRun.Mod
+cpGetPrevCoreRun modNm
+  = do { cr <- get
+       ; cpMsg modNm VerboseDebug "cpGetPrevCoreRun"
+       ; let  ecu    = crCU modNm cr
+       ; when ({- isJust (ecuMbCoreTime ecu) && -} isNothing (ecuMbCore ecu))
+              (cpDecodeCoreRun (Just Cfg.suffixDotlessBinaryCoreRun) modNm)
+       ; fmap (fromJust . ecuMbCoreRun) $ gets (crCU modNm)
        }
 %%]
 

@@ -47,9 +47,9 @@ fillFrameM lwb as (RVal_Frame {rvalFrVals=frArr}) = do
 implStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m RVal) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> RValMV -> RValT m HpPtr
 implStkAllocFrameM r2n sl {- lev -} sz as = do
   a <- liftIO $ mvecAllocInit sz
-  slref <- liftIO $ newIORef sl
+  cx <- liftIO $ mkRCxtSl sl
   spref <- liftIO $ newIORef sz -- (MV.length as) -- stack is not used, GC looks up until this location
-  let fr = RVal_Frame r2n slref {- lev -} a spref
+  let fr = RVal_Frame r2n cx a spref
   fillFrameM 0 as fr
   heapAllocM fr
 
@@ -92,7 +92,7 @@ implStkPopFrameM = do
 
 %%[(8 corerun) hs export(cmodRun)
 cmodRun :: (RunSem RValCxt RValEnv RVal m RVal) => EHCOpts -> Mod -> RValT m RVal
-cmodRun opts (Mod_Mod {body_Mod_Mod=e}) = do
+cmodRun opts (Mod_Mod {mbbody_Mod_Mod = Just e}) = do
   -- dumpEnvM True
   v <- mustReturn $ rsemExp e
 %%[[8
@@ -100,6 +100,7 @@ cmodRun opts (Mod_Mod {body_Mod_Mod=e}) = do
 %%][100
 %%]]
   return v
+cmodRun opts _ = err $ "Cannot run module without main"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,8 +135,8 @@ rvalImplStkApp :: RunSem RValCxt RValEnv RVal m RVal => RVal -> RValMV -> RValT 
 rvalImplStkApp f as = do
   -- rsemTr $ "V app f(" ++ show (MV.length as) ++ "): " ++ show (pp f)
   case f of
-    RVal_Lam {rvalSLRef=slref, rvalBody=b} -> do
-      sl <- liftIO $ readIORef slref
+    RVal_Lam {rvalCx=rcx, rvalBody=b} -> do
+      sl <- liftIO $ readIORef (rcxtSlRef rcx)
       rvalImplStkAppLam sl b as $ \narg -> do
         if MV.length as < narg 
           then do
@@ -181,14 +182,14 @@ rvalImplStkExp e = do
       | na == 0   -> mk (RVal_Thunk mn) >>= heapAllocM >>= (liftIO . newIORef) >>= (return . RVal_Ptr)
       | otherwise -> mk (RVal_Lam   mn)
       where mk rv = do
-             sl <- renvTopFrameM
-             slref <- liftIO $ newIORef sl
-             return $ rv e slref
+             (sl,fr) <- renvTopFramePtrAndFrameM
+             cx <- liftIO $ rcxtCloneWithNewFrame sl (rvalCx fr)
+             return $ rv e cx
 
     -- let
     Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
         bs' <- mustReturn $ (liftIO . V.thaw) =<< V.forM bs rsemExp
-        fr <- renvTopFrameM >>= heapGetM -- >>= rsemDeref
+        fr <- renvTopFrameM -- >>= heapGetM -- >>= rsemDeref
         fillFrameM fillFrom bs' fr
         rsemExp b
 
@@ -275,8 +276,8 @@ instance
           v <- heapGetM' hp p
           -- rsemTr $ "Evl: *" >|< p >|< ":" >#< v
           v' <- case v of
-            RVal_Thunk {rvalSLRef=slref, rvalBody=e} -> do
-              sl <- liftIO $ readIORef slref
+            RVal_Thunk {rvalCx=rcx, rvalBody=e} -> do
+              sl <- liftIO $ readIORef (rcxtSlRef rcx)
               heapSetM' hp p RVal_BlackHole
               v' <- liftIO (mvecAlloc 0) >>= \v -> rvalImplStkAppLam sl e v $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
               heapSetM' hp p v'

@@ -70,9 +70,9 @@ explStkAllocFrameM r2n sl {- lev -} sz as@(ExplArgs {eaVec=vsArgs, eaStk=nrArgs}
   let vsLen = V.length vsArgs
   when (vsLen  > 0) $ liftIO $ mvecFillFromV 0 a vsArgs
   when (nrArgs > 0) $ renvFrStkReversePopInMV vsLen nrArgs a
-  slref <- liftIO $ newIORef sl
+  cx <- liftIO $ mkRCxtSl sl
   spref <- liftIO $ newIORef (eaNrArgs as)
-  p <- heapAllocM $ RVal_Frame r2n slref {- lev -} a spref
+  p <- heapAllocM $ RVal_Frame r2n cx a spref
   return p
 
 -- | Push a new stack frame
@@ -123,7 +123,7 @@ explStkPopFrameM = do
 
 %%[(8 corerun) hs export(cmodRun)
 cmodRun :: (RunSem RValCxt RValEnv RVal m ()) => EHCOpts -> Mod -> RValT m ()
-cmodRun opts (Mod_Mod {body_Mod_Mod=e}) = do
+cmodRun opts (Mod_Mod {mbbody_Mod_Mod = Just e}) = do
   -- dumpEnvM True
   mustReturn $ rsemExp e
   -- v <- renvFrStkPop1
@@ -132,6 +132,7 @@ cmodRun opts (Mod_Mod {body_Mod_Mod=e}) = do
 %%][100
 %%]]
   -- return v
+cmodRun opts _ = return ()
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -173,8 +174,8 @@ rvalExplStkApp f as = do
   -- rsemTr $ "V app f(" ++ show (MV.length as) ++ "): " ++ show (pp f)
   let nrActualArgs = eaNrArgs as
   case f of
-    RVal_Lam {rvalSLRef=slref, rvalBody=b} -> do
-      sl <- liftIO $ readIORef slref
+    RVal_Lam {rvalCx=rcx, rvalBody=b} -> do
+      sl <- liftIO $ readIORef (rcxtSlRef rcx)
       rvalExplStkAppLam sl b as $ \narg -> do
         if nrActualArgs < narg 
           then do
@@ -221,9 +222,9 @@ rvalExplStkExp e = do
       | na == 0   -> mk heapAllocAsPtrM RVal_Thunk
       | otherwise -> mk return          RVal_Lam
       where mk alloc rv = do
-             sl <- renvTopFrameM
-             slref <- liftIO $ newIORef sl
-             alloc (rv mn e slref) >>= rsemPush
+             (sl,fr) <- renvTopFramePtrAndFrameM
+             cx <- liftIO $ rcxtCloneWithNewFrame sl (rvalCx fr)
+             alloc (rv mn e cx) >>= rsemPush
 
     -- let
     Exp_Let {firstOff_Exp_Let=fillFrom, ref2nm_Exp_Let=r2n, binds_Exp_Let=bs, body_Exp_Let=b} -> do
@@ -330,9 +331,9 @@ instance
           hp <- gets renvHeap
           v <- heapGetM' hp p
           case v of
-            RVal_Thunk {rvalMbNm=mn, rvalSLRef=slref, rvalBody=e} -> do
+            RVal_Thunk {rvalMbNm=mn, rvalCx=rcx, rvalBody=e} -> do
               -- rsemGcPushRoot v
-              sl <- liftIO $ readIORef slref
+              sl <- liftIO $ readIORef (rcxtSlRef rcx)
               heapSetM' hp p RVal_BlackHole
               v' <- rvalExplStkAppLam sl e (emptyExplArgs {eaStk=0}) $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
               hp <- gets renvHeap

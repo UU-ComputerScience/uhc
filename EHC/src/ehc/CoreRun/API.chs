@@ -13,12 +13,13 @@ module %%@{%{EH}%%}CoreRun.API
   -- * CoreRun AST
   -- | The datatypes making up a CoreRun program.
     Mod
-  , Exp
+  , Exp, MbExp
   , SExp
   , Alt
   -- , Pat
   , Bind
   , RRef
+  , Import
   , Meta
   , DataCon
 
@@ -57,7 +58,8 @@ module %%@{%{EH}%%}CoreRun.API
   , mkMetaDataCon, mkMetaDataType
   
   -- ** Modules
-  , mkMod, mkMod', mkMod''
+  , mkMod, mkMod', mkModWithMetas, mkModWithImportsMetas
+  , mkImport
   
   -- * Conversion
   , rrefToDif

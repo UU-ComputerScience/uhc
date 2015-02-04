@@ -93,6 +93,8 @@ level 2..6 : with prefix 'cpEhc'
 -- CoreRun
 %%[(8 corerun) import({%{EH}EHC.CompilePhase.Run})
 %%]
+%%[(50 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
+%%]
 -- Language syntax: TyCore
 %%[(8 codegen tycore) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
@@ -515,28 +517,36 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HMOnlyMinimal))
                    ; return defaultResult
                    }
+%%[[(50 corerunin)
+           (ECUS_CoreRun cst, Just (ECUS_Haskell HSOnlyImports))
+             | {- cst == CRRStartText || -} isBinary
+             -> do { cpMsg modNm VerboseNormal $ "Reading CoreRun (" ++ (if isBinary then "binary" else "textual") ++ ")"
+                   ; cpEhcHaskellModulePrepareSrc modNm
+                   ; modNm2 <- cpEhcCoreRunImport isBinary modNm
+                   ; cpUpdCU modNm2 (ecuStoreState (ECUS_CoreRun CRROnlyImports))
+                   ; return modNm2
+                   }
+             where isBinary = cst == CRRStartBinary
+           (ECUS_CoreRun CRROnlyImports,Just (ECUS_CoreRun CRRAllSem))
+             -> do { cpMsg modNm VerboseMinimal "Compiling CoreRun"
+                   ; cpEhcCoreRunModuleAfterImport (ecuIsTopMod ecu) opts modNm
+                   ; cpUpdCU modNm (ecuStoreState (ECUS_CoreRun CRRAllSem))
+                   ; return defaultResult
+                   }
+%%]]
 %%[[(50 corein)
            (ECUS_Core cst, Just (ECUS_Haskell HSOnlyImports))
              | cst == CRStartText || isBinary
              -> do { cpMsg modNm VerboseNormal $ "Reading Core (" ++ (if isBinary then "binary" else "textual") ++ ")"
-                   -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
-                   -- ; cpGetDummyCheckSrcMod modNm		-- really dummy, should be based on actual import info to be extracted by cpEhcCoreImport
                    ; cpEhcHaskellModulePrepareSrc modNm
                    ; modNm2 <- cpEhcCoreImport isBinary modNm
-                   -- ; cpGetDummyCheckSrcMod modNm2		-- really dummy, should be based on actual import info to be extracted by cpEhcCoreImport
-                   -- ; cpCheckModsWithBuiltin [modNm2]
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_Core CROnlyImports))
                    ; return modNm2
                    }
              where isBinary = cst == CRStartBinary
            (ECUS_Core CROnlyImports,Just (ECUS_Core CRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
-                   -- 20140605 AD, code below is temporary, to cater for minimal and working infrastructure first...
                    ; cpEhcCoreModuleAfterImport (ecuIsTopMod ecu) opts modNm
-{-
-                   ; cpProcessCoreModFold modNm
-                   ; cpEhcCoreModuleCommonPhases True True True {- isMainMod isTopMod doMkExec -} opts modNm
--}
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult
                    }
@@ -692,10 +702,24 @@ cpEhcCoreModuleAfterImport
           [ cpEhcCoreAnalyseModuleItf modNm
           , cpProcessCoreModFold modNm
           , cpEhcCoreModuleCommonPhases (ecuIsMainMod ecu) isTopMod False opts modNm
-{-
-          , cpEhcHaskellModuleCommonPhases isTopMod False opts modNm
-          , cpEhcHaskellModulePostlude modNm
--}
+          ]  
+       }
+%%]
+
+%%[(50 corerunin)
+-- | All the work to be done after CoreRun src/binary imports have been read/analysed
+cpEhcCoreRunModuleAfterImport
+  :: Bool -> EHCOpts
+     -> HsName -> EHCompilePhase ()
+cpEhcCoreRunModuleAfterImport
+     isTopMod opts
+     modNm
+  = do { cr <- get
+       ; let (ecu,_,_,_) = crBaseInfo modNm cr
+       ; cpSeq
+          [ cpEhcCoreRunAnalyseModuleItf modNm
+          , cpProcessCoreRunModFold modNm
+          -- , cpEhcCoreRunModuleCommonPhases (ecuIsMainMod ecu) isTopMod False opts modNm
           ]  
        }
 %%]
@@ -896,10 +920,28 @@ cpEhcHaskellAnalyseModuleItf modNm
 
 %%[(50 corein)
 -- | Analyse a Core text/binary src module for
---     (1) module information (import, export, etc),
+--     (1) module information (import, export, etc).
+-- Note: TBD: identical to cpEhcCoreRunAnalyseModuleItf
 cpEhcCoreAnalyseModuleItf :: HsName -> EHCompilePhase ()
 cpEhcCoreAnalyseModuleItf modNm
   = cpSeq [ cpMsg modNm VerboseDebug "cpEhcCoreAnalyseModuleItf"
+          , cpCheckModsWithoutBuiltin [modNm]
+%%[[(50 codegen grin)
+          , cpUpdateModOffMp [modNm]
+%%]]
+%%[[99
+          -- , cpCleanupHSMod modNm
+%%]]
+          ]
+%%]
+
+%%[(50 corerunin)
+-- | Analyse a CoreRun text/binary src module for
+--     (1) module information (import, export, etc).
+-- Note: TBD: identical to cpEhcCoreAnalyseModuleItf
+cpEhcCoreRunAnalyseModuleItf :: HsName -> EHCompilePhase ()
+cpEhcCoreRunAnalyseModuleItf modNm
+  = cpSeq [ cpMsg modNm VerboseDebug "cpEhcCoreRunAnalyseModuleItf"
           , cpCheckModsWithoutBuiltin [modNm]
 %%[[(50 codegen grin)
           , cpUpdateModOffMp [modNm]
@@ -966,7 +1008,7 @@ cpEhcCorePerModulePart1 modNm
 %%]
 
 %%[(50 codegen corein)
--- | Get import information from Core module source text.
+-- | Get import information from Core module source text/binary.
 cpEhcCoreImport
   :: Bool -> HsName -> EHCompilePhase HsName
 cpEhcCoreImport
@@ -975,11 +1017,27 @@ cpEhcCoreImport
        ; let (_,opts) = crBaseInfo' cr
        
        ; if isBinary
-         then -- cpDecodeCore (Just Cfg.suffixDotlessInputOutputBinaryCore) modNm
-              cpDecodeCore Nothing modNm
+         then cpDecodeCore Nothing modNm
          else cpParseCoreWithFPath Nothing modNm
        ; cpFoldCoreMod modNm
        ; cpGetCoreModnameAndImports modNm
+       }
+%%]
+
+%%[(50 codegen corerunin)
+-- | Get import information from CoreRun module source text/binary.
+cpEhcCoreRunImport
+  :: Bool -> HsName -> EHCompilePhase HsName
+cpEhcCoreRunImport
+     isBinary modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       
+       ; {- if isBinary
+         then -} cpDecodeCoreRun Nothing modNm
+         {- else cpParseCoreWithFPath Nothing modNm -}
+       ; cpFoldCoreRunMod modNm
+       ; cpGetCoreRunModnameAndImports modNm
        }
 %%]
 
@@ -993,6 +1051,19 @@ cpEhcCoreAnalyseModule modNm
              coreSem = panicJust "cpEhcCoreAnalyseModule" $ ecuMbCoreSemMod ecu
              errs = Seq.toList $ Core2ChkSem.errs_Syn_CodeAGItf coreSem
        ; cpSetLimitErrsWhen 5 "Core analysis" errs
+       }
+%%]
+
+%%[(50 codegen corerunin)
+-- | Analyse a CoreRun src module
+cpEhcCoreRunAnalyseModule :: HsName -> EHCompilePhase ()
+cpEhcCoreRunAnalyseModule modNm
+  = do { cr <- get
+       ; cpUpdateModOffMp [modNm]
+       ; let (ecu,_,opts,_) = crBaseInfo modNm cr
+             corerunSem = panicJust "cpEhcCoreRunAnalyseModule" $ ecuMbCoreRunSemMod ecu
+             errs = [] -- No errors -- Seq.toList $ CoreRun2ChkSem.errs_Syn_AGItf corerunSem
+       ; cpSetLimitErrsWhen 5 "CoreRun analysis" errs
        }
 %%]
 
@@ -1013,6 +1084,12 @@ cpEhcCorePerModulePart2 modNm
 %%]]
                ]
        }
+%%]
+
+%%[(8 codegen corerunin)
+-- | Part 2 CoreRun processing, part2 is done either for per individual module compilation or after full program analysis
+cpEhcCoreRunPerModulePart2 :: HsName -> EHCompilePhase ()
+cpEhcCoreRunPerModulePart2 = cpProcessCoreRunRest
 %%]
 
 %%[(8 codegen grin)
@@ -1193,6 +1270,15 @@ cpProcessCoreModFold modNm
       ]
 %%]
 
+%%[(50 codegen corerunin)
+cpProcessCoreRunModFold :: HsName -> EHCompilePhase ()
+cpProcessCoreRunModFold modNm
+  = cpSeq $
+      [ cpEhcCoreRunAnalyseModule modNm
+      -- , cpFlowCoreRunModSem modNm
+      ]
+%%]
+
 %%[(8 codegen)
 -- folded core -> grin, jazy, and the rest
 cpProcessCoreRest :: HsName -> EHCompilePhase ()
@@ -1221,16 +1307,29 @@ cpProcessCoreRest modNm
 %%]]
 %%]]
 %%[[(8 corerun)
-                ++ (if CoreOpt_RunDump `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore CPOutputCoreHow_Run [] "" Cfg.suffixDotlessInputOutputCoreRun modNm]
-                    else [])
-                ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
-                    then [cpRunCoreRun{-2-} modNm]
-                    else [])
+                ++ [ cpProcessCoreRunRest modNm ]
 %%]]
 %%[[99
                 ++ [ cpCleanupCore [modNm] ]
 %%]]
+               )
+       }
+          
+%%]
+
+%%[(8 codegen corerun)
+-- | folded corerun -> ...
+cpProcessCoreRunRest :: HsName -> EHCompilePhase ()
+cpProcessCoreRunRest modNm
+  = do { cr <- get
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
+       ; cpSeq (   []
+                ++ (if CoreOpt_RunDump `elem` ehcOptCoreOpts opts
+                    then [void $ cpOutputCore CPOutputCoreHow_CoreRun_Text [] "" Cfg.suffixDotlessInputOutputCoreRun modNm]
+                    else [])
+                ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
+                    then [cpRunCoreRun{-2-} modNm]
+                    else [])
                )
        }
           

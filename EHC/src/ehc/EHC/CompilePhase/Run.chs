@@ -78,7 +78,9 @@ cpRunCoreRun2 modNm = do
         mbCore = ecuMbCore ecu
 %%[[8
     let (impModL, mainMod) = ([], cmod2CoreRun $ fromJust mbCore)
+        hasMain = True
 %%][50
+    let hasMain = ecuHasMain ecu
     (impModL, mainMod) <- fmap (fromJust . initlast) $
       case crPartitionMainAndImported cr $ map head $ crCompileOrder cr of
         (_, impl) -> do
@@ -86,7 +88,7 @@ cpRunCoreRun2 modNm = do
           return $ flip evalState emptyNm2RefMp $ do
             forM (zip cores [0..]) $ \(cr,modnr) -> do
               prevNm2Ref <- get
-              let (m,nm2ref) = cmod2CoreRun' opts modnr prevNm2Ref cr
+              let (m,nm2ref) = cmod2CoreRun' opts hasMain modnr prevNm2Ref cr
               put $ nm2refUnion nm2ref prevNm2Ref
               return m
 %%]]

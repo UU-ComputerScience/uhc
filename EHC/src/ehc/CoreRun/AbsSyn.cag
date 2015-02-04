@@ -17,6 +17,15 @@ Global assumptions:
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Core code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 core)
+DATA AGItf
+  | AGItf       module          : Mod
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -26,9 +35,23 @@ DATA Mod
                 moduleNm        : {HsName}
                 moduleNr        : {Int}			-- sequence nr, index later into global table of modules
                 stkDepth        : {Int}			-- max depth of stack for setting up globals
+                imports         : ImportL
                 metas           : MetaL
                 binds           : {CRArray Bind}
-                body			: Exp
+                mbbody			: MbExp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Imports
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+DATA Import
+  | Import		nm				: {HsName}
+
+TYPE ImportL		= [Import]
+
+SET AllImport		= Import ImportL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,34 +108,22 @@ DATA Exp
                 args			: {CRArray SExp}
 
   -- let bindings, recursiveness allowed, yes/no eval made explicit in rhs of binding
-  | Let         -- lev				: {Int}
-  				firstOff		: {Int}			-- offset of first binding
+  | Let         firstOff		: {Int}			-- offset of first binding
   				ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
                 binds           : {CRArray Bind}
                 body            : Exp
 
   -- application, abstraction
-  | App         -- isTailRec		: {Bool}
-  				func            : Exp
+  | App         func            : Exp
                 args            : {CRArray SExp}
   | Lam         mbNm			: {Maybe HsName}	-- possibly bound to name
-  				-- lev				: {Int}				-- lexical level
   				nrArgs          : {Int}				-- nr of arguments, 0 means it is a thunk
-                -- nrBinds         : {Int}				-- nr stack frame locations to be allocated (excluding arguments) for locals
                 stkDepth        : {Int}				-- max depth of stack
                 ref2nm			: {Ref2Nm}			-- inverse lookup of locally introduced binding RRef's
                 body            : Exp
 
   -- thunking, forcing, partial applications
   | Force		expr			: Exp
-  -- | Thunk		expr			: Exp		-- expressed as parameterless Lam
-
-  -- expr in a context to which must be returned (i.e. no tail rec)
-  -- | Ret			expr			: Exp
-  
-  -- expr in a case alternative result context (with local bindings to be removed)
-  -- | RetCase		nrBinds			: {Int}
-  -- 				expr			: Exp
   
   -- Tail context
   | Tail		expr			: Exp
@@ -124,24 +135,12 @@ DATA Exp
   -- FFI call
   | FFI         prim        	: {RunPrim}
                 args			: {CRArray SExp}
-{-
-  | FFI         callconv        : {FFIWay}
-%%[[8
-                impEnt          : {String}
-%%][90
-                impEnt          : {ForeignEnt}
-%%]]
-                ty              : {Ty}
-                args			: {CRArray Exp}
--}
 
-%%[[9090
-  -- FFE binding (not yet implemented for all backends)
-  | FFE         callconv        : {FFIWay}
-                expEnt          : {ForeignEnt}
-                expr            : Exp
-                ty              : {Ty}
-%%]]
+TYPE MbExp		= MAYBE Exp
+
+SET AllExp		= Exp MbExp
+  
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,7 +162,7 @@ DATA Alt
 DATA Pat
   | Con         tag             : {Int}
 %%[[97
-  | BoolExpr    expr            : Exp
+  -- | BoolExpr    expr            : Exp
 %%]]
 %%]
 
@@ -172,6 +171,9 @@ DATA Pat
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun)
+SET AllCodeNT
+  = Mod SExp AllExp Alt Pat
+
 SET AllNT
-  = Mod SExp Exp Alt Pat
+  = AllCodeNT AllImport AllMetaNT
 %%]

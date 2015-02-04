@@ -108,6 +108,8 @@ ehc-codegentargetspecific-js:
 
 ehc-codegentargetspecific-cr:
 
+ehc-codegentargetspecific-crr:
+
 ehc-codegentargetspecific-cmmjs:
 
 ehc-codegentargetspecific-core:

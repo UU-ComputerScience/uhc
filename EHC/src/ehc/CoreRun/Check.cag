@@ -1,0 +1,161 @@
+%%[0 lhs2tex
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Check core module when provided as source
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin) hs module {%{EH}CoreRun.Check}
+%%]
+
+%%[(8 corerunin) hs import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Error})
+%%]
+
+%%[(8 corerunin) hs import({%{EH}CoreRun})
+%%]
+
+%%[(8 corerunin) hs import(qualified UHC.Util.Rel as Rel)
+%%]
+
+%%[(50 corerunin) hs import(qualified {%{EH}Module.ImportExport} as ModImpExp)
+%%]
+
+%%[(8 corerunin).WRAPPER ag import({CoreRun/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(99 corerunin)
+%%]
+-- PRAGMA strictcase
+PRAGMA nocycle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin) hs export(crmodCheck', Inh_AGItf(..), Syn_AGItf(..))
+crmodCheck'
+  :: Inh_AGItf
+     -> Mod
+     -> Syn_AGItf
+crmodCheck' inh crmod
+  = t
+  where t = wrap_AGItf
+              (sem_AGItf (AGItf_AGItf crmod))
+              inh
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR
+  AllCodeNT AGItf
+    [ opts: EHCOpts
+      -- env : CheckEnv
+    | | ]
+
+ATTR
+  AGItf Mod
+    [ moduleNm: HsName
+    | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AGItf Mod [ | | realModuleNm: HsName ]
+
+SEM Mod
+  | Mod         loc         .   realModuleNm        =   @moduleNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Imported modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AGItf Mod AllImport [ | | impModNmL USE {++} {[]} : {[HsName]} ]
+
+SEM Import
+  | Import		lhs         .   impModNmL        	=   [@nm]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Export info, similar to the extracted info from .hs source modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(5050 corerunin)
+ATTR AllExport [ | | modExpL USE {++} {[]} : {[ModImpExp.ModExp]} ]
+
+SEM CExport
+  | Export      lhs         .   modExpL             =   [ModImpExp.ModExpEnt (ModImpExp.ModEntSpec (hsnQualified @nm) emptyRange Nothing)]
+  | ExportData  lhs         .   modExpL             =   [ModImpExp.ModExpEnt (ModImpExp.ModEntSpec (hsnQualified @nm) emptyRange (fmap (ModImpExp.ModEntSubs . map hsnQualified) @mbConNmL))]
+%%]
+
+%%[(50 corerunin)
+ATTR AllImport [ | | modImpL USE {++} {[]} : {[ModImpExp.ModImp]} ]
+
+SEM Import
+  | Import		lhs			.   modImpL				=   [ModImpExp.ModImp True @nm @nm False [] emptyRange]
+%%]
+
+%%[(5050 corerunin)
+ATTR CExpr AllBindOnly AllDeclMeta [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModImpExp.ModEntRel ]
+
+SEM CBind
+  | Bind        lhs         .   modDefsRel          =   let o = IdOcc @nm IdOcc_Val
+                                                        in  Rel.fromList [ (hsnQualified (ioccNm o), ModImpExp.ModEnt (ioccKind o) o Set.empty emptyRange) ]
+
+SEM CDeclMeta
+  | Data        lhs         .   modDefsRel          =   let to = IdOcc ( @tyNm) IdOcc_Data
+                                                            subs = [ ModImpExp.ModEnt (ioccKind o) o Set.empty emptyRange | cn <- @dataCons.dataConNmL, let o = IdOcc ( cn) IdOcc_Val ]
+                                                        in  Rel.singleton (hsnQualified (ioccNm to)) (ModImpExp.ModEnt (ioccKind to) to (Set.fromList subs) emptyRange)
+%%]
+
+%%[(5050 corerunin)
+ATTR AllDataCon [ | | dataConNmL USE {++} {[]} : {[HsName]} ]
+
+SEM CDataCon
+  | Con			lhs			.	dataConNmL			=	[@conNm]
+%%]
+
+%%[(50 corerunin)
+ATTR AGItf Mod [ | | mod: {ModImpExp.Mod} ]
+
+SEM Mod
+  | Mod         lhs         .   mod                 =   ModImpExp.Mod
+                                                            @realModuleNm (Just @realModuleNm) Nothing @imports.modImpL
+                                                            Rel.empty
+                                                            Rel.empty
+                                                            []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module has 'main'?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AGItf Mod [ | | hasMain USE {||} {False} : Bool ]
+
+SEM Mod
+  | Mod			lhs			.	hasMain				=	@mbbody.isJust
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR MbExp [ | | isJust: Bool ]
+
+SEM MbExp
+  | Nothing		lhs			.	isJust				=	False
+  | Just		lhs			.	isJust				=	True
+%%]

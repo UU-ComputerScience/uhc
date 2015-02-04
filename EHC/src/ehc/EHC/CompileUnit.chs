@@ -19,6 +19,8 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 -- Language syntax: Core, TyCore, Grin, ...
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
 %%]
+%%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
+%%]
 %%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
@@ -36,6 +38,9 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 %%[(8 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
+%%]
+-- Language semantics: CoreRun
+%%[(8 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
 %%]
 
 -- HI Syntax and semantics, HS module semantics
@@ -156,6 +161,12 @@ data EHCompileUnit
 %%[[(8 codegen corein)
       , ecuMbCoreSemMod      :: !(Maybe Core2ChkSem.Syn_CodeAGItf)
 %%]]
+%%[[(8 corerun)
+      , ecuMbCoreRun         :: !(Maybe CoreRun.Mod)
+%%]]
+%%[[(8 codegen corerunin)
+      , ecuMbCoreRunSemMod   :: !(Maybe CoreRun2ChkSem.Syn_AGItf)
+%%]]
 %%[[(8 codegen tycore)
       , ecuMbTyCore          :: !(Maybe C.Module)
 %%]]
@@ -264,6 +275,12 @@ emptyECU
 %%]]
 %%[[(8 codegen corein)
       , ecuMbCoreSemMod      = Nothing
+%%]]
+%%[[(8 corerun)
+      , ecuMbCoreRun		 = Nothing
+%%]]
+%%[[(8 codegen corerunin)
+      , ecuMbCoreRunSemMod   = Nothing
 %%]]
 %%[[(8 codegen tycore)
       , ecuMbTyCore          = Nothing
@@ -377,6 +394,9 @@ instance CompileUnitState EHCompileUnitState where
                       ECUS_Haskell HIAllSem       -> True
 %%[[(50 corein)
                       ECUS_Core    CROnlyImports  -> True
+%%]]
+%%[[(50 corerunin)
+                      ECUS_CoreRun CRROnlyImports -> True
 %%]]
                       _                           -> False
 %%]
@@ -494,6 +514,16 @@ ecuStoreCore x ecu | x `seq` True = ecu { ecuMbCore = Just x }
 %%][9999
 ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
+%%]
+
+%%[(8 corerun) export(ecuStoreCoreRun)
+ecuStoreCoreRun :: EcuUpdater CoreRun.Mod
+ecuStoreCoreRun x ecu | x `seq` True = ecu { ecuMbCoreRun = Just x }
+%%]
+
+%%[(8 codegen corerunin) export(ecuStoreCoreRunSemMod)
+ecuStoreCoreRunSemMod :: EcuUpdater CoreRun2ChkSem.Syn_AGItf
+ecuStoreCoreRunSemMod x ecu = ecu { ecuMbCoreRunSemMod = Just x }
 %%]
 
 %%[(8 codegen tycore) export(ecuStoreTyCore)

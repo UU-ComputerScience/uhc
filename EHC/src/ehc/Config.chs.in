@@ -303,6 +303,24 @@ linkerSymbolPrefix = "@LINKER_SYMBOL_PREFIX@"
 
 %%]
 
+%%[8 export(suffixDotlessBinaryCoreRun, suffixDotlessInputOutputBinaryCoreRun, suffixDotlessOutputTextualCoreRun, suffixDotlessInputOutputTextualCoreRun)
+-- | Suffix (dotless) for binary corerun files, to be read in as part of the compilation process
+suffixDotlessBinaryCoreRun :: String
+suffixDotlessBinaryCoreRun = "crr"
+
+-- | Suffix (dotless) for binary dumped/output corerun files
+suffixDotlessInputOutputBinaryCoreRun :: String
+suffixDotlessInputOutputBinaryCoreRun = "bcrr"
+
+-- | Suffix (dotless) for textually dumped/output corerun files
+suffixDotlessOutputTextualCoreRun :: String
+suffixDotlessOutputTextualCoreRun = "tcrr"
+
+-- | Suffix (dotless) for textually read corerun files
+suffixDotlessInputOutputTextualCoreRun :: String
+suffixDotlessInputOutputTextualCoreRun = suffixDotlessOutputTextualCoreRun
+%%]
+
 %%[8 export(suffixDotlessBinaryCore, suffixDotlessInputOutputBinaryCore, suffixDotlessOutputTextualCore, suffixDotlessInputOutputTextualCore)
 -- | Suffix (dotless) for binary core files, to be read in as part of the compilation process
 suffixDotlessBinaryCore :: String

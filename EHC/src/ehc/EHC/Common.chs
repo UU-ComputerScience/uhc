@@ -122,10 +122,19 @@ The state Core compilation can be in
 
 %%[(8 corein) export(CRState(..))
 data CRState
-  = CRStartText
-  | CRStartBinary
+  = CRStartBinary
+  | CRStartText
   | CROnlyImports
   | CRAllSem
+  deriving (Show,Eq)
+%%]
+
+%%[(8 corerunin) export(CRRState(..))
+data CRRState
+  = CRRStartBinary
+  -- | CRRStartText
+  | CRROnlyImports
+  | CRRAllSem
   deriving (Show,Eq)
 %%]
 
@@ -142,6 +151,9 @@ data EHCompileUnitState
 %%]]
 %%[[(8 corein)
   | ECUS_Core    !CRState
+%%]]
+%%[[(8 corerunin)
+  | ECUS_CoreRun !CRRState
 %%]]
   | ECUS_Grin
   | ECUS_Fail
@@ -162,6 +174,9 @@ ecuStateFinalDestination postModf
 %%[[(50 corein)
         n (ECUS_Core    _) = ECUS_Core    CRAllSem
 %%]]
+%%[[(50 corerunin)
+        n (ECUS_CoreRun _) = ECUS_CoreRun CRRAllSem
+%%]]
         n _                = ECUS_Fail
 %%]
 
@@ -173,6 +188,16 @@ ecuStateIsCore st = case st of
   ECUS_Core _ -> True
 %%]]
   _           -> False
+%%]
+
+%%[8 export(ecuStateIsCoreRun)
+-- | Is compilation from CoreRun source
+ecuStateIsCoreRun :: EHCompileUnitState -> Bool
+ecuStateIsCoreRun st = case st of
+%%[[(8 corerunin)
+  ECUS_CoreRun _ -> True
+%%]]
+  _              -> False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

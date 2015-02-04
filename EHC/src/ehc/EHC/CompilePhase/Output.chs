@@ -46,8 +46,8 @@ Output generation, on stdout or file
 %%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
 %%]
 
--- CoreRun
-%%[(8 corerun) import({%{EH}Core.ToCoreRun}, {%{EH}CoreRun.Pretty})
+-- CoreRun output
+%%[(8 corerun) import({%{EH}CoreRun} as CoreRun, {%{EH}Core.ToCoreRun}, {%{EH}CoreRun.Pretty})
 %%]
 
 -- Core output
@@ -154,7 +154,10 @@ data CPOutputCoreHow
   | CPOutputCoreHow_Binary
 %%]]
 %%[[(8 corerun)
-  | CPOutputCoreHow_Run
+  | CPOutputCoreHow_CoreRun_Text
+%%]]
+%%[[(50 corerun)
+  | CPOutputCoreHow_CoreRun_Binary
 %%]]
 
 cpOutputCoreModules
@@ -177,9 +180,14 @@ cpOutputCoreModules how coreOpts mknmsuff suff modNm cMods
             putSerializeFile fnC cMod
 %%]]
 %%[[(8 corerun)
-          CPOutputCoreHow_Run -> do
+          CPOutputCoreHow_CoreRun_Text -> do
             let cMod' = cmod2CoreRun cMod
             putPPFPath fpC (ppMod' opts cMod') 100
+%%]]
+%%[[(50 corerun)
+          CPOutputCoreHow_CoreRun_Binary -> do
+            let cMod' = cmod2CoreRun cMod
+            putSerializeFile fnC cMod'
 %%]]
 %%]
 
@@ -192,6 +200,46 @@ cpOutputCore how coreOpts nmsuff suff modNm
                  cMod   = panicJust "cpOutputCore" mbCore
          ;  cpMsg modNm VerboseALot "Emit Core"
          ;  fmap head $ cpOutputCoreModules how coreOpts (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
+         }
+%%]
+
+%%[(8 corerun) export(CPOutputCoreRunHow(..), cpOutputCoreRunModules)
+data CPOutputCoreRunHow
+  = CPOutputCoreRunHow_Text
+%%[[50
+  | CPOutputCoreRunHow_Binary
+%%]]
+
+cpOutputCoreRunModules
+  :: CPOutputCoreRunHow -> [CoreOpt]
+     -> (Int -> String -> String)
+     -> String -> HsName
+     -> [(String,CoreRun.Mod)]
+     -> EHCompilePhase [FPath]
+cpOutputCoreRunModules how coreOpts mknmsuff suff modNm crMods
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm crMods
+       }
+  where write opts _ fpC fnC crMod = case how of
+          CPOutputCoreRunHow_Text ->
+            putPPFPath fpC (ppMod' opts crMod) 100
+%%[[50
+          CPOutputCoreRunHow_Binary ->
+            putSerializeFile fnC crMod
+%%]]
+
+%%]
+
+%%[(8 corerun) export(cpOutputCoreRun)
+cpOutputCoreRun :: CPOutputCoreRunHow -> [CoreOpt] -> String -> String -> HsName -> EHCompilePhase FPath
+cpOutputCoreRun how coreOpts nmsuff suff modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
+                 mbCoreRun = ecuMbCoreRun ecu
+                 cMod   = panicJust "cpOutputCoreRun" mbCoreRun
+         ;  cpMsg modNm VerboseALot "Emit CoreRun"
+         ;  fmap head $ cpOutputCoreRunModules how coreOpts (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
          }
 %%]
 
