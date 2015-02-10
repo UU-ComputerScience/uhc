@@ -37,6 +37,9 @@ An EHC compile run maintains info for one compilation invocation
 -- Language syntax: Core
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
 %%]
+-- Language syntax: CoreRun
+%%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
+%%]
 -- Language syntax: TyCore
 %%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
@@ -129,6 +132,9 @@ data EHCompileRunStateInfo
 %%[[(8 codegen)
       , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
 %%]]
+%%[[(8 corerun)
+      , crsiCore2RunInh	:: !CoreRun.Nm2RefMp       				-- current inh attrs for Core2CoreRun sem
+%%]]
 %%[[50
       , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
       , crsiHSModInh    :: !HSSemMod.Inh_AGItf                  -- current inh attrs for HS module analysis sem
@@ -157,6 +163,9 @@ emptyEHCompileRunStateInfo
       , crsiEHInh       =   panic "emptyEHCompileRunStateInfo.crsiEHInh"
 %%[[(8 codegen)
       , crsiCoreInh     =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
+%%]]
+%%[[(8 corerun)
+      , crsiCore2RunInh	=   panic "emptyEHCompileRunStateInfo.crsiCoreRunInh"
 %%]]
 %%[[50
       , crsiMbMainNm    =   Nothing

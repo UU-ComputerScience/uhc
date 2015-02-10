@@ -357,7 +357,7 @@ cpGetPrevCoreRun modNm
   = do { cr <- get
        ; cpMsg modNm VerboseDebug "cpGetPrevCoreRun"
        ; let  ecu    = crCU modNm cr
-       ; when ({- isJust (ecuMbCoreTime ecu) && -} isNothing (ecuMbCore ecu))
+       ; when (isJust (ecuMbCoreRunTime ecu) && isNothing (ecuMbCoreRun ecu))
               (cpDecodeCoreRun (Just Cfg.suffixDotlessBinaryCoreRun) modNm)
        ; fmap (fromJust . ecuMbCoreRun) $ gets (crCU modNm)
        }

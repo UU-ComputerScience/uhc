@@ -61,7 +61,7 @@ letoffUpd upd i@(InhPP {letoffInhPP=o}) = i {letoffInhPP = upd o}
 
 -- | PP using InhPP
 ppRRef :: InhPP -> RRef -> PP_Doc
-ppRRef inhpp r = ppMbPost ppCurly (r2nInhPP inhpp r) r
+ppRRef inhpp r = ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) r
 %%]
 
 %%[(8 corerun) hs
@@ -140,8 +140,8 @@ instance PP Alt where
 %%[(8 corerun) hs
 instance PP RRef where
   pp (RRef_Glb m e) = ppDots [pp "g", pp m, pp e]
-  pp (RRef_Imp m e) = ppDots [pp "m", pp m, pp e]
-  pp (RRef_Mod e  ) = ppDots [pp "g", pp e]
+  pp (RRef_Imp m e) = ppDots [pp "i", pp m, pp e]
+  pp (RRef_Mod e  ) = ppDots [pp "m", pp e]
   pp (RRef_Loc l e) = ppDots [pp "l", pp l, pp e]
   pp (RRef_LDf l e) = ppDots [pp "d", pp l, pp e]
   pp (RRef_Tag r  ) = ppDots [pp r, pp "tag"]

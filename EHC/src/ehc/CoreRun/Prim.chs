@@ -57,6 +57,19 @@ data RunPrim
   | RP_primGeInt
   | RP_primGtInt
   
+  | RP_primAndInt
+  | RP_primOrInt
+  | RP_primXorInt
+  | RP_primComplementInt
+  | RP_primShiftLeftInt
+  | RP_primShiftRightInt
+  | RP_primRotateLeftInt
+  | RP_primRotateRightInt
+  | RP_primBitSize
+  | RP_primBitSizeMaybe
+  | RP_primPopCount
+  | RP_primBit
+
   | RP_primIntToInteger
   | RP_primIntegerToInt
 
@@ -127,7 +140,7 @@ data RunPrim
 
     --- ** Special cases
 
-    --- | These functions are also exported by the "Prelude".
+    -- | These functions are also exported by the "Prelude".
 
   --- | RP_readFile                  -- :: FilePath -> IO String
   --- | RP_writeFile                 -- :: FilePath -> String -> IO ()

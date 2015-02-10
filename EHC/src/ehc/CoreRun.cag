@@ -19,7 +19,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%[(8 corerun) hs import ({%{EH}Base.Common}, {%{EH}Base.Target})
 %%]
 
-%%[(8 corerun) hs import(UHC.Util.Utils)
+%%[(8 corerun) hs import(UHC.Util.Utils, qualified UHC.Util.RelMap as Rel)
 %%]
 
 %%[(8 corerun) hs import({%{EH}Ty})
@@ -213,36 +213,52 @@ rrefToDif _      r                         = r
 %%% Name mapping: to & from RRef
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 corerun) hs
+-- | RRef to HsName mapping for use during running when a more informative name is required.
+-- The representation is lazily via function
+type Nm2RefRel = Rel.Rel HsName RRef -- RRef -> Maybe HsName
+%%]
+
 %%[(8 corerun) hs export(Ref2Nm)
 -- | RRef to HsName mapping for use during running when a more informative name is required.
 -- The representation is lazily via function
-type Ref2Nm = RRef -> Maybe HsName
+type Ref2Nm = Nm2RefRel -- RRef -> Maybe HsName
 %%]
 
-%%[(8 corerun) hs export(Nm2RefMp, emptyNm2RefMp, nm2refUnion, nm2RefMpInverse, ref2nmEmpty, ref2nmUnion)
+%%[(8 corerun) hs export(Nm2RefMp, emptyNm2RefMp, nm2refUnion, nm2RefMpInverse, nm2refLookup)
 -- | HsName to RRef mapping for resolving references during translation to CoreRun
-type Nm2RefMp = Map.Map HsName RRef
+type Nm2RefMp = Nm2RefRel -- Map.Map HsName RRef
 
 emptyNm2RefMp :: Nm2RefMp
-emptyNm2RefMp = Map.empty
+emptyNm2RefMp = Rel.empty -- Map.empty
 
 nm2refUnion :: Nm2RefMp -> Nm2RefMp -> Nm2RefMp
-nm2refUnion = Map.union
+nm2refUnion = Rel.union -- Map.union
+
+nm2refLookup :: HsName -> Nm2RefMp -> Maybe RRef
+nm2refLookup = Rel.lookup
 
 -- | Inverse of a `Nm2RefMp`
 nm2RefMpInverse :: Nm2RefMp -> Ref2Nm
-nm2RefMpInverse m
+nm2RefMpInverse m = m
+{-
   | Map.null m = const Nothing
   | otherwise  = flip Map.lookup inv
   where inv = Map.fromList [ (r,n) | (n,r) <- Map.toList m ]
+-}
+%%]
 
+%%[(8 corerun) hs export(ref2nmEmpty, ref2nmUnion, ref2nmLookup)
 -- | Empty Ref2Nm
 ref2nmEmpty :: Ref2Nm
-ref2nmEmpty = const Nothing
+ref2nmEmpty = Rel.empty -- const Nothing
+
+ref2nmLookup :: RRef -> Ref2Nm -> Maybe HsName
+ref2nmLookup = Rel.lookupInverse
 
 -- | Union, left-biased
 ref2nmUnion :: Ref2Nm -> Ref2Nm -> Ref2Nm
-ref2nmUnion m1 m2 = \r -> m1 r <|> m2 r
+ref2nmUnion = Rel.union -- m1 m2 = \r -> m1 r <|> m2 r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -251,8 +267,8 @@ ref2nmUnion m1 m2 = \r -> m1 r <|> m2 r
 
 %%[(50 corerun) hs
 instance Binary Mod where
-  put (Mod_Mod _ a b c d e f g) = put a >> put b >> put c >> put d >> put e >> put f >> put g
-  get = liftM8 Mod_Mod (return ref2nmEmpty) get get get get get get get
+  put (Mod_Mod a b c d e f g h) = put a >> put b >> put c >> put d >> put e >> put f >> put g >> put h
+  get = liftM8 Mod_Mod get get get get get get get get
 
 instance Serialize Mod where
   sput = sputPlain
@@ -279,9 +295,9 @@ instance Binary DataCon where
 instance Binary Exp where
   put (Exp_SExp 	a  			) = putWord8 0 >> put a
   put (Exp_Tup 		a b			) = putWord8 1 >> put a >> put b
-  put (Exp_Let 		a _ c d		) = putWord8 2 >> put a >> put c >> put d
+  put (Exp_Let 		a b c d		) = putWord8 2 >> put a >> put b >> put c >> put d
   put (Exp_App 		a b			) = putWord8 3 >> put a >> put b
-  put (Exp_Lam 		a b c _	e	) = putWord8 4 >> put a >> put b >> put c >> put e
+  put (Exp_Lam 		a b c d	e	) = putWord8 4 >> put a >> put b >> put c >> put d >> put e
   put (Exp_Force 	a  			) = putWord8 5 >> put a
   put (Exp_Tail 	a  			) = putWord8 6 >> put a
   put (Exp_Case		a b			) = putWord8 7 >> put a >> put b
@@ -290,9 +306,9 @@ instance Binary Exp where
            case t of
              0 -> liftM  Exp_SExp 		get
              1 -> liftM2 Exp_Tup 		get get
-             2 -> liftM4 Exp_Let 		get (return ref2nmEmpty) get get
+             2 -> liftM4 Exp_Let 		get get get get
              3 -> liftM2 Exp_App 		get get
-             4 -> liftM5 Exp_Lam 		get get get (return ref2nmEmpty) get
+             4 -> liftM5 Exp_Lam 		get get get get get
              5 -> liftM  Exp_Force 		get
              6 -> liftM  Exp_Tail 		get
              7 -> liftM2 Exp_Case 		get get
@@ -319,10 +335,10 @@ instance Binary SExp where
              5 -> liftM  SExp_Dbg 		get
 
 instance Binary Alt where
-  put (Alt_Alt _ b) = putWord8 0 >> put b
+  put (Alt_Alt a b) = putWord8 0 >> put a >> put b
   get = do t <- getWord8
            case t of
-             0 -> liftM2 Alt_Alt (return ref2nmEmpty) get
+             0 -> liftM2 Alt_Alt get get
 
 instance Binary Pat where
   put (Pat_Con 			a  			) = putWord8 0 >> put a
@@ -363,7 +379,7 @@ instance Binary a => Binary (CRArray a) where
 %%% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(mkLocLevRef, mkLocDifRef, mkGlobRef)
+%%[(8 corerun) hs export(mkLocLevRef, mkLocDifRef, mkGlobRef, mkImpRef, mkModRef)
 -- **************************************
 -- Construction: references
 -- **************************************
@@ -376,10 +392,29 @@ mkLocLevRef = RRef_Loc
 mkLocDifRef :: Int -> Int -> RRef
 mkLocDifRef = RRef_LDf
 
--- | 'RRef' to global from module, using module nr and offset
+-- | 'RRef' to global from module, using module nr and offset (will become obsolete, replaced by either Imp or Mod Ref
 mkGlobRef :: Int -> Int -> RRef
 mkGlobRef = RRef_Glb
+
+-- | 'RRef' to global from module, using module nr and offset
+mkImpRef :: Int -> Int -> RRef
+mkImpRef = RRef_Imp
+
+-- | 'RRef' to global from current module, using offset
+mkModRef :: Int -> RRef
+mkModRef = RRef_Mod
 %%]
+
+  -- | entry of current module reference
+  | RRef_Mod
+      { rrefEntry       :: !Int     -- ^ entry inside module, in its frame
+      }
+  -- | imported entry of module reference
+  | RRef_Imp
+      { rrefMod         :: !Int     -- ^ module (sequence) nr as it appears in the imported module list
+      , rrefEntry       :: !Int     -- ^ entry inside module, in its frame
+      }
+
 
 %%[(8 corerun) hs export(mkExp, mkVar, mkVar', mkInt, mkInt', mkChar, mkChar', mkString, mkString')
 -- **************************************

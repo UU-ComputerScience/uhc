@@ -345,6 +345,9 @@ doCompilePrepare fnL@(fn:_) opts
 %%[[(8 codegen)
                                                        (initialCore2GrSem opts3)
 %%]]
+%%[[(8 corerun)
+                                                       initialCore2CoreRunSem
+%%]]
 %%[[50
                                                        Nothing
                                                        -- (initialHISem opts3)

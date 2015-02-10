@@ -1,6 +1,7 @@
 %%[0 hs
 -- {-# LANGUAGE MagicHash #-}
 -- {-# OPTIONS_GHC -O2 #-}
+-- {-# OPTIONS_GHC -O3 #-}
 %%]
 
 %%[0 lhs2tex
@@ -64,13 +65,18 @@ renvFrStkEaPopMV ea@(ExplArgs {eaVec=v}) = (liftIO $ mvecAlloc eaLen) >>= \vs ->
 
 %%[(8 corerun) hs
 -- | Allocate a new frame
-explStkAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> ExplArgs -> RValT m HpPtr
-explStkAllocFrameM r2n sl {- lev -} sz as@(ExplArgs {eaVec=vsArgs, eaStk=nrArgs}) = do
+explStkAllocFrameM
+  :: (RunSem RValCxt RValEnv RVal m x)
+  => Ref2Nm					-- ^ ref <-> name mapping
+  -> RCxt					-- ^ context
+  -> Int					-- ^ size
+  -> ExplArgs				-- ^ arguments
+  -> RValT m HpPtr
+explStkAllocFrameM r2n cx sz as@(ExplArgs {eaVec=vsArgs, eaStk=nrArgs}) = do
   a <- liftIO $ mvecAllocInit sz -- (sz+3)		-- TBD: stack overflow somewhere...
   let vsLen = V.length vsArgs
   when (vsLen  > 0) $ liftIO $ mvecFillFromV 0 a vsArgs
   when (nrArgs > 0) $ renvFrStkReversePopInMV vsLen nrArgs a
-  cx <- liftIO $ mkRCxtSl sl
   spref <- liftIO $ newIORef (eaNrArgs as)
   p <- heapAllocM $ RVal_Frame r2n cx a spref
   return p
@@ -86,17 +92,29 @@ explStkPushFrameM frptr = do
 {-# INLINE explStkPushFrameM #-}
 
 -- | Allocate and push a new stack frame
-explStkPushAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> ExplArgs -> RValT m HpPtr
-explStkPushAllocFrameM r2n sl {- lev -} sz as = do
-  p <- explStkAllocFrameM r2n sl {- lev -} sz as
+explStkPushAllocFrameM
+  :: (RunSem RValCxt RValEnv RVal m x)
+  => Ref2Nm					-- ^ ref <-> name mapping
+  -> RCxt					-- ^ context
+  -> Int					-- ^ size
+  -> ExplArgs				-- ^ arguments
+  -> RValT m HpPtr
+explStkPushAllocFrameM r2n cx sz as = do
+  p <- explStkAllocFrameM r2n cx sz as
   explStkPushFrameM p
   return p
 {-# INLINE explStkPushAllocFrameM #-}
 
 -- | Allocate and replace top stack frame
-explStkReplaceAllocFrameM :: (RunSem RValCxt RValEnv RVal m x) => Ref2Nm -> HpPtr -> {- Int -> -} Int -> ExplArgs -> RValT m ()
-explStkReplaceAllocFrameM r2n sl {- lev -} sz as = do
-  p <- explStkAllocFrameM r2n sl {- lev -} sz as
+explStkReplaceAllocFrameM
+  :: (RunSem RValCxt RValEnv RVal m x)
+  => Ref2Nm					-- ^ ref <-> name mapping
+  -> RCxt					-- ^ context
+  -> Int					-- ^ size
+  -> ExplArgs				-- ^ arguments
+  -> RValT m ()
+explStkReplaceAllocFrameM r2n cx sz as = do
+  p <- explStkAllocFrameM r2n cx sz as
   (RValEnv {renvTopFrame=tf}) <- get
   liftIO $ writeIORef tf p
 {-# INLINE explStkReplaceAllocFrameM #-}
@@ -141,8 +159,8 @@ cmodRun opts _ = return ()
 
 %%[(8 corerun) hs
 -- | Apply Lam in context of static link with exact right amount of params, otherwise the continuation is used
-rvalExplStkAppLam :: RunSem RValCxt RValEnv RVal m () => HpPtr -> Exp -> ExplArgs -> (Int -> RValT m ()) -> RValT m ()
-rvalExplStkAppLam sl f as failcont = do
+rvalExplStkAppLam :: RunSem RValCxt RValEnv RVal m () => RCxt -> Exp -> ExplArgs -> (Int -> RValT m ()) -> RValT m ()
+rvalExplStkAppLam cx f as failcont = do
   let nrActualArgs = eaNrArgs as
   case f of
     Exp_Lam {{- lev_Exp_Lam=l, -} mbNm_Exp_Lam=mn, nrArgs_Exp_Lam=nrRequiredArgs, stkDepth_Exp_Lam=sz, ref2nm_Exp_Lam=r2n, body_Exp_Lam=b}
@@ -152,13 +170,13 @@ rvalExplStkAppLam sl f as failcont = do
            rvalTrEnterLam mn $ 
              if needRet
                then do
-                 explStkPushAllocFrameM r2n sl {- l -} sz as
+                 explStkPushAllocFrameM r2n cx sz as
                  rsemExp b
                  v <- renvFrStkPop1
                  explStkPopFrameM
                  renvFrStkPush1 v
                else do
-                 explStkReplaceAllocFrameM r2n sl {- l -} sz as
+                 explStkReplaceAllocFrameM r2n cx sz as
                  mustReturn $ rsemExp b
            -- rsemTr $ "<V (" ++ show mn ++ ")"
       | otherwise -> failcont nrRequiredArgs
@@ -175,8 +193,8 @@ rvalExplStkApp f as = do
   let nrActualArgs = eaNrArgs as
   case f of
     RVal_Lam {rvalCx=rcx, rvalBody=b} -> do
-      sl <- liftIO $ readIORef (rcxtSlRef rcx)
-      rvalExplStkAppLam sl b as $ \narg -> do
+      -- sl <- liftIO $ readIORef (rcxtSlRef rcx)
+      rvalExplStkAppLam rcx b as $ \narg -> do
         if nrActualArgs < narg 
           then do
             renvFrStkEaPopMV as >>= \as -> heapAllocAsPtrM (RVal_App f as) >>= renvFrStkPush1
@@ -270,6 +288,38 @@ rvalExplStkExp e = do
 %%]
 
 %%[(8 corerun) hs
+-- | Add module
+rvalExplAddModule :: RunSem RValCxt RValEnv RVal m () => Mod -> RValT m HpPtr
+rvalExplAddModule mod@(Mod_Mod {moduleNm_Mod_Mod=nm, ref2nm_Mod_Mod=r2n, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz, imports_Mod_Mod=imports}) = do
+    -- add new entry
+    env@(RValEnv {renvModulesMV=mods}) <- get
+    mods' <- liftIO $ MV.grow mods 1
+    put $ env {renvModulesMV = mods'}
+    --
+    env@(RValEnv {renvModulesMV=mods, renvGlobalsMV=globs}) <- get
+    let nr = MV.length mods - 1
+    -- get import indirection table
+    imptbl <- renvResolveModNames [ nm | Import_Import {nm_Import_Import=nm} <- imports ]
+    -- construct context (module is patched in later)
+    cx <- liftIO $ mkRCxt nullPtr nullPtr 
+    -- construct frame
+    f <- explStkPushAllocFrameM r2n cx sz emptyExplArgs
+    -- construct module, set the module entry
+    fr <- liftIO $ newIORef f
+    m <- heapAllocM $ RVal_Module nm (crarrayFromList imptbl) fr
+    liftIO $ do
+      -- fill global module entry
+      MV.write mods nr m
+      -- patch module ref in context
+      writeIORef (rcxtMdRef cx) m
+    -- compute module bindings into current frame
+    V.forM_ bs rsemExp
+    -- remove the frame
+    explStkPopFrameM
+  where
+%%]
+
+%%[(8 corerun) hs
 instance
     ( Monad m, MonadIO m, Functor m
     ) => RunSem RValCxt RValEnv RVal m ()
@@ -286,8 +336,10 @@ instance
         ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
         modify $ \env -> env {renvGlobalsMV = ms}
         forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz}) -> do
+          -- context (ignoring module stuff, TBD)
+          cx <- liftIO $ mkRCxtSl nullPtr
           -- construct frame for each module
-          p <- explStkPushAllocFrameM r2n nullPtr sz emptyExplArgs
+          p <- explStkPushAllocFrameM r2n cx sz emptyExplArgs
           -- and store the frame into the array holding module frames
           (liftIO $ MV.write ms nr p >> newIORef p) >>= \r -> rsemGcPushRoot (RVal_Ptr r)
           -- holding all local defs
@@ -333,9 +385,9 @@ instance
           case v of
             RVal_Thunk {rvalMbNm=mn, rvalCx=rcx, rvalBody=e} -> do
               -- rsemGcPushRoot v
-              sl <- liftIO $ readIORef (rcxtSlRef rcx)
+              -- sl <- liftIO $ readIORef (rcxtSlRef rcx)
               heapSetM' hp p RVal_BlackHole
-              v' <- rvalExplStkAppLam sl e (emptyExplArgs {eaStk=0}) $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
+              v' <- rvalExplStkAppLam rcx e (emptyExplArgs {eaStk=0}) $ \_ -> err $ "CoreRun.Run.Val.rsemEvl.RVal_Thunk:" >#< e
               hp <- gets renvHeap
               p <- liftIO (readIORef pref)
               v'' <- rsemPop v'

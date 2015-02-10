@@ -104,6 +104,9 @@ data GetMeta
   = GetMeta_Src
   | GetMeta_HI
   | GetMeta_Core
+%%[[(50 corerun)
+  | GetMeta_CoreRun
+%%]]
 %%[[(50 grin)
   | GetMeta_Grin
 %%]]
@@ -111,7 +114,12 @@ data GetMeta
   deriving (Eq,Ord)
 
 allGetMeta
-  = [ GetMeta_Src, GetMeta_HI, GetMeta_Core
+  = [ GetMeta_Src
+    , GetMeta_HI
+    , GetMeta_Core
+%%[[(50 corerun)
+    , GetMeta_CoreRun
+%%]]
 %%[[(50 grin)
     , GetMeta_Grin
 %%]]
@@ -220,6 +228,10 @@ cpGetMetaInfo gm modNm
 %%[[(50 codegen)
          ;  when (GetMeta_Core `elem` gm)
                  (tm opts ecu ecuStoreCoreTime      (fpathSetSuff Cfg.suffixDotlessBinaryCore fp))
+%%]]
+%%[[(50 corerun)
+         ;  when (GetMeta_CoreRun `elem` gm)
+                 (tm opts ecu ecuStoreCoreRunTime   (fpathSetSuff Cfg.suffixDotlessBinaryCoreRun fp))
 %%]]
 %%[[50
          ;  when (GetMeta_Dir `elem` gm)

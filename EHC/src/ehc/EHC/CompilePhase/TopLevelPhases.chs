@@ -757,6 +757,9 @@ cpEhcHaskellModulePrepareHS2 modNm
 %%[[(50 grin)
               , GetMeta_Grin
 %%]]
+%%[[(50 corerun)
+              , GetMeta_CoreRun
+%%]]
               , GetMeta_Dir
               ] modNm
           , cpGetPrevHI modNm
@@ -770,6 +773,9 @@ cpEhcHaskellModulePrepareHI modNm
               [ GetMeta_HI, GetMeta_Core
 %%[[(50 grin)
               , GetMeta_Grin
+%%]]
+%%[[(50 corerun)
+              , GetMeta_CoreRun
 %%]]
               ] modNm
           , cpGetPrevHI modNm
@@ -1239,9 +1245,13 @@ cpProcessCoreBasic modNm
        ; cpSeq [ cpTransformCore OptimizationScope_PerModule modNm
 %%[[50
                , cpFlowHILamMp modNm
-               , void $ cpOutputCore CPOutputCoreHow_Binary [] "" Cfg.suffixDotlessBinaryCore modNm
+               , void $ cpOutputCore    CPOutputCoreHow_Binary    [] "" Cfg.suffixDotlessBinaryCore    modNm
 %%]]
                , cpProcessCoreFold modNm
+%%[[(50 corerun)
+               , when (targetIsCoreVariation (ehcOptTarget opts)) $
+                   void $ cpOutputCoreRun CPOutputCoreRunHow_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
+%%]]
                ]
         }
 %%]
@@ -1251,14 +1261,21 @@ cpProcessCoreBasic modNm
 -- (called on merged core, and on core directly generated from cached grin)
 cpProcessCoreFold :: HsName -> EHCompilePhase ()
 cpProcessCoreFold modNm
-  = cpSeq $
+  = do { cr <- get
+       ; let (_,_,opts,_) = crBaseInfo modNm cr
+       ; cpSeq $ [] ++
 %%[[50
-	  [ cpFlowCoreSemBeforeFold modNm ] ++
+		  [ cpFlowCoreSemBeforeFold modNm ] ++
 %%]]
-      [ cpFoldCore2Grin modNm ]
+		  (if targetIsViaGrin (ehcOptTarget opts) then [ cpFoldCore2Grin modNm ] else []) ++
+%%[[(50 corerun)
+		  (if targetIsCoreVariation (ehcOptTarget opts) then [ cpFoldCore2CoreRun modNm ] else []) ++
+%%]]
 %%[[50
-	  ++ [ cpFlowCoreSemAfterFold modNm ]
+		  [ cpFlowCoreSemAfterFold modNm ] ++
 %%]]
+          []
+       }
 %%]
 
 %%[(50 codegen corein)

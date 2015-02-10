@@ -37,6 +37,8 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 -- Language semantics: Core
 %%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(8 corerun core) import(qualified {%{EH}Core.ToCoreRun} as Core2CoreRunSem)
+%%]
 %%[(8 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]
 -- Language semantics: CoreRun
@@ -158,6 +160,9 @@ data EHCompileUnit
 %%[[(8 codegen core)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
 %%]]
+%%[[(8 codegen corerun)
+      , ecuMbCore2CoreRunSem :: !(Maybe Core2CoreRunSem.Syn_CodeAGItf)
+%%]]
 %%[[(8 codegen corein)
       , ecuMbCoreSemMod      :: !(Maybe Core2ChkSem.Syn_CodeAGItf)
 %%]]
@@ -194,6 +199,9 @@ data EHCompileUnit
       , ecuMbHIInfoTime      :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated hi file
 %%[[(8 codegen)
       , ecuMbCoreTime        :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated core file
+%%]]
+%%[[(8 corerun)
+      , ecuMbCoreRunTime     :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated corerun file
 %%]]
 %%[[(8 codegen grin)
       , ecuMbGrinTime        :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated grin file
@@ -273,6 +281,9 @@ emptyECU
 %%[[(8 codegen core)
       , ecuMbCoreSem         = Nothing
 %%]]
+%%[[(8 codegen corerun)
+      , ecuMbCore2CoreRunSem = Nothing
+%%]]
 %%[[(8 codegen corein)
       , ecuMbCoreSemMod      = Nothing
 %%]]
@@ -309,6 +320,9 @@ emptyECU
       , ecuMbHIInfoTime      = Nothing
 %%[[(50 codegen)
       , ecuMbCoreTime        = Nothing
+%%]]
+%%[[(50 corerun)
+      , ecuMbCoreRunTime	 = Nothing
 %%]]
 %%[[(50 codegen grin)
       , ecuMbGrinTime        = Nothing
@@ -526,6 +540,11 @@ ecuStoreCoreRunSemMod :: EcuUpdater CoreRun2ChkSem.Syn_AGItf
 ecuStoreCoreRunSemMod x ecu = ecu { ecuMbCoreRunSemMod = Just x }
 %%]
 
+%%[(8 codegen corerun) export(ecuStoreCore2CoreRunSem)
+ecuStoreCore2CoreRunSem :: EcuUpdater Core2CoreRunSem.Syn_CodeAGItf
+ecuStoreCore2CoreRunSem x ecu = ecu { ecuMbCore2CoreRunSem = Just x }
+%%]
+
 %%[(8 codegen tycore) export(ecuStoreTyCore)
 ecuStoreTyCore :: EcuUpdater C.Module
 ecuStoreTyCore x ecu = ecu { ecuMbTyCore = Just x }
@@ -638,6 +657,11 @@ ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%[(50 codegen) export(ecuStoreCoreTime)
 ecuStoreCoreTime :: EcuUpdater ClockTime
 ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
+%%]
+
+%%[(50 corerun) export(ecuStoreCoreRunTime)
+ecuStoreCoreRunTime :: EcuUpdater ClockTime
+ecuStoreCoreRunTime x ecu = ecu { ecuMbCoreRunTime = Just x }
 %%]
 
 %%[(50 codegen grin) export(ecuStoreGrinTime)

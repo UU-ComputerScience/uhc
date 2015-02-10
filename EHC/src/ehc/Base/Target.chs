@@ -282,7 +282,7 @@ targetIsViaCmm t
 {-# INLINE targetIsViaCmm #-}
 %%]
 
-%%[(8888 codegen) export(targetIsViaGrin)
+%%[(8 codegen) export(targetIsViaGrin)
 targetIsViaGrin :: Target -> Bool
 targetIsViaGrin t
   = case t of

@@ -88,7 +88,7 @@ cpRunCoreRun2 modNm = do
           return $ flip evalState emptyNm2RefMp $ do
             forM (zip cores [0..]) $ \(cr,modnr) -> do
               prevNm2Ref <- get
-              let (m,nm2ref) = cmod2CoreRun' opts hasMain modnr prevNm2Ref cr
+              let (m,nm2ref,_) = cmod2CoreRun' opts hasMain modnr prevNm2Ref cr
               put $ nm2refUnion nm2ref prevNm2Ref
               return m
 %%]]

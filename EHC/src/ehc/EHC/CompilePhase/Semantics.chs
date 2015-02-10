@@ -33,6 +33,8 @@ Folding over AST to compute semantics
 -- Core syntax and semantics
 %%[(8 core) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(8 core corerun) import(qualified {%{EH}Core.ToCoreRun} as Core2CoreRunSem)
+%%]
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
 %%]
 -- CoreRun syntax and semantics
@@ -83,6 +85,31 @@ cpFoldCore2Grin modNm
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem
                                 ))
+         }
+%%]
+
+%%[(8 core corerun) export(cpFoldCore2CoreRun)
+cpFoldCore2CoreRun :: HsName -> EHCompilePhase ()
+cpFoldCore2CoreRun modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,_) 		= crBaseInfo modNm cr
+                 mbCore   				= ecuMbCore ecu
+%%[[8
+                 hasMain  				= True
+%%][50
+                 hasMain  				= ecuHasMain ecu
+%%]]
+                 core     				= panicJust "cpFoldCore2CoreRun" mbCore
+                 core2RunInh			= crsiCore2RunInh crsi
+                 (corerun,nm2ref,sem)	= Core2CoreRunSem.cmod2CoreRun' opts hasMain 0 core2RunInh core
+                 core2RunInh'			= nm2ref `CoreRun.nm2refUnion` core2RunInh
+         ;  when (isJust mbCore) $ do
+                 -- between module flow part
+                 cpUpdSI (\crsi -> crsi {crsiCore2RunInh = core2RunInh'})
+                 -- per module part
+                 cpUpdCU modNm ( ecuStoreCoreRun corerun
+                               . ecuStoreCore2CoreRunSem sem
+                               )
          }
 %%]
 

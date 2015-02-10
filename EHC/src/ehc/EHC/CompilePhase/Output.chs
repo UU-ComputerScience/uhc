@@ -211,12 +211,12 @@ data CPOutputCoreRunHow
 %%]]
 
 cpOutputCoreRunModules
-  :: CPOutputCoreRunHow -> [CoreOpt]
+  :: CPOutputCoreRunHow
      -> (Int -> String -> String)
      -> String -> HsName
      -> [(String,CoreRun.Mod)]
      -> EHCompilePhase [FPath]
-cpOutputCoreRunModules how coreOpts mknmsuff suff modNm crMods
+cpOutputCoreRunModules how mknmsuff suff modNm crMods
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
        ; cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm crMods
@@ -232,14 +232,27 @@ cpOutputCoreRunModules how coreOpts mknmsuff suff modNm crMods
 %%]
 
 %%[(8 corerun) export(cpOutputCoreRun)
-cpOutputCoreRun :: CPOutputCoreRunHow -> [CoreOpt] -> String -> String -> HsName -> EHCompilePhase FPath
-cpOutputCoreRun how coreOpts nmsuff suff modNm
+cpOutputCoreRun :: CPOutputCoreRunHow -> String -> String -> HsName -> EHCompilePhase FPath
+cpOutputCoreRun how nmsuff suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
                  mbCoreRun = ecuMbCoreRun ecu
                  cMod   = panicJust "cpOutputCoreRun" mbCoreRun
          ;  cpMsg modNm VerboseALot "Emit CoreRun"
-         ;  fmap head $ cpOutputCoreRunModules how coreOpts (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
+         ;  fmap head $ cpOutputCoreRunModules how (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
+         }
+%%]
+
+%%[(8888 codegen) export(cpOutputCoreAndCoreRun)
+cpOutputCoreAndCoreRun :: (CPOutputCoreHow, CPOutputCoreRunHow) -> [CoreOpt] -> String -> (String,String) -> HsName -> EHCompilePhase FPath
+cpOutputCoreAndCoreRun (howc,howcr) coreOpts nmsuff (suffc,suffcr) modNm
+  =  do  {  cr <- get
+         ;  let  (_,_,opts,_) = crBaseInfo modNm cr
+         ;  cpOutputCore howc coreOpts nmsuff suffc modNm
+%%[[(8 corerun)
+         ;  when (targetIsCoreVariation opts) $
+              cpOutputCoreRun howcr nmsuff suffcr modNm
+%%]]
          }
 %%]
 

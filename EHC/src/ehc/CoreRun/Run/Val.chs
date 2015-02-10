@@ -72,8 +72,8 @@
 %%[(8 corerun) hs export(RCxt(..))
 -- | Runtime context: module + enclosing lambda. Note/TBD: reduces performance quite a bit...
 data RCxt
-  = RCtxt
-      { rcxtMdRef			::                 (IORef HpPtr)		-- ^ the module we're in
+  = RCxt
+      { rcxtMdRef			:: {-# UNPACK #-} !(IORef HpPtr)		-- ^ the module we're in
       , rcxtSlRef			:: {-# UNPACK #-} !(IORef HpPtr)		-- ^ the enclosing lambda we're in
       }
 
@@ -81,18 +81,15 @@ instance Show RCxt where
   show _ = "RCxt"
 %%]
 
-%%[(8 corerun) hs export(mkRCxtSl, rcxtCloneWithNewFrame)
+%%[(8 corerun) hs export(mkRCxt, mkRCxtSl, rcxtCloneWithNewFrame)
 -- | Make fresh 'RCxt' from module and enclosing frame ptr
 mkRCxt :: HpPtr -> HpPtr -> IO RCxt
-mkRCxt m f = liftM2 RCtxt (newIORef m) (newIORef f)
+mkRCxt m f = liftM2 RCxt (newIORef m) (newIORef f)
 {-# INLINE mkRCxt #-}
 
 -- | Make fresh 'RCxt' enclosing frame ptr only (temporary hack)
 mkRCxtSl :: HpPtr -> IO RCxt
--- mkRCxtSl = mkRCxt 0
-mkRCxtSl f = do
-  fref <- newIORef f
-  return $ RCtxt undefined fref
+mkRCxtSl = mkRCxt 0
 {-# INLINE mkRCxtSl #-}
 
 -- | Copy/share module ref, fresh frame ref
@@ -117,23 +114,19 @@ data RVal
       }
   | RVal_Char  			   {-# UNPACK #-} !Char   
   | RVal_Int   			   {-# UNPACK #-} !Int   
-{--
   | RVal_Int8  			   {-# UNPACK #-} !Int8  
   | RVal_Int16 			   {-# UNPACK #-} !Int16
--}
   | RVal_Int32 			   {-# UNPACK #-} !Int32 
-{--
   | RVal_Int64 			   {-# UNPACK #-} !Int64 
   | RVal_Word  			   {-# UNPACK #-} !Word  
   | RVal_Word8 			   {-# UNPACK #-} !Word8 
   | RVal_Word16			   {-# UNPACK #-} !Word16
   | RVal_Word32			   {-# UNPACK #-} !Word32
   | RVal_Word64			   {-# UNPACK #-} !Word64
--}
-  | RVal_Integer		   !Integer
+  | RVal_Integer		                  !Integer
   | RVal_Float			   {-# UNPACK #-} !Float
   | RVal_Double			   {-# UNPACK #-} !Double
-  | RVal_PackedString 	   !BSC8.ByteString					-- ^ packed string, equivalent of low level C string (could be replaced by something more efficient)
+  | RVal_PackedString 	   {-# UNPACK #-} !BSC8.ByteString					-- ^ packed string, equivalent of low level C string (could be replaced by something more efficient?)
 
     -- Value representations for running itself: function, application, etc
   | RVal_Lam
@@ -169,7 +162,8 @@ data RVal
       }
   | RVal_Module
       { rvalModNm		:: HsName					-- ^ name of module
-      , rvalModImpsMV	:: !(CRMArray RValModule)	-- ^ imported modules, constructed at link time based on a global set of modules
+      -- , rvalModImpsMV	:: !(CRMArray RValModule)	-- ^ imported modules, constructed at link time based on a global set of modules
+      , rvalModImpsV	:: !(CRArray Int)			-- ^ re-index table (indexing into global module table) of imported modules, constructed at link time based on a global set of modules
       , rvalFrRef		:: !(IORef HpPtr)			-- ^ frame of this module
       }
   | RVal_Ptr
@@ -197,19 +191,15 @@ ppRVal' lkptr rval = case rval of
     RVal_Lit   			e     		-> dfltpp e
     RVal_Char   		v     		-> dfltpp $ show v
     RVal_Int   			v     		-> dfltpp v
-{--
     RVal_Int8   		v     		-> dfltpp $ show v
     RVal_Int16   		v     		-> dfltpp $ show v
--}
     RVal_Int32  		v     		-> dfltpp $ show v
-{--
     RVal_Int64 			v     		-> dfltpp $ show v
     RVal_Word   		v     		-> dfltpp $ show v
     RVal_Word8   		v     		-> dfltpp $ show v
     RVal_Word16   		v     		-> dfltpp $ show v
     RVal_Word32  		v     		-> dfltpp $ show v
     RVal_Word64 		v     		-> dfltpp $ show v
--}
     RVal_Integer   		v     		-> dfltpp v
     RVal_Float   		v     		-> dfltpp v
     RVal_Double   		v     		-> dfltpp $ show v
@@ -371,6 +361,7 @@ heapGcM curV = do
     env@(RValEnv {renvHeap=hp@(Heap {hpVals=vsOld, hpSemispaceMultiplier=mlRef, hpFirst=offOld, hpFree=hpFrRef})
                  , renvGcRootStack=rootStkRef, renvTopFrame=topFrRef, renvStack=stkRef
                  , renvGlobalsMV=globals
+                 , renvModulesMV=modules
                  }) <- get
     env' <- liftIO $ do
       ml <- readIORef mlRef
@@ -415,14 +406,20 @@ heapGcM curV = do
             -- putStrLn $ "GC copyv 1 v=" ++ show (pp v)
             case v of
               RVal_Ptr pref                               	-> modifyIORefM pref copyp
+              RVal_Module {rvalFrRef=frref}					-> modifyIORefM frref copyp
               RVal_Frame {rvalCx=rcx, rvalFrVals=vs, rvalFrSP=spref}
-              												-> modifyIORefM (rcxtSlRef rcx) copyp >> readIORef spref >>= \sp -> mvecForM_' 0 sp vs copyv
+              												-> copycx rcx >> readIORef spref >>= \sp -> mvecForM_' 0 sp vs copyv
               RVal_NodeMV {rvalNdMVals=vs} 					-> mvecForM_ vs copyv
               RVal_App {rvalFun=f, rvalArgs=as} 			-> copyv f >> mvecForM_ as copyv
-              RVal_Thunk {rvalCx=rcx}						-> modifyIORefM (rcxtSlRef rcx) copyp
-              RVal_Lam {rvalCx=rcx}							-> modifyIORefM (rcxtSlRef rcx) copyp
+              RVal_Thunk {rvalCx=rcx}						-> copycx rcx
+              RVal_Lam {rvalCx=rcx}							-> copycx rcx
               _  											-> return ()
             -- putStrLn $ "GC copyv 2 v=" ++ show (pp v)
+
+          -- inspect RCxt
+          copycx cx = do
+            case cx of
+              RCxt mref slref                               -> modifyIORefM mref copyp >> modifyIORefM slref copyp
 
           -- inspect, follow, copy content of RVal
           follow pBlk pGry
@@ -437,6 +434,9 @@ heapGcM curV = do
       -- initial copy: stack
       modifyIORefM stkRef $ mapM copyp
         
+      -- initial copy: modules
+      mvecLoop 0 (MV.length modules) (\v i -> MV.read v i >>= copyp >>= MV.write v i) modules
+      
       -- initial copy: globals
       mvecLoop 0 (MV.length globals) (\v i -> MV.read v i >>= copyp >>= MV.write v i) globals
       
@@ -620,6 +620,16 @@ newRValEnv hpSz = do
   return $ RValEnv md gl st tp hp False False rtst
 %%]
 
+%%[(8 corerun) hs export(renvResolveModNames)
+-- | Resolve module names into indirection/re-indexing table
+renvResolveModNames :: (RunSem RValCxt RValEnv RVal m x) => [HsName] -> RValT m [Int]
+renvResolveModNames nms = do
+    env@(RValEnv {renvModulesMV=ms, renvHeap=hp}) <- get
+    let lkup 0 nm = err $ "No module entry for: " ++ show nm
+        lkup n nm = (liftIO $ MV.read ms n >>= heapGetM'' hp) >>= \(RVal_Module {rvalModNm=nm'}) -> if nm == nm' then return n else lkup (n-1) nm
+    forM nms $ lkup (MV.length ms - 1)
+%%]
+
 %%[(8 corerun) hs export(renvTopFramePtrM, renvTopFramePtrAndFrameM, renvTopFrameM)
 -- | Get the top most frame ptr from the stack, 'nullPtr' if absent
 renvTopFramePtrM :: (RunSem RValCxt RValEnv RVal m x) => RValT m HpPtr
@@ -743,18 +753,77 @@ instance HSMarshall Int where
   hsUnmarshall v = rsemPush $ RVal_Int v
   {-# INLINE hsUnmarshall #-}
 
+instance HSMarshall Int8 where
+  hsMarshall _ (RVal_Int8 v) = return v
+  hsMarshall _ v             = err $ "CoreRun.Run.Val.HSMarshall Int8:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Int8 v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Int16 where
+  hsMarshall _ (RVal_Int16 v) = return v
+  hsMarshall _ v              = err $ "CoreRun.Run.Val.HSMarshall Int16:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Int16 v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Int32 where
+  hsMarshall _ (RVal_Int32 v) = return v
+  hsMarshall _ v              = err $ "CoreRun.Run.Val.HSMarshall Int32:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Int32 v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Int64 where
+  hsMarshall _ (RVal_Int64 v) = return v
+  hsMarshall _ v              = err $ "CoreRun.Run.Val.HSMarshall Int64:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Int64 v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Word where
+  hsMarshall _ (RVal_Word v) = return v
+  hsMarshall _ v             = err $ "CoreRun.Run.Val.HSMarshall Word:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Word v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Word8 where
+  hsMarshall _ (RVal_Word8 v) = return v
+  hsMarshall _ v             = err $ "CoreRun.Run.Val.HSMarshall Word8:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Word8 v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Word16 where
+  hsMarshall _ (RVal_Word16 v) = return v
+  hsMarshall _ v              = err $ "CoreRun.Run.Val.HSMarshall Word16:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Word16 v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Word32 where
+  hsMarshall _ (RVal_Word32 v) = return v
+  hsMarshall _ v              = err $ "CoreRun.Run.Val.HSMarshall Word32:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Word32 v
+  {-# INLINE hsUnmarshall #-}
+
+instance HSMarshall Word64 where
+  hsMarshall _ (RVal_Word64 v) = return v
+  hsMarshall _ v              = err $ "CoreRun.Run.Val.HSMarshall Word64:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Word64 v
+  {-# INLINE hsUnmarshall #-}
+
 instance HSMarshall Integer where
   hsMarshall _ (RVal_Integer v) = return v
   hsMarshall _ v                = err $ "CoreRun.Run.Val.HSMarshall Integer:" >#< v
   hsUnmarshall v = rsemPush $ RVal_Integer v
   {-# INLINE hsUnmarshall #-}
 
-instance HSMarshall Bool {- where
-  hsMarshall _ (RVal_NodeMV t _) = return $ t == tagBoolTrue
-  hsMarshall _ v                 = err $ "CoreRun.Run.Val.HSMarshall Bool:" >#< v
-  hsUnmarshall b = liftIO (mvecAllocFillFromV emptyCRArray) >>= rsemNode (if b then tagBoolTrue else tagBoolFalse) >>= rsemPush
+instance HSMarshall Float where
+  hsMarshall _ (RVal_Float v) = return v
+  hsMarshall _ v              = err $ "CoreRun.Run.Val.HSMarshall Float:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Float v
   {-# INLINE hsUnmarshall #-}
-  -}
+
+instance HSMarshall Double where
+  hsMarshall _ (RVal_Double v) = return v
+  hsMarshall _ v               = err $ "CoreRun.Run.Val.HSMarshall Double:" >#< v
+  hsUnmarshall v = rsemPush $ RVal_Double v
+  {-# INLINE hsUnmarshall #-}
 
 instance HSMarshall Char where
   hsMarshall _ (RVal_Char v) = return v
@@ -773,24 +842,10 @@ instance HSMarshall Handle where
   hsMarshall _ v               = err $ "CoreRun.Run.Val.HSMarshall Handle:" >#< v
   hsUnmarshall v = rsemPush $ RHsV_Handle v
   {-# INLINE hsUnmarshall #-}
+%%]
 
-{-
-instance HSMarshall [RVal] where
-  hsMarshall evl (RVal_NodeMV t as)
-    | t == tagListCons = liftIO (MV.read as 1) >>= evl >>= rsemPop >>= hsMarshall evl >>= \tl -> liftIO (MV.read as 0) >>= \hd -> return (hd : tl)
-    | otherwise        = return []
-  hsMarshall _   v     = err $ "CoreRun.Run.Val.HSMarshall [RVal]:" >#< v
-
-  hsUnmarshall []      = liftIO (mvecAllocFillFromV emptyCRArray) >>= rsemNode tagListNil >>= rsemPush
-  hsUnmarshall (h:t)   = hsUnmarshall t >>= rsemPop >>= \t' -> (liftIO $ mvecAllocFillFromV $ crarrayFromList [h, t']) >>= rsemNode tagListCons >>= rsemPush
-
-instance HSMarshall x => HSMarshall [x] where
-  hsMarshall evl x = hsMarshall evl x >>= mapM (\v -> evl v >>= rsemPop >>= hsMarshall evl)
-  {-# INLINE hsMarshall #-}
-
-  hsUnmarshall v       = forM v (\e -> hsUnmarshall e >>= rsemPop) >>= hsUnmarshall
-  {-# INLINE hsUnmarshall #-}
--}
+%%[(8 corerun) hs
+instance HSMarshall Bool
 
 instance HSMarshall x => HSMarshall [x]
 %%]
@@ -1143,11 +1198,23 @@ ptr2valM v = case v of
 ref2valM :: (RunSem RValCxt RValEnv RVal m x) => RRef -> RValT m RVal
 ref2valM r = do
   -- rsemTr $ "R: " ++ show (pp r)
-  env <- get
+  env@(RValEnv {renvHeap=hp, renvModulesMV=mods}) <- get
   case r of
     RRef_Glb m e -> do
-        modFrame <- heapGetM =<< liftIO (MV.read (renvGlobalsMV env) m)
-        liftIO $ MV.read (rvalFrVals modFrame) e
+        RVal_Frame {rvalFrVals=frvals} <- heapGetM =<< liftIO (MV.read (renvGlobalsMV env) m)
+        liftIO $ MV.read frvals e
+    RRef_Imp m e -> do
+        RVal_Frame {rvalCx=RCxt {rcxtMdRef=mdref}} <- renvTopFrameM
+        liftIO $ do
+          RVal_Module {rvalModImpsV=imps} <- heapGetM'' hp =<< readIORef mdref
+          RVal_Frame {rvalFrVals=frvals} <- heapGetM'' hp =<< MV.read mods (imps V.! m)
+          MV.read frvals e
+    RRef_Mod e -> do
+        RVal_Frame {rvalCx=RCxt {rcxtMdRef=mdref}} <- renvTopFrameM
+        liftIO $ do
+          RVal_Module {rvalFrRef=frref} <- heapGetM'' hp =<< readIORef mdref
+          RVal_Frame {rvalFrVals=frvals} <- heapGetM'' hp =<< readIORef frref
+          MV.read frvals e
 {-
     RRef_Loc l o -> do
         topfrp <- renvTopFramePtrM

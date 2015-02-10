@@ -32,6 +32,8 @@ module %%@{%{EH}%%}CoreRun.API
   , mkLocLevRef
   , mkLocDifRef
   , mkGlobRef
+  , mkImpRef
+  , mkModRef
   
   -- ** Expressions
   , mkExp

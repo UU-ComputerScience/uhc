@@ -18,12 +18,15 @@ Construct a more efficient CoreRun representation assuming a memory model where
 Offsets start at 0.
 %%]
 
-%%[(8 corerun) hs module {%{EH}Core.ToCoreRun} import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
+%%[(8 corerun) hs module {%{EH}Core.ToCoreRun} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
+%%]
+
+%%[(8 corerun) hs import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
 %%]
 
 %%[(8 corerun) hs import(Data.Maybe, qualified Data.Map as Map, Data.Char)
 %%]
-%%[(8 corerun) hs import(UHC.Util.Utils, qualified UHC.Util.FastSeq as Seq)
+%%[(8 corerun) hs import(UHC.Util.Utils, qualified UHC.Util.RelMap as Rel, qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}CodeGen.BuiltinSizeInfo},{%{EH}CodeGen.BuiltinPrims},{%{EH}CodeGen.BasicAnnot})
@@ -60,10 +63,12 @@ cmod2CoreRun'
      -> CModule
      -> ( CR.Mod        -- generated CoreRun
         , CR.Nm2RefMp   -- name to ref mapping of toplevel bindings
+        , Syn_CodeAGItf -- the 2 above, for now duplicate
         )
 cmod2CoreRun' opts hasMain modNr nm2ref cmod
   =  ( crm_Syn_CodeAGItf t
      , nm2refGath_Syn_CodeAGItf t
+     , t
      )
   where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
               (Inh_CodeAGItf
@@ -75,7 +80,7 @@ cmod2CoreRun' opts hasMain modNr nm2ref cmod
 
 cmod2CoreRunWithModNr :: Int -> CModule -> CR.Mod
 cmod2CoreRunWithModNr nr m = m'
-  where (m',_) = cmod2CoreRun' defaultEHCOpts True nr Map.empty m
+  where (m',_,_) = cmod2CoreRun' defaultEHCOpts True nr CR.emptyNm2RefMp m
 
 cmod2CoreRun :: CModule -> CR.Mod
 cmod2CoreRun = cmod2CoreRunWithModNr 0
@@ -306,55 +311,55 @@ SEM CBound
 
 %%[(8 corerun)
 -- Name gathering
-ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`Map.union`} {Map.empty} : {CR.Nm2RefMp} ]
+ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`CR.nm2refUnion`} {CR.emptyNm2RefMp} : {CR.Nm2RefMp} ]
 
 SEM CModule
   | Mod         loc         .   nm2refNew       =   @expr.nm2refGath
 
 SEM CExpr
-  | Lam         loc         .   nm2refNew       =   Map.insert @bind.nm (CR.RRef_Loc @lev @refOffset) @body.nm2refGath
+  | Lam         loc         .   nm2refNew       =   Rel.insert @bind.nm (CR.RRef_Loc @lev @refOffset) @body.nm2refGath
                 lhs         .   nm2refGath      =   if @isTopLam
-                                                    then Map.empty
+                                                    then CR.emptyNm2RefMp
                                                     else @nm2refNew
   | Let         (loc.nm2refNew, lhs.nm2refGath) =   if @isGlobal
-                                                    then (Map.empty, @binds.nm2refGath `Map.union` @body.nm2refGath)        -- TBD: shadowing not dealt with properly for inverse
-                                                    else (@binds.nm2refGath, Map.empty)
+                                                    then (CR.emptyNm2RefMp, @binds.nm2refGath `CR.nm2refUnion` @body.nm2refGath)        -- TBD: shadowing not dealt with properly for inverse
+                                                    else (@binds.nm2refGath, CR.emptyNm2RefMp)
 
 SEM CBind
-  | Bind        loc         .   nm2refGath      =   Map.singleton @nm @ref
+  | Bind        loc         .   nm2refGath      =   Rel.singleton @nm @ref
 
 SEM CBound
-  | Bind Val    loc         .   nm2refNew       =   if @isToBeThunked then @expr.nm2refGath else Map.empty      -- TBD: shadowing not dealt with properly for inverse
+  | Bind Val    loc         .   nm2refNew       =   if @isToBeThunked then @expr.nm2refGath else CR.emptyNm2RefMp      -- TBD: shadowing not dealt with properly for inverse
 
 SEM CAlt
-  | Alt         loc         .   nm2refNew       =   Map.fromList [ (n, CR.RRef_Fld @lhs.scrutRef i) | (n,i) <- zip @pat.fldNmL [0..] ]
+  | Alt         loc         .   nm2refNew       =   Rel.fromList [ (n, CR.RRef_Fld @lhs.scrutRef i) | (n,i) <- zip @pat.fldNmL [0..] ]
 
 -- Name distribution
 ATTR CodeAGItf CModule AllExpr [ nm2ref: {CR.Nm2RefMp} | | ]
 
 SEM CModule
-  | Mod         expr        .   nm2ref          =   @nm2refNew `Map.union` @lhs.nm2ref
+  | Mod         expr        .   nm2ref          =   @nm2refNew `CR.nm2refUnion` @lhs.nm2ref
 
 SEM CExpr
   | Lam         loc         .   nm2ref          =   if @isTopLam
-                                                    then @nm2refNew `Map.union` @lhs.nm2ref
+                                                    then @nm2refNew `CR.nm2refUnion` @lhs.nm2ref
                                                     else @lhs.nm2ref
   | Let         (binds.nm2ref, body.nm2ref)     =   if @isGlobal
                                                     then (@lhs.nm2ref, @lhs.nm2ref)
                                                     else ( case @categ of
-                                                             CBindCateg_Rec -> @binds.nm2refGath `Map.union` @lhs.nm2ref
-                                                             _              -> @lhs.nm2ref `Map.union` @binds.nm2refGath
-                                                         , @binds.nm2refGath `Map.union` @lhs.nm2ref
+                                                             CBindCateg_Rec -> @binds.nm2refGath `CR.nm2refUnion` @lhs.nm2ref
+                                                             _              -> @lhs.nm2ref `CR.nm2refUnion` @binds.nm2refGath
+                                                         , @binds.nm2refGath `CR.nm2refUnion` @lhs.nm2ref
                                                          )
                 
 SEM CAlt
-  | Alt         expr        .   nm2ref          =   @nm2refNew `Map.union` @lhs.nm2ref
+  | Alt         expr        .   nm2ref          =   @nm2refNew `CR.nm2refUnion` @lhs.nm2ref
 
 -- Ref to scrutinee
 ATTR AllAlt [ scrutRef: {CR.RRef} | | ]
 
 SEM CExpr
-  | Case        alts        .   scrutRef        =   maybe CR.noRRef (\n -> maybe (CR.RRef_Dbg n) id $ Map.lookup n @lhs.nm2ref) $ whatExprMbVar @expr.whatBelow
+  | Case        alts        .   scrutRef        =   maybe CR.noRRef (\n -> maybe (CR.RRef_Dbg n) id $ CR.nm2refLookup n @lhs.nm2ref) $ whatExprMbVar @expr.whatBelow
 %%]
 
 %%[(8 corerun)
@@ -422,7 +427,7 @@ ATTR CExpr [ | | vref: {CR.RRef} ]
 
 %%[(8 corerun)
 SEM CExpr
-  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (CR.rrefToDif @lhs.lev) $ Map.lookup @nm @lhs.nm2ref
+  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (CR.rrefToDif @lhs.lev) $ CR.nm2refLookup @nm @lhs.nm2ref
   | * - Var
                 loc         .   vref            =   panic "Core.ToCoreRun.CExpr.ref"
 %%]
@@ -479,7 +484,7 @@ SEM CExpr
                                                     else CR.Exp_Let {- @lhs.lev -} @lhs.refOffset (CR.nm2RefMpInverse @nm2refNew) (CR.crarrayFromList $ map snd @binds.crb) @body.cre
   -- | Case        loc         .   creBase         =   CR.Exp_Case @expr.crse $ CR.crarrayFromList @alts.cra
   | Case        loc         .   creBase         =   CR.Exp_Case (CR.mkVar' $ CR.RRef_Tag @expr.vref) $ CR.crarrayFromList @alts.cra
-  | FFI         loc         .   creEntMb        =   forextractMbEnt @foreignEntInfo -- >>= flip Map.lookup CR.allRunPrimMp
+  | FFI         loc         .   creEntMb        =   forextractMbEnt @foreignEntInfo -- >>= flip CR.nm2refLookup CR.allRunPrimMp
                             .   creMk           =   \as -> maybe (CR.dbg $ "Core.ToCoreRun.CExpr.FFI.cre: " ++ show @foreignEntInfo) (\ent -> CR.mkFFI' ent as) @creEntMb
                             .   creBase         =   @creMk CR.emptyCRArray
   | Ann         loc         .   creBase         =   @expr.cre

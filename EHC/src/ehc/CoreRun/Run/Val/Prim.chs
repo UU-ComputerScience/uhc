@@ -26,6 +26,8 @@
 
 %%[(8 corerun) hs import(qualified Data.ByteString.Char8 as BSC8)
 %%]
+%%[(8 corerun) hs import(Data.Bits, Data.Maybe)
+%%]
 
 %%[(8 corerun) hs import(GHC.Generics)
 %%]
@@ -46,61 +48,74 @@ rvalPrim pr as = do
       (RP_primUnsafeId, [x]) -> rsemPush x
 
       -- Char
-      (RP_primEqChar, [RVal_Char i1, RVal_Char i2]) -> hsUnmarshall $ i1 == i2
-      (RP_primCmpChar, [RVal_Char i1, RVal_Char i2]) -> hsUnmarshall $ i1 `compare` i2
+      (RP_primEqChar		, [RVal_Char i1, RVal_Char i2]	) -> hsUnmarshall $ i1 == i2
+      (RP_primCmpChar		, [RVal_Char i1, RVal_Char i2]	) -> hsUnmarshall $ i1 `compare` i2
   
-      (RP_primCharToInt  , [RVal_Char x]) -> rsemPush $ RVal_Int $ fromEnum x
-      (RP_primIntToChar  , [RVal_Int x]) -> rsemPush $ RVal_Char $ toEnum x
+      (RP_primCharToInt  	, [RVal_Char x]					) -> rsemPush $ RVal_Int $ fromEnum x
+      (RP_primIntToChar  	, [RVal_Int x]					) -> rsemPush $ RVal_Char $ toEnum x
       
       -- Int
-      (RP_primAddInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 + i2
-      (RP_primSubInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 - i2
-      (RP_primMulInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 * i2
-      (RP_primDivInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `div` i2
-      (RP_primQuotInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `quot` i2
-      (RP_primRemInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `rem` i2
-      (RP_primModInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `mod` i2
-      (RP_primNegInt, [RVal_Int i1]) -> rsemPush $ RVal_Int (-i1)
+      (RP_primAddInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 + i2
+      (RP_primSubInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 - i2
+      (RP_primMulInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 * i2
+      (RP_primDivInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `div` i2
+      (RP_primQuotInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `quot` i2
+      (RP_primRemInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `rem` i2
+      (RP_primModInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `mod` i2
+      (RP_primNegInt		, [RVal_Int i1]				) -> rsemPush $ RVal_Int (-i1)
 
-      (RP_primDivModInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 `divMod` i2
-      (RP_primQuotRemInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 `quotRem` i2
+      (RP_primDivModInt		, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 `divMod` i2
+      (RP_primQuotRemInt	, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 `quotRem` i2
       
-      (RP_primMinInt, []) -> rsemPush $ RVal_Int minBound
-      (RP_primMaxInt, []) -> rsemPush $ RVal_Int maxBound
+      (RP_primMinInt		, []						) -> rsemPush $ RVal_Int minBound
+      (RP_primMaxInt		, []						) -> rsemPush $ RVal_Int maxBound
       
-      (RP_primEqInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 == i2
-      (RP_primNeInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 /= i2
+      (RP_primEqInt			, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 == i2
+      (RP_primNeInt			, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 /= i2
       
-      (RP_primCmpInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 `compare` i2
-      (RP_primLeInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 <= i2
-      (RP_primLtInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 <  i2
-      (RP_primGeInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 >= i2
-      (RP_primGtInt, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 >  i2
+      (RP_primCmpInt		, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 `compare` i2
+      (RP_primLeInt			, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 <= i2
+      (RP_primLtInt			, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 <  i2
+      (RP_primGeInt			, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 >= i2
+      (RP_primGtInt			, [RVal_Int i1, RVal_Int i2]) -> hsUnmarshall $ i1 >  i2
       
-      (RP_primIntToInteger  , [RVal_Int x]) -> rsemPush $ RVal_Integer $ fromIntegral x
-      (RP_primIntegerToInt  , [RVal_Integer x]) -> rsemPush $ RVal_Int $ fromIntegral x
+      (RP_primAndInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 .&. i2
+      (RP_primOrInt			, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 .|. i2
+      (RP_primXorInt		, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `xor` i2
+      (RP_primComplementInt	, [RVal_Int i1]				) -> rsemPush $ RVal_Int $ complement i1
+      (RP_primShiftLeftInt	, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `shiftL` i2
+      (RP_primShiftRightInt	, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `shiftR` i2
+      (RP_primRotateLeftInt	, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `rotateL` i2
+      (RP_primRotateRightInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `rotateR` i2
+      (RP_primBitSize		, [RVal_Int i1]				) -> rsemPush $ RVal_Int $ fromJust $ bitSizeMaybe i1
+      (RP_primBitSizeMaybe	, [RVal_Int i1]				) -> hsUnmarshall $ bitSizeMaybe i1
+      (RP_primPopCount		, [RVal_Int i1]				) -> rsemPush $ RVal_Int $ popCount i1
+      (RP_primBit			, [RVal_Int i1]				) -> rsemPush $ RVal_Int $ bit i1
+
+      (RP_primIntToInteger  , [RVal_Int x]				) -> rsemPush $ RVal_Integer $ fromIntegral x
+      (RP_primIntegerToInt  , [RVal_Integer x]			) -> rsemPush $ RVal_Int $ fromIntegral x
 
       -- Integer
-      (RP_primAddInteger, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 + i2
-      (RP_primSubInteger, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 - i2
-      (RP_primMulInteger, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 * i2
-      (RP_primDivInteger, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 `div` i2
-      (RP_primQuotInteger, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 `quot` i2
-      (RP_primRemInteger, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 `rem` i2
-      (RP_primModInteger, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 `mod` i2
-      (RP_primNegInteger, [RVal_Integer i1]) -> rsemPush $ RVal_Integer (-i1)
+      (RP_primAddInteger		, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 + i2
+      (RP_primSubInteger		, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 - i2
+      (RP_primMulInteger		, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 * i2
+      (RP_primDivInteger		, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 `div` i2
+      (RP_primQuotInteger		, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 `quot` i2
+      (RP_primRemInteger		, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 `rem` i2
+      (RP_primModInteger		, [RVal_Integer i1, RVal_Integer i2]) -> rsemPush $ RVal_Integer $ i1 `mod` i2
+      (RP_primNegInteger		, [RVal_Integer i1]					) -> rsemPush $ RVal_Integer (-i1)
 
-      (RP_primDivModInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 `divMod` i2
-      (RP_primQuotRemInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 `quotRem` i2
+      (RP_primDivModInteger		, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 `divMod` i2
+      (RP_primQuotRemInteger	, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 `quotRem` i2
             
-      (RP_primEqInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 == i2
-      (RP_primNeInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 /= i2
+      (RP_primEqInteger			, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 == i2
+      (RP_primNeInteger			, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 /= i2
       
-      (RP_primCmpInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 `compare` i2
-      (RP_primLeInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 <= i2
-      (RP_primLtInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 <  i2
-      (RP_primGeInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 >= i2
-      (RP_primGtInteger, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 >  i2
+      (RP_primCmpInteger		, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 `compare` i2
+      (RP_primLeInteger			, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 <= i2
+      (RP_primLtInteger			, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 <  i2
+      (RP_primGeInteger			, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 >= i2
+      (RP_primGtInteger			, [RVal_Integer i1, RVal_Integer i2]) -> hsUnmarshall $ i1 >  i2
       
       -- Exception handling
       (RP_primCatchException, [x, hdl]) -> rsemEvl x -- err $ "Not impl: RP_primCatchException" -- TBD

@@ -103,10 +103,14 @@ pExp = pE
 pRRef :: CRParser RRef
 pRRef
   = (\b sufs -> foldl (flip ($)) b sufs) <$> pB <*> pList_ng pS
-  where pB = (   mkLocDifRef <$ pKeyTk "d"
-             <|> mkGlobRef   <$ pKeyTk "g"
-             <|> mkLocLevRef <$ pKeyTk "l"
-             ) <* pDOT <*> pInt <* pDOT <*> pInt
+  where pB =   ( (   mkLocDifRef <$ pKeyTk "d"
+                 <|> mkGlobRef   <$ pKeyTk "g"
+                 <|> mkImpRef    <$ pKeyTk "i"
+                 <|> mkLocLevRef <$ pKeyTk "l"
+                 ) <* pDOT <*> pInt <* pDOT <*> pInt
+               )
+           <|> ( mkModRef <$ pKeyTk "m" <* pDOT <*> pInt
+               )
         pS = pDOT
               *> (   RRef_Tag <$ pKeyTk "tag"
                  <|> flip RRef_Fld <$> pInt

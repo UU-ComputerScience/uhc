@@ -23,6 +23,8 @@ Initial values
 -- Core semantics
 %%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(8 core) import(qualified {%{EH}CoreRun} as CoreRun)
+%%]
 -- HI semantics
 %%[5020 import(qualified {%{EH}HI.MainAG} as HISem)
 %%]
@@ -110,6 +112,11 @@ initialCore2GrSem opts
       , Core2GrSem.importUsedModules_Inh_CodeAGItf	= emptyImportUsedModules
 %%]]
       }
+%%]
+
+%%[(8 corerun) export(initialCore2CoreRunSem)
+initialCore2CoreRunSem :: CoreRun.Nm2RefMp
+initialCore2CoreRunSem = CoreRun.emptyNm2RefMp
 %%]
 
 %%[50 export(initialHSSemMod)
