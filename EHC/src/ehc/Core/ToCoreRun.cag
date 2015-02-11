@@ -24,7 +24,7 @@ Offsets start at 0.
 %%[(8 corerun) hs import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Opts},{%{EH}Ty},{%{EH}Core})
 %%]
 
-%%[(8 corerun) hs import(Data.Maybe, qualified Data.Map as Map, Data.Char)
+%%[(8 corerun) hs import(Data.Maybe, qualified Data.Map as Map, Data.Char, Data.List)
 %%]
 %%[(8 corerun) hs import(UHC.Util.Utils, qualified UHC.Util.RelMap as Rel, qualified UHC.Util.FastSeq as Seq)
 %%]
@@ -100,6 +100,14 @@ ATTR CodeAGItf CModule [ hasMain: Bool | | ]
 %%[(8 corerun)
 -- | Module (sequence)nr, offset
 ATTR CodeAGItf AllCodeNT [ modNr: Int | | ]
+%%]
+
+%%[(50 corerun)
+-- | Module name lookup to index
+ATTR AllExpr [ impNmLkup: {HsName -> Maybe Int} | | ]
+
+SEM CModule
+  | Mod			loc			.	impNmLkup		=	\n -> elemIndex n @imports.impNmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,8 +227,8 @@ SEM CBind
   | Bind        loc         .   refOffsetHere   =   @lhs.refOffset + 1
                 lhs         .   refOffset       =   @refOffsetHere
                 loc         .   ref             =   if @lhs.isGlobal
-                                                    then -- CR.RRef_Mod @lhs.refOffset
-                                                         CR.RRef_Glb @lhs.modNr @lhs.refOffset
+                                                    then CR.RRef_Mod @lhs.refOffset
+                                                         -- CR.RRef_Glb @lhs.modNr @lhs.refOffset
                                                     else CR.RRef_Loc @lhs.lev   @lhs.refOffset
 
 SEM CBound
@@ -431,7 +439,11 @@ ATTR CExpr [ | | vref: {CR.RRef} ]
 
 %%[(8 corerun)
 SEM CExpr
-  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (CR.rrefToDif @lhs.lev) $ CR.nm2refLookup @nm @lhs.nm2ref
+%%[[8
+  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (                              CR.rrefToDif @lhs.lev) $ CR.nm2refLookup @nm @lhs.nm2ref
+%%][50
+  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (CR.rrefToImp @lhs.impNmLkup . CR.rrefToDif @lhs.lev) $ CR.nm2refLookup @nm @lhs.nm2ref
+%%]]
   | * - Var
                 loc         .   vref            =   panic "Core.ToCoreRun.CExpr.ref"
 %%]
@@ -555,10 +567,10 @@ SEM CPat
 %%]
 
 %%[(8 corerun)
-ATTR AllImport [ | | crim USE {++} {[]} : {[CR.Import]} ]
+ATTR AllImport [ | | impNmL USE {++} {[]} : {[HsName]} ]
 
 SEM CImport
-  | Import		lhs			.	crim			=	[CR.Import_Import @nm]
+  | Import		lhs			.	impNmL			=	[@nm]
 
 ATTR AllDeclMeta [ | | crmt USE {++} {[]} : {[CR.Meta]} ]
 
@@ -578,7 +590,8 @@ SEM CModule
   | Mod         loc         .   crmBinds        =   CR.crarrayFromList $ map snd @expr.crb
                 lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew)
                                                       @moduleNm @lhs.modNr (@expr.stackDepthMax + 2 {- - CR.craLength @crmBinds -})
-                                                      @imports.crim @declMetas.crmt @crmBinds (if @lhs.hasMain then (Just $ CR.mkEval @creMod) else Nothing)
+                                                      (map CR.Import_Import @imports.impNmL)
+                                                      @declMetas.crmt @crmBinds (if @lhs.hasMain then (Just $ CR.mkEval @creMod) else Nothing)
 %%]
 
 

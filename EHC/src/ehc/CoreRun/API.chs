@@ -104,7 +104,7 @@ runCoreRunIO
 runCoreRunIO opts mod = do
     catch
       (runCoreRun opts [] mod $ cmodRun opts mod)
-      (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "cpRunCoreRun: " ++ show e))
+      (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "runCoreRunIO: " ++ show e))
 
 -- **************************************
 -- Utilities (i.e. other stuff)

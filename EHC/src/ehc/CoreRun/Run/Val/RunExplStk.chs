@@ -28,6 +28,9 @@
 %%[(8 corerun) hs import(qualified Data.Vector as V, qualified Data.Vector.Mutable as MV)
 %%]
 
+%%[(8 corerun) hs import(Data.List)
+%%]
+
 %%[(8 corerun) hs import(qualified Data.ByteString.Char8 as BSC8)
 %%]
 
@@ -330,6 +333,14 @@ instance
       return (emptyRValCxt, s, undefined)
   
     rsemSetup opts modImpL mod@(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) = do
+{-
+-}
+        let modAllL = modImpL ++ [mod]
+        modFrames <- forM modAllL $ \mod -> do
+          rvalExplAddModule mod
+        explStkPushFrameM (last modFrames)
+        rcxtUpdDatatypes modAllL
+{-
         -- rsemSetTrace True
         rsemGcEnterRootLevel
         let modAllL = modImpL ++ [mod]
@@ -351,6 +362,7 @@ instance
         rsemGcLeaveRootLevel
         rsemSetupTracing opts
         rcxtUpdDatatypes modAllL
+-}
 
     rsemSetTrace doTrace doExtensive = modify $ \env ->
       env {renvDoTrace = doTrace, renvDoTraceExt = doExtensive}

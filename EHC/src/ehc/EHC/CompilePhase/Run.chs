@@ -105,4 +105,34 @@ cpRunCoreRun2 modNm = do
            res
 %%]
 
+%%[(8 corerun) export(cpRunCoreRun3)
+-- | Run CoreRun.
+cpRunCoreRun3 :: HsName -> EHCompilePhase ()
+cpRunCoreRun3 modNm = do
+    cr <- get
+    let (ecu,_,opts,_) = crBaseInfo modNm cr
+        mbCore = ecuMbCore ecu
+%%[[8
+    let (impModL, mainMod) = ([], cmod2CoreRun $ fromJust mbCore)
+        hasMain = True
+%%][50
+    let hasMain = ecuHasMain ecu
+    (impModL, mainMod) <- fmap (fromJust . initlast) $
+      case crPartitionMainAndImported cr $ map head $ crCompileOrder cr of
+        (_, impl) -> do
+          forM (impl ++ [modNm]) cpGetPrevCoreRun
+%%]]
+    cpMsg modNm VerboseNormal "Run Core"
+    res <- liftIO $ catch
+      (runCoreRun opts impModL mainMod $ cmodRun opts mainMod)
+      (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "cpRunCoreRun: " ++ show e))
+    either (\e -> cpSetLimitErrsWhen 1 "Run Core(Run) errors" [e])
+%%[[8
+           (liftIO . putStrLn . show . pp)
+%%][100
+           (\_ -> return ())
+%%]]
+           res
+%%]
+
 
