@@ -219,7 +219,8 @@ SEM CBind
   | Bind        loc         .   refOffsetHere   =   @lhs.refOffset + 1
                 lhs         .   refOffset       =   @refOffsetHere
                 loc         .   ref             =   if @lhs.isGlobal
-                                                    then CR.RRef_Glb @lhs.modNr @lhs.refOffset
+                                                    then -- CR.RRef_Mod @lhs.refOffset
+                                                         CR.RRef_Glb @lhs.modNr @lhs.refOffset
                                                     else CR.RRef_Loc @lhs.lev   @lhs.refOffset
 
 SEM CBound
@@ -316,7 +317,7 @@ ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`CR.nm2refUnion`} {CR
 SEM CModule
   | Mod         loc         .   nm2refNew       =   @expr.nm2refGath
 %%[[50
-  				lhs         .   nm2refGath      =   Rel.mapRng (rrefToExp @moduleNm) @expr.nm2refGath
+  				lhs         .   nm2refGath      =   Rel.mapRng (CR.rrefToExp @moduleNm) @expr.nm2refGath
 %%]]
 
 SEM CExpr
