@@ -141,6 +141,7 @@ instance PP Alt where
 instance PP RRef where
   pp (RRef_Glb m e) = ppDots [pp "g", pp m, pp e]
   pp (RRef_Imp m e) = ppDots [pp "i", pp m, pp e]
+  pp (RRef_Exp m e) = ppDots [pp m, pp e]
   pp (RRef_Mod e  ) = ppDots [pp "m", pp e]
   pp (RRef_Loc l e) = ppDots [pp "l", pp l, pp e]
   pp (RRef_LDf l e) = ppDots [pp "d", pp l, pp e]

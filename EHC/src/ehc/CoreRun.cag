@@ -165,6 +165,11 @@ data RRef
   | RRef_Mod
       { rrefEntry       :: !Int     -- ^ entry inside module, in its frame
       }
+  -- | exported entry of module reference, only used internally to be later resolved to a 'RRef_Imp'
+  | RRef_Exp
+      { rrefModNm       :: !HsName	-- ^ module name, to be looked up in a module specific import list for an index
+      , rrefEntry       :: !Int     -- ^ entry inside module, in its frame
+      }
   -- | imported entry of module reference
   | RRef_Imp
       { rrefMod         :: !Int     -- ^ module (sequence) nr as it appears in the imported module list
@@ -199,14 +204,40 @@ instance Show RRef where
   show _ = "RRef"
 
 noRRef = RRef_Dbg hsnUnknown
+
+-- | Map over the non-recursive parts of RRef
+mapRRef :: (RRef -> RRef) -> RRef -> RRef
+mapRRef f r@(RRef_Fld {rrefRef=r'}) = r {rrefRef = mapRRef f r'}
+mapRRef f r@(RRef_Tag {rrefRef=r'}) = r {rrefRef = mapRRef f r'}
+mapRRef f r                         = f r
+%%]
+
+%%[(50 corerun) hs export(rrefToImp, rrefToExp)
+-- | Convert to RRef_Exp to RRef_Imp, i.e. named module to indexed module ref
+rrefToImp :: (HsName -> Maybe Int) -> RRef -> RRef
+rrefToImp lkup = mapRRef f
+  where f r@(RRef_Exp n o) = maybe (RRef_Dbg n) (flip RRef_Imp o) $ lkup $ panicJust "rrefToImp" $ hsnQualifier n
+        f r                = r
+
+-- | Convert to RRef_Mod to RRef_Exp, i.e. local module ref to exported
+rrefToExp :: HsName -> RRef -> RRef
+rrefToExp nm = mapRRef f
+  where f r@(RRef_Mod o) = RRef_Exp nm o
+        f r              = r
 %%]
 
 %%[(8 corerun) hs export(rrefToDif)
 -- | Convert to RRef_Loc to RRef_LDf, i.e. absolute level to relative (to current) level
+rrefToDif :: Int -> RRef -> RRef
+rrefToDif curlev = mapRRef f
+  where f r@(RRef_Loc l o) = RRef_LDf (curlev - l) o
+        f r                = r
+{-
 rrefToDif curlev r@(RRef_Loc l o         ) = RRef_LDf (curlev - l) o
 rrefToDif curlev r@(RRef_Fld {rrefRef=r'}) = r {rrefRef = rrefToDif curlev r'}
 rrefToDif curlev r@(RRef_Tag {rrefRef=r'}) = r {rrefRef = rrefToDif curlev r'}
 rrefToDif _      r                         = r
+-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -359,6 +390,7 @@ instance Binary RRef where
   put (RRef_Dbg 		a  			) = putWord8 5 >> put a
   put (RRef_Mod 		a  			) = putWord8 6 >> put a
   put (RRef_Imp 		a b			) = putWord8 7 >> put a >> put b
+  put (RRef_Exp 		a b			) = putWord8 8 >> put a >> put b
   get = do t <- getWord8
            case t of
              0 -> liftM2 RRef_Glb 		get get
@@ -369,6 +401,7 @@ instance Binary RRef where
              5 -> liftM  RRef_Dbg 		get
              6 -> liftM  RRef_Mod 		get
              7 -> liftM2 RRef_Imp 		get get
+             8 -> liftM2 RRef_Exp 		get get
 
 instance Binary a => Binary (CRArray a) where
   put = put . crarrayToList 
@@ -404,17 +437,6 @@ mkImpRef = RRef_Imp
 mkModRef :: Int -> RRef
 mkModRef = RRef_Mod
 %%]
-
-  -- | entry of current module reference
-  | RRef_Mod
-      { rrefEntry       :: !Int     -- ^ entry inside module, in its frame
-      }
-  -- | imported entry of module reference
-  | RRef_Imp
-      { rrefMod         :: !Int     -- ^ module (sequence) nr as it appears in the imported module list
-      , rrefEntry       :: !Int     -- ^ entry inside module, in its frame
-      }
-
 
 %%[(8 corerun) hs export(mkExp, mkVar, mkVar', mkInt, mkInt', mkChar, mkChar', mkString, mkString')
 -- **************************************
