@@ -20,7 +20,7 @@ Global assumptions:
 %%% Abstract syntax for Core code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 core)
+%%[(8 corerun)
 DATA AGItf
   | AGItf       module          : Mod
 %%]

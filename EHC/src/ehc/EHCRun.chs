@@ -48,7 +48,7 @@ main = do
                         { ehcOptMbTarget = JustOk Target_None_Core_AsIs
                         , ehcOptCoreOpts = CoreOpt_Run : ehcOptCoreOpts opts
 %%[[50
-                        -- , ehcOptOptimizationScope = OptimizationScope_WholeCore
+                        , ehcOptOptimizationScope = OptimizationScope_WholeCore
 %%]]
                         , ehcOptVerbosity = VerboseQuiet
                         }

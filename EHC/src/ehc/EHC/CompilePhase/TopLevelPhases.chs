@@ -1350,9 +1350,9 @@ cpProcessCoreRunRest modNm
                     then [void $ cpOutputCore CPOutputCoreHow_CoreRun_Text [] "" Cfg.suffixDotlessInputOutputCoreRun modNm]
                     else [])
                 ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
-                    then -- [cpRunCoreRun  modNm]
+                    then [cpRunCoreRun  modNm]
                          -- [cpRunCoreRun2 modNm]
-                         [cpRunCoreRun3 modNm]
+                         -- [cpRunCoreRun3 modNm]
                     else [])
                )
        }

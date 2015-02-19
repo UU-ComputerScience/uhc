@@ -23,7 +23,7 @@ Initial values
 -- Core semantics
 %%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
-%%[(8 core) import(qualified {%{EH}CoreRun} as CoreRun)
+%%[(8 corerun) import(qualified {%{EH}CoreRun} as CoreRun)
 %%]
 -- HI semantics
 %%[5020 import(qualified {%{EH}HI.MainAG} as HISem)

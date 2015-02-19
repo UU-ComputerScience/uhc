@@ -26,28 +26,29 @@ For now (20150218) a start of a build system replacement allowing declarative sp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(BFun(..))
+-- | Representation of build functions (embedded comment screws up haddock, hence see source code directly)
 data BFun res where
-  -- | Obtain FPath of an (imported module)
+  --- | Obtain FPath of an (imported module)
   FPathOfImported
-    :: HsName				-- ^ module name
+    :: HsName				--- ^ module name
     -> BFun FPath
 
-  -- | Extract imported modules from a module
+  --- | Extract imported modules from a module
   ImportsOf
-    :: HsName				-- ^ module name
+    :: HsName				--- ^ module name
     -> BFun [HsName]
 
-  -- | Extract compileunit from a module
+  --- | Extract compileunit from a module
   EcuOf
-    :: HsName				-- ^ module name
+    :: HsName				--- ^ module name
     -> BFun EHCompileUnit
 
-  -- | Applicative: pure
+  --- | Applicative: pure
   Pure
     :: res
     -> BFun res
 
-  -- | Applicative: <*>
+  --- | Applicative: <*>
   App
     :: BFun (res1 -> res2)
     -> BFun res1

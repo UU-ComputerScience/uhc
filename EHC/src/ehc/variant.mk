@@ -9,7 +9,7 @@
 ifeq ($(EHC_VARIANT),$(EHC_UHCLIGHT_CABAL_VARIANT))
 EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core corein coreout corebackend corerun corerunin
 else
-EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core grin corein coreout corerunin machdep
+EHC_ASPECTS_MINIMAL						:= base hmtyinfer codegen core grin corein coreout machdep
 endif
 EHC_ASPECTS								:= $(strip $(sort $(if $(ASPECTS),$(ASPECTS) \
 											,$(EHC_ASPECTS_MINIMAL) \
