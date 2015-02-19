@@ -112,7 +112,7 @@ Top level entry point into compilation by the compiler driver, apart from import
 
 %%[(50 codegen)
 -- | top lever driver for after all per-module work has been done, and whole program stuff like combining/linking can start
-cpEhcFullProgLinkAllModules :: [HsName] -> EHCompilePhase ()
+cpEhcFullProgLinkAllModules :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpEhcFullProgLinkAllModules modNmL
  = do { cr <- get
       ; let (mainModNmL,impModNmL) = crPartitionMainAndImported cr modNmL
@@ -168,7 +168,7 @@ cpEhcFullProgLinkAllModules modNmL
 %%]
 
 %%[50 export(cpEhcCheckAbsenceOfMutRecModules)
-cpEhcCheckAbsenceOfMutRecModules :: EHCompilePhase ()
+cpEhcCheckAbsenceOfMutRecModules :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpEhcCheckAbsenceOfMutRecModules
  = do { cr <- get
       ; let mutRecL = filter (\ml -> length ml > 1) $ crCompileOrder cr
@@ -180,7 +180,7 @@ cpEhcCheckAbsenceOfMutRecModules
 
 %%[5050 export(cpEhcFetchAllMissingModulesForLinking)
 -- | Fetch all necessary modules, but just the minimal info
-cpEhcFetchAllMissingModulesForLinking :: EHCompilePhase ()
+cpEhcFetchAllMissingModulesForLinking :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpEhcFetchAllMissingModulesForLinking
  = do { cr <- get
       ; let modNmLL = crCompileOrder cr
@@ -191,7 +191,7 @@ cpEhcFetchAllMissingModulesForLinking
 %%]
 
 %%[50 export(cpEhcFullProgCompileAllModules)
-cpEhcFullProgCompileAllModules :: EHCompilePhase ()
+cpEhcFullProgCompileAllModules :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpEhcFullProgCompileAllModules
  = do { cr <- get
       ; let modNmLL = crCompileOrder cr
@@ -223,7 +223,7 @@ Post processing involves the following:
 %%]
 
 %%[(50 codegen)
-cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
+cpEhcFullProgPostModulePhases :: EHCCompileRunner m => EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhaseT m ()
 cpEhcFullProgPostModulePhases opts modNmL modSpl
   | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore = cpEhcCoreFullProgPostModulePhases opts modNmL modSpl
 %%[[(50 grin)
@@ -234,7 +234,7 @@ cpEhcFullProgPostModulePhases opts modNmL modSpl
 %%]
 
 %%[(50 codegen grin)
-cpEhcGrinFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
+cpEhcGrinFullProgPostModulePhases :: EHCCompileRunner m => EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhaseT m ()
 cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpEnsureGrin m | m <- modNmL]
            , mergeIntoOneBigGrin
@@ -254,7 +254,7 @@ cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
                                    )             )
                }
 
-cpEnsureGrin :: HsName -> EHCompilePhase ()
+cpEnsureGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEnsureGrin nm
 -- read Grin, or, if not available, read and process Core
   = do { cpGetPrevGrin nm
@@ -265,7 +265,7 @@ cpEnsureGrin nm
 %%]
 
 %%[(50 codegen)
-cpEhcCoreFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
+cpEhcCoreFullProgPostModulePhases :: EHCCompileRunner m => EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhaseT m ()
 cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [void $ cpGetPrevCore m | m <- modNmL]
            , mergeIntoOneBigCore
@@ -294,7 +294,7 @@ Per module compilation of (import) ordered sequence of module, as part of a full
 %%]
 
 %%[50
-cpEhcFullProgModuleCompileN :: [HsName] -> EHCompilePhase ()
+cpEhcFullProgModuleCompileN :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpEhcFullProgModuleCompileN modNmL
   = cpSeq (merge (map cpEhcFullProgModuleCompile1    modNmL)
                  (map cpEhcFullProgBetweenModuleFlow modNmL)
@@ -309,14 +309,14 @@ Find out whether a compilation is needed, and if so, can be done.
 %%]
 
 %%[50 export(cpEhcFullProgModuleDetermineNeedsCompile)
-cpEhcFullProgModuleDetermineNeedsCompile :: HsName -> EHCompilePhase ()
+cpEhcFullProgModuleDetermineNeedsCompile :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcFullProgModuleDetermineNeedsCompile modNm
   = do { cr <- get
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              needsCompile = crModNeedsCompile modNm cr
              canCompile   = crModCanCompile modNm cr
        ; when (ehcOptVerbosity opts >= VerboseDebug)
-              (lift $ putStrLn
+              (liftIO $ putStrLn
                 (  show modNm
                 ++ ", src fpath: " ++ show (ecuSrcFilePath ecu)
                 ++ ", fileloc: " ++ show (ecuFileLocation ecu)
@@ -338,12 +338,12 @@ Compilation of 1 module, as part of a full program compilation
 %%]
 
 %%[50
-cpEhcFullProgModuleCompile1 :: HsName -> EHCompilePhase ()
+cpEhcFullProgModuleCompile1 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcFullProgModuleCompile1 modNm
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr   -- '
        ; when (ehcOptVerbosity opts >= VerboseALot)
-              (lift $ putStrLn ("====================== Compile1: " ++ show modNm ++ "======================"))
+              (liftIO $ putStrLn ("====================== Compile1: " ++ show modNm ++ "======================"))
        ; cpEhcFullProgModuleDetermineNeedsCompile modNm
        ; cr <- get
        ; let (ecu,_,_,_) = crBaseInfo modNm cr
@@ -361,7 +361,7 @@ Flow of info between modules, as part of a full program compilation
 %%]
 
 %%[50
-cpEhcFullProgBetweenModuleFlow :: HsName -> EHCompilePhase ()
+cpEhcFullProgBetweenModuleFlow :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcFullProgBetweenModuleFlow modNm
   = do { cr <- get
        ; case ecuState $ crCU modNm cr of
@@ -379,11 +379,11 @@ cpEhcFullProgBetweenModuleFlow modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.cpEhcModuleCompile1.sig export(cpEhcModuleCompile1)
-cpEhcModuleCompile1 :: HsName -> EHCompilePhase ()
+cpEhcModuleCompile1 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcModuleCompile1 modNm
 %%]
 %%[50 -8.cpEhcModuleCompile1.sig export(cpEhcModuleCompile1)
-cpEhcModuleCompile1 :: Maybe EHCompileUnitState -> HsName -> EHCompilePhase HsName
+cpEhcModuleCompile1 :: EHCCompileRunner m => Maybe EHCompileUnitState -> HsName -> EHCompilePhaseT m HsName
 cpEhcModuleCompile1 targHSState modNm
 %%]
 %%[8
@@ -396,9 +396,9 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
 %%[[50
        ; when (ehcOptVerbosity opts >= VerboseALot)
-              (lift $ putStrLn ("====================== Module: " ++ show modNm ++ " ======================"))
+              (liftIO $ putStrLn ("====================== Module: " ++ show modNm ++ " ======================"))
        ; when (ehcOptVerbosity opts >= VerboseDebug)
-              (lift $ putStrLn ("State: in: " ++ show (ecuState ecu) ++ ", to: " ++ show targHSState))
+              (liftIO $ putStrLn ("State: in: " ++ show (ecuState ecu) ++ ", to: " ++ show targHSState))
 %%]]
 %%[[8
        ; case (ecuState ecu,panic "CompilePhase.TopLevelPhases.cpEhcModuleCompile1") of
@@ -431,7 +431,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
                               ; let (ecu,_,opts,fp) = crBaseInfo modNm2 cr
-                              ; lift $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm2 ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmS ecu))
+                              ; liftIO $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm2 ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmS ecu))
                               })
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_Haskell stnext))
                    ; cpStopAt CompilePoint_Imports
@@ -445,7 +445,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
                               ; let (ecu,_,opts,fp) = crBaseInfo modNm cr
-                              ; lift $ putStrLn ("After HI import: nm=" ++ show modNm ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmS ecu))
+                              ; liftIO $ putStrLn ("After HI import: nm=" ++ show modNm ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmS ecu))
                               })
                    ; return defaultResult
                    }
@@ -619,7 +619,7 @@ EH common phases: analysis + core + grin
 %%]
 
 %%[8
-cpEhcCoreModuleCommonPhases :: Bool -> Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhase ()
+cpEhcCoreModuleCommonPhases :: EHCCompileRunner m => Bool -> Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhaseT m ()
 cpEhcCoreModuleCommonPhases isMainMod isTopMod doMkExec opts modNm
   = cpSeq ([ 
 %%[[(8 codegen)
@@ -636,7 +636,7 @@ cpEhcCoreModuleCommonPhases isMainMod isTopMod doMkExec opts modNm
 %%]
 
 %%[8
-cpEhcEhModuleCommonPhases :: Bool -> Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhase ()
+cpEhcEhModuleCommonPhases :: EHCCompileRunner m => Bool -> Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhaseT m ()
 cpEhcEhModuleCommonPhases isMainMod isTopMod doMkExec opts modNm
   = cpSeq [ cpEhcEhAnalyseModuleDefs modNm
           , cpEhcCoreModuleCommonPhases isMainMod isTopMod doMkExec opts modNm
@@ -646,7 +646,7 @@ cpEhcEhModuleCommonPhases isMainMod isTopMod doMkExec opts modNm
 %%[8
 -- | Common phases when starting with a Haskell module.
 -- HS common phases: HS analysis + EH common
-cpEhcHaskellModuleCommonPhases :: Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhase ()
+cpEhcHaskellModuleCommonPhases :: EHCCompileRunner m => Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModuleCommonPhases isTopMod doMkExec opts modNm
   = cpSeq [ cpEhcHaskellAnalyseModuleDefs modNm
           , do { cr <- get
@@ -666,11 +666,12 @@ cpEhcHaskellModuleCommonPhases isTopMod doMkExec opts modNm
 -- | All the work to be done after Haskell src imports have been read/analysed.
 -- Post module import common phases: Parse + Module analysis + HS common
 cpEhcHaskellModuleAfterImport
-  :: Bool -> EHCOpts -> HSState
+  :: EHCCompileRunner m => 
+        Bool -> EHCOpts -> HSState
 %%[[99
      -> [PkgModulePartition]
 %%]]
-     -> HsName -> EHCompilePhase ()
+     -> HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModuleAfterImport
      isTopMod opts hsst
 %%[[99
@@ -691,8 +692,9 @@ cpEhcHaskellModuleAfterImport
 %%[(50 corein)
 -- | All the work to be done after Core src/binary imports have been read/analysed
 cpEhcCoreModuleAfterImport
-  :: Bool -> EHCOpts
-     -> HsName -> EHCompilePhase ()
+  :: EHCCompileRunner m => 
+        Bool -> EHCOpts
+     -> HsName -> EHCompilePhaseT m ()
 cpEhcCoreModuleAfterImport
      isTopMod opts
      modNm
@@ -709,8 +711,9 @@ cpEhcCoreModuleAfterImport
 %%[(50 corerunin)
 -- | All the work to be done after CoreRun src/binary imports have been read/analysed
 cpEhcCoreRunModuleAfterImport
-  :: Bool -> EHCOpts
-     -> HsName -> EHCompilePhase ()
+  :: EHCCompileRunner m => 
+        Bool -> EHCOpts
+     -> HsName -> EHCompilePhaseT m ()
 cpEhcCoreRunModuleAfterImport
      isTopMod opts
      modNm
@@ -734,7 +737,7 @@ This should be the first step before compilation of a module and is meant to obt
 %%]
 
 %%[8.cpEhcHaskellModulePrepare
-cpEhcHaskellModulePrepare :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepare :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModulePrepare _ = return ()
 %%]
 
@@ -746,11 +749,11 @@ To be able to cpp preprocess first we need to know whether a Haskell file exists
     Previous info also has to be obtained again.
 
 %%[50 -8.cpEhcHaskellModulePrepare
-cpEhcHaskellModulePrepareSrc :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepareSrc :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModulePrepareSrc modNm
   = cpGetMetaInfo [GetMeta_Src,GetMeta_Dir] modNm
 
-cpEhcHaskellModulePrepareHS2 :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepareHS2 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModulePrepareHS2 modNm
   = cpSeq [ cpGetMetaInfo
               [ GetMeta_Src, GetMeta_HI, GetMeta_Core
@@ -767,7 +770,7 @@ cpEhcHaskellModulePrepareHS2 modNm
           , cpFoldHIInfo modNm
           ]
 
-cpEhcHaskellModulePrepareHI :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepareHI :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModulePrepareHI modNm
   = cpSeq [ cpGetMetaInfo
               [ GetMeta_HI, GetMeta_Core
@@ -783,7 +786,7 @@ cpEhcHaskellModulePrepareHI modNm
           , cpFoldHIInfo modNm
           ]
 
-cpEhcHaskellModulePrepare :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepare :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModulePrepare modNm
   = cpSeq [ cpEhcHaskellModulePrepareSrc modNm
           , cpEhcHaskellModulePrepareHS2 modNm
@@ -791,7 +794,7 @@ cpEhcHaskellModulePrepare modNm
 %%]
 
 %%[50
-cpEhcHaskellModulePostlude :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePostlude :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModulePostlude modNm
   = cpSeq [ cpOutputHI "hi" modNm
 %%[[99
@@ -803,11 +806,12 @@ cpEhcHaskellModulePostlude modNm
 %%[50
 -- | Get import information from Haskell module source text.
 cpEhcHaskellImport
-  :: HSState
+  :: EHCCompileRunner m => 
+        HSState
 %%[[99
      -> [PkgModulePartition]
 %%]]
-     -> HsName -> EHCompilePhase HsName
+     -> HsName -> EHCompilePhaseT m HsName
 cpEhcHaskellImport
      hsst
 %%[[99
@@ -868,11 +872,12 @@ cpEhcHaskellImport
 %%[8
 -- | Parse a Haskell module
 cpEhcHaskellParse
-  :: Bool -> Bool
+  :: EHCCompileRunner m => 
+         Bool -> Bool
 %%[[99
      -> [PkgModulePartition]
 %%]]
-     -> HsName -> EHCompilePhase ()
+     -> HsName -> EHCompilePhaseT m ()
 cpEhcHaskellParse
      doCPP litmode
 %%[[99
@@ -893,7 +898,7 @@ cpEhcHaskellParse
 %%]
 
 %%[8
-cpEhcEhParse :: HsName -> EHCompilePhase ()
+cpEhcEhParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcEhParse modNm
   = cpSeq [ cpParseEH modNm
           , cpStopAt CompilePoint_Parse
@@ -901,7 +906,7 @@ cpEhcEhParse modNm
 %%]
 
 %%[(8 corein)
-cpEhcCoreParse :: HsName -> EHCompilePhase ()
+cpEhcCoreParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreParse modNm
   = cpSeq [ cpParseCoreWithFPath Nothing modNm
           , cpStopAt CompilePoint_Parse
@@ -911,7 +916,7 @@ cpEhcCoreParse modNm
 %%[50
 -- | Analyse a Haskell src module for
 --     (1) module information (import, export, etc),
-cpEhcHaskellAnalyseModuleItf :: HsName -> EHCompilePhase ()
+cpEhcHaskellAnalyseModuleItf :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellAnalyseModuleItf modNm
   = cpSeq [ cpStepUID, cpFoldHsMod modNm, cpGetHsMod modNm
           , cpCheckModsWithBuiltin [modNm]
@@ -928,7 +933,7 @@ cpEhcHaskellAnalyseModuleItf modNm
 -- | Analyse a Core text/binary src module for
 --     (1) module information (import, export, etc).
 -- Note: TBD: identical to cpEhcCoreRunAnalyseModuleItf
-cpEhcCoreAnalyseModuleItf :: HsName -> EHCompilePhase ()
+cpEhcCoreAnalyseModuleItf :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreAnalyseModuleItf modNm
   = cpSeq [ cpMsg modNm VerboseDebug "cpEhcCoreAnalyseModuleItf"
           , cpCheckModsWithoutBuiltin [modNm]
@@ -945,7 +950,7 @@ cpEhcCoreAnalyseModuleItf modNm
 -- | Analyse a CoreRun text/binary src module for
 --     (1) module information (import, export, etc).
 -- Note: TBD: identical to cpEhcCoreAnalyseModuleItf
-cpEhcCoreRunAnalyseModuleItf :: HsName -> EHCompilePhase ()
+cpEhcCoreRunAnalyseModuleItf :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreRunAnalyseModuleItf modNm
   = cpSeq [ cpMsg modNm VerboseDebug "cpEhcCoreRunAnalyseModuleItf"
           , cpCheckModsWithoutBuiltin [modNm]
@@ -961,7 +966,7 @@ cpEhcCoreRunAnalyseModuleItf modNm
 %%[8
 -- | Analyse a Haskell src module for
 --     (2) names + dependencies
-cpEhcHaskellAnalyseModuleDefs :: HsName -> EHCompilePhase ()
+cpEhcHaskellAnalyseModuleDefs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellAnalyseModuleDefs modNm
   = cpSeq [ cpStepUID
           , cpProcessHs modNm
@@ -973,7 +978,7 @@ cpEhcHaskellAnalyseModuleDefs modNm
 %%[8
 -- | Analyse a Haskell src module for
 --     (3) types
-cpEhcEhAnalyseModuleDefs :: HsName -> EHCompilePhase ()
+cpEhcEhAnalyseModuleDefs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcEhAnalyseModuleDefs modNm
   = cpSeq [ cpStepUID, cpProcessEH modNm
           , cpMsg modNm VerboseALot "Type analysis done"
@@ -983,7 +988,7 @@ cpEhcEhAnalyseModuleDefs modNm
 
 %%[(8 codegen)
 -- | Part 1 Core processing, on a per module basis, part1 is done always
-cpEhcCorePerModulePart1 :: HsName -> EHCompilePhase ()
+cpEhcCorePerModulePart1 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCorePerModulePart1 modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1016,7 +1021,7 @@ cpEhcCorePerModulePart1 modNm
 %%[(50 codegen corein)
 -- | Get import information from Core module source text/binary.
 cpEhcCoreImport
-  :: Bool -> HsName -> EHCompilePhase HsName
+  :: EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m HsName
 cpEhcCoreImport
      isBinary modNm
   = do { cr <- get
@@ -1033,7 +1038,7 @@ cpEhcCoreImport
 %%[(50 codegen corerunin)
 -- | Get import information from CoreRun module source text/binary.
 cpEhcCoreRunImport
-  :: Bool -> HsName -> EHCompilePhase HsName
+  :: EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m HsName
 cpEhcCoreRunImport
      isBinary modNm
   = do { cr <- get
@@ -1049,7 +1054,7 @@ cpEhcCoreRunImport
 
 %%[(50 codegen corein)
 -- | Analyse a Core src module
-cpEhcCoreAnalyseModule :: HsName -> EHCompilePhase ()
+cpEhcCoreAnalyseModule :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreAnalyseModule modNm
   = do { cr <- get
        ; cpUpdateModOffMp [modNm]
@@ -1062,7 +1067,7 @@ cpEhcCoreAnalyseModule modNm
 
 %%[(50 codegen corerunin)
 -- | Analyse a CoreRun src module
-cpEhcCoreRunAnalyseModule :: HsName -> EHCompilePhase ()
+cpEhcCoreRunAnalyseModule :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreRunAnalyseModule modNm
   = do { cr <- get
        ; cpUpdateModOffMp [modNm]
@@ -1075,7 +1080,7 @@ cpEhcCoreRunAnalyseModule modNm
 
 %%[(8 codegen)
 -- | Part 2 Core processing, part2 is done either for per individual module compilation or after full program analysis
-cpEhcCorePerModulePart2 :: HsName -> EHCompilePhase ()
+cpEhcCorePerModulePart2 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCorePerModulePart2 modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1094,13 +1099,13 @@ cpEhcCorePerModulePart2 modNm
 
 %%[(8 codegen corerunin)
 -- | Part 2 CoreRun processing, part2 is done either for per individual module compilation or after full program analysis
-cpEhcCoreRunPerModulePart2 :: HsName -> EHCompilePhase ()
+cpEhcCoreRunPerModulePart2 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreRunPerModulePart2 = cpProcessCoreRunRest
 %%]
 
 %%[(8 codegen grin)
 -- | Core+grin processing, on a per module basis, may only be done when no full program analysis is done
-cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis :: EHCOpts -> Bool -> Bool -> Bool -> HsName -> EHCompilePhase ()
+cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis :: EHCCompileRunner m => EHCOpts -> Bool -> Bool -> Bool -> HsName -> EHCompilePhaseT m ()
 cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec modNm
   = cpSeq (  [ cpEhcCorePerModulePart2 modNm
 %%[[50
@@ -1125,7 +1130,7 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
 
 %%[(8 codegen)
 -- | Core+grin processing, on a per module basis, may only be done when full program analysis is done
-cpEhcCoreGrinPerModuleDoneFullProgAnalysis :: HsName -> EHCompilePhase ()
+cpEhcCoreGrinPerModuleDoneFullProgAnalysis :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm
   = cpSeq (  [ cpEhcCorePerModulePart2 modNm
              , cpEhcExecutablePerModule FinalCompile_Exec [] modNm
@@ -1136,7 +1141,7 @@ cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm
 
 %%[(8 codegen)
 -- | Make final executable code, either still partly or fully (i.e. also linking)
-cpEhcExecutablePerModule :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
+cpEhcExecutablePerModule :: EHCCompileRunner m => FinalCompileHow -> [HsName] -> HsName -> EHCompilePhaseT m ()
 cpEhcExecutablePerModule how impModNmL modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1161,7 +1166,7 @@ cpEhcExecutablePerModule how impModNmL modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-cpProcessHs :: HsName -> EHCompilePhase ()
+cpProcessHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessHs modNm 
   = cpSeq [ cpFoldHs modNm
 %%[[50
@@ -1175,7 +1180,7 @@ cpProcessHs modNm
 %%]
 
 %%[8
-cpProcessEH :: HsName -> EHCompilePhase ()
+cpProcessEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessEH modNm
   = do { cr <- get
        ; let (_,_,opts,fp) = crBaseInfo modNm cr
@@ -1217,7 +1222,7 @@ cpProcessEH modNm
 
 %%[(8 codegen tycore)
 -- | TBD: finish it, only a sketch now
-cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
+cpProcessTyCoreBasic :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessTyCoreBasic modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1238,7 +1243,7 @@ cpProcessTyCoreBasic modNm
 
 %%[(8 codegen)
 -- unprocessed core -> folded core
-cpProcessCoreBasic :: HsName -> EHCompilePhase ()
+cpProcessCoreBasic :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCoreBasic modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1259,7 +1264,7 @@ cpProcessCoreBasic modNm
 %%[(8 codegen)
 -- unfolded core -> folded core
 -- (called on merged core, and on core directly generated from cached grin)
-cpProcessCoreFold :: HsName -> EHCompilePhase ()
+cpProcessCoreFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCoreFold modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1279,7 +1284,7 @@ cpProcessCoreFold modNm
 %%]
 
 %%[(50 codegen corein)
-cpProcessCoreModFold :: HsName -> EHCompilePhase ()
+cpProcessCoreModFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCoreModFold modNm
   = cpSeq $
       [ cpEhcCoreAnalyseModule modNm
@@ -1288,7 +1293,7 @@ cpProcessCoreModFold modNm
 %%]
 
 %%[(50 codegen corerunin)
-cpProcessCoreRunModFold :: HsName -> EHCompilePhase ()
+cpProcessCoreRunModFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCoreRunModFold modNm
   = cpSeq $
       [ cpEhcCoreRunAnalyseModule modNm
@@ -1298,7 +1303,7 @@ cpProcessCoreRunModFold modNm
 
 %%[(8 codegen)
 -- folded core -> grin, jazy, and the rest
-cpProcessCoreRest :: HsName -> EHCompilePhase ()
+cpProcessCoreRest :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCoreRest modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1336,7 +1341,7 @@ cpProcessCoreRest modNm
 
 %%[(8 codegen corerun)
 -- | folded corerun -> ...
-cpProcessCoreRunRest :: HsName -> EHCompilePhase ()
+cpProcessCoreRunRest :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCoreRunRest modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1355,7 +1360,7 @@ cpProcessCoreRunRest modNm
 %%]
 
 %%[(8 codegen grin)
-cpProcessGrin :: HsName -> EHCompilePhase ()
+cpProcessGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessGrin modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1374,7 +1379,7 @@ cpProcessGrin modNm
 %%]
 
 %%[(8 codegen grin)
-cpProcessAfterGrin :: HsName -> EHCompilePhase ()
+cpProcessAfterGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessAfterGrin modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1390,7 +1395,7 @@ cpProcessAfterGrin modNm
 %%]
 
 %%[(8 codegen cmm)
-cpProcessCmm :: HsName -> EHCompilePhase ()
+cpProcessCmm :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCmm modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
@@ -1409,7 +1414,7 @@ cpProcessCmm modNm
 %%]
 
 %%[(8 codegen grin)
-cpProcessBytecode :: HsName -> EHCompilePhase ()
+cpProcessBytecode :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessBytecode modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr

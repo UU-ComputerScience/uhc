@@ -89,8 +89,9 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
 													$(addprefix TyCore/Trf/,Common) \
 													$(addprefix GrinCode/,Common SolveEqs) \
-													$(addprefix EHC/,Main Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
+													$(addprefix EHC/,Main Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup BuildFunction \
 														$(addprefix Main/,Utils) \
+														$(addprefix BuildFunction/,Run) \
 														$(addprefix CompilePhase/,Common Run Parsers Output Translations Transformations \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM CompileJavaScript Link \

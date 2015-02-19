@@ -12,6 +12,8 @@
 
 %%[1 import(System.Console.GetOpt, System.IO, System.Exit, System.Process, System.Environment)
 %%]
+%%[8 import(qualified Control.Exception as CE)
+%%]
 %%[99 import(System.Directory)
 %%]
 %%[1.fastseq import(qualified UHC.Util.FastSeq as Seq)
@@ -61,7 +63,7 @@
 %%]
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[8 import(Control.Monad.State)
+%%[8 import(Control.Monad.State, Control.Monad.Error)
 %%]
 
 -- module
@@ -99,7 +101,7 @@ mainEHC opts0
          ;  curDir    <- getCurrentDirectory
 %%]]
 %%[[103
-         -- an empty data dir means we are running as cabal installed exec
+         -- a non-empty data dir means we are running as cabal installed exec
          ;  mbDataDir <- Cfg.getDataDir >>= \d -> return $ if null d then Nothing else Just d
 %%]]
          ;  let  opts1          = opts0
@@ -379,25 +381,29 @@ doCompileRun fnL@(fn:_) opts
                  ; when (ehcOptVerbosity opts >= VerboseDebug)
                         (putStrLn $ "search path: " ++ show searchPath)
 %%[[8
-                 ; _ <- runStateT (compile opts fileSuffMpHs searchPath (Just fp) topModNm) initialState
+                 ; _ <- run initialState $ compile opts fileSuffMpHs searchPath (Just fp) topModNm
 %%][50
                  ; _ <- if False -- ehcOptPriv opts
-                        then runStateT (compile2 opts fileSuffMpHs searchPath fpL topModNmL) initialState
-                        else runStateT (compile  opts fileSuffMpHs searchPath fpL topModNmL) initialState
+                        then run initialState $ compile2 opts fileSuffMpHs searchPath fpL topModNmL
+                        else run initialState $ compile  opts fileSuffMpHs searchPath fpL topModNmL
 %%]]
                  ; return ()
                  }
          else exitFailure
        }
+  where -- run s c = {- runErrorT $ -} runStateT (runCompilePhaseT c) s
+        run s c = runStateT (runCompilePhaseT c) s
 %%[[8
-  where compile :: EHCOpts -> FileSuffMp -> FileLocPath -> Maybe FPath -> HsName -> EHCompilePhase ()
+        compile :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> Maybe FPath -> HsName -> EHCompilePhaseT m ()
+        -- compile :: EHCOpts -> FileSuffMp -> FileLocPath -> Maybe FPath -> HsName -> EHCompilePhase ()
         compile opts fileSuffMpHs searchPath mbFp nm
           = do { mbFoundFp <- cpFindFileForFPath (map tup123to12 fileSuffMpHs) searchPath (Just nm) mbFp
                ; when (isJust mbFoundFp)
                       (cpEhcModuleCompile1 nm)
                }
 %%][50
-  where compile2 :: EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhase ()
+        -- compile2 :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhaseT m ()
+        compile2 :: EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhase ()
         compile2 opts fileSuffMpHs searchPath fpL topModNmL
           = do { 
                -- start with directly importing top modules, providing the filepath directly
@@ -432,10 +438,11 @@ doCompileRun fnL@(fn:_) opts
                 {-
                 showCompileOrder
                   = do { cr <- get
-                       ; lift $ putStrLn $ "compile order: " ++ show (crCompileOrder cr)
+                       ; liftIO $ putStrLn $ "compile order: " ++ show (crCompileOrder cr)
                        }
                 -}
                
+        -- compile :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhaseT m ()
         compile :: EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhase ()
         compile opts fileSuffMpHs searchPath fpL topModNmL@(modNm:_)
           = do { cpMsg modNm VerboseDebug $ "doCompileRun.compile topModNmL: " ++ show topModNmL
@@ -481,6 +488,7 @@ doCompileRun fnL@(fn:_) opts
                 imp = imp1 opts fileSuffMpHs searchPath
                 
                 -- import others, but then in a (slightly) different way
+                -- importAlso :: EHCCompileRunner m => EHCompileUnitState -> (EHCompileUnit -> Set.Set HsName) -> EHCompilePhaseT m ()
                 importAlso :: EHCompileUnitState -> (EHCompileUnit -> Set.Set HsName) -> EHCompilePhase ()
                 importAlso how getNms
                   = do { cr <- get
@@ -491,6 +499,7 @@ doCompileRun fnL@(fn:_) opts
                            (imp how Nothing) (Set.toList allNewS)
                        }
 
+        -- imp1 :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> EHCompileUnitState -> Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhaseT m (HsName,Maybe (HsName,(FPath,FileLoc)))
         imp1 :: EHCOpts -> FileSuffMp -> FileLocPath -> EHCompileUnitState -> Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
         imp1 opts fileSuffMpHs searchPath desiredState mbFp mbPrev nm
           = do { let isTopModule = isJust mbFp
@@ -502,9 +511,9 @@ doCompileRun fnL@(fn:_) opts
                ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) (\(x,_,_) -> x) False fileSuffMpHs' searchPath' (Just nm) mbFp
 %%]]
                ; when (ehcOptVerbosity opts >= VerboseDebug)
-                      (do { lift $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)
+                      (do { liftIO $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)
 %%[[99
-                          ; lift $ putStrLn $ "searchPath: " ++ show searchPath'
+                          ; liftIO $ putStrLn $ "searchPath: " ++ show searchPath'
 %%]]
                           })
                ; when isTopModule

@@ -445,7 +445,7 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuParticipation u = []
 %%]]
 
-instance FPathError Err
+-- instance FPathError Err
 
 instance CompileRunError Err () where
   crePPErrL                      = ppErrL
@@ -704,6 +704,14 @@ ecuStoreCppFilePath x ecu = ecu { ecuMbCppFilePath = Just x }
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicates on EHCompileUnit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ecuSrcHasSuffix)
+-- | Has the source file the given extension? Given suffix is stripped from possible prefixed '.'.
+ecuSrcHasSuffix :: String -> EHCompileUnit -> Bool
+ecuSrcHasSuffix suff ecu
+  = maybe False (==suff') $ fpathMbSuff $ ecuSrcFilePath ecu
+  where suff' = case suff of {('.':s) -> s; _ -> suff}
+%%]
 
 %%[50 export(ecuIsHSNewerThanHI)
 -- | Is HS newer?

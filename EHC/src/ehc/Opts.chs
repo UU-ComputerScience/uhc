@@ -311,20 +311,6 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
      ,  Option ""   ["target-flavor"]       (ReqArg oTargetFlavor (showAllTargetFlavors' "|"))
                                                                                     ("generate code for target flavor, default=" ++ show defaultTargetFlavor)
 %%]]
-%%[[99
-     ,  Option ""   ["version-dotted"]      (NoArg oNumVersion)                     ("print version in \"x.y.z\" style (then stop)")
-     ,  Option ""   ["version-asnumber"]    (NoArg oVersionAsNumber)                ("print version in \"xyz\" style (then stop)")
-     ,  Option ""   ["numeric-version"]     (NoArg oNumVersion)                     "see --version-dotted (to become obsolete)"
-%%]]
-%%[[8
-     ,  Option "v"  ["verbose"]             (OptArg oVerbose "0|1|2|3|4")           (   "be verbose, 0=quiet, 4=debug, "
-%%[[8
-                                                                                    ++ "default=2"
-%%][100
-                                                                                    ++ "default=1"
-%%]]
-                                                                                    )
-%%]]
 %%[[1
      ,  Option "p"  ["pretty"]              (OptArg oPretty "hs|eh|ast|-")          "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
 %%][(8 codegen tycore)
@@ -639,14 +625,6 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
 %%[[(8 codegen grin)
          oRTSInfo    s   o =  o { ehcOptGenRTSInfo     = read s       }
 %%]]
-         oVerbose    ms  o =  case ms of
-                                Just "0"    -> o { ehcOptVerbosity     = VerboseQuiet       }
-                                Just "1"    -> o { ehcOptVerbosity     = VerboseMinimal     }
-                                Just "2"    -> o { ehcOptVerbosity     = VerboseNormal      }
-                                Just "3"    -> o { ehcOptVerbosity     = VerboseALot        }
-                                Just "4"    -> o { ehcOptVerbosity     = VerboseDebug       }
-                                Nothing     -> o { ehcOptVerbosity     = succ (ehcOptVerbosity o)}
-                                _           -> o
 %%[[(8 codegen)
          oOptimization ms o
                            = o' {ehcOptOptimizations = optimizeRequiresClosure os}
@@ -715,8 +693,6 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
 %%]]
 %%[[99
          oNoHiCheck             o   = o { ehcOptHiValidityCheck             = False    }
-         oNumVersion            o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_VersionDotted }
-         oVersionAsNumber       o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_VersionAsNumber }
          oUsrFileLocPath      s o   = o { ehcOptImportFileLocPath           = ehcOptImportFileLocPath o ++ mkFileLocPath s }
          oLibFileLocPath      s o   = o { ehcOptLibFileLocPath              = ehcOptLibFileLocPath o ++ mkFileLocPath s }
          oPkgdirLocPath       s o   = o { ehcOptPkgdirLocPath               = ehcOptPkgdirLocPath o ++ mkStringPath s }
@@ -805,6 +781,20 @@ sharedCmdLineOpts :: GetOptCmdLineOpts
 sharedCmdLineOpts
   =  [  Option "h"  ["help"]                (NoArg oHelp)                           "print this help (then stop)"
      ,  Option ""   ["version"]             (NoArg oVersion)                        "print version info (then stop)"
+%%[[99
+     ,  Option ""   ["version-dotted"]      (NoArg oNumVersion)                     ("print version in \"x.y.z\" style (then stop)")
+     ,  Option ""   ["version-asnumber"]    (NoArg oVersionAsNumber)                ("print version in \"xyz\" style (then stop)")
+     ,  Option ""   ["numeric-version"]     (NoArg oNumVersion)                     "see --version-dotted (to become obsolete)"
+%%]]
+%%[[8
+     ,  Option "v"  ["verbose"]             (OptArg oVerbose "0|1|2|3|4")           (   "be verbose, 0=quiet, 4=debug, "
+%%[[8
+                                                                                    ++ "default=2"
+%%][100
+                                                                                    ++ "default=1"
+%%]]
+                                                                                    )
+%%]]
      ]
 %%]
 
@@ -816,8 +806,23 @@ sharedCmdLineOpts
 -- | Help
 oHelp           o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Help    }
 
---  Version
+-- | Version
 oVersion        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Version }
+
+-- | Verbosity
+oVerbose    ms  o =  case ms of
+                       Just "0"    -> o { ehcOptVerbosity     = VerboseQuiet       }
+                       Just "1"    -> o { ehcOptVerbosity     = VerboseMinimal     }
+                       Just "2"    -> o { ehcOptVerbosity     = VerboseNormal      }
+                       Just "3"    -> o { ehcOptVerbosity     = VerboseALot        }
+                       Just "4"    -> o { ehcOptVerbosity     = VerboseDebug       }
+                       Nothing     -> o { ehcOptVerbosity     = succ (ehcOptVerbosity o)}
+                       _           -> o
+%%]
+
+%%[99
+oNumVersion            o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_VersionDotted }
+oVersionAsNumber       o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_VersionAsNumber }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

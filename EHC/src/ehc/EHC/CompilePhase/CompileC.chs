@@ -74,7 +74,7 @@ gccInclDirs opts pkgKeyDirL
         mkp (k,_) = fmap (Cfg.mkPkgIncludeDir . filePathMkPrefix . filelocDir . pkginfoLoc) $ pkgDbLookup k $ ehcOptPkgDb opts
 
 %%[(8 codegen) export(cpCompileWithGCC)
-cpCompileWithGCC :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
+cpCompileWithGCC :: EHCCompileRunner m => FinalCompileHow -> [HsName] -> HsName -> EHCompilePhaseT m ()
 cpCompileWithGCC how othModNmL modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -174,14 +174,14 @@ cpCompileWithGCC how othModNmL modNm
                                  )
                      ; when (ehcOptVerbosity opts >= VerboseALot)
                             (do { cpMsg' modNm VerboseALot "GCC" Nothing fpTarg
-                                ; lift $ putStrLn $ showShellCmd compileC
+                                ; liftIO $ putStrLn $ showShellCmd compileC
                                 })
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
-                            (do { lift $ putStrLn ("pkgs : " ++ show pkgKeyL)
+                            (do { liftIO $ putStrLn ("pkgs : " ++ show pkgKeyL)
 %%[[99
-                                ; lift $ putStrLn ("pkgdirs : " ++ show pkgKeyDirL)
+                                ; liftIO $ putStrLn ("pkgdirs : " ++ show pkgKeyDirL)
 %%]]
-                                ; lift $ putStrLn ("other: " ++ show othModNmL2)
+                                ; liftIO $ putStrLn ("other: " ++ show othModNmL2)
                                 })
                      ; cpSeq [ cpSystem' Nothing compileC
 %%[[99
@@ -193,7 +193,7 @@ cpCompileWithGCC how othModNmL modNm
 %%]
 
 %%[99 export(cpPreprocessWithCPP)
-cpPreprocessWithCPP :: [PkgModulePartition] -> HsName -> EHCompilePhase ()
+cpPreprocessWithCPP :: EHCCompileRunner m => [PkgModulePartition] -> HsName -> EHCompilePhaseT m ()
 cpPreprocessWithCPP pkgKeyDirL modNm 
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -214,14 +214,14 @@ cpPreprocessWithCPP pkgKeyDirL modNm
                                     )
                   ; when (ehcOptVerbosity opts >= VerboseALot)
                          (do { cpMsg modNm VerboseALot "CPP"
-                             -- ; lift $ putStrLn ("pkg db: " ++ show (ehcOptPkgDb opts))
-                             -- ; lift $ putStrLn ("pkg srch filter: " ++ (show $ ehcOptPackageSearchFilter opts))
-                             -- ; lift $ putStrLn ("exposed pkgs: " ++ show (pkgExposedPackages $ ehcOptPkgDb opts))
-                             -- ; lift $ putStrLn ("pkgKeyDirL: " ++ show pkgKeyDirL)
-                             ; lift $ putStrLn $ showShellCmd preCPP
+                             -- ; liftIO $ putStrLn ("pkg db: " ++ show (ehcOptPkgDb opts))
+                             -- ; liftIO $ putStrLn ("pkg srch filter: " ++ (show $ ehcOptPackageSearchFilter opts))
+                             -- ; liftIO $ putStrLn ("exposed pkgs: " ++ show (pkgExposedPackages $ ehcOptPkgDb opts))
+                             -- ; liftIO $ putStrLn ("pkgKeyDirL: " ++ show pkgKeyDirL)
+                             ; liftIO $ putStrLn $ showShellCmd preCPP
                              })
                   ; when (crModCanCompile modNm cr)
-                         (do { lift $ fpathEnsureExists fpCPP
+                         (do { liftIO $ fpathEnsureExists fpCPP
                              ; cpSystem' (Just $ fpathToStr fpCPP) preCPP
 %%[[99
                              ; cpRegisterFilesToRm [fpCPP]

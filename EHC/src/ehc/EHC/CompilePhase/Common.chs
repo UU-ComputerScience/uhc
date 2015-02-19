@@ -41,7 +41,7 @@ Translation to another AST
 
 %%[(50 codegen) export(cpGenModuleImportExportImpl)
 -- | Compute impl info for module codegen
-cpGenModuleImportExportImpl :: HsName -> EHCompilePhase ModuleImportExportImpl
+cpGenModuleImportExportImpl :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ModuleImportExportImpl
 cpGenModuleImportExportImpl modNm
   = do { cr <- get
        ; cpMsg modNm VerboseDebug "cpGenModuleImportExportImpl"
@@ -52,11 +52,11 @@ cpGenModuleImportExportImpl modNm
                         | otherwise        = crsiExpNmOffMp modNm crsi
              modOffMp   | isWholeProg = Map.filterWithKey (\n _ -> n == modNm) $ crsiModOffMp crsi
                         | otherwise   = crsiModOffMp crsi
-       -- ; lift $ putStrLn $ "cpGenModuleImportExportImpl " ++ show impNmL
-       -- ; lift $ putStrLn $ "cpGenModuleImportExportImpl ecuHSDeclImpNmS " ++ show (ecuHSDeclImpNmS ecu)
-       -- ; lift $ putStrLn $ "cpGenModuleImportExportImpl ecuHIDeclImpNmS " ++ show (ecuHIDeclImpNmS ecu)
-       -- ; lift $ putStrLn $ "cpGenModuleImportExportImpl ecuHIUsedImpNmS " ++ show (ecuHIUsedImpNmS ecu)
-       -- ; lift $ putStrLn $ "cpGenModuleImportExportImpl modOffMp " ++ show modOffMp
+       -- ; liftIO $ putStrLn $ "cpGenModuleImportExportImpl " ++ show impNmL
+       -- ; liftIO $ putStrLn $ "cpGenModuleImportExportImpl ecuHSDeclImpNmS " ++ show (ecuHSDeclImpNmS ecu)
+       -- ; liftIO $ putStrLn $ "cpGenModuleImportExportImpl ecuHIDeclImpNmS " ++ show (ecuHIDeclImpNmS ecu)
+       -- ; liftIO $ putStrLn $ "cpGenModuleImportExportImpl ecuHIUsedImpNmS " ++ show (ecuHIUsedImpNmS ecu)
+       -- ; liftIO $ putStrLn $ "cpGenModuleImportExportImpl modOffMp " ++ show modOffMp
        -- ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu
        ; return $ emptyModuleImportExportImpl
            { mieimplLamMp 			= Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi

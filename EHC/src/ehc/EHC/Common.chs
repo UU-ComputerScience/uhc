@@ -12,7 +12,7 @@ Used by all compiler driver code
 %%]
 %%[1 import(Control.Monad.State, System.IO) export(module System.IO)
 %%]
-%%[1 import(UHC.Util.CompileRun, UHC.Util.Pretty, UHC.Util.FPath, UHC.Util.Utils) export(module UHC.Util.CompileRun, module UHC.Util.Pretty, module UHC.Util.FPath, module UHC.Util.Utils)
+%%[1 import(UHC.Util.CompileRun2, UHC.Util.Pretty, UHC.Util.FPath, UHC.Util.Utils) export(module UHC.Util.CompileRun2, module UHC.Util.Pretty, module UHC.Util.FPath, module UHC.Util.Utils)
 %%]
 %%[1 import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin}, {%{EH}Opts}) export(module {%{EH}Base.Common}, module {%{EH}Base.HsName.Builtin}, module {%{EH}Opts})
 %%]

@@ -306,10 +306,10 @@ instance Serialize Mod where
   sget = sgetPlain
 
 instance Binary Meta where
-  put (Meta_Data a b) = putWord8 0 >> put a >> put b
-  get = do t <- getWord8
+  put (Meta_Data a b) = {- putWord8 0 >> -} put a >> put b
+  get = {- do t <- getWord8
            case t of
-             0 -> liftM2 Meta_Data get get
+             0 -> -} liftM2 Meta_Data get get
 
 instance Binary Import where
   put (Import_Import a) = {- putWord8 0 >> -} put a
@@ -318,10 +318,10 @@ instance Binary Import where
              0 -> -} liftM  Import_Import get
 
 instance Binary DataCon where
-  put (DataCon_Con a b) = putWord8 0 >> put a >> put b
-  get = do t <- getWord8
+  put (DataCon_Con a b) = {- putWord8 0 >> -} put a >> put b
+  get = {- do t <- getWord8
            case t of
-             0 -> liftM2 DataCon_Con get get
+             0 -> -} liftM2 DataCon_Con get get
 
 instance Binary Exp where
   put (Exp_SExp 	a  			) = putWord8 0 >> put a
@@ -366,16 +366,16 @@ instance Binary SExp where
              5 -> liftM  SExp_Dbg 		get
 
 instance Binary Alt where
-  put (Alt_Alt a b) = putWord8 0 >> put a >> put b
-  get = do t <- getWord8
+  put (Alt_Alt a b) = {- putWord8 0 >> -} put a >> put b
+  get = {- do t <- getWord8
            case t of
-             0 -> liftM2 Alt_Alt get get
+             0 -> -} liftM2 Alt_Alt get get
 
 instance Binary Pat where
-  put (Pat_Con 			a  			) = putWord8 0 >> put a
-  get = do t <- getWord8
+  put (Pat_Con 			a  			) = {- putWord8 0 >> -} put a
+  get = {- do t <- getWord8
            case t of
-             0 -> liftM  Pat_Con 		get
+             0 -> -} liftM  Pat_Con 		get
 
 instance Binary RunPrim where
   put = putEnum

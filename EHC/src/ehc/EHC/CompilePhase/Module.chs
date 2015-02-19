@@ -53,7 +53,7 @@ Module analysis
 
 %%[50 export(cpCheckModsModWith)
 -- | Check module dependencies for given 'Mod'
-cpCheckModsModWith :: (HsName -> ModMpInfo) -> [Mod] -> EHCompilePhase ()
+cpCheckModsModWith :: EHCCompileRunner m => (HsName -> ModMpInfo) -> [Mod] -> EHCompilePhaseT m ()
 cpCheckModsModWith dfltMod modL@(Mod {modName = modNm} : _)
   = do { cr <- get
        ; cpMsg modNm VerboseDebug $ "cpCheckModsModWith modL: " ++ show modL
@@ -63,7 +63,7 @@ cpCheckModsModWith dfltMod modL@(Mod {modName = modNm} : _)
 %%[[5050
        ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
               (do { cpMsg modNm VerboseDebug "cpCheckModsModWith"
-                  ; lift $ putWidthPPLn 120 (pp modNm >-< pp modL >-< ppModMp mm)
+                  ; liftIO $ putWidthPPLn 120 (pp modNm >-< pp modL >-< ppModMp mm)
                   })
 %%][10110
 %%]]
@@ -72,7 +72,7 @@ cpCheckModsModWith dfltMod modL@(Mod {modName = modNm} : _)
 %%]
 
 %%[50 export(cpCheckModsWithOrWithoutBuiltin)
-cpCheckModsWithOrWithoutBuiltin :: Bool -> [HsName] -> EHCompilePhase ()
+cpCheckModsWithOrWithoutBuiltin :: EHCCompileRunner m => Bool -> [HsName] -> EHCompilePhaseT m ()
 cpCheckModsWithOrWithoutBuiltin bltin modNmL@(modNm:_)
   = do { cr <- get
        ; cpMsg modNm VerboseDebug $ "cpCheckModsWithOrWithoutBuiltin modNmL: " ++ show modNmL
@@ -84,13 +84,13 @@ cpCheckModsWithOrWithoutBuiltin bltin modNmL@(modNm:_)
 %%]
 
 %%[50 export(cpCheckModsWithBuiltin)
-cpCheckModsWithBuiltin :: [HsName] -> EHCompilePhase ()
+cpCheckModsWithBuiltin :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpCheckModsWithBuiltin = cpCheckModsWithOrWithoutBuiltin True
 {-# INLINE cpCheckModsWithBuiltin #-}
 %%]
 
 %%[50 export(cpCheckModsWithoutBuiltin)
-cpCheckModsWithoutBuiltin :: [HsName] -> EHCompilePhase ()
+cpCheckModsWithoutBuiltin :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpCheckModsWithoutBuiltin = cpCheckModsWithOrWithoutBuiltin False
 {-# INLINE cpCheckModsWithoutBuiltin #-}
 %%]
@@ -129,7 +129,7 @@ allGetMeta
 %%]
 
 %%[(50 corerunin) export(cpGetCoreRunModnameAndImports)
-cpGetCoreRunModnameAndImports :: HsName -> EHCompilePhase HsName
+cpGetCoreRunModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT m HsName
 cpGetCoreRunModnameAndImports modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
@@ -148,7 +148,7 @@ cpGetCoreRunModnameAndImports modNm
 %%]
 
 %%[(50 corein) export(cpGetCoreModnameAndImports)
-cpGetCoreModnameAndImports :: HsName -> EHCompilePhase HsName
+cpGetCoreModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT m HsName
 cpGetCoreModnameAndImports modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
@@ -167,7 +167,7 @@ cpGetCoreModnameAndImports modNm
 %%]
 
 %%[50 export(cpGetHsModnameAndImports,cpGetHsMod,cpGetMetaInfo)
-cpGetHsModnameAndImports :: HsName -> EHCompilePhase HsName
+cpGetHsModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT m HsName
 cpGetHsModnameAndImports modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
@@ -182,7 +182,7 @@ cpGetHsModnameAndImports modNm
               _      -> return modNm
          }
 
-cpGetHsMod :: HsName -> EHCompilePhase ()
+cpGetHsMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpGetHsMod modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
@@ -191,13 +191,13 @@ cpGetHsMod modNm
                  mod        = HSSemMod.mod_Syn_AGItf hsSemMod
          ;  when (ehcOptVerbosity opts >= VerboseDebug)
                  (do { cpMsg modNm VerboseDebug "cpGetHsMod"
-                     ; lift $ putWidthPPLn 120 (pp mod)
+                     ; liftIO $ putWidthPPLn 120 (pp mod)
                      })
          ;  when (isJust mbHsSemMod)
                  (cpUpdCU modNm (ecuStoreMod mod))
          }
 
-cpGetMetaInfo :: [GetMeta] -> HsName -> EHCompilePhase ()
+cpGetMetaInfo :: EHCCompileRunner m => [GetMeta] -> HsName -> EHCompilePhaseT m ()
 cpGetMetaInfo gm modNm
   =  do  {  cr <- get
          ;  let (ecu,_,opts,fp) = crBaseInfo modNm cr
@@ -238,25 +238,25 @@ cpGetMetaInfo gm modNm
                  (wr opts ecu ecuStoreDirIsWritable (                         fp     ))
 %%]]
          }
-  where tm :: EHCOpts -> EHCompileUnit -> (ClockTime -> EHCompileUnit -> EHCompileUnit) -> FPath -> EHCompilePhase ()
+  where tm :: EHCCompileRunner m => EHCOpts -> EHCompileUnit -> (ClockTime -> EHCompileUnit -> EHCompileUnit) -> FPath -> EHCompilePhaseT m ()
         tm opts ecu store fp
           = do { let n = fpathToStr fp
-               ; nExists <- lift $ doesFileExist n
+               ; nExists <- liftIO $ doesFileExist n
                ; when (ehcOptVerbosity opts >= VerboseDebug)
-                      (do { lift $ putStrLn ("meta info of: " ++ show (ecuModNm ecu) ++ ", file: " ++ n ++ ", exists: " ++ show nExists)
+                      (do { liftIO $ putStrLn ("meta info of: " ++ show (ecuModNm ecu) ++ ", file: " ++ n ++ ", exists: " ++ show nExists)
                           })
                ; when nExists
-                      (do { t <- lift $ fpathGetModificationTime fp
+                      (do { t <- liftIO $ fpathGetModificationTime fp
                           ; when (ehcOptVerbosity opts >= VerboseDebug)
-                                 (do { lift $ putStrLn ("time stamp of: " ++ show (ecuModNm ecu) ++ ", time: " ++ show t)
+                                 (do { liftIO $ putStrLn ("time stamp of: " ++ show (ecuModNm ecu) ++ ", time: " ++ show t)
                                      })
                           ; cpUpdCU modNm $ store t
                           })
                }
 %%[[50
         wr opts ecu store fp
-          = do { pm <- lift $ getPermissions (maybe "." id $ fpathMbDir fp)
-               -- ; lift $ putStrLn (fpathToStr fp ++ " writ " ++ show (writable pm))
+          = do { pm <- liftIO $ getPermissions (maybe "." id $ fpathMbDir fp)
+               -- ; liftIO $ putStrLn (fpathToStr fp ++ " writ " ++ show (writable pm))
                ; cpUpdCU modNm $ store (writable pm)
                }
 %%]]
@@ -267,7 +267,7 @@ cpGetMetaInfo gm modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 export(cpGetDummyCheckSrcMod)
-cpGetDummyCheckSrcMod :: HsName -> EHCompilePhase ()
+cpGetDummyCheckSrcMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpGetDummyCheckSrcMod modNm
   = do { cr <- get
        ; let crsi   = crStateInfo cr
@@ -283,7 +283,7 @@ cpGetDummyCheckSrcMod modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 codegen) export(cpUpdateModOffMp)
-cpUpdateModOffMp :: [HsName] -> EHCompilePhase ()
+cpUpdateModOffMp :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpUpdateModOffMp modNmL@(modNm:_)
   = do { cr <- get
        ; cpMsg modNm VerboseDebug "cpUpdateModOffMp"
@@ -307,7 +307,7 @@ cpUpdateModOffMp modNmL@(modNm:_)
 
 %%[(50 codegen) export(cpGenImpNmInfo)
 -- | Compute imported module names
-cpGenImpNmInfo :: HsName -> EHCompilePhase [HsName]
+cpGenImpNmInfo :: EHCCompileRunner m => HsName -> EHCompilePhaseT m [HsName]
 cpGenImpNmInfo modNm
   = do { cr <- get
        ; let (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -323,7 +323,7 @@ cpGenImpNmInfo modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(92 codegen) export(cpUpdHiddenExports)
-cpUpdHiddenExports :: HsName -> [(HsName,IdOccKind)] -> EHCompilePhase ()
+cpUpdHiddenExports :: EHCCompileRunner m => HsName -> [(HsName,IdOccKind)] -> EHCompilePhaseT m ()
 cpUpdHiddenExports modNm exps
   = when (not $ null exps)
          (do { cpUpdSI (\crsi -> crsi { crsiModMp = modMpAddHiddenExps modNm exps $ crsiModMp crsi

@@ -93,7 +93,7 @@ gamUnionFlow g1 g2 | forceEval g1 `seq` True = gamUnion g1 g2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 export(cpFlowHsSem1)
-cpFlowHsSem1 :: HsName -> EHCompilePhase ()
+cpFlowHsSem1 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowHsSem1 modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -128,15 +128,15 @@ cpFlowHsSem1 modNm
          ;  when (isJust (ecuMbHSSem ecu))
                  (do { cpUpdSI (\crsi -> crsi {crsiHSInh = hsInh', crsiEHInh = ehInh', crsiOpts = opts'})
                      ; cpUpdCU modNm $! ecuStoreHIInfo hii'
-                     -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
+                     -- ; liftIO $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
                      })
-         -- ;  lift $ putWidthPPLn 120 (ppGam $ EHSem.idQualGam_Inh_AGItf $ ehInh')
+         -- ;  liftIO $ putWidthPPLn 120 (ppGam $ EHSem.idQualGam_Inh_AGItf $ ehInh')
          }
 
 %%]
 
 %%[8 export(cpFlowEHSem1)
-cpFlowEHSem1 :: HsName -> EHCompilePhase ()
+cpFlowEHSem1 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowEHSem1 modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -240,7 +240,7 @@ cpFlowEHSem1 modNm
 %%]
 
 %%[50 export(cpFlowHISem)
-cpFlowHISem :: HsName -> EHCompilePhase ()
+cpFlowHISem :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowHISem modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
@@ -292,7 +292,7 @@ cpFlowHISem modNm
 
 %%[(50 codegen corein) export(cpFlowCoreModSem)
 -- | Flow info after Core source check
-cpFlowCoreModSem :: HsName -> EHCompilePhase ()
+cpFlowCoreModSem :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowCoreModSem modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -311,7 +311,7 @@ cpFlowCoreModSem modNm
 The following flow functions probably can be merged with the semantics itself, TBD & sorted out, 20140407
 
 %%[(50 codegen) export(cpFlowCoreSemAfterFold, cpFlowCoreSemBeforeFold)
-cpFlowCoreSemAfterFold :: HsName -> EHCompilePhase ()
+cpFlowCoreSemAfterFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowCoreSemAfterFold modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -333,7 +333,7 @@ cpFlowCoreSemAfterFold modNm
                      })
          }
 
-cpFlowCoreSemBeforeFold :: HsName -> EHCompilePhase ()
+cpFlowCoreSemBeforeFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowCoreSemBeforeFold modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -347,8 +347,8 @@ cpFlowCoreSemBeforeFold modNm
                               { -- 20100717 AD: required here because of inlining etc, TBD
                                 HI.hiiHIUsedImpModS = usedImpS
                               }
-         -- ;  lift $ putStrLn $ "cpFlowCoreSemBeforeFold usedImpS " ++ show usedImpS
-         -- ;  lift $ putStrLn $ "cpFlowCoreSemBeforeFold introdModS " ++ show introdModS
+         -- ;  liftIO $ putStrLn $ "cpFlowCoreSemBeforeFold usedImpS " ++ show usedImpS
+         -- ;  liftIO $ putStrLn $ "cpFlowCoreSemBeforeFold introdModS " ++ show introdModS
          ;  cpUpdCU modNm ( ecuStoreHIInfo hii'
                           -- 
                           -- 20100717 AD: required here because of inlining etc, TBD
@@ -362,7 +362,7 @@ cpFlowCoreSemBeforeFold modNm
 %%]
 
 %%[(50 codegen) export(cpFlowHILamMp)
-cpFlowHILamMp :: HsName -> EHCompilePhase ()
+cpFlowHILamMp :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowHILamMp modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -375,7 +375,7 @@ cpFlowHILamMp modNm
 %%]
 
 %%[50 export(cpFlowOptim)
-cpFlowOptim :: HsName -> EHCompilePhase ()
+cpFlowOptim :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowOptim modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
@@ -398,7 +398,7 @@ cpFlowOptim modNm
          ;  when (isJust (ecuMbOptim ecu))
                  (do { cpUpdSI (\crsi -> crsi {crsiOptim = optim'})
                      ; cpUpdCU modNm $! ecuStoreHIInfo $! prepFlow hii'
-                     -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowOptim")
+                     -- ; liftIO $ putStrLn (forceEval hii' `seq` "cpFlowOptim")
                      })
          }
 %%]

@@ -52,34 +52,34 @@ type JarManifest = AssocL String String
 %%]
 
 %%[(8 codegen && (java jazy)) export(cpJar)
-cpJar :: Maybe String -> Maybe FPath -> JarWhat -> FPath -> [FPath] -> EHCompilePhase ()
+cpJar :: EHCCompileRunner m => Maybe String -> Maybe FPath -> JarWhat -> FPath -> [FPath] -> EHCompilePhaseT m ()
 cpJar relToDir mbManif what archive files
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
              veryVerbose = ehcOptVerbosity opts >= VerboseALot
-       ; cwd <- lift getCurrentDirectory
+       ; cwd <- liftIO getCurrentDirectory
        ; (archive',files',mbInsideDir)
            <- case relToDir of
-                Just d -> do { lift $ setCurrentDirectory d 
+                Just d -> do { liftIO $ setCurrentDirectory d 
                              ; return ( mka archive, map mkd files, Just d )
                              }
                        where mkd = fpathUnPrependDir d
                              mka a = if fpathIsAbsolute a then a else fpathPrependDir cwd a
                 _      -> return (archive,files,Nothing)
-       ; when veryVerbose (lift $ putStrLn ("Jar: " ++ maybe "" (\d -> "in dir " ++ d ++ ": ") mbInsideDir ++ show files'))
+       ; when veryVerbose (liftIO $ putStrLn ("Jar: " ++ maybe "" (\d -> "in dir " ++ d ++ ": ") mbInsideDir ++ show files'))
        ; cpSeq
            (  ( case what of
                   Jar_Create | not (null files')
                     -> [jarCreateOrUpdate veryVerbose archive' files' mbManif]
                   _ -> []
               )
-           ++ [lift $ setCurrentDirectory cwd]
+           ++ [liftIO $ setCurrentDirectory cwd]
            )
        }
   where -- split files in groups, fed to jar group by group, necessary because is somewhere a limit on nr of shell args
         -- TBD: correct Manifest (does not reflect actual content when only part of .hs are compiled)
         jarCreateOrUpdate veryVerbose archive files mbManif
-          = do { archiveExists <- lift $ doesFileExist archive'
+          = do { archiveExists <- liftIO $ doesFileExist archive'
                ; cpSeq
                  $ map oneJar
                      (firstJargs archiveExists filesfirst : map restJargs filesrest)
@@ -108,7 +108,7 @@ cpJar relToDir mbManif what archive files
 %%]
 
 %%[(99 codegen jazy) export(cpLinkJar)
-cpLinkJar :: Maybe FPath -> [HsName] -> JarMk -> EHCompilePhase ()
+cpLinkJar :: EHCCompileRunner m => Maybe FPath -> [HsName] -> JarMk -> EHCompilePhaseT m ()
 cpLinkJar mbManif modNmL jarMk
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
@@ -131,7 +131,7 @@ cpLinkJar mbManif modNmL jarMk
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen && (java jazy)) export(cpCompileJazyJVM)
-cpCompileJazyJVM :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
+cpCompileJazyJVM :: EHCCompileRunner m => FinalCompileHow -> [HsName] -> HsName -> EHCompilePhaseT m ()
 cpCompileJazyJVM how othModNmL modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
@@ -148,9 +148,9 @@ cpCompileJazyJVM how othModNmL modNm
                         variant        = Cfg.installVariant opts
                   ; cpMsg modNm VerboseALot "Emit Jazy"
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
-                         (lift $ putStrLn (show modNm ++ " JVM classes: " ++ show (map fst clss2)))
+                         (liftIO $ putStrLn (show modNm ++ " JVM classes: " ++ show (map fst clss2)))
                   ; fpModClL
-                      <- lift $
+                      <- liftIO $
                          mapM (\(m,b) -> do { let fpModCl = fpCl m
                                             ; fpathEnsureExists fpModCl
                                             ; when (ehcOptVerbosity opts >= VerboseDebug)
@@ -166,7 +166,7 @@ cpCompileJazyJVM how othModNmL modNm
                   ; let fpManifest = mkOutputFPath opts modNm fp "manifest"     
                   ; case how of
                       FinalCompile_Exec
-                        -> do { lift $ putPPFPath fpManifest (vlist $ [ k >|< ":" >#< v | (k,v) <- manifest ]) 100
+                        -> do { liftIO $ putPPFPath fpManifest (vlist $ [ k >|< ":" >#< v | (k,v) <- manifest ]) 100
                               ; cpRegisterFilesToRm [fpManifest]
                               ; cpLinkJar (Just fpManifest) (modNm : othModNmL2) (JarMk_Exec modNm fp)
                               }

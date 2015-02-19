@@ -44,7 +44,7 @@
 %%[(8 corerun) export(cpRunCoreRun)
 -- | Run CoreRun.
 -- TBD: fix dependence on whole program linked
-cpRunCoreRun :: HsName -> EHCompilePhase ()
+cpRunCoreRun :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpRunCoreRun modNm = do
     cr <- get
     let (ecu,_,opts,_) = crBaseInfo modNm cr
@@ -71,7 +71,7 @@ cpRunCoreRun modNm = do
 %%[(8 corerun) export(cpRunCoreRun2)
 -- | Run CoreRun.
 -- 20150130: TBD: does not work yet
-cpRunCoreRun2 :: HsName -> EHCompilePhase ()
+cpRunCoreRun2 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpRunCoreRun2 modNm = do
     cr <- get
     let (ecu,_,opts,_) = crBaseInfo modNm cr
@@ -107,7 +107,7 @@ cpRunCoreRun2 modNm = do
 
 %%[(8 corerun) export(cpRunCoreRun3)
 -- | Run CoreRun.
-cpRunCoreRun3 :: HsName -> EHCompilePhase ()
+cpRunCoreRun3 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpRunCoreRun3 modNm = do
     cr <- get
     let (ecu,_,opts,_) = crBaseInfo modNm cr

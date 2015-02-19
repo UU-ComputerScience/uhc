@@ -1,6 +1,8 @@
 autom4te.cache
 
 *.hi
+*.cr
+*.crr
 *.core
 *.grin
 
@@ -13,8 +15,10 @@ www/
 
 config.*
 
-install*/
-build*/
+install/
+install-*/
+build/
+build-*/
 t/
 doc/
 klad*

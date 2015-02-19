@@ -43,7 +43,7 @@ JavaScript compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen javascript) export(cpJavaScript)
-cpJavaScript :: FilePath -> [FilePath] -> EHCompilePhase ()
+cpJavaScript :: EHCCompileRunner m => FilePath -> [FilePath] -> EHCompilePhaseT m ()
 cpJavaScript archive files
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
@@ -58,7 +58,7 @@ cpJavaScript archive files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen javascript) export(cpCompileJavaScript)
-cpCompileJavaScript :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
+cpCompileJavaScript :: EHCCompileRunner m => FinalCompileHow -> [HsName] -> HsName -> EHCompilePhaseT m ()
 cpCompileJavaScript how othModNmL modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
@@ -84,10 +84,10 @@ cpCompileJavaScript how othModNmL modNm
 
        ; when (isJust mbJs && ehcOptEmitJavaScript opts)
               (do { when (ehcOptVerbosity opts >= VerboseDebug)
-                         (do { lift $ putStrLn $ "fpExec: " ++ fpathToStr fpExec
-                             -- ; lift $ putStrLn $ "fpExec (canon): " ++ fileNmExec
-                             ; lift $ putStrLn $ show (ehcOptImportFileLocPath opts)
-                             ; lift $ putStrLn $ "module dependencies:" ++ intercalate "," (jsModDeps (fromJust mbJs))
+                         (do { liftIO $ putStrLn $ "fpExec: " ++ fpathToStr fpExec
+                             -- ; liftIO $ putStrLn $ "fpExec (canon): " ++ fileNmExec
+                             ; liftIO $ putStrLn $ show (ehcOptImportFileLocPath opts)
+                             ; liftIO $ putStrLn $ "module dependencies:" ++ intercalate "," (jsModDeps (fromJust mbJs))
                              })
 
                   ; let fpDeps  = map fpathFromStr (jsModDeps (fromJust mbJs))
@@ -104,7 +104,7 @@ cpCompileJavaScript how othModNmL modNm
 
                   ; let Right jsDeps = jsDepsFound
 
-                  -- ; lift $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
+                  -- ; liftIO $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
                   ; fpM <- cpOutputJavaScript False "" modNm
                   
                   -- ; fileNmExec <- liftIO $ canonicalize $ fpathToStr fpExec 
@@ -159,7 +159,7 @@ cpCompileJavaScript how othModNmL modNm
               )
        }
   where mkHtml fpHtml jsL
-          = lift $ putPPFPath fpHtml (ppHtml) 1000
+          = liftIO $ putPPFPath fpHtml (ppHtml) 1000
           where scr x = "<script type=\"text/javascript\" src=\"" >|< x >|< "\"></script>"
                 ppHtml
                   = "<!DOCTYPE html><html><head><title>" >|< modNm >|< "</title>"
@@ -169,10 +169,10 @@ cpCompileJavaScript how othModNmL modNm
                     >-< "</body>"
                     >-< "</html>"
 
-        findJsDep :: FileLocPath -> FPath -> EHCompilePhase (Maybe FPath)
-        findJsDep searchPath dep = lift $ searchPathForReadableFile (map filelocDir searchPath) [Just "js"] dep
+        findJsDep :: EHCCompileRunner m => FileLocPath -> FPath -> EHCompilePhaseT m (Maybe FPath)
+        findJsDep searchPath dep = liftIO $ searchPathForReadableFile (map filelocDir searchPath) [Just "js"] dep
 
-        jsDepsToFPaths :: FileLocPath -> [FPath] -> EHCompilePhase (Either [FPath] [FPath])
+        jsDepsToFPaths :: EHCCompileRunner m => FileLocPath -> [FPath] -> EHCompilePhaseT m (Either [FPath] [FPath])
         jsDepsToFPaths searchPath deps = do
           paths <- mapM (\dep -> do {
                     ; depFound <- findJsDep searchPath dep
@@ -186,10 +186,10 @@ cpCompileJavaScript how othModNmL modNm
             then return $ Left allLeft
             else return $ Right $ rights paths
 
-        err :: String -> EHCompilePhase ()
+        err :: EHCCompileRunner m => String -> EHCompilePhaseT m ()
         err x = do 
-          lift $ hPutStrLn stderr ("error: " ++ x)
-          lift $ exitFailure
+          liftIO $ hPutStrLn stderr ("error: " ++ x)
+          liftIO $ exitFailure
 %%]
 
 

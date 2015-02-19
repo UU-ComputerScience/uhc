@@ -68,7 +68,7 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(cpTransformCore)
-cpTransformCore :: OptimizationScope -> HsName -> EHCompilePhase ()
+cpTransformCore :: EHCCompileRunner m => OptimizationScope -> HsName -> EHCompilePhaseT m ()
 cpTransformCore optimScope modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -100,7 +100,7 @@ cpTransformCore optimScope modNm
               trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsiCoreInh crsi) modNm trfcoreIn
        
 %%[[(50 corein)
-       -- ; lift $ putStrLn $ "cpTransformCore trfcoreNotYetTransformed: " ++ show (trfcoreNotYetTransformed $ trfstExtra trfcoreIn)
+       -- ; liftIO $ putStrLn $ "cpTransformCore trfcoreNotYetTransformed: " ++ show (trfcoreNotYetTransformed $ trfstExtra trfcoreIn)
 %%]]
          -- put back result: Core
        ; cpUpdCU modNm $! ecuStoreCore (trfstMod trfcoreOut)
@@ -132,7 +132,7 @@ cpTransformCore optimScope modNm
 
 
 %%[(8 codegen tycore) export(cpTransformTyCore)
-cpTransformTyCore :: HsName -> EHCompilePhase ()
+cpTransformTyCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTransformTyCore modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -181,7 +181,7 @@ cpTransformTyCore modNm
 
 
 %%[(8 javascript) export(cpTransformJavaScript)
-cpTransformJavaScript :: OptimizationScope -> HsName -> EHCompilePhase ()
+cpTransformJavaScript :: EHCCompileRunner m => OptimizationScope -> HsName -> EHCompilePhaseT m ()
 cpTransformJavaScript optimScope modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -210,7 +210,7 @@ cpTransformJavaScript optimScope modNm
 
 
 %%[(8 codegen cmm) export(cpTransformCmm)
-cpTransformCmm :: OptimizationScope -> HsName -> EHCompilePhase ()
+cpTransformCmm :: EHCCompileRunner m => OptimizationScope -> HsName -> EHCompilePhaseT m ()
 cpTransformCmm optimScope modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr

@@ -30,14 +30,14 @@ Cleanup between phases
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(cpCleanupHSMod,cpCleanupHS,cpCleanupFoldEH,cpCleanupEH)
-cpCleanupHSMod :: HsName -> EHCompilePhase ()
+cpCleanupHSMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupHSMod modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbHSSemMod     	  = Nothing
                }
       )
 
-cpCleanupHS :: HsName -> EHCompilePhase ()
+cpCleanupHS :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupHS modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbHS              = Nothing
@@ -45,14 +45,14 @@ cpCleanupHS modNm
                }
       )
 
-cpCleanupFoldEH :: HsName -> EHCompilePhase ()
+cpCleanupFoldEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupFoldEH modNm 
   = cpUpdCU modNm
       (\e -> e { ecuMbEH              = Nothing
                }
       )
 
-cpCleanupEH :: HsName -> EHCompilePhase ()
+cpCleanupEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupEH modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbEHSem           = Nothing
@@ -61,7 +61,7 @@ cpCleanupEH modNm
 %%]
 
 %%[(99 codegen) export(cpCleanupCore)
-cpCleanupCore :: [HsName] -> EHCompilePhase ()
+cpCleanupCore :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpCleanupCore modNmL
   = cpSeq [cl m | m <- modNmL]
   where cl m = cpUpdCU m
@@ -80,7 +80,7 @@ cpCleanupCore modNmL
 %%]
 
 %%[(99 codegen cmm) export(cpCleanupCmm)
-cpCleanupCmm :: HsName -> EHCompilePhase ()
+cpCleanupCmm :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupCmm modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbCmm               = Nothing
@@ -89,7 +89,7 @@ cpCleanupCmm modNm
 %%]
 
 %%[(99 codegen grin) export(cpCleanupGrin,cpCleanupFoldBytecode,cpCleanupBytecode)
-cpCleanupGrin :: [HsName] -> EHCompilePhase ()
+cpCleanupGrin :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpCleanupGrin modNmL
   = cpSeq [cl m | m <- modNmL]
   where cl m = cpUpdCU m
@@ -97,14 +97,14 @@ cpCleanupGrin modNmL
                            }
                   )
 
-cpCleanupFoldBytecode :: HsName -> EHCompilePhase ()
+cpCleanupFoldBytecode :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupFoldBytecode modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbBytecode          = Nothing
                }
       )
 
-cpCleanupBytecode :: HsName -> EHCompilePhase ()
+cpCleanupBytecode :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupBytecode modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbBytecodeSem       = Nothing
@@ -113,7 +113,7 @@ cpCleanupBytecode modNm
 %%]
 
 %%[99 export(cpCleanupCU,cpCleanupFlow)
-cpCleanupCU :: HsName -> EHCompilePhase ()
+cpCleanupCU :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupCU modNm
   = do { cpUpdCU modNm
            (\e -> e { ecuHIInfo            = {- HI.hiiRetainAfterCleanup -} (ecuHIInfo e)
@@ -129,7 +129,7 @@ cpCleanupCU modNm
 %%]]
        }
 
-cpCleanupFlow :: HsName -> EHCompilePhase ()
+cpCleanupFlow :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupFlow modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbHSSemMod        = Nothing

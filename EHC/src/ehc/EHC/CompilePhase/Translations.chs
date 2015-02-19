@@ -94,7 +94,7 @@ Translation to another AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(cpTranslateHs2EH)
-cpTranslateHs2EH :: HsName -> EHCompilePhase ()
+cpTranslateHs2EH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateHs2EH modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -106,15 +106,15 @@ cpTranslateHs2EH modNm
                  (do { cpUpdCU modNm (ecuStoreEH eh)
                      ; cpSetLimitErrsWhen 5 "Dependency/name analysis" errs
                      ; when (ehcOptEmitHS opts)
-                            (lift $ putPPFPath (mkOutputFPath opts modNm fp "hs2") (HSSem.pp_Syn_AGItf hsSem) 1000)
+                            (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "hs2") (HSSem.pp_Syn_AGItf hsSem) 1000)
                      ; when (ehcOptShowHS opts)
-                            (lift $ putWidthPPLn 120 (HSSem.pp_Syn_AGItf hsSem))
+                            (liftIO $ putWidthPPLn 120 (HSSem.pp_Syn_AGItf hsSem))
                      })
          }
 %%]
 
 %%[8 export(cpTranslateEH2Output)
-cpTranslateEH2Output :: HsName -> EHCompilePhase ()
+cpTranslateEH2Output :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2Output modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -135,22 +135,22 @@ cpTranslateEH2Output modNm
                  (do { cpSetLimitErrsWhen 5 about errs
 %%[[8
                      ; when (ehcOptEmitEH opts)
-                            (lift $ putPPFPath (mkOutputFPath opts modNm fp "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
+                            (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
                      ; when (ehcOptShowEH opts)
-                            (lift $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
+                            (liftIO $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
 %%][102
 %%]]
 %%[[8
                      ; when (ehcOptShowAst opts)
-                            (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+                            (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][99
                      ; when (ecuIsTopMod ecu && ehcOptShowAst opts)
-                            (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+                            (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][100
 %%]]
 %%[[(99 hmtyinfer tyderivtree)
                      ; when (ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
-                            (lift $ putPPFPath (mkOutputFPath opts modNm fp "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)
+                            (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)
 %%][100
 %%]]
                      }
@@ -159,7 +159,7 @@ cpTranslateEH2Output modNm
 %%]
 
 %%[(8 codegen) export(cpTranslateEH2Core)
-cpTranslateEH2Core :: HsName -> EHCompilePhase ()
+cpTranslateEH2Core :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2Core modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -173,7 +173,7 @@ cpTranslateEH2Core modNm
 %%]
 
 %%[(8 codegen tycore) export(cpTranslateEH2TyCore)
-cpTranslateEH2TyCore :: HsName -> EHCompilePhase ()
+cpTranslateEH2TyCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2TyCore modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -183,13 +183,13 @@ cpTranslateEH2TyCore modNm
          ;  when (isJust mbEHSem)
                  (do { cpUpdCU modNm (ecuStoreTyCore tycore)
                      ; when (ehcOptShowTyCore opts)
-                            (lift $ putPPLn (TyCoreSem.ppAST opts tycore))
+                            (liftIO $ putPPLn (TyCoreSem.ppAST opts tycore))
                      })
          }
 %%]
 
 %%[(8 codegen grin) export(cpTranslateCore2Grin)
-cpTranslateCore2Grin :: HsName -> EHCompilePhase ()
+cpTranslateCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCore2Grin modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -202,7 +202,7 @@ cpTranslateCore2Grin modNm
 %%]
 
 %%[(8 codegen tycore grin) export(cpTranslateTyCore2Core)
-cpTranslateTyCore2Core :: HsName -> EHCompilePhase ()
+cpTranslateTyCore2Core :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateTyCore2Core modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -215,7 +215,7 @@ cpTranslateTyCore2Core modNm
 %%]
 
 %%[(8 codegen jazy) export(cpTranslateCore2Jazy)
-cpTranslateCore2Jazy :: HsName -> EHCompilePhase ()
+cpTranslateCore2Jazy :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCore2Jazy modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -227,7 +227,7 @@ cpTranslateCore2Jazy modNm
 
 %%[(8 codegen javascript) export(cpTranslateCore2JavaScript)
 -- | Translate Core to JavaScript
-cpTranslateCore2JavaScript :: HsName -> EHCompilePhase ()
+cpTranslateCore2JavaScript :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCore2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -242,8 +242,9 @@ cpTranslateCore2JavaScript modNm
 -- | Compute info for Grin based codegen.
 -- TBD: can become obsolete
 cpGenGrinGenInfo
-  :: HsName
-  -> EHCompilePhase
+  :: EHCCompileRunner m => 
+     HsName
+  -> EHCompilePhaseT m
        ( LamMp
        , [HsName]
        , HsName2FldMpMp
@@ -256,7 +257,7 @@ cpGenGrinGenInfo modNm
 
 %%[(8 codegen grin cmm) export(cpTranslateGrin2Cmm)
 -- | Translate Grin to Cmm
-cpTranslateGrin2Cmm :: HsName -> EHCompilePhase ()
+cpTranslateGrin2Cmm :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateGrin2Cmm modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -280,7 +281,7 @@ cpTranslateGrin2Cmm modNm
 
 %%[(8 codegen javascript cmm) export(cpTranslateCmm2JavaScript)
 -- | Translate Cmm to JavaScript
-cpTranslateCmm2JavaScript :: HsName -> EHCompilePhase ()
+cpTranslateCmm2JavaScript :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCmm2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
@@ -299,13 +300,13 @@ cpTranslateCmm2JavaScript modNm
 %%]
 
 %%[(8 codegen grin) export(cpTranslateGrin2Bytecode)
-cpTranslateGrin2Bytecode :: HsName -> EHCompilePhase ()
+cpTranslateGrin2Bytecode :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateGrin2Bytecode modNm
   =  do { cr <- get
         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
 %%[[50
         ; when (ehcOptVerbosity opts >= VerboseDebug)
-               (lift $ putStrLn ("crsiModOffMp: " ++ show (crsiModOffMp crsi)))
+               (liftIO $ putStrLn ("crsiModOffMp: " ++ show (crsiModOffMp crsi)))
         ; (lamMp, allImpNmL, impNmFldMpMp, expNmFldMp) <- cpGenGrinGenInfo modNm
 %%]]
         ; let  mbGrin = ecuMbGrin ecu
@@ -319,7 +320,7 @@ cpTranslateGrin2Bytecode modNm
                           $ grin
 %%[[50
         ; when (ehcOptVerbosity opts >= VerboseDebug)
-               (lift $ putStrLn ("expNmFldMp: " ++ show expNmFldMp))
+               (liftIO $ putStrLn ("expNmFldMp: " ++ show expNmFldMp))
 %%]]
 
         ; cpMsg modNm VerboseDebug ("cpTranslateGrin2Bytecode: store bytecode")
@@ -334,19 +335,19 @@ cpTranslateGrin2Bytecode modNm
 %%[(8 codegen grin wholeprogAnal) export(cpTransformGrinHPTWholeProg)
 -- This should be in Transformations
 -- | Transform Grin using HPT and its results
-cpTransformGrinHPTWholeProg :: HsName -> EHCompilePhase ()
+cpTransformGrinHPTWholeProg :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTransformGrinHPTWholeProg modNm
   =  do { cr <- get
         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                mbGrin = ecuMbGrin ecu
                grin   = panicJust "cpTransformGrinHPTWholeProg" mbGrin
         ; when (isJust mbGrin)
-               (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
+               (liftIO $ GRINC.doCompileGrin (Right (fp,grin)) opts)
         }
 %%]
 
 %%[(8 codegen grin) export(cpTranslateByteCode)
-cpTranslateByteCode :: HsName -> EHCompilePhase ()
+cpTranslateByteCode :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateByteCode modNm
   =  do { cr <- get
         ; let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -401,9 +402,9 @@ cpTranslateByteCode modNm
                       )
 {-
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
-                          (lift $ do { putStrLn ("cpTranslateByteCode.lamMp: " ++ show (HI.hiiLamMp hii))
-                                     ; putStrLn ("cpTranslateByteCode.functionInfoExportMp: " ++ show functionInfoExportMp)
-                                     })
+                          (liftIO $ do { putStrLn ("cpTranslateByteCode.lamMp: " ++ show (HI.hiiLamMp hii))
+                                       ; putStrLn ("cpTranslateByteCode.functionInfoExportMp: " ++ show functionInfoExportMp)
+                                       })
 -}
                    })
         }

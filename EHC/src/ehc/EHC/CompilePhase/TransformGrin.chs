@@ -47,14 +47,14 @@ Grin transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-cpMsgGrinTrf :: HsName -> String -> EHCompilePhase ()
+cpMsgGrinTrf :: EHCCompileRunner m => HsName -> String -> EHCompilePhaseT m ()
 cpMsgGrinTrf modNm m
   = do { cr <- get
        ; let (_,_,_,fp) = crBaseInfo modNm cr
        ; cpMsg' modNm VerboseALot "Local GRIN optim" (Just m) fp     -- '
        }
 
-cpFromGrinTrf :: HsName -> (Grin.GrModule -> Grin.GrModule) -> String -> EHCompilePhase ()
+cpFromGrinTrf :: EHCCompileRunner m => HsName -> (Grin.GrModule -> Grin.GrModule) -> String -> EHCompilePhaseT m ()
 cpFromGrinTrf modNm trf m
   = do { cr <- get
        ; let (ecu,_,_,fp) = crBaseInfo modNm cr
@@ -64,7 +64,7 @@ cpFromGrinTrf modNm trf m
 %%]
 
 %%[(8 codegen grin) export(cpTransformGrin)
-cpTransformGrin :: HsName -> EHCompilePhase ()
+cpTransformGrin :: forall m . EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTransformGrin modNm
   =  do  {  cr <- get
          ;  cpMsg modNm VerboseDebug "cpTransformGrin"         
@@ -78,6 +78,7 @@ cpTransformGrin modNm
 {- for debugging 
                  trafos  =     mk [mte,unb,flt,cpr,nme]
 -}
+                 trafos :: [(EHCompilePhaseT m (), String)]
                  trafos  =     (                                  mk [flt,bae]                             )
                            ++  (if not needMetaInfo          then mk [mte]                    else []      )
                            ++  (if forBytecode               then mk [unb]                    else []      )

@@ -67,7 +67,7 @@ Folding over AST to compute semantics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(cpFoldCore2Grin)
-cpFoldCore2Grin :: HsName -> EHCompilePhase ()
+cpFoldCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCore2Grin modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -89,7 +89,7 @@ cpFoldCore2Grin modNm
 %%]
 
 %%[(8 core corerun) export(cpFoldCore2CoreRun)
-cpFoldCore2CoreRun :: HsName -> EHCompilePhase ()
+cpFoldCore2CoreRun :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCore2CoreRun modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) 		= crBaseInfo modNm cr
@@ -114,7 +114,7 @@ cpFoldCore2CoreRun modNm
 %%]
 
 %%[(50 codegen corerunin) export(cpFoldCoreRunMod)
-cpFoldCoreRunMod :: HsName -> EHCompilePhase ()
+cpFoldCoreRunMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCoreRunMod modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -128,7 +128,7 @@ cpFoldCoreRunMod modNm
                  crrSem   = CoreRun2ChkSem.crmodCheck' inh core
                  hasMain  = CoreRun2ChkSem.hasMain_Syn_AGItf crrSem
                  mod      = CoreRun2ChkSem.mod_Syn_AGItf crrSem
-         -- ;  lift $ putStrLn $ "cpFoldCoreRunMod " ++ show hasMain
+         -- ;  liftIO $ putStrLn $ "cpFoldCoreRunMod " ++ show hasMain
          ;  when (isJust mbCoreRun)
                  (cpUpdCU modNm ( ecuStoreCoreRunSemMod crrSem
                                 . ecuSetHasMain hasMain
@@ -138,7 +138,7 @@ cpFoldCoreRunMod modNm
 %%]
 
 %%[(50 codegen corein) export(cpFoldCoreMod)
-cpFoldCoreMod :: HsName -> EHCompilePhase ()
+cpFoldCoreMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCoreMod modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -152,7 +152,7 @@ cpFoldCoreMod modNm
                  coreSem  = Core2ChkSem.cmodCheck' inh core
                  hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
                  mod      = Core2ChkSem.mod_Syn_CodeAGItf coreSem
-         -- ;  lift $ putStrLn $ "cpFoldCoreMod " ++ show hasMain
+         -- ;  liftIO $ putStrLn $ "cpFoldCoreMod " ++ show hasMain
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSemMod coreSem
                                 . ecuSetHasMain hasMain
@@ -162,7 +162,7 @@ cpFoldCoreMod modNm
 %%]
 
 %%[8 export(cpFoldEH)
-cpFoldEH :: HsName -> EHCompilePhase ()
+cpFoldEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldEH modNm
   =  do  {  cr <- get
 %%[[(50 codegen)
@@ -189,7 +189,7 @@ cpFoldEH modNm
 %%]
 
 %%[8 export(cpFoldHs)
-cpFoldHs :: HsName -> EHCompilePhase ()
+cpFoldHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHs modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -228,7 +228,7 @@ cpFoldHs modNm
                                      )
 %%[[50
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
-                            (lift $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
+                            (liftIO $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
                      -- ; when hasMain (crSetAndCheckMain modNm)
 %%]]
                      })
@@ -236,7 +236,7 @@ cpFoldHs modNm
 %%]
 
 %%[50 export(cpFoldHsMod)
-cpFoldHsMod :: HsName -> EHCompilePhase ()
+cpFoldHsMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHsMod modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -264,7 +264,7 @@ cpFoldHsMod modNm
 %%]
 
 %%[50 export(cpFoldHIInfo)
-cpFoldHIInfo :: HsName -> EHCompilePhase ()
+cpFoldHIInfo :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHIInfo modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -287,7 +287,7 @@ cpFoldHIInfo modNm
                                      . ecuSetHasMain hasMain
                                      )
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
-                            (lift $ putStrLn
+                            (liftIO $ putStrLn
                                (show modNm
                                 ++ ": hi imps, decl=" ++ show (HI.hiiHIDeclImpModS hiInfo)
                                 ++ ", used=" ++ show (HI.hiiHIUsedImpModS hiInfo)

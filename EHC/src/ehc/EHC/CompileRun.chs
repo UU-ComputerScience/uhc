@@ -16,9 +16,9 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[99 import(System.Directory)
 %%]
-%%[8 import(Control.Monad.State)
+%%[8 import(Control.Monad.State, Control.Monad.Error)
 %%]
-%%[99 import(Control.Exception as CE)
+%%[8 import(Control.Exception as CE)
 %%]
 %%[99 import(UHC.Util.FPath)
 %%]
@@ -206,10 +206,35 @@ instance CompileRunStateInfo EHCompileRunStateInfo HsName () where
   crsiImportPosOfCUKey n i = ()
 %%]
 
-%%[8 export(EHCompileRun,EHCompilePhase)
-type EHCompileRun     = CompileRun   HsName EHCompileUnit EHCompileRunStateInfo Err
-type EHCompilePhase a = CompilePhase HsName EHCompileUnit EHCompileRunStateInfo Err a
+%%[8 export(EHCCompileRunner)
+class (MonadIO m, CompileRunner EHCompileUnitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)) => EHCCompileRunner m where
+
+instance ( CompileRunStateInfo EHCompileRunStateInfo HsName ()
+         , CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState
+         , CompileRunError Err ()
+         -- , MonadError (CompileRunState Err) m
+         -- , MonadState EHCompileRun (EHCompilePhaseAddonT m)
+         , MonadIO m -- (EHCompilePhaseAddonT m)
+         , Monad m
+         ) => CompileRunner EHCompileUnitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)
+
+instance ( CompileRunStateInfo EHCompileRunStateInfo HsName ()
+         , CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState
+         , CompileRunError Err ()
+         -- , MonadError (CompileRunState Err) m
+         -- , MonadState EHCompileRun (EHCompilePhaseAddonT m)
+         , MonadIO m -- (EHCompilePhaseAddonT m)
+         , Monad m
+         ) => EHCCompileRunner m
 %%]
+
+%%[8 export(EHCompileRun,EHCompilePhaseT,EHCompilePhase)
+type EHCompileRun           = CompileRun HsName EHCompileUnit EHCompileRunStateInfo Err
+type EHCompilePhaseAddonT m = StateT EHCompileRun m
+type EHCompilePhaseT      m = CompilePhaseT HsName EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)
+type EHCompilePhase         = EHCompilePhaseT IO
+%%]
+-- type EHCompilePhase a = CompilePhase HsName EHCompileUnit EHCompileRunStateInfo Err a
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile Run base info
@@ -251,16 +276,16 @@ crBaseInfo modNm cr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-cpMemUsage :: EHCompilePhase ()
+cpMemUsage :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpMemUsage
 %%[[8
   = return ()
 %%][102
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
-       ; size <- lift $ megaBytesAllocated
+       ; size <- liftIO $ megaBytesAllocated
        ; when (ehcOptVerbosity opts >= VerboseDebug)
-              (lift $ putStrLn ("Mem: " ++ show size ++ "M"))
+              (liftIO $ putStrLn ("Mem: " ++ show size ++ "M"))
        }
 %%]]
 %%]
@@ -274,7 +299,7 @@ cpMemUsage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(cpUpdOpts)
-cpUpdOpts :: (EHCOpts -> EHCOpts) -> EHCompilePhase ()
+cpUpdOpts :: EHCCompileRunner m => (EHCOpts -> EHCOpts) -> EHCompilePhaseT m ()
 cpUpdOpts upd
   = cpUpdSI (\crsi -> crsi {crsiOpts = upd $ crsiOpts crsi})
 %%]
@@ -284,18 +309,18 @@ cpUpdOpts upd
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(cpRegisterFilesToRm)
-cpRegisterFilesToRm :: [FPath] -> EHCompilePhase ()
+cpRegisterFilesToRm :: EHCCompileRunner m => [FPath] -> EHCompilePhaseT m ()
 cpRegisterFilesToRm fpL
   = cpUpdSI (\crsi -> crsi {crsiFilesToRm = fpL ++ crsiFilesToRm crsi})
 %%]
 
 %%[99 export(cpRmFilesToRm)
-cpRmFilesToRm :: EHCompilePhase ()
+cpRmFilesToRm :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpRmFilesToRm
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
              files = Set.toList $ Set.fromList $ map fpathToStr $ crsiFilesToRm crsi
-       ; lift $ mapM rm files
+       ; liftIO $ mapM rm files
        ; cpUpdSI (\crsi -> crsi {crsiFilesToRm = []})
        }
   where rm f = CE.catch (removeFile f)
@@ -307,20 +332,20 @@ cpRmFilesToRm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(cpMsg,cpMsg')
-cpMsg :: HsName -> Verbosity -> String -> EHCompilePhase ()
+cpMsg :: EHCCompileRunner m => HsName -> Verbosity -> String -> EHCompilePhaseT m ()
 cpMsg modNm v m
   = do { cr <- get
        ; let (_,_,_,mbFp) = crMbBaseInfo modNm cr
        ; cpMsg' modNm v m Nothing (maybe emptyFPath id mbFp)
        }
 
-cpMsg' :: HsName -> Verbosity -> String -> Maybe String -> FPath -> EHCompilePhase ()
+cpMsg' :: EHCCompileRunner m => HsName -> Verbosity -> String -> Maybe String -> FPath -> EHCompilePhaseT m ()
 cpMsg' modNm v m mbInfo fp
   = do { cr <- get
        ; let (mbEcu,crsi,opts,_) = crMbBaseInfo modNm cr
 %%[[99
-       ; ehcioinfo <- lift $ readIORef (crsiEHCIOInfo crsi)
-       ; clockTime <- lift getEHCTime
+       ; ehcioinfo <- liftIO $ readIORef (crsiEHCIOInfo crsi)
+       ; clockTime <- liftIO getEHCTime
        ; let clockStartTimePrev = ehcioinfoStartTime ehcioinfo
              clockTimePrev      = ehcioinfoLastTime ehcioinfo
              clockStartTimeDiff = ehcTimeDiff clockTime clockStartTimePrev
@@ -333,10 +358,10 @@ cpMsg' modNm v m mbInfo fp
              t				= if v >= VerboseALot then "<" ++ strBlankPad 35 (ehcTimeDiffFmt clockStartTimeDiff ++ "/" ++ ehcTimeDiffFmt clockTimeDiff) ++ ">" else ""
              m'             = maybe "" (\ecu -> show (ecuSeqNr ecu) ++ t ++ " ") mbEcu ++ m
 %%]]
-       ; lift $ putCompileMsg v (ehcOptVerbosity opts) m' mbInfo modNm fp
+       ; liftIO $ putCompileMsg v (ehcOptVerbosity opts) m' mbInfo modNm fp
 %%[[99
-       ; clockTime <- lift getEHCTime
-       ; lift $ writeIORef (crsiEHCIOInfo crsi) (ehcioinfo {ehcioinfoLastTime = clockTime})
+       ; clockTime <- liftIO getEHCTime
+       ; liftIO $ writeIORef (crsiEHCIOInfo crsi) (ehcioinfo {ehcioinfoLastTime = clockTime})
        -- ; cpUpdSI (\crsi -> crsi { crsiTime = clockTime })
 %%]]
        ; cpMemUsage
@@ -348,13 +373,13 @@ cpMsg' modNm v m mbInfo fp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(cpStepUID,cpSetUID)
-cpStepUID :: EHCompilePhase ()
+cpStepUID :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpStepUID
   = cpUpdSI (\crsi -> let (n,h) = mkNewLevUID (crsiNextUID crsi)
                       in  crsi {crsiNextUID = n, crsiHereUID = h}
             )
 
-cpSetUID :: UID -> EHCompilePhase ()
+cpSetUID :: EHCCompileRunner m => UID -> EHCompilePhaseT m ()
 cpSetUID u
   = cpUpdSI (\crsi -> crsi {crsiNextUID = u})
 %%]
@@ -364,20 +389,20 @@ cpSetUID u
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(cpSystem',cpSystem)
-cpSystem' :: Maybe FilePath -> (FilePath,[String]) -> EHCompilePhase ()
+cpSystem' :: EHCCompileRunner m => Maybe FilePath -> (FilePath,[String]) -> EHCompilePhaseT m ()
 cpSystem' mbStdOut (cmd,args)
-  = do { exitCode <- lift $ system $ showShellCmd $ (cmd,args ++ (maybe [] (\o -> [">", o]) mbStdOut))
+  = do { exitCode <- liftIO $ system $ showShellCmd $ (cmd,args ++ (maybe [] (\o -> [">", o]) mbStdOut))
        ; case exitCode of
            ExitSuccess -> return ()
            _           -> cpSetFail
        }
 
-cpSystem :: (FilePath,[String]) -> EHCompilePhase ()
+cpSystem :: EHCCompileRunner m => (FilePath,[String]) -> EHCompilePhaseT m ()
 cpSystem = cpSystem' Nothing
 %%]
 cpSystem' :: (FilePath,[String]) -> Maybe FilePath -> EHCompilePhase ()
 cpSystem' (cmd,args) mbStdOut
-  = do { exitcode <- lift $ do 
+  = do { exitcode <- liftIO $ do 
            proc <- runProcess cmd args Nothing Nothing Nothing Nothing Nothing
            waitForProcess proc
        ; case exitCode of
@@ -387,16 +412,16 @@ cpSystem' (cmd,args) mbStdOut
 
 cpSystem' :: (FilePath,[String]) -> Maybe FilePath -> EHCompilePhase ()
 cpSystem' (cmd,args) mbStdOut
-  = do { exitCode <- lift $ system cmd
+  = do { exitCode <- liftIO $ system cmd
        ; case exitCode of
            ExitSuccess -> return ()
            _           -> cpSetFail
        }
 
 %%[8 export(cpSystemRaw)
-cpSystemRaw :: String -> [String] -> EHCompilePhase ()
+cpSystemRaw :: EHCCompileRunner m => String -> [String] -> EHCompilePhaseT m ()
 cpSystemRaw cmd args
-  = do { exitCode <- lift $ rawSystem cmd args
+  = do { exitCode <- liftIO $ rawSystem cmd args
        ; case exitCode of
            ExitSuccess -> return ()
            _           -> cpSetErrs [rngLift emptyRange Err_PP $ pp $ show exitCode] -- cpSetFail
@@ -408,7 +433,7 @@ cpSystemRaw cmd args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(cpStopAt)
-cpStopAt :: CompilePoint -> EHCompilePhase ()
+cpStopAt :: EHCCompileRunner m => CompilePoint -> EHCompilePhaseT m ()
 cpStopAt atPhase
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
@@ -501,7 +526,7 @@ crPartitionIntoPkgAndOthers cr modNmL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 export(crSetAndCheckMain)
-crSetAndCheckMain :: HsName -> EHCompilePhase ()
+crSetAndCheckMain :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 crSetAndCheckMain modNm
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
