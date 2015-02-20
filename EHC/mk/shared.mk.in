@@ -585,14 +585,14 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "" ; \
 					echo   "Library" ; \
 					echo   "  Hs-Source-Dirs:       $(17)" ; \
-					echo   "  Build-Depends:		$(subst $(space),$(comma),$(strip  fgl hashable>=1.1&&<1.3 uhc-util>=0.1.3.7 base>=4&&<5  vector syb uulib network binary mtl directory containers array process  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Exposed-Modules:		$(7)" ; \
 					echo   "  Other-Modules:		$(8)" ; \
 					echo   "" ; \
 					echo   "Executable $(strip $(10))" ; \
 					echo   "  Hs-Source-Dirs:       $(18)" ; \
-					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip  fgl hashable>=1.1&&<1.3 uhc-util>=0.1.3.7 base>=4&&<5  vector syb uulib network binary mtl directory containers array process  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Main-Is:           	$(strip $(9)).hs" ; \
 					echo   "" ; \
