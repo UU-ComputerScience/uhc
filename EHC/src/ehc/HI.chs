@@ -48,7 +48,7 @@
 
 %%[50 hs import(Control.Monad, UHC.Util.Binary)
 %%]
-%%[50 hs import(Data.Typeable(Typeable), Data.Generics(Data), UHC.Util.Serialize)
+%%[50 hs import(UHC.Util.Serialize)
 %%]
 
 %%[50 hs import(qualified {%{EH}Config} as Cfg)

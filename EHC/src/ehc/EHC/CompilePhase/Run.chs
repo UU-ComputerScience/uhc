@@ -82,7 +82,7 @@ cpRunCoreRun2 modNm = do
 %%][50
     let hasMain = ecuHasMain ecu
     (impModL, mainMod) <- fmap (fromJust . initlast) $
-      case crPartitionMainAndImported cr $ map head $ crCompileOrder cr of
+      case crPartitionMainAndImported cr $ map head $ _crCompileOrder cr of
         (_, impl) -> do
           cores <- forM (impl ++ [modNm]) cpGetPrevCore
           return $ flip evalState emptyNm2RefMp $ do
@@ -118,7 +118,7 @@ cpRunCoreRun3 modNm = do
 %%][50
     let hasMain = ecuHasMain ecu
     (impModL, mainMod) <- fmap (fromJust . initlast) $
-      case crPartitionMainAndImported cr $ map head $ crCompileOrder cr of
+      case crPartitionMainAndImported cr $ map head $ _crCompileOrder cr of
         (_, impl) -> do
           forM (impl ++ [modNm]) cpGetPrevCoreRun
 %%]]

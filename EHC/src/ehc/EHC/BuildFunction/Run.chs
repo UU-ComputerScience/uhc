@@ -18,40 +18,47 @@ Running of BuildFunction
 %%]
 
 -- general imports
-%%[8 import ({%{EH}EHC.CompileRun}, {%{EH}EHC.CompileUnit})
+%%[8 import ({%{EH}EHC.Common}, {%{EH}EHC.CompileRun}, {%{EH}EHC.CompileUnit})
+%%]
+
+%%[8 import (UHC.Util.Lens)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Build function runner
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(runBFun)
-runBFun :: EHCCompileRunner m => BFun res -> EHCompilePhaseT m res
-runBFun bfun = do
-    case bfun of
-      -- Applicative part
-      Pure res -> return res
-      App  f a -> do
-          f' <- runBFun f
-          a' <- runBFun a
-          return $ f' a'
-      
+%%[8 export(runBFun')
+runBFun' :: EHCCompileRunner m => BFun' res -> EHCompilePhaseT m res
+runBFun' bfun = do
+    start
+
+    res <- case bfun of
       -- The actual work
       EcuOf modNm -> do
            return undefined
+           
+      FPathSearchForFile suff fn -> do
+           let fp    = mkTopLevelFPath suff fn
+               modNm = mkHNm $ fpathBase fp
+           return (fp, modNm)
+      
       _ -> return undefined
+
+    end
+    return res
+  where
+    start = crStateInfo ^* crsiBState ^* bstateCallStack =$: (BFun bfun :)
+    end = crStateInfo ^* crsiBState ^* bstateCallStack =$: tail
+
 %%]
 
-%%[8888 export(runBFunSq)
-runBFunSq :: BFunSq res -> EHCompilePhase res
-runBFunSq bfunsq = do
-    case bfunsq of
+      {-
+      -- Applicative part
       Pure res -> return res
-      Lift bfn -> runBFun bfn
       App  f a -> do
-          f' <- runBFunSq f
-          a' <- runBFunSq a
+          f' <- runBFun' f
+          a' <- runBFun' a
           return $ f' a'
-      _ -> return undefined
-%%]
-
+      -}
+      

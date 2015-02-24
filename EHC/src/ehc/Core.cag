@@ -57,8 +57,6 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%]
 %%[(50 core) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
-%%[(50 core) hs import(Data.Typeable(Typeable), Data.Generics(Data))
-%%]
 
 %%[(90 core) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
 %%]

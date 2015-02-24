@@ -1,6 +1,6 @@
 %%[0 hs
 {-# LANGUAGE MagicHash #-}
-{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, KindSignatures #-}
+{-# LANGUAGE DefaultSignatures, TypeOperators, KindSignatures #-}
 -- {-# OPTIONS_GHC -O3 #-}
 %%]
 
@@ -34,8 +34,6 @@
 %%[(8888 corerun) hs import(Data.Array, Data.Array.IO, Data.Array.MArray)
 %%]
 %%[(8 corerun) hs import(qualified Data.Vector as V, qualified Data.Vector.Mutable as MV, qualified Data.Vector.Generic as GV)
-%%]
-%%[(8 corerun) hs import(Data.Data, Data.Typeable)
 %%]
 
 -- For use of underlying (Haskell) impl

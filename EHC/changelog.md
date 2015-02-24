@@ -2,7 +2,7 @@
 
 ## 1.1.8.8 - 
 
-- 
+- [build] Intro of dependency on template haskell due to start of use of a lens library (fclabels, via uhc-util)
 
 ## 1.1.8.7 - 20150219
 

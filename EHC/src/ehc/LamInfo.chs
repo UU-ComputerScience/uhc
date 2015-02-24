@@ -57,8 +57,6 @@ Currently the following is maintained:
 
 %%[(50 codegen) import(Control.Monad, UHC.Util.Serialize)
 %%]
-%%[(50 codegen) import(Data.Typeable, Data.Generics(Data))
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Calling convention info for lambda expressions/CAFs: known function arity

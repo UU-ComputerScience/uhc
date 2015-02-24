@@ -42,9 +42,9 @@ candidates is returned.
 %%[9 import(UHC.Util.Pretty hiding (empty), qualified UHC.Util.Pretty as PP)
 %%]
 
-%%[50 import(Data.Typeable, Data.Generics(Data))
-%%]
 %%[50 hs import(Control.Monad)
+%%]
+%%[9 import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 %%[50 hs import(UHC.Util.Serialize)
 %%]
@@ -127,11 +127,6 @@ ppTreeTrieMpKey = ppListSep "<" ">" "," . map ppTreeTrieMp1Key
 
 ppTreeTrieKey :: PP k => TreeTrieKey k -> PP_Doc
 ppTreeTrieKey = ppBracketsCommas . map ppTreeTrieMpKey
-%%]
-
-%%[9999
-instance Hashable k => Hashable (TreeTrieKey k) where
-  hash = hash . ttkKey
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

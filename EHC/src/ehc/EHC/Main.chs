@@ -66,6 +66,10 @@
 %%[8 import(Control.Monad.State, Control.Monad.Error)
 %%]
 
+-- Build function state
+%%[8 import({%{EH}EHC.BuildFunction})
+%%]
+
 -- module
 %%[50 import({%{EH}Module.ImportExport}(modBuiltin), {%{EH}Module.ImportExport})
 %%]
@@ -328,9 +332,9 @@ doCompilePrepare fnL@(fn:_) opts
                                     }
 {- this does not work in ghc 6.8.2
              crsi           = emptyEHCompileRunStateInfo
-                                { crsiOpts       =   opts3
-                                , crsiHSInh      =   initialHSSem opts3
-                                , crsiEHInh      =   initialEHSem opts3 fp
+                                { _crsiOpts       =   opts3
+                                , _crsiHSInh      =   initialHSSem opts3
+                                , _crsiEHInh      =   initialEHSem opts3 fp
 %%[[(8 codegen)
                                 , crsiCoreInh    =   initialCore2GrSem opts3
 %%]]
@@ -362,6 +366,7 @@ doCompilePrepare fnL@(fn:_) opts
 %%[[99
                                                        ehcioinfo []
 %%]]
+                                                       emptyBState
                                 )
              initialState   = mkEmptyCompileRun topModNm crsi
        ; return $ Just (opts3,fpL,topModNmL,initialState)
@@ -417,7 +422,7 @@ doCompileRun fnL@(fn:_) opts
                   = zipWithM (\fp topModNm -> imp1 opts fileSuffMpHs searchPath (ECUS_Haskell HSOnlyImports) (Just fp) Nothing topModNm) fpL topModNmL
                 onelayer
                   = do { cr <- get
-                       ; let modNmS = Map.keysSet $ crCUCache cr
+                       ; let modNmS = Map.keysSet $ _crCUCache cr
                              ms = Set.unions
                                     [ case cuState e of
                                         -- ECUS_Haskell HIOnlyImports -> ecuTransClosedOrphanModS ecu
@@ -438,7 +443,7 @@ doCompileRun fnL@(fn:_) opts
                 {-
                 showCompileOrder
                   = do { cr <- get
-                       ; liftIO $ putStrLn $ "compile order: " ++ show (crCompileOrder cr)
+                       ; liftIO $ putStrLn $ "compile order: " ++ show (_crCompileOrder cr)
                        }
                 -}
                
@@ -492,7 +497,7 @@ doCompileRun fnL@(fn:_) opts
                 importAlso :: EHCompileUnitState -> (EHCompileUnit -> Set.Set HsName) -> EHCompilePhase ()
                 importAlso how getNms
                   = do { cr <- get
-                       ; let allAnalysedModS = Map.keysSet $ crCUCache cr
+                       ; let allAnalysedModS = Map.keysSet $ _crCUCache cr
                              allNewS         = Set.unions [ getNms $ crCU m cr | m <- Set.toList allAnalysedModS ] `Set.difference` allAnalysedModS
                        ; cpImportGatherFromModsWithImp
                            (const [])

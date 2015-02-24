@@ -28,8 +28,6 @@ Analysis domains
 
 %%[(50 codegen) hs import(Control.Monad hiding(join), UHC.Util.Serialize, UHC.Util.Control.Monad(liftM6))
 %%]
-%%[(50 codegen) hs import(Data.Typeable(Typeable), Data.Generics(Data))
-%%]
 
 %%[(8 codegen) ag import({AnaDomain/AbsSyn})
 DERIVING *

@@ -1,5 +1,5 @@
 %%[0 hs
-{-# LANGUAGE DeriveGeneric #-}
+-- {-# LANGUAGE DeriveGeneric #-}
 -- {-# OPTIONS_GHC -O2 #-}
 %%]
 

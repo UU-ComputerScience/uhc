@@ -13,6 +13,9 @@ XXX
 %%[92 import(qualified UHC.Util.FastSeq as Seq)
 %%]
 
+%%[8 import(UHC.Util.Lens)
+%%]
+
 %%[8 import(Control.Monad.State)
 %%]
 
@@ -98,8 +101,8 @@ cpFlowHsSem1 modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  hsSem  = panicJust "cpFlowHsSem1" $ ecuMbHSSem ecu
-                 ehInh  = crsiEHInh crsi
-                 hsInh  = crsiHSInh crsi
+                 ehInh  = crsi ^. crsiEHInh
+                 hsInh  = crsi ^. crsiHSInh
                  hii    = ecuHIInfo ecu
                  ig     = prepFlow $! HSSem.gathIdGam_Syn_AGItf hsSem
                  fg     = prepFlow $! HSSem.gathFixityGam_Syn_AGItf hsSem
@@ -126,7 +129,7 @@ cpFlowHsSem1 modNm
                                    else \k n -> idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh') k (hsnQualified n)
 %%]]
          ;  when (isJust (ecuMbHSSem ecu))
-                 (do { cpUpdSI (\crsi -> crsi {crsiHSInh = hsInh', crsiEHInh = ehInh', crsiOpts = opts'})
+                 (do { cpUpdSI (\crsi -> crsi {_crsiHSInh = hsInh', _crsiEHInh = ehInh', _crsiOpts = opts'})
                      ; cpUpdCU modNm $! ecuStoreHIInfo hii'
                      -- ; liftIO $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
                      })
@@ -141,7 +144,7 @@ cpFlowEHSem1 modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  ehSem    = panicJust "cpFlowEHSem1.ehSem" $ ecuMbEHSem ecu
-                 ehInh    = crsiEHInh crsi
+                 ehInh    = crsi ^. crsiEHInh
 %%[[(8 codegen)
                  coreInh  = crsiCoreInh crsi
 %%]]
@@ -218,9 +221,9 @@ cpFlowEHSem1 modNm
 %%[[(8 codegen)
                                    { crsiCoreInh = coreInh' }
 %%][(50 codegen)
-                                   { crsiCoreInh = coreInh', crsiEHInh = ehInh' }
+                                   { crsiCoreInh = coreInh', _crsiEHInh = ehInh' }
 %%][50
-                                   { crsiEHInh = ehInh' }
+                                   { _crsiEHInh = ehInh' }
 %%]]
                                )
 %%[[50
@@ -246,7 +249,7 @@ cpFlowHISem modNm
          ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
                  -- hiSem  = panicJust "cpFlowHISem.hiSem" $ ecuMbPrevHISem ecu
                  hiInfo = panicJust "cpFlowHISem.hiInfo" $ ecuMbPrevHIInfo ecu
-                 ehInh  = crsiEHInh crsi
+                 ehInh  = crsi ^. crsiEHInh
 %%[[50
                  ehInh' = ehInh
 %%[[(50 hmtyinfer)
@@ -261,7 +264,7 @@ cpFlowHISem modNm
                             }
 %%]]
 %%]]
-                 hsInh  = crsiHSInh crsi
+                 hsInh  = crsi ^. crsiHSInh
                  hsInh' = hsInh
                             { HSSem.fixityGam_Inh_AGItf  = (HI.hiiFixityGam    hiInfo) `gamUnionFlow` HSSem.fixityGam_Inh_AGItf hsInh
                             , HSSem.idGam_Inh_AGItf      = (HI.hiiIdDefOccGam  hiInfo) `gamUnionFlow` HSSem.idGam_Inh_AGItf     hsInh
@@ -279,8 +282,8 @@ cpFlowHISem modNm
                               }
 %%]]
          ;  when (isJust (ecuMbPrevHIInfo ecu))
-                 (do { cpUpdSI (\crsi -> crsi { crsiEHInh = ehInh'
-                                              , crsiHSInh = {- tr "cpFlowHISem.crsiHSInh" (pp $ HSSem.idGam_Inh_AGItf hsInh') $ -} hsInh'
+                 (do { cpUpdSI (\crsi -> crsi { _crsiEHInh = ehInh'
+                                              , _crsiHSInh = {- tr "cpFlowHISem.crsiHSInh" (pp $ HSSem.idGam_Inh_AGItf hsInh') $ -} hsInh'
 %%[[(50 codegen)
                                               , crsiCoreInh = coreInh'
 %%]]

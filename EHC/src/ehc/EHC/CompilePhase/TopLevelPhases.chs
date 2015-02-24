@@ -171,7 +171,7 @@ cpEhcFullProgLinkAllModules modNmL
 cpEhcCheckAbsenceOfMutRecModules :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpEhcCheckAbsenceOfMutRecModules
  = do { cr <- get
-      ; let mutRecL = filter (\ml -> length ml > 1) $ crCompileOrder cr
+      ; let mutRecL = filter (\ml -> length ml > 1) $ _crCompileOrder cr
       ; when (not $ null mutRecL)
              (cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MutRecModules mutRecL]
              )
@@ -183,7 +183,7 @@ cpEhcCheckAbsenceOfMutRecModules
 cpEhcFetchAllMissingModulesForLinking :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpEhcFetchAllMissingModulesForLinking
  = do { cr <- get
-      ; let modNmLL = crCompileOrder cr
+      ; let modNmLL = _crCompileOrder cr
             modNmL = map head modNmLL
             otherUsedModNmS = Set.unions [ ecuTransClosedUsedModMp me | m <- modNmL, let me = crCU m cr ] `Set.difference` Set.fromList modNmL
       ; return ()
@@ -194,7 +194,7 @@ cpEhcFetchAllMissingModulesForLinking
 cpEhcFullProgCompileAllModules :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpEhcFullProgCompileAllModules
  = do { cr <- get
-      ; let modNmLL = crCompileOrder cr
+      ; let modNmLL = _crCompileOrder cr
             modNmL = map head modNmLL
       ; cpSeq (   []
 %%[[99

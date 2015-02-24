@@ -30,8 +30,6 @@
 
 %%[90 hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
-%%[90 hs import(Data.Typeable(Typeable), Data.Generics(Data))
-%%]
 
 %%[90 ag import({Foreign/AbsSyn})
 %%]

@@ -16,6 +16,9 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[8 import(Control.Monad.State)
 %%]
 
+%%[8 import(UHC.Util.Lens)
+%%]
+
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[(8 codegen) import({%{EH}Base.Optimize})
@@ -79,7 +82,7 @@ cpTransformCore optimScope modNm
               coreInh    = crsiCoreInh crsi
               trfcoreIn  = emptyTrfCore
                              { trfstMod             	= panicJust "cpTransformCore" mbCore
-                             , trfstUniq            	= crsiNextUID crsi
+                             , trfstUniq            	= crsi ^. crsiNextUID
                              , trfstExtra = emptyTrfCoreExtra
                                  { trfcoreECUState		= ecuState ecu
 %%[[8
@@ -142,7 +145,7 @@ cpTransformTyCore modNm
        ; let  mbTyCore    = ecuMbTyCore ecu
               trftycoreIn = emptyTrfTyCore
                               { trftycoreTyCore        = panicJust "cpTransformTyCore" mbTyCore
-                              , trftycoreUniq          = crsiNextUID crsi
+                              , trftycoreUniq          = crsi ^. crsiNextUID
 %%[[50
                               , trftycoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 %%]]
@@ -191,7 +194,7 @@ cpTransformJavaScript optimScope modNm
        ; let  mbJavaScript     = ecuMbJavaScript ecu
               trfjsIn  = emptyTrfJavaScript
                              { trfstMod           = panicJust "cpTransformJavaScript" mbJavaScript
-                             , trfstUniq          = crsiNextUID crsi
+                             , trfstUniq          = crsi ^. crsiNextUID
                              }
               trfjsOut = trfJavaScript opts optimScope modNm trfjsIn
        
@@ -220,7 +223,7 @@ cpTransformCmm optimScope modNm
        ; let  mbCmm     = ecuMbCmm ecu
               trfcmmIn  = emptyTrfCmm
                              { trfstMod           = panicJust "cpTransformCmm" mbCmm
-                             , trfstUniq          = crsiNextUID crsi
+                             , trfstUniq          = crsi ^. crsiNextUID
                              }
               trfcmmOut = trfCmm opts optimScope modNm trfcmmIn
        

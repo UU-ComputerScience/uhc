@@ -44,8 +44,6 @@
 
 %%[(50 grin) hs import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
-%%[(50 grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
-%%]
 
 %%[(8 grin) hs import({%{EH}Gam.DataGam})
 %%]

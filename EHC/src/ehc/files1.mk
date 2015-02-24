@@ -346,7 +346,7 @@ EHC_ALL_DPDS_NOPREPROC					:= $(subst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefi
 ###########################################################################################
 
 CABAL_EHCLIB_DEPENDS_ON					:= binary syb bytestring uulib>=0.9.12 old-locale
-CABAL_EHCLIB_EXTENSIONS					:= $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable OverlappingInstances LiberalTypeSynonyms StandaloneDeriving FlexibleContexts FlexibleInstances TypeSynonymInstances ScopedTypeVariables
+CABAL_EHCLIB_EXTENSIONS					:= $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable OverlappingInstances LiberalTypeSynonyms StandaloneDeriving DeriveGeneric FlexibleContexts FlexibleInstances TypeSynonymInstances ScopedTypeVariables
 
 ###########################################################################################
 # variant dispatch rules

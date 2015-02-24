@@ -1,3 +1,7 @@
+%%[0 hs
+{-# LANGUAGE TemplateHaskell #-}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC Compile Run
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,9 +20,13 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[99 import(System.Directory)
 %%]
-%%[8 import(Control.Monad.State, Control.Monad.Error)
+%%[8 import(Control.Monad.State hiding (get), qualified Control.Monad.State as MS)
+%%]
+%%[8 import(Control.Monad.Error)
 %%]
 %%[8 import(Control.Exception as CE)
+%%]
+%%[8 import(UHC.Util.Lens)
 %%]
 %%[99 import(UHC.Util.FPath)
 %%]
@@ -33,6 +41,9 @@ An EHC compile run maintains info for one compilation invocation
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
 %%[50 import({%{EH}EHC.CompileGroup})
+%%]
+-- Build function state
+%%[8 import({%{EH}EHC.BuildFunction})
 %%]
 -- Language syntax: Core
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
@@ -124,11 +135,11 @@ unsafeTimedPerformIO inforef io
 %%[8 export(EHCompileRunStateInfo(..))
 data EHCompileRunStateInfo
   = EHCompileRunStateInfo
-      { crsiOpts        :: !EHCOpts                             -- options
-      , crsiNextUID     :: !UID                                 -- unique id, the next one
-      , crsiHereUID     :: !UID                                 -- unique id, the current one
-      , crsiHSInh       :: !HSSem.Inh_AGItf                     -- current inh attrs for HS sem
-      , crsiEHInh       :: !EHSem.Inh_AGItf                     -- current inh attrs for EH sem
+      { _crsiOpts       :: !EHCOpts                             -- options
+      , _crsiNextUID    :: !UID                                 -- unique id, the next one
+      , _crsiHereUID    :: !UID                                 -- unique id, the current one
+      , _crsiHSInh      :: !HSSem.Inh_AGItf                     -- current inh attrs for HS sem
+      , _crsiEHInh      :: !EHSem.Inh_AGItf                     -- current inh attrs for EH sem
 %%[[(8 codegen)
       , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
 %%]]
@@ -149,18 +160,23 @@ data EHCompileRunStateInfo
       , crsiEHCIOInfo	:: !(IORef EHCIOInfo)					-- unsafe info
       , crsiFilesToRm   :: ![FPath]                             -- files to clean up (remove)
 %%]]
+      , _crsiBState		:: !BState								-- Build state for use of build functions
       }
+%%]
+
+%%[8 export(crsiOpts, crsiNextUID, crsiHereUID, crsiHSInh, crsiEHInh, crsiBState)
+mkLabel ''EHCompileRunStateInfo
 %%]
 
 %%[8 export(emptyEHCompileRunStateInfo)
 emptyEHCompileRunStateInfo :: EHCompileRunStateInfo
 emptyEHCompileRunStateInfo
   = EHCompileRunStateInfo
-      { crsiOpts        =   defaultEHCOpts
-      , crsiNextUID     =   uidStart
-      , crsiHereUID     =   uidStart
-      , crsiHSInh       =   panic "emptyEHCompileRunStateInfo.crsiHSInh"
-      , crsiEHInh       =   panic "emptyEHCompileRunStateInfo.crsiEHInh"
+      { _crsiOpts       =   defaultEHCOpts
+      , _crsiNextUID    =   uidStart
+      , _crsiHereUID    =   uidStart
+      , _crsiHSInh      =   panic "emptyEHCompileRunStateInfo.crsiHSInh"
+      , _crsiEHInh      =   panic "emptyEHCompileRunStateInfo.crsiEHInh"
 %%[[(8 codegen)
       , crsiCoreInh     =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
 %%]]
@@ -181,6 +197,7 @@ emptyEHCompileRunStateInfo
       , crsiEHCIOInfo   =   panic "emptyEHCompileRunStateInfo.crsiEHCIOInfo"
       , crsiFilesToRm   =   []
 %%]]
+      , _crsiBState   	=   emptyBState
       }
 %%]
 
@@ -244,8 +261,8 @@ type EHCompilePhase         = EHCompilePhaseT IO
 crBaseInfo' :: EHCompileRun -> (EHCompileRunStateInfo,EHCOpts)
 crBaseInfo' cr
   = (crsi,opts)
-  where crsi   = crStateInfo cr
-        opts   = crsiOpts  crsi
+  where crsi   = _crStateInfo cr
+        opts   = crsi ^. crsiOpts
 
 crMbBaseInfo :: HsName -> EHCompileRun -> (Maybe EHCompileUnit, EHCompileRunStateInfo, EHCOpts, Maybe FPath)
 crMbBaseInfo modNm cr
@@ -281,7 +298,7 @@ cpMemUsage
 %%[[8
   = return ()
 %%][102
-  = do { cr <- get
+  = do { cr <- MS.get
        ; let (crsi,opts) = crBaseInfo' cr
        ; size <- liftIO $ megaBytesAllocated
        ; when (ehcOptVerbosity opts >= VerboseDebug)
@@ -301,7 +318,7 @@ cpMemUsage
 %%[8 export(cpUpdOpts)
 cpUpdOpts :: EHCCompileRunner m => (EHCOpts -> EHCOpts) -> EHCompilePhaseT m ()
 cpUpdOpts upd
-  = cpUpdSI (\crsi -> crsi {crsiOpts = upd $ crsiOpts crsi})
+  = cpUpdSI $ crsiOpts ^$= upd -- (\crsi -> crsi {crsiOpts = upd $ crsiOpts crsi})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -317,7 +334,7 @@ cpRegisterFilesToRm fpL
 %%[99 export(cpRmFilesToRm)
 cpRmFilesToRm :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpRmFilesToRm
-  = do { cr <- get
+  = do { cr <- MS.get
        ; let (crsi,opts) = crBaseInfo' cr
              files = Set.toList $ Set.fromList $ map fpathToStr $ crsiFilesToRm crsi
        ; liftIO $ mapM rm files
@@ -334,14 +351,14 @@ cpRmFilesToRm
 %%[8 export(cpMsg,cpMsg')
 cpMsg :: EHCCompileRunner m => HsName -> Verbosity -> String -> EHCompilePhaseT m ()
 cpMsg modNm v m
-  = do { cr <- get
+  = do { cr <- MS.get
        ; let (_,_,_,mbFp) = crMbBaseInfo modNm cr
        ; cpMsg' modNm v m Nothing (maybe emptyFPath id mbFp)
        }
 
 cpMsg' :: EHCCompileRunner m => HsName -> Verbosity -> String -> Maybe String -> FPath -> EHCompilePhaseT m ()
 cpMsg' modNm v m mbInfo fp
-  = do { cr <- get
+  = do { cr <- MS.get
        ; let (mbEcu,crsi,opts,_) = crMbBaseInfo modNm cr
 %%[[99
        ; ehcioinfo <- liftIO $ readIORef (crsiEHCIOInfo crsi)
@@ -375,13 +392,14 @@ cpMsg' modNm v m mbInfo fp
 %%[8 export(cpStepUID,cpSetUID)
 cpStepUID :: EHCCompileRunner m => EHCompilePhaseT m ()
 cpStepUID
-  = cpUpdSI (\crsi -> let (n,h) = mkNewLevUID (crsiNextUID crsi)
-                      in  crsi {crsiNextUID = n, crsiHereUID = h}
+  = cpUpdSI (\crsi -> let (n,h) = mkNewLevUID (crsi ^. crsiNextUID)
+                      in  crsiNextUID ^= n $ crsiHereUID ^= h $ crsi
+                          -- crsi {_crsiNextUID = n, _crsiHereUID = h}
             )
 
 cpSetUID :: EHCCompileRunner m => UID -> EHCompilePhaseT m ()
 cpSetUID u
-  = cpUpdSI (\crsi -> crsi {crsiNextUID = u})
+  = cpUpdSI $ crsiNextUID ^= u -- (\crsi -> crsi {crsiNextUID = u})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -435,7 +453,7 @@ cpSystemRaw cmd args
 %%[8 export(cpStopAt)
 cpStopAt :: EHCCompileRunner m => CompilePoint -> EHCompilePhaseT m ()
 cpStopAt atPhase
-  = do { cr <- get
+  = do { cr <- MS.get
        ; let (_,opts) = crBaseInfo' cr
        ; unless (atPhase < ehcStopAtPoint opts)
                 cpSetStopAllSeq
@@ -483,7 +501,7 @@ crModNeedsCompile modNm cr
            )
   where ecu = crCU modNm cr
         (newer,_) = crPartitionNewerOlderImports modNm cr
-        opts = crsiOpts $ crStateInfo cr
+        opts = _crStateInfo cr ^. crsiOpts
 %%]
     || (ehcOptCheckVersion opts
         && (  not (ecuCanUseHIInsteadOfHS ecu)
@@ -528,7 +546,7 @@ crPartitionIntoPkgAndOthers cr modNmL
 %%[50 export(crSetAndCheckMain)
 crSetAndCheckMain :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 crSetAndCheckMain modNm
-  = do { cr <- get
+  = do { cr <- MS.get
        ; let (crsi,opts) = crBaseInfo' cr
              mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
        ; case crsiMbMainNm crsi of

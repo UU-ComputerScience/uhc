@@ -18,6 +18,9 @@ Output generation, on stdout or file
 %%[8 import(Control.Monad.State)
 %%]
 
+%%[8 import(UHC.Util.Lens)
+%%]
+
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
@@ -411,7 +414,7 @@ cpOutputHI suff modNm
 %%[[50
                  hii3   = hii2
 %%][9999
-                 ehInh  = crsiEHInh crsi
+                 ehInh  = crsi ^. crsiEHInh
                  hii3 = HI.hiiIncludeCacheOfImport (ecuAnHIInfo . flip crCU cr) (mentrelFilterMpExtendViaValGam modNm (EHSem.valGam_Inh_AGItf ehInh) (ecuUsedNames ecu)) hii2
                  -- hii3   = hii2
 %%]]

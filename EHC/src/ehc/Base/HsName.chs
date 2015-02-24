@@ -19,6 +19,12 @@ HsNameUniqifier to guarantee such an invariant.
 %%[1 module {%{EH}Base.HsName} import(UHC.Util.Utils,UHC.Util.Pretty, Data.List)
 %%]
 
+%%[1 import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
+%%[1 import(GHC.Generics)
+%%]
+
 %%[1 import({%{EH}Base.UID})
 %%]
 
@@ -46,7 +52,7 @@ HsNameUniqifier to guarantee such an invariant.
 %%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
-%%[99 import(Data.Hashable)
+%%[1 import(UHC.Util.Hashable)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -96,7 +102,9 @@ data HsNameUniqifier
 %%[[(8 core)
   | HsNameUniqifier_CoreAPI             -- Used by the Core API, to allow external programs to generate new identifiers.
 %%]]
-  deriving (Eq,Ord,Enum)
+  deriving (Eq,Ord,Enum,Generic)
+
+instance Hashable HsNameUniqifier
 
 -- | The show of a HsNameUniqifier is found back in the pretty printed code, current convention is 3 uppercase letters, as a balance between size and clarity of meaning
 instance Show HsNameUniqifier where
@@ -149,7 +157,9 @@ data HsNameUnique
   | HsNameUnique_String     !String
   | HsNameUnique_Int        !Int
   | HsNameUnique_UID        !UID
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Generic)
+
+instance Hashable HsNameUnique
 
 showHsNameUnique :: (UID -> String) -> (String -> String) -> HsNameUnique -> String
 showHsNameUnique _    _    (HsNameUnique_None    ) = ""
@@ -260,18 +270,23 @@ hsnSimplifications _                            = []
 %%% Haskell names: hashing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[1
 hsnHashWithSalt :: Int -> HsName -> Int
 hsnHashWithSalt salt (HsName_Base s      ) = hashWithSalt salt s
 hsnHashWithSalt salt (HsName_UID  i      ) = hashWithSalt salt i
+%%[[7
 hsnHashWithSalt salt (HsName_Pos  p      ) = hashWithSalt salt p
 hsnHashWithSalt salt (HsName_Modf _ q b u) = hashWithSalt salt q `hashWithSalt` hashWithSalt salt b `hashWithSalt` hashWithSalt salt (Map.toList u)
+%%]]
+%%[[8
 hsnHashWithSalt salt (HsName_Nr i n      ) = i `hashWithSalt` hashWithSalt salt n
+%%]]
 
 instance Hashable HsName where
   hashWithSalt salt n@(HsName_Modf h _ _ _) | h /= 0 = h
   hashWithSalt salt n                                = hsnHashWithSalt salt n
 
+{- 20150221: done via generics
 instance Hashable OrigName where
   hashWithSalt salt (OrigNone    ) = salt
   hashWithSalt salt (OrigLocal  n) = 23 `hashWithSalt` hashWithSalt salt n
@@ -286,6 +301,7 @@ instance Hashable HsNameUnique where
 
 instance Hashable HsNameUniqifier where
   hashWithSalt salt u = hashWithSalt salt (fromEnum u)
+-}
 %%]
 
 %%[1
@@ -325,7 +341,9 @@ data HsName
 %%[[8
   |   HsName_Nr                     !Int !OrigName
 %%]]
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Generic)
+
+-- instance Hashable HsName
 %%]
 
 %%[1 export(hsnEmpty)
@@ -487,7 +505,9 @@ data OrigName
   | OrigLocal  HsName
   | OrigGlobal HsName
   | OrigFunc   HsName
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Generic)
+
+instance Hashable OrigName
 %%]
 
 %%[1
@@ -833,24 +853,28 @@ instance Position HsName where
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50
-deriving instance Typeable HsNameUniqifier
-deriving instance Data HsNameUniqifier
-
-deriving instance Typeable HsNameUnique
-deriving instance Data HsNameUnique
-
+%%[1
 deriving instance Typeable HsName
 deriving instance Data HsName
-
-deriving instance Typeable OrigName
-deriving instance Data OrigName
 
 deriving instance Typeable IdOccKind
 deriving instance Data IdOccKind
 
 deriving instance Typeable IdOcc
 deriving instance Data IdOcc
+%%]
+
+%%[7
+deriving instance Typeable HsNameUniqifier
+deriving instance Data HsNameUniqifier
+
+deriving instance Typeable HsNameUnique
+deriving instance Data HsNameUnique
+%%]
+
+%%[8
+deriving instance Typeable OrigName
+deriving instance Data OrigName
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

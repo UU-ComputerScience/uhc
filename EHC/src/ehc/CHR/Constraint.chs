@@ -20,8 +20,6 @@
 
 %%[(50 hmtyinfer || hmtyast) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
-%%[(50 hmtyinfer || hmtyast) import(Data.Typeable, Data.Generics(Data))
-%%]
 
 %%[(50 hmtyinfer || hmtyast) import({%{EH}Opts.Base})
 %%]

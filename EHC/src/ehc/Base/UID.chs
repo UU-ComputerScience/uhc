@@ -10,6 +10,8 @@
 
 %%[1 import(UHC.Util.Pretty)
 %%]
+%%[1 import(UHC.Util.Hashable)
+%%]
 
 %%[1 import(qualified Data.Set as Set, Data.List)
 %%]
@@ -19,13 +21,15 @@
 %%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
 %%]
 
+%%[1 import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[50 import(Control.Monad, UHC.Util.Binary as B, UHC.Util.Serialize)
 %%]
 
-%%[99 import(Data.Hashable)
+%%[1 import(GHC.Generics)
 %%]
-%%[9999 import({%{EH}Base.Hashable})
-%%]
+
 %%[9999 import({%{EH}Base.ForceEval})
 %%]
 
@@ -85,7 +89,7 @@ newtype UID = UID { uidInts :: [Int] }
 %%][99
 data UID = UID { uidHash :: !Int, uidInts :: ![Int] }
 %%]]
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Generic)
 %%]
 
 %%[1 export(mkUID)
@@ -110,9 +114,13 @@ instance Show UID where
   show uid = concat . intersperse "_" . map show . reverse $ uidInts uid
 %%]
 
-%%[99
+%%[1
+%%[[1
+instance Hashable UID
+%%][99
 instance Hashable UID where
   hashWithSalt salt (UID h _) = salt `hashWithSalt` h
+%%]]
 %%]
 
 %%[1.UID.mkNewLevUID
@@ -224,7 +232,7 @@ nextUnique = mkNewLevUID
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50
+%%[1
 deriving instance Typeable UID
 deriving instance Data UID
 %%]

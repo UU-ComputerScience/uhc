@@ -57,11 +57,11 @@ cpCheckModsModWith :: EHCCompileRunner m => (HsName -> ModMpInfo) -> [Mod] -> EH
 cpCheckModsModWith dfltMod modL@(Mod {modName = modNm} : _)
   = do { cr <- get
        ; cpMsg modNm VerboseDebug $ "cpCheckModsModWith modL: " ++ show modL
-       ; let crsi   = crStateInfo cr
+       ; let crsi   = _crStateInfo cr
              (mm,e) = modMpCombine' dfltMod modL (crsiModMp crsi)
        ; cpUpdSI (\crsi -> crsi {crsiModMp = mm})
 %%[[5050
-       ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
+       ; when (ehcOptVerbosity (crsi ^. crsiOpts) >= VerboseDebug)
               (do { cpMsg modNm VerboseDebug "cpCheckModsModWith"
                   ; liftIO $ putWidthPPLn 120 (pp modNm >-< pp modL >-< ppModMp mm)
                   })
@@ -270,7 +270,7 @@ cpGetMetaInfo gm modNm
 cpGetDummyCheckSrcMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpGetDummyCheckSrcMod modNm
   = do { cr <- get
-       ; let crsi   = crStateInfo cr
+       ; let crsi   = _crStateInfo cr
              mm     = crsiModMp crsi
              mod    = Mod modNm Nothing Nothing [] Rel.empty Rel.empty []
        ; cpUpdCU modNm (ecuStoreMod mod)
@@ -287,7 +287,7 @@ cpUpdateModOffMp :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpUpdateModOffMp modNmL@(modNm:_)
   = do { cr <- get
        ; cpMsg modNm VerboseDebug "cpUpdateModOffMp"
-       ; let crsi   = crStateInfo cr
+       ; let crsi   = _crStateInfo cr
              offMp  = crsiModOffMp crsi
              (offMp',_)
                     = foldr add (offMp, Map.size offMp) modNmL

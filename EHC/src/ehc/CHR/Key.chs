@@ -11,8 +11,6 @@
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 
-%%[50 import(Data.Typeable(Typeable), Data.Generics(Data))
-%%]
 %%[50 import(UHC.Util.Serialize)
 %%]
 %%[50 import( Control.Monad)
@@ -22,9 +20,6 @@
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
-%%]
-
-%%[9999 import({%{EH}Base.Hashable},Data.Bits)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

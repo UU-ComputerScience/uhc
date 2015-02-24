@@ -8,6 +8,8 @@ Folding over AST to compute semantics
 %%]
 
 -- general imports
+%%[8 import(UHC.Util.Lens)
+%%]
 %%[8 import(Control.Monad.State)
 %%]
 %%[8 import(qualified Data.Map as Map)
@@ -76,7 +78,7 @@ cpFoldCore2Grin modNm
                  coreInh  = crsiCoreInh crsi
                  coreSem  = Core2GrSem.wrap_CodeAGItf
                               (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
-                              (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsiHereUID crsi
+                              (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID
                                        , Core2GrSem.opts_Inh_CodeAGItf                          = opts
 %%[[50
                                        , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
@@ -123,7 +125,7 @@ cpFoldCoreRunMod modNm
                  inh      = CoreRun2ChkSem.Inh_AGItf
                                 { CoreRun2ChkSem.opts_Inh_AGItf = opts
                                 , CoreRun2ChkSem.moduleNm_Inh_AGItf = modNm
-                                -- , CoreRun2ChkSem.dataGam_Inh_AGItf = EHSem.dataGam_Inh_AGItf $ crsiEHInh crsi
+                                -- , CoreRun2ChkSem.dataGam_Inh_AGItf = EHSem.dataGam_Inh_AGItf $ _crsiEHInh crsi
                                 }
                  crrSem   = CoreRun2ChkSem.crmodCheck' inh core
                  hasMain  = CoreRun2ChkSem.hasMain_Syn_AGItf crrSem
@@ -147,7 +149,7 @@ cpFoldCoreMod modNm
                  inh      = Core2ChkSem.Inh_CodeAGItf
                                 { Core2ChkSem.opts_Inh_CodeAGItf = opts
                                 , Core2ChkSem.moduleNm_Inh_CodeAGItf = modNm
-                                , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsiEHInh crsi
+                                , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh
                                 }
                  coreSem  = Core2ChkSem.cmodCheck' inh core
                  hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
@@ -171,9 +173,9 @@ cpFoldEH modNm
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbEH   = ecuMbEH ecu
                  ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf $ panicJust "cpFoldEH" mbEH)
-                                           ((crsiEHInh crsi)
+                                           ((crsi ^. crsiEHInh)
                                                   { EHSem.moduleNm_Inh_AGItf         		= ecuModNm ecu
-                                                  , EHSem.gUniq_Inh_AGItf            		= crsiHereUID crsi
+                                                  , EHSem.gUniq_Inh_AGItf            		= crsi ^. crsiHereUID
                                                   , EHSem.opts_Inh_AGItf             		= opts
 %%[[(50 codegen)
                                                   , EHSem.importUsedModules_Inh_AGItf		= ecuImportUsedModules ecu
@@ -194,10 +196,10 @@ cpFoldHs modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbHS   = ecuMbHS ecu
-                 inh    = crsiHSInh crsi
+                 inh    = crsi ^. crsiHSInh
                  hsSem  = HSSem.wrap_AGItf (HSSem.sem_AGItf $ panicJust "cpFoldHs" mbHS)
                                            (inh { HSSem.opts_Inh_AGItf             = opts
-                                                , HSSem.gUniq_Inh_AGItf            = crsiHereUID crsi
+                                                , HSSem.gUniq_Inh_AGItf            = crsi ^. crsiHereUID
 %%[[50
                                                 , HSSem.moduleNm_Inh_AGItf         = modNm
                                                 , HSSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
@@ -243,7 +245,7 @@ cpFoldHsMod modNm
                  mbHS       = ecuMbHS ecu
                  inh        = crsiHSModInh crsi
                  hsSemMod   = HSSemMod.wrap_AGItf (HSSemMod.sem_AGItf $ panicJust "cpFoldHsMod" mbHS)
-                                                  (inh { HSSemMod.gUniq_Inh_AGItf        = crsiHereUID crsi
+                                                  (inh { HSSemMod.gUniq_Inh_AGItf        = crsi ^. crsiHereUID
                                                        , HSSemMod.moduleNm_Inh_AGItf     = modNm
                                                        })
                  hasMain= HSSemMod.mainValExists_Syn_AGItf hsSemMod
