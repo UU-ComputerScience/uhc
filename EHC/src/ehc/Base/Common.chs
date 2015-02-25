@@ -20,6 +20,9 @@
 %%[1 import(UHC.Util.Hashable) export (module UHC.Util.Hashable)
 %%]
 
+%%[99 import(GHC.Generics(Generic))
+%%]
+
 %%[1 import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
@@ -88,6 +91,19 @@
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
+%%]
+
+%%[99 import(Data.Version)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional instances for Version
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+deriving instance Generic Version
+
+instance Hashable Version
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

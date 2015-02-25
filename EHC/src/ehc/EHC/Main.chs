@@ -65,6 +65,8 @@
 %%]
 %%[8 import(Control.Monad.State, Control.Monad.Error)
 %%]
+%%[8 import(UHC.Util.Lens)
+%%]
 
 -- Build function state
 %%[8 import({%{EH}EHC.BuildFunction})
@@ -90,6 +92,8 @@
 
 -- Utils
 %%[1 import({%{EH}EHC.Main.Utils})
+%%]
+%%[8 import({%{EH}EHC.Main.Compile})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -348,6 +352,7 @@ doCompilePrepare fnL@(fn:_) opts
                                                        uidStart uidStart
                                                        (initialHSSem opts3)
                                                        (initialEHSem opts3 fp)
+                                                       (mkFileSuffMpHs opts3)
 %%[[(8 codegen)
                                                        (initialCore2GrSem opts3)
 %%]]
@@ -382,15 +387,19 @@ doCompileRun fnL@(fn:_) opts
                         , initialState
                         ) = fromJust mbPrep
                        searchPath = ehcOptImportFileLocPath opts
-                       fileSuffMpHs = mkFileSuffMpHs opts
+                       fileSuffMpHs = initialState ^. crStateInfo ^. crsiFileSuffMp
                  ; when (ehcOptVerbosity opts >= VerboseDebug)
                         (putStrLn $ "search path: " ++ show searchPath)
 %%[[8
-                 ; _ <- run initialState $ compile opts fileSuffMpHs searchPath (Just fp) topModNm
+                 ; _ <- if ehcOptAltDriver opts
+                        then run initialState $ compileN_Alternate [fp] [topModNm]
+                        else run initialState $ compile1 opts fileSuffMpHs searchPath (Just fp) topModNm
 %%][50
                  ; _ <- if False -- ehcOptPriv opts
                         then run initialState $ compile2 opts fileSuffMpHs searchPath fpL topModNmL
-                        else run initialState $ compile  opts fileSuffMpHs searchPath fpL topModNmL
+                        else if ehcOptAltDriver opts
+                        then run initialState $ compileN_Alternate fpL topModNmL
+                        else run initialState $ compileN  opts fileSuffMpHs searchPath fpL topModNmL
 %%]]
                  ; return ()
                  }
@@ -398,15 +407,11 @@ doCompileRun fnL@(fn:_) opts
        }
   where -- run s c = {- runErrorT $ -} runStateT (runCompilePhaseT c) s
         run s c = runStateT (runCompilePhaseT c) s
+        -- init (to be moved elsewhere, TBD)
+        -- initOther fileSuffMpHs = crsiFileSuffMp =: fileSuffMpHs
 %%[[8
-        compile :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> Maybe FPath -> HsName -> EHCompilePhaseT m ()
-        -- compile :: EHCOpts -> FileSuffMp -> FileLocPath -> Maybe FPath -> HsName -> EHCompilePhase ()
-        compile opts fileSuffMpHs searchPath mbFp nm
-          = do { mbFoundFp <- cpFindFileForFPath (map tup123to12 fileSuffMpHs) searchPath (Just nm) mbFp
-               ; when (isJust mbFoundFp)
-                      (cpEhcModuleCompile1 nm)
-               }
 %%][50
+        -- experimental stuff trying to deal with orphan instances, ignore
         -- compile2 :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhaseT m ()
         compile2 :: EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhase ()
         compile2 opts fileSuffMpHs searchPath fpL topModNmL
@@ -419,7 +424,7 @@ doCompileRun fnL@(fn:_) opts
                ; return ()
                }
           where toplayer fpL topModNmL
-                  = zipWithM (\fp topModNm -> imp1 opts fileSuffMpHs searchPath (ECUS_Haskell HSOnlyImports) (Just fp) Nothing topModNm) fpL topModNmL
+                  = zipWithM (\fp topModNm -> import1 opts fileSuffMpHs searchPath (ECUS_Haskell HSOnlyImports) (Just fp) Nothing topModNm) fpL topModNmL
                 onelayer
                   = do { cr <- get
                        ; let modNmS = Map.keysSet $ _crCUCache cr
@@ -431,7 +436,7 @@ doCompileRun fnL@(fn:_) opts
                                     ]
                                   `Set.difference` modNmS
                        ; sequence -- or: cpSeq + return ()
-                           [ do { i@(m',_) <- imp1 opts fileSuffMpHs searchPath (ECUS_Haskell HSOnlyImports) Nothing Nothing m
+                           [ do { i@(m',_) <- import1 opts fileSuffMpHs searchPath (ECUS_Haskell HSOnlyImports) Nothing Nothing m
                                 -- ; cpEhcFullProgModuleDetermineNeedsCompile m'
                                 ; return i
                                 }
@@ -446,107 +451,6 @@ doCompileRun fnL@(fn:_) opts
                        ; liftIO $ putStrLn $ "compile order: " ++ show (_crCompileOrder cr)
                        }
                 -}
-               
-        -- compile :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhaseT m ()
-        compile :: EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhase ()
-        compile opts fileSuffMpHs searchPath fpL topModNmL@(modNm:_)
-          = do { cpMsg modNm VerboseDebug $ "doCompileRun.compile topModNmL: " ++ show topModNmL
-
-               -- check module import relationship for builtin module
-               ; cpCheckModsModWith (const emptyModMpInfo) [modBuiltin]
-               
-               -- start with directly importing top modules, providing the filepath directly
-               ; topModNmL' <- zipWithM (\fp topModNm -> imp (ECUS_Haskell HSOnlyImports) (Just fp) Nothing topModNm) fpL topModNmL
-               
-               -- follow the import relation to chase modules which have to be analysed
-               ; cpImportGatherFromModsWithImp
-                   (if ehcOptPriv opts
-                    then \ecu -> case ecuState ecu of
-                                   -- ECUS_Haskell HIStart -> Set.toList $ ecuTransClosedOrphanModS ecu
-                                   ECUS_Haskell HIOnlyImports -> [] -- Set.toList $ ecuTransClosedOrphanModS ecu
-                                   _ -> ecuImpNmL ecu
-                    else ecuImpNmL
-                   )
-                   (imp (ECUS_Haskell HSOnlyImports) Nothing) (map fst topModNmL')
-               
-               -- import orphans
-               ; when (ehcOptPriv opts)
-                      (do { 
-                          -- import orphans
-                            importAlso (ECUS_Haskell HSOnlyImports) ecuTransClosedOrphanModS
-                          
-                          -- import used remaining modules, but just minimally                          
-                          ; importAlso (ECUS_Haskell HMOnlyMinimal) (Set.unions . Map.elems . ecuTransClosedUsedModMp)
-                          })
-
-               -- inhibit mutual recursiveness
-               ; cpEhcCheckAbsenceOfMutRecModules
-               
-               -- and compile it all
-               ; cpEhcFullProgCompileAllModules
-%%[[100
-               -- cleanup
-               ; unless (ehcOptKeepIntermediateFiles opts) cpRmFilesToRm
-%%]]
-               }
-          where -- abbrev for imp1
-                imp = imp1 opts fileSuffMpHs searchPath
-                
-                -- import others, but then in a (slightly) different way
-                -- importAlso :: EHCCompileRunner m => EHCompileUnitState -> (EHCompileUnit -> Set.Set HsName) -> EHCompilePhaseT m ()
-                importAlso :: EHCompileUnitState -> (EHCompileUnit -> Set.Set HsName) -> EHCompilePhase ()
-                importAlso how getNms
-                  = do { cr <- get
-                       ; let allAnalysedModS = Map.keysSet $ _crCUCache cr
-                             allNewS         = Set.unions [ getNms $ crCU m cr | m <- Set.toList allAnalysedModS ] `Set.difference` allAnalysedModS
-                       ; cpImportGatherFromModsWithImp
-                           (const [])
-                           (imp how Nothing) (Set.toList allNewS)
-                       }
-
-        -- imp1 :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> EHCompileUnitState -> Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhaseT m (HsName,Maybe (HsName,(FPath,FileLoc)))
-        imp1 :: EHCOpts -> FileSuffMp -> FileLocPath -> EHCompileUnitState -> Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
-        imp1 opts fileSuffMpHs searchPath desiredState mbFp mbPrev nm
-          = do { let isTopModule = isJust mbFp
-                     fileSuffMpHs' = map tup123to12 $ (if isTopModule then fileSuffMpHsNoSuff else []) ++ fileSuffMpHs
-%%[[50
-               ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
-%%][99
-               ; let searchPath' = adaptedSearchPath mbPrev
-               ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) (\(x,_,_) -> x) False fileSuffMpHs' searchPath' (Just nm) mbFp
-%%]]
-               ; when (ehcOptVerbosity opts >= VerboseDebug)
-                      (do { liftIO $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)
-%%[[99
-                          ; liftIO $ putStrLn $ "searchPath: " ++ show searchPath'
-%%]]
-                          })
-               ; when isTopModule
-                      (cpUpdCU nm (ecuSetIsTopMod True))
-%%[[99
-               ; cpUpdCU nm (ecuSetTarget (ehcOptTarget opts))
-%%]]
-               ; case fpsFound of
-                   (fp:_)
-                     -> do { nm' <- cpEhcModuleCompile1 (Just desiredState) nm
-                           ; cr <- get
-                           ; let (ecu,_,_,_) = crBaseInfo nm' cr
-                           ; return (nm',Just (nm',(fp, ecuFileLocation ecu)))
-                           }
-                   _ -> return (nm,Nothing)
-               }
-%%[[99
-          where -- strip tail part corresponding to module name, and use it to search as well
-                adaptedSearchPath (Just (prevNm,(prevFp,prevLoc)))
-                  = case (fpathMbDir (mkFPath prevNm), fpathMbDir prevFp, prevLoc) of
-                      (_, _, p) | filelocIsPkg p
-                        -> p : searchPath
-                      (Just n, Just p, _)
-                        -> mkDirFileLoc (filePathUnPrefix prefix) : searchPath
-                        where (prefix,_) = splitAt (length p - length n) p
-                      _ -> searchPath
-                adaptedSearchPath _ = searchPath
-%%]]
 %%]]
 
 %%]

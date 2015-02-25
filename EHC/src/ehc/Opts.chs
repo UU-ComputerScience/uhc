@@ -787,6 +787,7 @@ sharedCmdLineOpts
      ,  Option ""   ["numeric-version"]     (NoArg oNumVersion)                     "see --version-dotted (to become obsolete)"
 %%]]
 %%[[8
+     ,  Option ""   ["driver-alt"]          (NoArg oAltDriver)                      "driver: use alternate compiler driver (under development)"
      ,  Option "v"  ["verbose"]             (OptArg oVerbose "0|1|2|3|4")           (   "be verbose, 0=quiet, 4=debug, "
 %%[[8
                                                                                     ++ "default=2"
@@ -823,6 +824,10 @@ oVerbose    ms  o =  case ms of
 %%[99
 oNumVersion            o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_VersionDotted }
 oVersionAsNumber       o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_VersionAsNumber }
+%%]
+
+%%[8
+oAltDriver             o   = o { ehcOptAltDriver                   = True }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

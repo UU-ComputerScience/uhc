@@ -3,6 +3,10 @@
 %include afp.fmt
 %%]
 
+%%[0 hs
+-- {-# LANGUAGE TemplateHaskell #-}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options of all sorts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,7 +17,7 @@
 %%[1 import(UHC.Util.Utils)
 %%]
 
-%%[1 import(Data.Maybe,qualified Data.Map as Map)
+%%[1 import(Data.Typeable, Data.Maybe, qualified Data.Map as Map)
 %%]
 
 %%[4 import(UHC.Util.Pretty)
@@ -27,6 +31,10 @@
 
 %%[8 import(UHC.Util.FPath)
 %%]
+
+%%[8888 import(UHC.Util.Lens)
+%%]
+
 %%[8 import({%{EH}EHC.Environment})
 %%]
 
@@ -322,6 +330,9 @@ data EHCOpts
       ,  ehcOptEmitDerivFitsIn
                               ::  Bool              -- show fitsIn derivation tree as well
 %%]]
+%%[[8
+      ,  ehcOptAltDriver 	  ::  Bool				-- alternate (build function based) compiler driver
+%%]]
 %%[[99
       ,  ehcOptHiValidityCheck::  Bool              -- when .hi and compiler are out of sync w.r.t. timestamp and checksum, recompile
       ,  ehcOptLibFileLocPath ::  FileLocPath
@@ -353,6 +364,14 @@ data EHCOpts
       												-- default options for commands
 %%]]
       }
+      deriving Typeable
+%%]
+
+%%[8888
+mkLabel ''EHCOpts
+%%]
+
+%%[9999 export(ehcOptAltDriver)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -496,6 +515,9 @@ emptyEHCOpts
       ,  ehcOptEmitDerivTreePaperSize
                                 =   "2"
       ,  ehcOptEmitDerivFitsIn  =   False
+%%]]
+%%[[8
+      ,  ehcOptAltDriver 	    =   False
 %%]]
 %%[[99
       ,  ehcOptHiValidityCheck  =   True

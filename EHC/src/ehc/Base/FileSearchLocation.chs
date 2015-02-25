@@ -28,6 +28,12 @@ In principle such files reside in directories or packages.
 %%[99 import({%{EH}Base.Target}, qualified {%{EH}ConfigInstall} as Cfg)
 %%]
 
+%%[99 import(UHC.Util.Hashable)
+%%]
+
+%%[99 import(GHC.Generics)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind of location
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,7 +46,9 @@ data FileLocKind
   | FileLocKind_Pkg	PkgKey							-- specific package
   					String							-- with the dir inside package it was found
   | FileLocKind_PkgDb								-- yet unknown package in the package database
-  deriving Eq
+  deriving (Eq,Ord,Generic)
+
+instance Hashable FileLocKind
 
 instance Show FileLocKind where
   show  FileLocKind_Dir		    = "directory"
@@ -68,7 +76,9 @@ data FileLoc
       {	filelocKind		:: FileLocKind
       , filelocDir		:: String
       }
-  deriving Eq
+  deriving (Eq,Ord,Generic)
+
+instance Hashable FileLoc
 
 instance Show FileLoc where
   show (FileLoc k d) = d ++ " (" ++ show k ++ ")"

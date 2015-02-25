@@ -1,3 +1,7 @@
+%%[0 hs
+{-# LANGUAGE TemplateHaskell #-}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC Compile Unit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -11,6 +15,12 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 %%[8 import({%{EH}EHC.Common})
+%%]
+
+%%[8 import(UHC.Util.Lens)
+%%]
+
+%%[8 import(Data.Typeable)
 %%]
 
 -- Language syntax: HS, EH
@@ -60,16 +70,6 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 
 %%[50 import(UHC.Util.Time, System.Directory)
 %%]
--- | a for now alias for old-time ClockTime
-type ClockTime = UTCTime
-
-diffClockTimes = diffUTCTime
-
-noTimeDiff :: NominalDiffTime
-noTimeDiff = toEnum 0
-
-getClockTime :: IO ClockTime
-getClockTime = getCurrentTime
 
 -- Force evaluation for IO
 %%[9999 import({%{EH}Base.ForceEval})
@@ -146,6 +146,7 @@ data EHCompileUnit
       { ecuSrcFilePath       :: !FPath
 %%[[99
       , ecuMbCppFilePath     :: !(Maybe FPath)
+      , _ecuMbPrevSearchInfo :: !(Maybe PrevSearchInfo)
 %%]]
       , ecuFileLocation      :: !FileLoc
       , ecuGrpNm             :: !HsName
@@ -224,6 +225,14 @@ data EHCompileUnit
       , ecuGenCodeFiles      :: ![FPath]                            -- generated code files
 %%]]
       }
+      deriving Typeable
+%%]
+
+%%[8
+mkLabel ''EHCompileUnit
+%%]
+
+%%[99 export(ecuMbPrevSearchInfo)
 %%]
 
 %%[50 export(ecuHSDeclImpNmS, ecuHIDeclImpNmS, ecuHIUsedImpNmS)
@@ -265,6 +274,7 @@ emptyECU
       { ecuSrcFilePath       = emptyFPath
 %%[[99
       , ecuMbCppFilePath     = Nothing
+      , _ecuMbPrevSearchInfo = Nothing
 %%]]
       , ecuFileLocation      = emptyFileLoc
       , ecuGrpNm             = hsnUnknown

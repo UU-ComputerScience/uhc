@@ -36,7 +36,7 @@ An EHC compile run maintains info for one compilation invocation
 %%[(8 codegen) hs import({%{EH}CodeGen.ValAccess} as VA)
 %%]
 
-%%[8 import({%{EH}EHC.Common})
+%%[8 import({%{EH}EHC.Common}, {%{EH}EHC.FileSuffMp})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
@@ -140,6 +140,7 @@ data EHCompileRunStateInfo
       , _crsiHereUID    :: !UID                                 -- unique id, the current one
       , _crsiHSInh      :: !HSSem.Inh_AGItf                     -- current inh attrs for HS sem
       , _crsiEHInh      :: !EHSem.Inh_AGItf                     -- current inh attrs for EH sem
+      , _crsiFileSuffMp :: FileSuffMp							-- allowed suffixes
 %%[[(8 codegen)
       , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
 %%]]
@@ -164,7 +165,7 @@ data EHCompileRunStateInfo
       }
 %%]
 
-%%[8 export(crsiOpts, crsiNextUID, crsiHereUID, crsiHSInh, crsiEHInh, crsiBState)
+%%[8 export(crsiOpts, crsiNextUID, crsiHereUID, crsiHSInh, crsiEHInh, crsiBState, crsiFileSuffMp)
 mkLabel ''EHCompileRunStateInfo
 %%]
 
@@ -177,6 +178,7 @@ emptyEHCompileRunStateInfo
       , _crsiHereUID    =   uidStart
       , _crsiHSInh      =   panic "emptyEHCompileRunStateInfo.crsiHSInh"
       , _crsiEHInh      =   panic "emptyEHCompileRunStateInfo.crsiEHInh"
+      , _crsiFileSuffMp =	emptyFileSuffMp
 %%[[(8 codegen)
       , crsiCoreInh     =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
 %%]]

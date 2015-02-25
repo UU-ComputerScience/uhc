@@ -10,7 +10,7 @@
 %%[1 module {%{EH}EHC.Main.Utils}
 %%]
 
-%%[1 import({%{EH}EHC.Common})
+%%[1 import({%{EH}EHC.Common}, {%{EH}EHC.FileSuffMp}) export(module {%{EH}EHC.FileSuffMp})
 %%]
 
 %%[8 import({%{EH}Base.Target}, {%{EH}Base.Optimize}(allOptimizeMp))
@@ -97,60 +97,5 @@ handleImmQuitOption cmdLineOpts inputSuffixes immq opts
               ; putStrLn d
               }
 %%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Suffix search path
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(FileSuffMp, mkFileSuffMpHs, fileSuffMpHsNoSuff)
-type FileSuffMp =
-  [( FileSuffix				-- suffix
-   , EHCompileUnitState		-- initial state
-   , Bool					-- visible from commandline
-   )]
-
--- | Allowed suffixes, order is significant.
-mkFileSuffMpHs :: EHCOpts -> FileSuffMp
-mkFileSuffMpHs opts
-  = [ ( Just "hs"  , ECUS_Haskell HSStart, True )
-%%[[99
-    , ( Just "lhs" , ECUS_Haskell LHSStart, True )
-%%]]
-    , ( Just "eh"  , ECUS_Eh EHStart, True )
-%%[[50
-    , ( Just "hi"  , ECUS_Haskell HIStart, False )
-%%]]
-%%[[(8 grin)
-    -- currently not supported
-    -- , ( Just "grin", ECUS_Grin, True )
-%%]]
-%%[[(50 corerunin)
-    , ( Just Cfg.suffixDotlessBinaryCoreRun , ECUS_CoreRun CRRStartBinary, True )
-%%]]
-%%[[(50 corein)
-    , ( Just Cfg.suffixDotlessInputOutputTextualCore, ECUS_Core CRStartText, True   )
-    , ( Just Cfg.suffixDotlessInputOutputBinaryCore , ECUS_Core CRStartBinary, True )
-%%]]
-%%[[(50 corebackend)
-    , ( Just Cfg.suffixDotlessBinaryCore , ECUS_Core CRStartBinary, False )
-%%]]
-    ]
-%%[[(90 codegen)
-    ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts)
-        then [ ( Just "c"   , ECUS_C CStart, True )
-             , ( Just "o"   , ECUS_O OStart, True )
-             ]
-        else []
-       )
-%%]]
-%%]
-
-%%[8
--- Suffix map for empty suffix, defaults to .hs
-fileSuffMpHsNoSuff :: FileSuffMp
-fileSuffMpHsNoSuff
-  = [ ( Nothing  , ECUS_Haskell HSStart, False )
-    ]
 %%]
 

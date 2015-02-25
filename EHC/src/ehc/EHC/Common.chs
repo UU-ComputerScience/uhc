@@ -226,6 +226,28 @@ ecuStateToKind s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Info & Adaption of search path
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(PrevSearchInfo)
+type PrevSearchInfo = (HsName,(FPath,FileLoc))
+%%]
+
+%%[99 export(prevSearchInfoAdaptedSearchPath)
+-- | strip tail part corresponding to module name, and use it to search as well
+prevSearchInfoAdaptedSearchPath :: Maybe PrevSearchInfo -> FileLocPath -> FileLocPath
+prevSearchInfoAdaptedSearchPath (Just (prevNm,(prevFp,prevLoc))) searchPath
+  = case (fpathMbDir (mkFPath prevNm), fpathMbDir prevFp, prevLoc) of
+	  (_, _, p) | filelocIsPkg p
+		-> p : searchPath
+	  (Just n, Just p, _)
+		-> mkDirFileLoc (filePathUnPrefix prefix) : searchPath
+		where (prefix,_) = splitAt (length p - length n) p
+	  _ -> searchPath
+prevSearchInfoAdaptedSearchPath _ searchPath = searchPath
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% How to compile the final step for a target
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
