@@ -90,48 +90,12 @@ cpParseWithFPath
 cpParseOffsideWithFPath :: EHCCompileRunner m => OffsideParser [Token] Pair Token (Maybe Token) a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> Maybe FPath -> HsName -> EHCompilePhaseT m ()
 cpParseOffsideWithFPath parser scanOpts store description mbFp modNm
   = cpParseWithFPath offsideScanHandle parseOffsideToResMsgs (cpSetLimitErrsWhen 5 description) parser scanOpts store mbFp modNm
-{-
- = do { cr <- get
-      ; (fn,fh) <- liftIO $ openFPath (maybe (ecuFilePath (crCU modNm cr)) id mbFp) ReadMode False
-      ; tokens  <- liftIO $ offsideScanHandle scanOpts fn fh
-      -- ; liftIO $ putStrLn $ show tokens -- does not work, no Show instance
-      ; let (res,msgs) = parseOffsideToResMsgs parser tokens
-            errs       = map (rngLift emptyRange mkPPErr) msgs
-      ; cpUpdCU modNm (store res)
-      ; cpSetLimitErrsWhen 5 description errs
-      }
--}
 %%]
       
 %%[8 export(cpParseOffside)
 cpParseOffside :: EHCCompileRunner m => HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> HsName -> EHCompilePhaseT m ()
 cpParseOffside parser scanOpts store description modNm
  = cpParseOffsideWithFPath parser scanOpts store description Nothing modNm
-%%]
-
-%%[8888 export(cpParsePlain)
-cpParsePlainWithHandleToErrs :: EHCCompileRunner m => PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> (String, Handle) -> HsName -> EHCompilePhaseT m [Err]
-cpParsePlainWithHandleToErrs parser scanOpts store (fn,fh) modNm
- = do { cr <- get
-      ; tokens  <- liftIO $ scanHandle scanOpts fn fh
-      ; let (res,msgs) = parseToResMsgs parser tokens
-            errs       = map (rngLift emptyRange mkPPErr) msgs
-      ; when (null errs)
-             (cpUpdCU modNm (store res))
-      ; return errs
-      }
-
-cpParsePlainToErrs :: EHCCompileRunner m => PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> FPath -> HsName -> EHCompilePhaseT m [Err]
-cpParsePlainToErrs parser scanOpts store fp modNm
- = do { fnfh@(fn,fh) <- liftIO $ openFPath fp ReadMode False
-      ; cpParsePlainWithHandleToErrs parser scanOpts store fnfh modNm
-      }
-
-cpParsePlain :: EHCCompileRunner m => PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> FPath -> HsName -> EHCompilePhaseT m ()
-cpParsePlain parser scanOpts store description fp modNm
- = do { errs <- cpParsePlainToErrs parser scanOpts store fp modNm
-      ; cpSetLimitErrsWhen 5 description errs
-      }
 %%]
 
 %%[8 export(cpParseEH)

@@ -65,18 +65,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- timestamps
-%%[5050 import(Data.Time, System.Directory)
-%%]
-
 %%[50 import(UHC.Util.Time, System.Directory)
-%%]
-
--- Force evaluation for IO
-%%[9999 import({%{EH}Base.ForceEval})
-%%]
-%%[(9999 codegen) import({%{EH}Core.Trf.ForceEval})
-%%]
-%%[(9999 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
 %%]
 
 -- pragma, target

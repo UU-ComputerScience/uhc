@@ -26,6 +26,10 @@ Running of BuildFunction
 %%[99 import ({%{EH}Base.PackageDatabase})
 %%]
 
+-- source handling
+%%[8 import ({%{EH}EHC.SourceHandler}, {%{EH}EHC.SourceHandler.Instances})
+%%]
+
 -- general imports
 %%[8 import (UHC.Util.Lens)
 %%]
@@ -85,7 +89,7 @@ bcall bfun = do
                when isTopModule
                     (cpUpdCU modNm (ecuSetIsTopMod True))
 %%]]
-               bmemoRef $ BRef_ECU modNm
+               bmemo $ BRef_ECU modNm
                fmap (panicJust "EcuOfNameAndPath") $ cpMbCU modNm
            
           FPathSearchForFile suff fn -> do
@@ -105,20 +109,17 @@ bcall bfun = do
     end   = st ^* bstateCallStack =$: tail
     
     -- memoize
-    bmemoRef :: BRef res -> EHCompilePhaseT m ()
-    bmemoRef res = do
+    bmemo :: Typeable f => f res -> EHCompilePhaseT m ()
+    bmemo res = do
         (BFun bfun : _) <- getl $ st ^* bstateCallStack
         case cast bfun of
           Just bfun -> st ^* bstateCache =$: bcacheInsert bfun res
-          _ -> panic $ "BuildFunction.Run.bcall.bmemoRef: " ++ show bfun
+          _ -> panic $ "BuildFunction.Run.bcall.bmemo: " ++ show bfun
 
-    -- memoize & return (duplicate code w.r.t. bmemoRef: TBD fix)
+    -- memoize & return
     breturn :: res -> EHCompilePhaseT m res
     breturn res = do
-        (BFun bfun : _) <- getl $ st ^* bstateCallStack
-        case cast bfun of
-          Just bfun -> st ^* bstateCache =$: bcacheInsert bfun (Identity res)
-          _ -> panic $ "BuildFunction.Run.bcall.breturn: " ++ show bfun
+        bmemo (Identity res)
         return res
 
     lkup :: BFun' res -> BCache -> EHCompilePhaseT m (Maybe res)
