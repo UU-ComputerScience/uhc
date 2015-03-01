@@ -87,8 +87,11 @@ rvalPrim pr as = do
       (RP_primShiftRightInt	, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `shiftR` i2
       (RP_primRotateLeftInt	, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `rotateL` i2
       (RP_primRotateRightInt, [RVal_Int i1, RVal_Int i2]) -> rsemPush $ RVal_Int $ i1 `rotateR` i2
+      (RP_primBitSize		, [RVal_Int i1]				) -> rsemPush $ RVal_Int $ bitSize i1 -- fromJust $ bitSizeMaybe i1
+      {-
       (RP_primBitSize		, [RVal_Int i1]				) -> rsemPush $ RVal_Int $ fromJust $ bitSizeMaybe i1
       (RP_primBitSizeMaybe	, [RVal_Int i1]				) -> hsUnmarshall $ bitSizeMaybe i1
+      -}
       (RP_primPopCount		, [RVal_Int i1]				) -> rsemPush $ RVal_Int $ popCount i1
       (RP_primBit			, [RVal_Int i1]				) -> rsemPush $ RVal_Int $ bit i1
 

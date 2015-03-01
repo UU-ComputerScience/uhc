@@ -27,7 +27,7 @@ Running of BuildFunction
 %%]
 
 -- source handling
-%%[8 import ({%{EH}EHC.SourceHandler}, {%{EH}EHC.SourceHandler.Instances})
+%%[8 import ({%{EH}EHC.ASTHandler}, {%{EH}EHC.ASTHandler.Instances})
 %%]
 
 -- general imports

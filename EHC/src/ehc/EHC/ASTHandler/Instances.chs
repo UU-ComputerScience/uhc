@@ -3,20 +3,20 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SourceHandler instances
+%%% ASTHandler instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[doesWhat doclatex
 %%]
 
-%%[8 module {%{EH}EHC.SourceHandler.Instances}
+%%[8 module {%{EH}EHC.ASTHandler.Instances}
 %%]
 
 -- general imports
 %%[8 import ({%{EH}EHC.Common}, {%{EH}EHC.CompileUnit}, {%{EH}EHC.CompileRun})
 %%]
 
-%%[8 import ({%{EH}EHC.SourceHandler})
+%%[8 import ({%{EH}EHC.ASTHandler})
 %%]
 
 %%[8888 import (Control.Applicative)
@@ -86,13 +86,13 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SourceHandler: CoreRun
+%%% ASTHandler: CoreRun
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(sourceHandler_CoreRun)
-sourceHandler_CoreRun :: SourceHandler CoreRun.Mod
+sourceHandler_CoreRun :: ASTHandler CoreRun.Mod
 sourceHandler_CoreRun = 
-  emptySourceHandler
+  emptyASTHandler
     {-
     -}
 %%]

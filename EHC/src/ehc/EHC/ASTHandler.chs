@@ -10,7 +10,7 @@
 Abstraction for dealing with AST formats
 %%]
 
-%%[8 module {%{EH}EHC.SourceHandler}
+%%[8 module {%{EH}EHC.ASTHandler}
 %%]
 
 -- general imports
@@ -39,38 +39,38 @@ Abstraction for dealing with AST formats
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SourceType
+%%% ASTType
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(SourceType(..))
--- | An 'Enum' listing all types of files we can deal with
-data SourceType
-  = SourceType_Hs
-  | SourceType_LitHs
-  | SourceType_Core
-  | SourceType_CoreRun
+%%[8 export(ASTType(..))
+-- | An 'Enum' listing all types of ast we can deal with
+data ASTType
+  = ASTType_Hs
+  | ASTType_LitHs
+  | ASTType_Core
+  | ASTType_CoreRun
   deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SourceHandler
+%%% ASTHandler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(SourceHandler(..))
-data SourceHandler ast
-  = SourceHandler
-      { _shParseFromText		:: forall m . EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m (Maybe ast)
+%%[8 export(ASTHandler(..))
+data ASTHandler ast
+  = ASTHandler
+      { _asthdlrParseFromText		:: forall m . EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m (Maybe ast)
       }
 %%]
 
-%%[8888 export(shParseFromText)
-mkLabel ''SourceHandler
+%%[8888 export(asthdlrParseFromText)
+mkLabel ''ASTHandler
 %%]
 
-%%[8 export(emptySourceHandler)
-emptySourceHandler :: SourceHandler ast
-emptySourceHandler
-  = SourceHandler
-      { _shParseFromText = \_ _ -> return Nothing
+%%[8 export(emptyASTHandler)
+emptyASTHandler :: ASTHandler ast
+emptyASTHandler
+  = ASTHandler
+      { _asthdlrParseFromText = \_ _ -> return Nothing
       }
 %%]
