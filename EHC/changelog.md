@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.8.9 - 20150301
+
+- [edit this] and this, adding new entries as needed
+
 ## 1.1.8.8 - 20150301
 
 - [build] Intro of dependency on template haskell due to start of use of a lens library (fclabels, via uhc-util)

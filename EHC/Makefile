@@ -448,13 +448,18 @@ clean-extlibs:
 ###########################################################################################
 
 git-fixate-tagversion:
-	( echo "# Changelog" ; \
-	  echo "" ; \
+	( echo "" ; \
 	  echo "## $(EH_VERSION_FULL) - $(DATE)" ; \
 	  echo "" ; \
 	  cat changelog.md.editthis ; \
+	) > changelog.md.tmp
+	( echo "# Changelog" ; \
+	  cat changelog.md.tmp ; \
 	) > changelog.md
-	git ci -m "Last changes before fixating/tagging v$(EH_VERSION_FULL)"
+	( echo "- [edit this] and this, adding new entries as needed" ; \
+	  cat changelog.md.tmp ; \
+	) > changelog.md.editthis
+	rm changelog.md.tmp
 	git tag "v$(EH_VERSION_FULL)"
 	git ci -m "Fixate/tag v$(EH_VERSION_FULL)"
 
