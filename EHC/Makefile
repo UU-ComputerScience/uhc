@@ -447,19 +447,30 @@ clean-extlibs:
 # Version incrementing/bumping
 ###########################################################################################
 
-bump-major:
+git-fixate-tagversion:
+	( echo "# Changelog" ; \
+	  echo "" ; \
+	  echo "## $(EH_VERSION_FULL) - $(DATE)" ; \
+	  echo "" ; \
+	  cat changelog.md.editthis ; \
+	) > changelog.md
+	git ci -m "Last changes before fixating/tagging v$(EH_VERSION_FULL)"
+	git tag "v$(EH_VERSION_FULL)"
+	git ci -m "Fixate/tag v$(EH_VERSION_FULL)"
+
+bump-major: git-fixate-tagversion
 	@echo $$(($(EH_VERSION_MAJOR)+1)).0.0.0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
 
-bump-minor:
+bump-minor: git-fixate-tagversion
 	@echo $(EH_VERSION_MAJOR).$$(($(EH_VERSION_MINOR)+1)).0.0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
 
-bump-minorminor:
+bump-minorminor: git-fixate-tagversion
 	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$$(($(EH_VERSION_MINORMINOR)+1)).0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
 
-bump-minorminorminor:
+bump-minorminorminor: git-fixate-tagversion
 	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$(EH_VERSION_MINORMINOR).$$(($(EH_VERSION_MINORMINORMINOR)+1)) > VERSION ; \
 	echo "bumped version to `cat VERSION`"
 
