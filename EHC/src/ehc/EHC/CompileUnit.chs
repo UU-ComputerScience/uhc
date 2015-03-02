@@ -382,6 +382,22 @@ ecuIsFromCoreSrc :: EHCompileUnit -> Bool
 ecuIsFromCoreSrc = ecuStateIsCore . ecuState
 %%]
 
+%%[(8 core) export(ecuCore)
+ecuCore = panicJust "ecuCore.ecuMbCore" . ecuMbCore
+%%]
+
+%%[(8 corerun) export(ecuCoreRun)
+ecuCoreRun = panicJust "ecuCoreRun.ecuMbCoreRun" . ecuMbCoreRun
+%%]
+
+%%[(8 javascript) export(ecuJavaScript)
+ecuJavaScript = panicJust "ecuJavaScript.ecuMbJavaScript" . ecuMbJavaScript
+%%]
+
+%%[(8 grin) export(ecuGrin)
+ecuGrin = panicJust "ecuGrin.ecuMbGrin" . ecuMbGrin
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% State of compilation unit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

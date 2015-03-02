@@ -83,6 +83,10 @@ level 2..6 : with prefix 'cpEhc'
 %%[99 import({%{EH}EHC.CompilePhase.Cleanup})
 %%]
 
+-- AST handler
+%%[8 import({%{EH}EHC.ASTHandler.Instances})
+%%]
+
 -- Language syntax: Core
 %%[(50 codegen) import(qualified {%{EH}Core} as Core(cModMergeByConcat))
 %%]
@@ -242,7 +246,7 @@ cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , cpCleanupGrin impModNmL -- clean up unused Grin (moved here from cpCleanupCU)
 %%]]
            ]
-           ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin False "-fullgrin" mainModNm] else [])
+           ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileVariation_Text "-fullgrin" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
               ]
           )
@@ -1250,12 +1254,14 @@ cpProcessCoreBasic modNm
        ; cpSeq [ cpTransformCore OptimizationScope_PerModule modNm
 %%[[50
                , cpFlowHILamMp modNm
-               , void $ cpOutputCore    CPOutputCoreHow_Binary    [] "" Cfg.suffixDotlessBinaryCore    modNm
+               , void $ cpOutputCore    ASTFileVariation_Binary    {-[]-} "" Cfg.suffixDotlessBinaryCore    modNm
+               -- , void $ cpOutputSomeModule ecuCore astHandler_Core ASTFileVariation_Binary "" Cfg.suffixDotlessBinaryCore modNm
 %%]]
                , cpProcessCoreFold modNm
 %%[[(50 corerun)
                , when (targetIsCoreVariation (ehcOptTarget opts)) $
-                   void $ cpOutputCoreRun CPOutputCoreRunHow_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
+                   void $ -- cpOutputCoreRun ASTFileVariation_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
+                          cpOutputSomeModule ecuCoreRun astHandler_CoreRun ASTFileVariation_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
 %%]]
                ]
         }
@@ -1310,7 +1316,7 @@ cpProcessCoreRest modNm
        ; cpSeq (   []
 %%[[(8 grin)
                 ++ [ cpTranslateCore2Grin modNm ]
-                ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin True "" modNm] else [])
+                ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin ASTFileVariation_Binary "" modNm] else [])
 %%]]
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
@@ -1320,11 +1326,11 @@ cpProcessCoreRest modNm
 %%]]
 %%[[(8 coreout)
                 ++ (if CoreOpt_Dump `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore CPOutputCoreHow_Text [] "" Cfg.suffixDotlessOutputTextualCore modNm]
+                    then [void $ cpOutputCore ASTFileVariation_Text {-[]-} "" Cfg.suffixDotlessOutputTextualCore modNm]
                     else [])
 %%[[50
                 ++ (if CoreOpt_DumpBinary `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore CPOutputCoreHow_Binary [] "" Cfg.suffixDotlessInputOutputBinaryCore modNm]
+                    then [void $ cpOutputCore ASTFileVariation_Binary {-[]-} "" Cfg.suffixDotlessInputOutputBinaryCore modNm]
                     else [])
 %%]]
 %%]]
@@ -1347,7 +1353,8 @@ cpProcessCoreRunRest modNm
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq (   []
                 ++ (if CoreOpt_RunDump `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore CPOutputCoreHow_CoreRun_Text [] "" Cfg.suffixDotlessInputOutputCoreRun modNm]
+                    then -- [void $ cpOutputCore CPOutputCoreHow_CoreRun_Text {-[]-} "" Cfg.suffixDotlessInputOutputCoreRun modNm]
+                         [void $ cpOutputSomeModule ecuCoreRun astHandler_CoreRun ASTFileVariation_Text "" Cfg.suffixDotlessInputOutputCoreRun modNm]
                     else [])
                 ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
                     then [cpRunCoreRun  modNm]
@@ -1364,9 +1371,9 @@ cpProcessGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessGrin modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; cpSeq (   (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin False "-000-initial" modNm] else [])
+       ; cpSeq (   (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileVariation_Text "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
-                ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin False "-099-final" modNm]  else [])
+                ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileVariation_Text "-099-final" modNm]  else [])
 %%[[(8 wholeprogAnal)
                 ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTransformGrinHPTWholeProg modNm] else [])
 %%]]
@@ -1400,7 +1407,6 @@ cpProcessCmm modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; cpSeq [ cpMsg modNm VerboseALot "Translate Cmm"
-               -- , when (ehcOptDumpCmmStages opts) $ void $ cpOutputCmm False "-000-initial" modNm
                , cpTransformCmm OptimizationScope_PerModule modNm
 
 %%[[(8 javascript)

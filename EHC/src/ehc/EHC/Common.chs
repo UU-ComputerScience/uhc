@@ -18,6 +18,8 @@ Used by all compiler driver code
 %%]
 %%[1 import({%{EH}Error},{%{EH}Error.Pretty}) export(module {%{EH}Error},module {%{EH}Error.Pretty})
 %%]
+%%[8 import(GHC.Generics)
+%%]
 
 %%[8 import({%{EH}Gam.Full}) export(module {%{EH}Gam.Full})
 %%]
@@ -223,6 +225,47 @@ ecuStateToKind s
       ECUS_C       _ -> EHCUKind_C
 %%]]
       _              -> EHCUKind_None
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ASTType & file variation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ASTType(..))
+-- | An 'Enum' of all types of ast we can deal with
+data ASTType
+  = ASTType_HS
+  | ASTType_EH
+%%[[(8 core)
+  | ASTType_Core
+%%]]
+%%[[(8 corerun)
+  | ASTType_CoreRun
+%%]]
+%%[[(8 grin)
+  | ASTType_Grin
+%%]]
+%%[[(8 cmm)
+  | ASTType_Cmm
+%%]]
+%%[[(8 javascript)
+  | ASTType_JavaScript
+%%]]
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+%%]
+
+%%[8 export(ASTFileVariation(..))
+-- | An 'Enum' of all file variations of ast we can deal with (in principle)
+data ASTFileVariation
+  = ASTFileVariation_Text
+  | ASTFileVariation_LitText
+  | ASTFileVariation_Binary
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+%%]
+
+%%[8 export(ASTHandlerKey)
+-- | Combination of 'ASTType' and 'ASTFileVariation' as key into map of handlers
+type ASTHandlerKey = (ASTType, ASTFileVariation)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

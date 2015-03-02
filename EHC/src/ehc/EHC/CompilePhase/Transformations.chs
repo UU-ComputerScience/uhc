@@ -32,6 +32,10 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
 
+-- AST handling
+%%[8 import({%{EH}EHC.ASTHandler.Instances})
+%%]
+
 -- Transformation utils
 %%[(8 codegen) import({%{EH}CodeGen.TrfUtils})
 %%]
@@ -128,7 +132,8 @@ cpTransformCore optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcoreOut
-       ; cpOutputCoreModules CPOutputCoreHow_Text [{- CoreOpt_DumpAlsoNonParseable -}] (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       -- ; cpOutputCoreModules CPOutputCoreHow_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules' astHandler_Core ASTFileVariation_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
 %%]
@@ -206,11 +211,11 @@ cpTransformJavaScript optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfjsOut
-       ; cpOutputJavaScriptModules False (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       -- ; cpOutputJavaScriptModules ASTFileVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules' astHandler_JavaScript ASTFileVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("JavaScript errors: " ++ nm) err) nms errs
        }
 %%]
-
 
 %%[(8 codegen cmm) export(cpTransformCmm)
 cpTransformCmm :: EHCCompileRunner m => OptimizationScope -> HsName -> EHCompilePhaseT m ()
@@ -235,7 +240,8 @@ cpTransformCmm optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcmmOut
-       ; cpOutputCmmModules False (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       -- ; cpOutputCmmModules ASTFileVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules' astHandler_Cmm ASTFileVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Cmm errors: " ++ nm) err) nms errs
        }
 %%]

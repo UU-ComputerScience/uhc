@@ -444,22 +444,24 @@ clean-extlibs:
 	#$(MAKE) gmp-clean
 
 ###########################################################################################
-# Version incrementing/bumping
+# Version incrementing/bumping/tagging
 ###########################################################################################
+
+CHANGELOG		:= changelog.md
 
 git-fixate-tagversion:
 	( echo "" ; \
 	  echo "## $(EH_VERSION_FULL) - $(DATE)" ; \
 	  echo "" ; \
-	  cat changelog.md.editthis ; \
-	) > changelog.md.tmp
+	  cat $(CHANGELOG).editthis ; \
+	) > $(CHANGELOG).tmp
 	( echo "# Changelog" ; \
-	  cat changelog.md.tmp ; \
-	) > changelog.md
-	( echo "- [edit this] and this, adding new entries as needed" ; \
-	  cat changelog.md.tmp ; \
-	) > changelog.md.editthis
-	rm changelog.md.tmp
+	  cat $(CHANGELOG).tmp ; \
+	) > $(CHANGELOG)
+	( echo "- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)" ; \
+	  cat $(CHANGELOG).tmp ; \
+	) > $(CHANGELOG).editthis
+	rm $(CHANGELOG).tmp
 	git tag "v$(EH_VERSION_FULL)"
 	git ci -m "Fixate/tag v$(EH_VERSION_FULL)"
 

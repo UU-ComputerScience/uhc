@@ -14,6 +14,10 @@ JavaScript compilation
 %%[(8 codegen javascript) import(Control.Monad.State)
 %%]
 
+-- AST handling
+%%[(8 codegen javascript) import({%{EH}EHC.ASTHandler.Instances})
+%%]
+
 -- general imports
 %%[(8 codegen javascript) import({%{EH}EHC.Common})
 %%]
@@ -75,7 +79,7 @@ cpCompileJavaScript how othModNmL modNm
                                   {ehcOptOutputDir = Nothing}
 %%]]
               mbJs            = ecuMbJavaScript ecu
-              fpOOpts o m f   = outputMkFPathJavaScriptModule o m f Cfg.suffixJavaScriptLib
+              fpOOpts o m f   = _asthdlrMkFPath astHandler_JavaScript o m f Cfg.suffixJavaScriptLib
               fpO m f         = fpOOpts opts m f
               fpExecOpts o    = mkPerExecOutputFPath o modNm fp (Just ("js", True))
               fpExec          = fpExecOpts opts
@@ -104,8 +108,9 @@ cpCompileJavaScript how othModNmL modNm
 
                   ; let Right jsDeps = jsDepsFound
 
-                  -- ; liftIO $ putPPFPath fpM ("//" >#< modNm >-< ppMod) 1000
-                  ; fpM <- cpOutputJavaScript False "" modNm
+                  -- ; fpM <- cpOutputJavaScript ASTFileVariation_Text "" modNm
+                  ; fpM <- fmap (panicJust "cpCompileJavaScript.cpOutputSomeModule") $
+                      cpOutputSomeModule ecuJavaScript astHandler_JavaScript ASTFileVariation_Text "" Cfg.suffixJavaScriptLib modNm
                   
                   -- ; fileNmExec <- liftIO $ canonicalize $ fpathToStr fpExec 
 
