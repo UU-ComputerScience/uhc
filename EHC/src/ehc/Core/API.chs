@@ -351,17 +351,7 @@ mkModule :: HsName    -- ^ The name of the module.
     -> EC.CExpr            -- ^ The body of the module.
     -> EC.CModule
 mkModule mod exps imps meta body =
-  EC.CModule_Mod mod exps imps meta body'
-  -- TODO this is a work around, it forces UHC to recognize that
-  -- this core file is not yet lambda-lifted.
-  -- See issue #36.
-  where body' = mkLet1Plain dummyName (mkApp
-                    (mkLam [mkUniqueHsName prefix [] "dummy-arg"] unit)
-                    [ unit ]
-                    ) body
-        unit = mkUnit defaultEHCOpts
-        dummyName = hsnUniqifyStr HsNameUniqifier_CoreAPI prefix $ hsnPrefixQual mod (hsnFromString "dummy")
-        prefix = "nl.uu.uhc.core-api.lambda-lift-fix"
+  EC.CModule_Mod mod exps imps meta body
 
 -- | Creates an import.
 mkImport :: HsName -- ^ The module to import.
