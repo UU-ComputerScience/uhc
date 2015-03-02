@@ -40,10 +40,11 @@
 %%[8 import (Data.Typeable, GHC.Generics)
 %%]
 
--- Language syntax: HS, EH
-%%[8 import(qualified {%{EH}HS} as HS, qualified {%{EH}EH} as EH)
+-- Language syntax: HS, EH, Core, TyCore, Grin, ...
+%%[8 import(qualified {%{EH}EH} as EH)
 %%]
--- Language syntax: Core, TyCore, Grin, ...
+%%[8 import(qualified {%{EH}HS} as HS)
+%%]
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
 %%]
 %%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
@@ -116,6 +117,64 @@
 %%[50 import(UHC.Util.Time, System.Directory)
 %%]
 
+-- parsing
+%%[8 import(UU.Parsing, UU.Parsing.Offside)
+%%]
+%%[8 import(qualified UHC.Util.ScanUtils as ScanUtils, {%{EH}Scanner.Common})
+%%]
+%%[8 import(UHC.Util.ParseUtils)
+%%]
+
+-- EH parser
+%%[8 import(qualified {%{EH}EH.Parser} as EHPrs)
+%%]
+-- HS parser
+%%[8 import(qualified {%{EH}HS.Parser} as HSPrs)
+%%]
+-- HI parser
+%%[50 import(qualified {%{EH}HI} as HI)
+%%]
+-- Core parser
+%%[(8 corein) import(qualified {%{EH}Core.Parser} as CorePrs)
+%%]
+-- CoreRun parser
+%%[(8 corerun)
+%%]
+-- TyCore parser
+%%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
+%%]
+-- Grin parser
+%%[(8 codegen grinparser) import(qualified {%{EH}GrinCode.Parser} as GrinParser)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ASTHandler: HS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(astHandler_HS)
+astHandler_HS :: ASTHandler HS.AGItf
+astHandler_HS = 
+  emptyASTHandler
+    { _asthdlrName				= "Haskell"
+    , _asthdlrParseScanOpts 	= hsScanOpts
+    , _asthdlrEcuStore		= ecuStoreHS
+    }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ASTHandler: EH
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(astHandler_EH)
+astHandler_EH :: ASTHandler EH.AGItf
+astHandler_EH = 
+  emptyASTHandler
+    { _asthdlrName				= "Desugared Haskell"
+    , _asthdlrParseScanOpts 	= ehScanOpts
+    , _asthdlrEcuStore		= ecuStoreEH
+    }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ASTHandler: Core
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,8 +183,12 @@
 astHandler_Core :: ASTHandler Core.CModule
 astHandler_Core = 
   emptyASTHandler
-    { _asthdlrName		= "Core"
-    , _asthdlrOutputIO 	= \how opts _ _ fpC fnC cMod -> case how of
+    { _asthdlrName				= "Core"
+%%[[(8 corein)
+    , _asthdlrParseScanOpts 	= coreScanOpts
+%%]]
+    , _asthdlrEcuStore		= ecuStoreCore
+    , _asthdlrOutputIO 			= \how opts _ _ fpC fnC cMod -> case how of
           ASTFileVariation_Text -> do
             let cMod' = cmodTrfEraseTyCore opts cMod
             putPPFPath fpC (ppCModule (opts {- ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts -}) cMod') 100
@@ -147,8 +210,10 @@ astHandler_Core =
 astHandler_CoreRun :: ASTHandler CoreRun.Mod
 astHandler_CoreRun = 
   emptyASTHandler
-    { _asthdlrName		= "CoreRun"
-    , _asthdlrOutputIO 	= \how opts _ _ fpC fnC crMod -> case how of
+    { _asthdlrName				= "CoreRun"
+    , _asthdlrParseScanOpts 	= const corerunScanOpts
+    , _asthdlrEcuStore		= ecuStoreCoreRun
+    , _asthdlrOutputIO 			= \how opts _ _ fpC fnC crMod -> case how of
           ASTFileVariation_Text -> do
             putPPFPath fpC (ppMod' opts crMod) 100
             return True
@@ -169,8 +234,10 @@ astHandler_CoreRun =
 astHandler_Grin :: ASTHandler Grin.GrModule
 astHandler_Grin = 
   emptyASTHandler
-    { _asthdlrName		= "Grin"
-    , _asthdlrOutputIO 	= \how _ _ _ fpC fnC gMod -> case how of
+    { _asthdlrName				= "Grin"
+    , _asthdlrParseScanOpts 	= const grinScanOpts
+    , _asthdlrEcuStore		= ecuStoreGrin
+    , _asthdlrOutputIO 			= \how _ _ _ fpC fnC gMod -> case how of
           ASTFileVariation_Text -> do
             putPPFPath fpC (ppGrModule gMod) 100
             return True
@@ -191,8 +258,9 @@ astHandler_Grin =
 astHandler_Cmm :: ASTHandler Cmm.Module
 astHandler_Cmm = 
   emptyASTHandler
-    { _asthdlrName		= "Cmm"
-    , _asthdlrOutputIO 	= \how _ _ _ fpC fnC cmmMod -> case how of
+    { _asthdlrName				= "Cmm"
+    , _asthdlrEcuStore		= ecuStoreCmm
+    , _asthdlrOutputIO 			= \how _ _ _ fpC fnC cmmMod -> case how of
           ASTFileVariation_Text -> do
             putPPFPath fpC (ppCmmModule cmmMod) 100
             return True
@@ -208,9 +276,10 @@ astHandler_Cmm =
 astHandler_JavaScript :: ASTHandler JS.JavaScriptModule
 astHandler_JavaScript = 
   emptyASTHandler
-    { _asthdlrName		= "JavaScript"
-    , _asthdlrMkFPath	= \opts m f suff -> mkPerModuleOutputFPath opts True m f suff
-    , _asthdlrOutputIO 	= \how _ ecu modNm fpC fnC jsMod -> case how of
+    { _asthdlrName				= "JavaScript"
+    , _asthdlrEcuStore		= ecuStoreJavaScript
+    , _asthdlrMkFPath			= \opts m f suff -> mkPerModuleOutputFPath opts True m f suff
+    , _asthdlrOutputIO 			= \how _ ecu modNm fpC fnC jsMod -> case how of
           ASTFileVariation_Text -> do
 %%[[8
             let ppMod = ppJavaScriptModule jsMod
@@ -225,4 +294,3 @@ astHandler_JavaScript =
 %%]
 
 
-mkPerModuleOutputFPath opts True m f suff

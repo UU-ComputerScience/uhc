@@ -23,6 +23,10 @@ Abstraction for dealing with AST formats
 %%[8 import (qualified Data.Map as Map)
 %%]
 
+-- parsing
+%%[8 import(qualified UHC.Util.ScanUtils as ScanUtils)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ASTHandler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,20 +35,37 @@ Abstraction for dealing with AST formats
 data ASTHandler ast
   = ASTHandler
       {
-      --- | Input an ast
-        _asthdlrInput		:: forall m . EHCCompileRunner m => ASTFileVariation -> HsName -> EHCompilePhaseT m (Maybe ast)
-
-      --- | Write to an ast to a file in the IO monad, return True if could be done
-      , _asthdlrOutputIO	:: ASTFileVariation -> EHCOpts -> EHCompileUnit -> HsName -> FPath -> FilePath -> ast -> IO Bool
+      --- * Meta
       
       --- | Meta info: name of ast
-      , _asthdlrName		:: !String
+        _asthdlrName				:: !String
 
+      --- * File
+      
       --- | Construct FPath from module name, path, suffix
-      , _asthdlrMkFPath		:: EHCOpts -> HsName -> FPath -> String -> FPath
+      , _asthdlrMkFPath				:: EHCOpts -> HsName -> FPath -> String -> FPath
 
       --- | Suffix info (not used yet)
-      , _asthdlrSuffixMp	:: Map.Map ASTFileVariation String
+      , _asthdlrSuffixMp			:: Map.Map ASTFileVariation String
+      
+      --- * Compile unit
+      
+      --- | Update EHCompileUnit
+      , _asthdlrEcuStore			:: EcuUpdater ast
+      
+      --- * Output
+      
+      --- | Write to an ast to a file in the IO monad, return True if could be done
+      , _asthdlrOutputIO			:: ASTFileVariation -> EHCOpts -> EHCompileUnit -> HsName -> FPath -> FilePath -> ast -> IO Bool
+      
+      --- * Input, parsing
+      
+      --- | Scanning parameterisation
+      , _asthdlrParseScanOpts 		:: EHCOpts -> ScanUtils.ScanOpts
+      
+      --- | Input an ast
+      , _asthdlrInput				:: forall m . EHCCompileRunner m => ASTFileVariation -> HsName -> EHCompilePhaseT m (Maybe ast)
+
       }
 %%]
 
@@ -52,10 +73,16 @@ data ASTHandler ast
 emptyASTHandler :: ASTHandler ast
 emptyASTHandler
   = ASTHandler
-      { _asthdlrInput 		= \_ _ -> return Nothing
-      , _asthdlrOutputIO 	= \_ _ _ _ _ _ _ -> return False
-      , _asthdlrName 		= "Unknown AST"
-      , _asthdlrMkFPath		= mkOutputFPath
-      , _asthdlrSuffixMp 	= Map.empty
+      { _asthdlrName 				= "Unknown AST"
+      
+      , _asthdlrMkFPath				= mkOutputFPath
+      , _asthdlrSuffixMp 			= Map.empty
+      
+      , _asthdlrEcuStore			= const id
+
+      , _asthdlrOutputIO 			= \_ _ _ _ _ _ _ -> return False
+
+      , _asthdlrInput 				= \_ _ -> return Nothing
+      , _asthdlrParseScanOpts		= const ScanUtils.defaultScanOpts
       }
 %%]
