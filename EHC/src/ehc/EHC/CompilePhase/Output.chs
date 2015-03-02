@@ -53,24 +53,8 @@ Output generation, on stdout or file
 %%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
 %%]
 
--- CoreRun output
-%%[(8 corerun) import({%{EH}CoreRun} as CoreRun, {%{EH}Core.ToCoreRun}, {%{EH}CoreRun.Pretty})
-%%]
-
--- Core output
-%%[(8888 codegen coreout) import({%{EH}Core} as Core,{%{EH}Core.Pretty})
-%%]
 -- TyCore output
 %%[(8 codegen tycore) import({%{EH}TyCore},{%{EH}TyCore.Pretty})
-%%]
--- Grin input and output
-%%[(8888 codegen grin) import({%{EH}GrinCode} as Grin,{%{EH}GrinCode.Pretty})
-%%]
--- Java output
-%%[(8888 codegen java) import({%{EH}Core.ToJava})
-%%]
--- JavaScript output
-%%[(8888 javascript) import({%{EH}JavaScript} as JS,{%{EH}JavaScript.Pretty})
 %%]
 -- Cmm output
 %%[(8888 codegen cmm) import({%{EH}Cmm} as Cmm,{%{EH}Cmm.ToC}(cmmMod2C), {%{EH}Cmm.Pretty})
@@ -96,9 +80,9 @@ Output generation, on stdout or file
 %%% Compile actions: abstract writing of output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
--- | Abstraction for writing a module to output with variation in suffices
-cpOutputSomeModules
+%%[8888
+-- | Abstraction for writing a module to output with variation in suffices, old (<= 20150302) version
+cpOutputSomeModules'
   ::    EHCCompileRunner m => 
         (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO ())
      -> (EHCOpts -> HsName -> FPath -> String -> FPath)
@@ -107,7 +91,7 @@ cpOutputSomeModules
      -> HsName
      -> [(String,mod)]
      -> EHCompilePhaseT m [FPath]
-cpOutputSomeModules write mkfp mknmsuff suff modNm mods = do
+cpOutputSomeModules' write mkfp mknmsuff suff modNm mods = do
     cr <- get
     let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
     forM (zip [1..] mods) $ \(nr,(nmsuff,mod)) -> do
@@ -119,9 +103,9 @@ cpOutputSomeModules write mkfp mknmsuff suff modNm mods = do
       return fpC
 %%]
 
-%%[8 export(cpOutputSomeModules')
--- | Abstraction for writing some module to output with variation in suffices, will make obsolete 'cpOutputSomeModules'
-cpOutputSomeModules'
+%%[8 export(cpOutputSomeModules)
+-- | Abstraction for writing some module to output with variation in suffices
+cpOutputSomeModules
   :: EHCCompileRunner m
      => ASTHandler mod -- (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO Bool)
      -> ASTFileVariation
@@ -130,7 +114,7 @@ cpOutputSomeModules'
      -> HsName
      -> [(String,mod)]
      -> EHCompilePhaseT m [Maybe FPath]
-cpOutputSomeModules' astHdlr how mknmsuff suff modNm mods = do
+cpOutputSomeModules astHdlr how mknmsuff suff modNm mods = do
     cr <- get
     let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
     forM (zip [1..] mods) $ \(nr,(nmsuff,mod)) -> do
@@ -160,7 +144,7 @@ cpOutputSomeModule getMod astHdlr how nmsuff suff modNm
          ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
                  mod    = getMod ecu
          ;  cpMsg modNm VerboseALot $ "Emit " ++ _asthdlrName astHdlr
-         ;  fmap head $ cpOutputSomeModules' astHdlr how (\_ nm -> nm) suff modNm [(nmsuff,mod)]
+         ;  fmap head $ cpOutputSomeModules astHdlr how (\_ nm -> nm) suff modNm [(nmsuff,mod)]
          }
 %%]
 
@@ -200,131 +184,11 @@ cpOutputTyCore suff modNm
          }
 %%]
 
-%%[(8888 codegen) export(CPOutputCoreHow(..), cpOutputCoreModules)
-data CPOutputCoreHow
-  = CPOutputCoreHow_Text
-%%[[50
-  | CPOutputCoreHow_Binary
-%%]]
-%%[[(8 corerun)
-  | CPOutputCoreHow_CoreRun_Text
-%%]]
-%%[[(50 corerun)
-  | CPOutputCoreHow_CoreRun_Binary
-%%]]
-
-cpOutputCoreModules
-  :: EHCCompileRunner m => 
-        CPOutputCoreHow
-     {- -> [CoreOpt] -}
-     -> (Int -> String -> String)
-     -> String -> HsName
-     -> [(String,CModule)]
-     -> EHCompilePhaseT m [FPath]
-cpOutputCoreModules how {-coreOpts-} mknmsuff suff modNm cMods
-  = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
-       ; cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm cMods
-       }
-  where write opts _ fpC fnC cMod = case how of
-          CPOutputCoreHow_Text -> do
-            let cMod' = cmodTrfEraseTyCore opts cMod
-            putPPFPath fpC (ppCModule (opts {- ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts -}) cMod') 100
-%%[[50
-          CPOutputCoreHow_Binary ->
-            putSerializeFile fnC cMod
-%%]]
-%%[[(8 corerun)
-          CPOutputCoreHow_CoreRun_Text -> do
-            let cMod' = cmod2CoreRun cMod
-            putPPFPath fpC (ppMod' opts cMod') 100
-%%]]
-%%[[(50 corerun)
-          CPOutputCoreHow_CoreRun_Binary -> do
-            let cMod' = cmod2CoreRun cMod
-            putSerializeFile fnC cMod'
-%%]]
-%%]
-
 %%[(8 codegen) export(cpOutputCore)
 cpOutputCore :: EHCCompileRunner m => ASTFileVariation -> String -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputCore how nmsuff suff modNm =
     fmap (panicJust "cpOutputGrin.cpOutputSomeModule") $
       cpOutputSomeModule ecuCore astHandler_Core how nmsuff suff modNm
-{-
-cpOutputCore :: EHCCompileRunner m => CPOutputCoreHow -> String -> String -> HsName -> EHCompilePhaseT m FPath
-cpOutputCore how nmsuff suff modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
-                 mbCore = ecuMbCore ecu
-                 cMod   = panicJust "cpOutputCore" mbCore
-         ;  cpMsg modNm VerboseALot "Emit Core"
-         ;  fmap head $ cpOutputCoreModules how} (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
-         }
--}
-%%]
-
-%%[(8888 corerun) export(cpOutputCoreRunModules)
-cpOutputCoreRunModules
-  :: EHCCompileRunner m => 
-        ASTFileVariation
-     -> (Int -> String -> String)
-     -> String -> HsName
-     -> [(String,CoreRun.Mod)]
-     -> EHCompilePhaseT m [FPath]
-cpOutputCoreRunModules how mknmsuff suff modNm crMods
-  = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
-       ; cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm crMods
-       }
-  where write opts _ fpC fnC crMod = case how of
-          ASTFileVariation_Text ->
-            putPPFPath fpC (ppMod' opts crMod) 100
-%%[[50
-          ASTFileVariation_Binary ->
-            putSerializeFile fnC crMod
-%%]]
-
-%%]
-
-%%[(8888 corerun) export(cpOutputCoreRun, cpOutputCoreRun')
-cpOutputCoreRun' :: EHCCompileRunner m => ASTFileVariation -> String -> String -> HsName -> CoreRun.Mod -> EHCompilePhaseT m FPath
-cpOutputCoreRun' how nmsuff suff modNm cMod
-  =  do  {  cr <- get
-         ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
-                 mbCoreRun = ecuMbCoreRun ecu
-                 cMod   = panicJust "cpOutputCoreRun" mbCoreRun
-         ;  cpMsg modNm VerboseALot "Emit CoreRun"
-         ;  fmap head $ cpOutputCoreRunModules how (\_ nm -> nm) suff modNm [(nmsuff,cMod)]
-         }
-
-cpOutputCoreRun :: EHCCompileRunner m => ASTFileVariation -> String -> String -> HsName -> EHCompilePhaseT m FPath
-cpOutputCoreRun how nmsuff suff modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
-                 mbCoreRun = ecuMbCoreRun ecu
-                 cMod   = panicJust "cpOutputCoreRun" mbCoreRun
-         ;  cpOutputCoreRun' how nmsuff suff modNm cMod
-         }
-%%]
-
-%%[(8888 grin) export(cpOutputGrinModules)
-cpOutputGrinModules
-  :: EHCCompileRunner m => 
-        ASTFileVariation
-     -> (Int -> String -> String)
-     -> String -> HsName
-     -> [(String,GrModule)]
-     -> EHCompilePhaseT m [FPath]
-cpOutputGrinModules binary mknmsuff suff modNm cMods
-  = cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm cMods
-  where write opts _ fpC fnC gMod = do
-%%[[50
-          if binary == ASTFileVariation_Binary
-            then putSerializeFile fnC gMod
-            else
-%%]]
-                 putPPFPath fpC (ppGrModule gMod) 100
 %%]
 
 %%[(8 codegen grin) export(cpOutputGrin)
@@ -332,16 +196,6 @@ cpOutputGrin :: EHCCompileRunner m => ASTFileVariation -> String -> HsName -> EH
 cpOutputGrin how nmsuff modNm =
     fmap (panicJust "cpOutputGrin.cpOutputSomeModule") $
       cpOutputSomeModule ecuGrin astHandler_Grin how nmsuff "grin" modNm
-{-
-cpOutputGrin binary suff modNm
-  =  do  { cr <- get
-         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                mbGrin = ecuMbGrin ecu
-                grin   = panicJust "cpOutputGrin" mbGrin
-         ; cpMsg modNm VerboseALot "Emit Grin"
-         ; fmap head $ cpOutputGrinModules binary (\_ nm -> nm) "grin" modNm [(suff,grin)]
-         }
--}
 %%]
 
 %%[(8888 cmm) export(cpOutputCmmModules)
@@ -353,7 +207,7 @@ cpOutputCmmModules
      -> [(String,Cmm.Module)]
      -> EHCompilePhaseT m [FPath]
 cpOutputCmmModules _ mknmsuff suff modNm mods
-  = cpOutputSomeModules write mkOutputFPath mknmsuff suff modNm mods
+  = cpOutputSomeModules' write mkOutputFPath mknmsuff suff modNm mods
   where write opts _ fpC fnC cmmMod = do
           putPPFPath fpC (ppCmmModule cmmMod) 100
 %%]
@@ -367,43 +221,6 @@ cpOutputCmm binary suff modNm
                 cmm    = panicJust "cpOutputCmm" mbCmm
          ; cpMsg modNm VerboseALot "Emit Cmm"
          ; fmap head $ cpOutputCmmModules binary (\_ nm -> nm) "cmm" modNm [(suff,cmm)]
-         }
-%%]
-
-%%[(8888 javascript) export(outputMkFPathJavaScriptModule)
-outputMkFPathJavaScriptModule :: EHCOpts -> HsName -> FPath -> String -> FPath
-outputMkFPathJavaScriptModule opts m f suff = mkPerModuleOutputFPath opts True m f suff
-%%]
-
-%%[(8888 javascript) export(cpOutputJavaScriptModules)
-cpOutputJavaScriptModules
-  :: EHCCompileRunner m =>   
-        ASTFileVariation
-     -> (Int -> String -> String)
-     -> String -> HsName
-     -> [(String,JavaScriptModule)]
-     -> EHCompilePhaseT m [FPath]
-cpOutputJavaScriptModules _ mknmsuff suff modNm mods
-  = cpOutputSomeModules write outputMkFPathJavaScriptModule mknmsuff suff modNm mods
-  where write opts ecu fpC fnC jsMod = do
-%%[[8
-          let ppMod = ppJavaScriptModule jsMod
-%%][50
-          let ppMod = vlist $ [p] ++ (if ecuIsMainMod ecu then [pmain] else [])
-                    where (p,pmain) = ppJavaScriptModule jsMod
-%%]]
-          putPPFPath fpC ("//" >#< modNm >-< ppMod) 1000
-%%]
-
-%%[(8888 javascript) export(cpOutputJavaScript)
-cpOutputJavaScript :: EHCCompileRunner m => ASTFileVariation -> String -> HsName -> EHCompilePhaseT m FPath
-cpOutputJavaScript binary suff modNm
-  =  do  { cr <- get
-         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                mbJavaScript  = ecuMbJavaScript ecu
-                js    = panicJust "cpOutputJavaScript" mbJavaScript
-         ; cpMsg modNm VerboseALot "Emit JavaScript"
-         ; fmap head $ cpOutputJavaScriptModules binary (\_ nm -> nm) Cfg.suffixJavaScriptLib modNm [(suff,js)]
          }
 %%]
 
