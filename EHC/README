@@ -16,6 +16,10 @@ be found.
 Installation
 ============
 
+Support for GCC 4.9 is currently broken. Either use an older version of GCC or LLVM/clang. 
+You can set the C compiler using the "--with-gcc=PATH_TO_C_COMPILER" configure option, eg
+"./configure --with-gcc=/usr/bin/clang". See issue #32 for details.
+
 The short version for installing uhc (from either binary or
 source distribution) is:
 
