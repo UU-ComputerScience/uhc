@@ -4,8 +4,8 @@
 --
 -- Intended for constructing basic Core Programs. Use the binary serialization from `UHC.Util.Binary`
 -- to produce a core file, which can be compiled by UHC.
--- You will need to install the full UHC Compiler Suite in addition to uhc-light for this, and Core support
--- in UHC has to be enabled (use the @--enable-core-asinpoutp@ configure option). See <https://github.com/UU-ComputerScience/uhc> for more details.
+-- You will need to install the full UHC Compiler Suite in addition to uhc-light for this.
+-- See <https://github.com/UU-ComputerScience/uhc> for more details.
 --
 -- A small example program can be found at <https://github.com/UU-ComputerScience/uhc/tree/master/EHC/demo/CoreApi/> .
 -- In general, it is also a good idea to see what kind of Core UHC generates for Haskell files. To do this,
