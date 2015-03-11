@@ -7,7 +7,7 @@
 %%% Core parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corein) module {%{EH}Core.Parser} import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin})
+%%[(8 corein) module {%{EH}Core.Parser} import({%{EH}Base.Common}, {%{EH}Opts.Base}, {%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(8 corein) import(UHC.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
@@ -21,6 +21,9 @@
 %%]
 
 %%[(8 corein) hs import({%{EH}AbstractCore}, {%{EH}Core}, {%{EH}Ty})
+%%]
+
+%%[(8888 corein) import({%{EH}EHC.ASTHandler})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,9 +69,14 @@ pListSemiTerminated :: CParser x -> CParser [x]
 pListSemiTerminated p = pList (pSemiTerminated p)
 %%]
 
+%%[(8888 corein) export(pAST)
+pAST :: EHCOpts -> ASTParser CModule
+pAST opts = ASTParser $ pCModule opts
+%%]
+
 %%[(8 corein) export(pCModule,pCExpr)
-pCModule :: CParser CModule
-pCModule
+pCModule :: EHCOpts -> CParser CModule
+pCModule _
   = CModule_Mod
     <$  pMODULE <*> pDollNm <* pSEMI
     <*> pE

@@ -34,7 +34,7 @@ internalVersionCombined =
 internalVersionHI = mkInternalVersion 1
 
 -- | For binary/serialized Core .cr/.bcr/.tcr etc files
-internalVersionCore = mkInternalVersion 14
+internalVersionCore = mkInternalVersion 15
 
 -- | For binary/serialized CoreRun .crr/.bcrr./tcrr etc files
 internalVersionCoreRun = mkInternalVersion 6

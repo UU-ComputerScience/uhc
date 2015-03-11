@@ -74,13 +74,13 @@ pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
 %%]
 
 -- counterpart of ppPredOccId'
-%%[50 export(pPredOccId)
+%%[5050 export(pPredOccId)
 pPredOccId :: P PredOccId
 pPredOccId
   = mkPrId <$> pUIDHI
 %%]
 
-%%[50 export(pIdOcc,pIdOccKind)
+%%[5050 export(pIdOcc,pIdOccKind)
 -- counterpart of PP IdOccKind instance
 pIdOccKind :: P IdOccKind
 pIdOccKind

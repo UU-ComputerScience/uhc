@@ -59,7 +59,7 @@ parsePkgKeys = parseString scanOptsPkgKey (pList pPkgKey)
 %%% Parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 export(pModEntRel)
+%%[5050 export(pModEntRel)
 pModEnt :: P ModEnt
 pModEnt
   = (\kind occ owns -> ModEnt kind occ owns emptyRange)

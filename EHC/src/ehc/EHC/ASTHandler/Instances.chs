@@ -1,5 +1,5 @@
 %%[0 hs
--- {-# LANGUAGE GADTs, TemplateHaskell #-}
+{-# LANGUAGE RecordWildCards #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,6 +38,9 @@
 %%]
 
 %%[8 import (Data.Typeable, GHC.Generics)
+%%]
+
+%%[8 import({%{EH}Base.ParseUtils})
 %%]
 
 -- Language syntax: HS, EH, Core, TyCore, Grin, ...
@@ -138,7 +141,7 @@
 %%[(8 corein) import(qualified {%{EH}Core.Parser} as CorePrs)
 %%]
 -- CoreRun parser
-%%[(8 corerun)
+%%[(8 corerun) import(qualified {%{EH}CoreRun.Parser} as CoreRunPrs)
 %%]
 -- TyCore parser
 %%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
@@ -153,12 +156,23 @@
 
 %%[8 export(astHandler_HS)
 astHandler_HS :: ASTHandler HS.AGItf
-astHandler_HS = 
-  emptyASTHandler
-    { _asthdlrName				= "Haskell"
-    , _asthdlrParseScanOpts 	= hsScanOpts
-    , _asthdlrEcuStore		= ecuStoreHS
-    }
+astHandler_HS = mk emptyASTHandler
+  where mk (hdlr@(ASTHandler {..})) =
+          ASTHandler
+            { _asthdlrName              = "Haskell"
+            , _asthdlrEcuStore          = ecuStoreHS
+            , _asthdlrParseScanOpts     = \opts popts -> hsScanOpts opts
+            , _asthdlrParseParse        = \opts -> Just . parseOffsideToResMsgs (HSPrs.pAGItf opts)
+            , _asthdlrParseScan         = \opts fp hdl -> fmap Just $ offsideScanHandle opts fp hdl
+            , _asthdlrParser			= \opts popts -> Just $ ASTParser $ if ehpoptsForImport popts then HSPrs.pAGItfImport opts else HSPrs.pAGItf opts
+            
+            -- the rest, avoid record update (http://hackage.haskell.org/trac/ghc/ticket/2595, http://breaks.for.alienz.org/blog/2011/10/21/record-update-for-insufficiently-polymorphic-field/) 
+            , _asthdlrMkFPath			= _asthdlrMkFPath
+            , _asthdlrSuffixMp			= _asthdlrSuffixMp
+            , _asthdlrOutputIO			= _asthdlrOutputIO
+            , _asthdlrInput				= _asthdlrInput
+            }
+            
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,12 +181,22 @@ astHandler_HS =
 
 %%[8 export(astHandler_EH)
 astHandler_EH :: ASTHandler EH.AGItf
-astHandler_EH = 
-  emptyASTHandler
-    { _asthdlrName				= "Desugared Haskell"
-    , _asthdlrParseScanOpts 	= ehScanOpts
-    , _asthdlrEcuStore		= ecuStoreEH
-    }
+astHandler_EH = mk emptyASTHandler
+  where mk (hdlr@(ASTHandler {..})) = 
+          ASTHandler
+            { _asthdlrName              = "EH"
+            , _asthdlrEcuStore          = ecuStoreEH
+            , _asthdlrParseScanOpts     = \opts _ -> ehScanOpts opts
+            , _asthdlrParseParse        = \_ -> Just . parseOffsideToResMsgs EHPrs.pAGItf
+            , _asthdlrParseScan         = \opts fp hdl -> fmap Just $ offsideScanHandle opts fp hdl
+            , _asthdlrParser			= \_ _ -> Just $ ASTParser EHPrs.pAGItf
+            
+            -- the rest, avoid record update (http://hackage.haskell.org/trac/ghc/ticket/2595, http://breaks.for.alienz.org/blog/2011/10/21/record-update-for-insufficiently-polymorphic-field/) 
+            , _asthdlrMkFPath			= _asthdlrMkFPath
+            , _asthdlrSuffixMp			= _asthdlrSuffixMp
+            , _asthdlrOutputIO			= _asthdlrOutputIO
+            , _asthdlrInput				= _asthdlrInput
+            }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -181,25 +205,36 @@ astHandler_EH =
 
 %%[(8 core) export(astHandler_Core)
 astHandler_Core :: ASTHandler Core.CModule
-astHandler_Core = 
-  emptyASTHandler
-    { _asthdlrName				= "Core"
+astHandler_Core = mk emptyASTHandler
+  where mk (hdlr@(ASTHandler {..})) = 
+          ASTHandler
+            { _asthdlrName              = "Core"
+            , _asthdlrEcuStore          = ecuStoreCore
 %%[[(8 corein)
-    , _asthdlrParseScanOpts 	= coreScanOpts
+            , _asthdlrParseScanOpts 	= \opts _ -> coreScanOpts opts
 %%]]
-    , _asthdlrEcuStore		= ecuStoreCore
-    , _asthdlrOutputIO 			= \how opts _ _ fpC fnC cMod -> case how of
-          ASTFileVariation_Text -> do
-            let cMod' = cmodTrfEraseTyCore opts cMod
-            putPPFPath fpC (ppCModule (opts {- ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts -}) cMod') 100
-            return True
+            , _asthdlrParseParse        = \opts inp -> Just $ parseToResMsgs (CorePrs.pCModule opts) inp
+            , _asthdlrParseScan         = \opts fp hdl -> fmap Just $ scanHandle opts fp hdl
+            -- , _asthdlrParser			= \opts _ -> Just $ ASTParser $ CorePrs.pCModule opts
+            , _asthdlrOutputIO          = \how opts _ _ fpC fnC cMod -> case how of
+                  ASTFileVariation_Text -> do
+                    let cMod' = cmodTrfEraseTyCore opts cMod
+                    putPPFPath fpC (ppCModule (opts {- ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts -}) cMod') 100
+                    return True
 %%[[50
-          ASTFileVariation_Binary -> do
-            putSerializeFile fnC cMod
-            return True
+                  ASTFileVariation_Binary -> do
+                    putSerializeFile fnC cMod
+                    return True
 %%]]
-          _ -> return False
-    }
+            
+            -- the rest, avoid record update (http://hackage.haskell.org/trac/ghc/ticket/2595, http://breaks.for.alienz.org/blog/2011/10/21/record-update-for-insufficiently-polymorphic-field/) 
+            -- , _asthdlrParseParse        = _asthdlrParseParse
+            -- , _asthdlrParseScan         = _asthdlrParseScan
+            , _asthdlrParser			= _asthdlrParser
+            , _asthdlrMkFPath			= _asthdlrMkFPath
+            , _asthdlrSuffixMp			= _asthdlrSuffixMp
+            , _asthdlrInput				= _asthdlrInput
+            }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -211,8 +246,8 @@ astHandler_CoreRun :: ASTHandler CoreRun.Mod
 astHandler_CoreRun = 
   emptyASTHandler
     { _asthdlrName				= "CoreRun"
-    , _asthdlrParseScanOpts 	= const corerunScanOpts
-    , _asthdlrEcuStore		= ecuStoreCoreRun
+    , _asthdlrParseScanOpts 	= \opts _ -> corerunScanOpts
+    , _asthdlrEcuStore			= ecuStoreCoreRun
     , _asthdlrOutputIO 			= \how opts _ _ fpC fnC crMod -> case how of
           ASTFileVariation_Text -> do
             putPPFPath fpC (ppMod' opts crMod) 100
@@ -226,6 +261,11 @@ astHandler_CoreRun =
     }
 %%]
 
+%%[(8888 corerun)
+pAST :: EHCOpts -> ASTParser CoreRun.Mod
+pAST opts = ASTParser $ CoreRunPrs.pMod opts
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ASTHandler: Grin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -235,8 +275,8 @@ astHandler_Grin :: ASTHandler Grin.GrModule
 astHandler_Grin = 
   emptyASTHandler
     { _asthdlrName				= "Grin"
-    , _asthdlrParseScanOpts 	= const grinScanOpts
-    , _asthdlrEcuStore		= ecuStoreGrin
+    , _asthdlrParseScanOpts 	= \opts _ -> grinScanOpts
+    , _asthdlrEcuStore			= ecuStoreGrin
     , _asthdlrOutputIO 			= \how _ _ _ fpC fnC gMod -> case how of
           ASTFileVariation_Text -> do
             putPPFPath fpC (ppGrModule gMod) 100
@@ -259,7 +299,7 @@ astHandler_Cmm :: ASTHandler Cmm.Module
 astHandler_Cmm = 
   emptyASTHandler
     { _asthdlrName				= "Cmm"
-    , _asthdlrEcuStore		= ecuStoreCmm
+    , _asthdlrEcuStore			= ecuStoreCmm
     , _asthdlrOutputIO 			= \how _ _ _ fpC fnC cmmMod -> case how of
           ASTFileVariation_Text -> do
             putPPFPath fpC (ppCmmModule cmmMod) 100
@@ -277,7 +317,7 @@ astHandler_JavaScript :: ASTHandler JS.JavaScriptModule
 astHandler_JavaScript = 
   emptyASTHandler
     { _asthdlrName				= "JavaScript"
-    , _asthdlrEcuStore		= ecuStoreJavaScript
+    , _asthdlrEcuStore			= ecuStoreJavaScript
     , _asthdlrMkFPath			= \opts m f suff -> mkPerModuleOutputFPath opts True m f suff
     , _asthdlrOutputIO 			= \how _ ecu modNm fpC fnC jsMod -> case how of
           ASTFileVariation_Text -> do

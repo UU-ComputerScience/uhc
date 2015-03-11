@@ -7,7 +7,7 @@
 %%% CoreRun parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) module {%{EH}CoreRun.Parser} import({%{EH}Base.Common}, {%{EH}Base.HsName.Builtin})
+%%[(8 corerun) module {%{EH}CoreRun.Parser} import({%{EH}Base.Common}, {%{EH}Opts.Base}, {%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(8 corerun) import(UHC.Util.ScanUtils, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
@@ -21,6 +21,9 @@
 %%[(8 corerun) hs import({%{EH}CoreRun})
 %%]
 
+%%[(8888 corerun) import({%{EH}EHC.ASTHandler})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,7 +31,7 @@
 %%[(8 corerun) export(parseModFromString)
 -- | Parses a module. TBD: integration with other parser utils from EHC driver...
 parseModFromString :: String -> Either [String] Mod
-parseModFromString str = case parseToResMsgs pMod $ scan corerunScanOpts (initPos $ take 80 str) str of
+parseModFromString str = case parseToResMsgs (pMod emptyEHCOpts) $ scan corerunScanOpts (initPos $ take 80 str) str of
     (res, []) -> Right res
     (_, errs) -> Left $ map show errs
 %%]
@@ -50,10 +53,15 @@ pDifficultNm = (\s -> {- parseHsName [s] -} mkHNm s) <$> pStr
 type CRParser hp = PlainParser Token hp
 %%]
 
-%%[(8 corerun)
+%%[(8888 corerun) export(pAST)
+pAST :: EHCOpts -> ASTParser Mod
+pAST opts = ASTParser $ pMod opts
+%%]
+
+%%[(8 corerun) export(pMod)
 -- | Parse module 'Mod'
-pMod :: CRParser Mod
-pMod
+pMod :: EHCOpts -> CRParser Mod
+pMod _
   = (\nm nr sz main is ms bs -> mkModWithImportsMetas nm nr sz is ms (crarrayFromList bs) main)
     <$  pMODULE <*> pMaybe (mkHNm "Main") id pDollNm <*> pInt <* pCOMMA <*> pInt <*> pMb (pRARROW *> pExp) <* pSEMI
     <*> pList (pImport <* pSEMI)
