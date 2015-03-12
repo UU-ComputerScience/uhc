@@ -64,6 +64,7 @@ data EHParseOpts
       , ehpoptsStopAtErr	:: Bool			-- ^ stop prematurely when parse error occurs?
       , ehpoptsForImport	:: Bool			-- ^ for import only?
       }
+    deriving (Show)
 
 defaultEHParseOpts :: EHParseOpts
 defaultEHParseOpts
@@ -78,18 +79,27 @@ defaultEHParseOpts
 %%% Abstraction of what we want to be able to do with parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(EHPrs, EHParser)
+%%[8 export(EHPrs, EHPrsAna, EHPrsOff)
 type EHPrs prs inp sym pos a = prs inp Pair sym pos a
+type EHPrsAna a = EHPrs AnaParser [Token] Token (Maybe Token) a
+type EHPrsOff a = EHPrs OffsideParser [Token] Token (Maybe Token) a
+%%]
 
+%%[8 export(EHParser)
 class ( Eq symmsg, Show symmsg, Show pos, Position pos, PP (Message symmsg pos)
-      , IsParser (prs inp Pair sym pos) sym
+      -- , IsParser (prs inp Pair sym pos) sym
+      -- , InputState inp sym pos
+      -- , IsParser prs sym
       )
       => EHParser prs inp sym symmsg pos | prs -> inp sym symmsg pos where
   -- | Scan & parse using a parser coupled with a scanner
   ehScanParseToResMsgs :: ScanOpts -> EHParseOpts -> EHPrs prs inp sym pos a -> FilePath -> Handle -> IO (a,[Message symmsg pos])
+  -- ehScanParseToResMsgs :: ScanOpts -> EHParseOpts -> prs a -> FilePath -> Handle -> IO (a,[Message symmsg pos])
 
 -- instance (Show sym, Eq sym, Show pos, Position pos, Symbol sym, InputState [Token] sym pos) => EHParser AnaParser [Token] sym sym pos where
-instance (Show sym, Ord sym, Show pos, Position pos, Symbol sym, InputState [Token] sym pos) => EHParser AnaParser [Token] sym sym pos where
+-- instance (Show sym, Ord sym, Show pos, Position pos, Symbol sym, InputState [Token] sym pos) => EHParser AnaParser [Token] sym sym pos where
+instance EHParser AnaParser [Token] Token Token (Maybe Token) where
+-- instance (Show sym, Ord sym, Show pos, Position pos, Symbol sym, InputState [Token] sym pos) => EHParser (AnaParser [Token] Pair sym pos) [Token] sym sym pos where
 -- instance (Show pos, Position pos, InputState [Token] Token pos) => EHParser AnaParser [Token] Token Token pos where
 -- instance InputState [Token] Token Pos => EHParser AnaParser [Token] Token Token Pos where
   ehScanParseToResMsgs sopts popts prs fn fh = do
@@ -97,6 +107,7 @@ instance (Show sym, Ord sym, Show pos, Position pos, Symbol sym, InputState [Tok
     return $ parseToResMsgs prs tokens
 
 instance EHParser OffsideParser [Token] Token (OffsideSymbol Token) (Maybe Token) where
+-- instance EHParser (OffsideParser [Token] Pair Token (Maybe Token)) [Token] Token (OffsideSymbol Token) (Maybe Token) where
   ehScanParseToResMsgs sopts popts prs fn fh = do
     tokens <- offsideScanHandle sopts fn fh
     return $ if ehpoptsStopAtErr popts
@@ -117,6 +128,7 @@ parseWithFPath
      => ScanOpts
      -> EHParseOpts
      -> EHPrs prs inp sym pos a
+     -- -> prs a
      -> FPath															-- ^ file
      -> m (a,[Err])
 parseWithFPath sopts popts p fp = do

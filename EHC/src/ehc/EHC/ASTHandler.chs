@@ -39,7 +39,7 @@ data ASTParser ast
       ( EHParser prs inp sym symmsg pos
       ) =>
 		ASTParser
-		  { unASTParser 	:: EHPrs prs inp sym pos ast
+		  { unASTParser 	:: EHPrs prs inp sym pos ast -- prs ast -- 
 		  }
 %%]
 
@@ -49,10 +49,10 @@ data ASTParser ast
 
 %%[8 export(ASTHandler(..))
 data ASTHandler ast
-  = forall prs inp sym symmsg pos msg .
-      ( PP msg
+  = forall prs inp sym symmsg pos . -- msg .
+      -- ( PP msg
       -- , EHParser prs inp sym symmsg pos
-      ) =>
+      -- ) =>
 		ASTHandler
 		  {
 		  --- * Meta
@@ -84,10 +84,10 @@ data ASTHandler ast
 		  , _asthdlrParseScanOpts 		:: EHCOpts -> EHParseOpts -> ScanUtils.ScanOpts
 	  
 		  --- | Scanning
-		  , _asthdlrParseScan 			:: ScanUtils.ScanOpts -> FilePath -> Handle -> IO (Maybe inp)
+		  -- , _asthdlrParseScan 			:: ScanUtils.ScanOpts -> FilePath -> Handle -> IO (Maybe inp)
 	  
 		  --- | Parsing
-		  , _asthdlrParseParse			:: EHCOpts -> inp -> Maybe (ast,[msg])
+		  -- , _asthdlrParseParse			:: EHCOpts -> inp -> Maybe (ast,[msg])
 	  
 		  --- | Parsing
 		  , _asthdlrParser				:: EHCOpts -> EHParseOpts -> Maybe (ASTParser ast)
@@ -115,8 +115,8 @@ emptyASTHandler
 
       , _asthdlrInput 				= \_ _ -> return Nothing
       , _asthdlrParseScanOpts		= \_ _ -> ScanUtils.defaultScanOpts
-      , _asthdlrParseParse			= \_ _ -> (Nothing :: Maybe (ast,[String]))
-      , _asthdlrParseScan			= \_ _ _ -> return Nothing
+      -- , _asthdlrParseParse			= \_ _ -> (Nothing :: Maybe (ast,[String]))
+      -- , _asthdlrParseScan			= \_ _ _ -> return Nothing
       , _asthdlrParser				= \_ _ -> (Nothing :: Maybe (ASTParser ast))
       }
 %%]

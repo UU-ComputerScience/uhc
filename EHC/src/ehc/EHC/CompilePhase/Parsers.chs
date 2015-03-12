@@ -67,7 +67,7 @@ CompilePhase building blocks: parsers
 %%% Compile actions: parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8888
 -- | Generalization of parser invocation
 cpParseWithFPath
   :: (EHCCompileRunner m, PP msg)
@@ -128,12 +128,12 @@ cpParseWithFPath'
           Just (ASTParser p) -> do
                (res,errs) <- parseWithFPath sopts popts p (maybe (ecuFilePath (crCU modNm cr)) id mbFp)
                cpUpdCU modNm (_asthdlrEcuStore astHdlr res)
-               seterrs errs
+               unless (ehpoptsStopAtErr popts) $ seterrs errs
           _ -> seterrs [strMsg $ "No parser for " ++ _asthdlrName astHdlr]
       }
 %%]
       
-%%[8 export(cpParseOffside)
+%%[8888 export(cpParseOffside)
 cpParseOffside
   :: EHCCompileRunner m
   => ASTHandler a
@@ -194,7 +194,7 @@ cpParseHs litmode modNm
 -}
 %%]
 
-%%[50 export(cpParseOffsideStopAtErr)
+%%[5050 export(cpParseOffsideStopAtErr)
 cpParseOffsideStopAtErr :: EHCCompileRunner m => HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> HsName -> EHCompilePhaseT m ()
 cpParseOffsideStopAtErr parser scanOpts store modNm
  = do { cr <- get
@@ -231,12 +231,16 @@ cpParseHsImport litmode modNm
 
 %%[(8 corein) export(cpParseCoreWithFPath)
 cpParseCoreWithFPath :: EHCCompileRunner m => Maybe FPath -> HsName -> EHCompilePhaseT m ()
-cpParseCoreWithFPath mbFp modNm
+cpParseCoreWithFPath = cpParseWithFPath' astHandler_Core (defaultEHParseOpts)
 {-
-  = cpParseWithFPath' astHandler_Core (defaultEHParseOpts) Nothing modNm
--}
   = do (_,opts) <- gets crBaseInfo'
        cpParseWithFPath astHandler_Core scanHandle (parseToResMsgs $ CorePrs.pCModule opts) (cpSetLimitErrsWhen 5 "Parse Core") mbFp modNm
+-}
+%%]
+
+%%[(8 corein) export(cpParseCoreRunWithFPath)
+cpParseCoreRunWithFPath :: EHCCompileRunner m => Maybe FPath -> HsName -> EHCompilePhaseT m ()
+cpParseCoreRunWithFPath = cpParseWithFPath' astHandler_CoreRun (defaultEHParseOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
