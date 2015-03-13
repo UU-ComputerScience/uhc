@@ -509,8 +509,11 @@ hsnUniqifyACoreBindAspectKeyS as n
         mk a                         = hsnUniqifyStr HsNameUniqifier_BindAspect (show a)
 %%]
 
-%%[(50 codegen) hs
+%%[(8 codegen) hs
 deriving instance Typeable ACoreBindAspectKey
+%%]
+
+%%[(50 codegen) hs
 deriving instance Data ACoreBindAspectKey
 %%]
 

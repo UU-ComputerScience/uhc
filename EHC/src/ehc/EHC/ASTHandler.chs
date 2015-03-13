@@ -39,21 +39,21 @@ data ASTParser ast
       ( EHParser prs inp sym symmsg pos
       ) =>
 		ASTParser
-		  { unASTParser 	:: EHPrs prs inp sym pos ast -- prs ast -- 
+		  { unASTParser 	:: EHPrs prs inp sym pos ast
 		  }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% AST Handler
+%%% AST Handler, type parameterized
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ASTHandler(..))
-data ASTHandler ast
-  = forall prs inp sym symmsg pos . -- msg .
+%%[8 export(ASTHandler'(..))
+data ASTHandler' ast
+  = -- forall prs inp sym symmsg pos . -- msg .
       -- ( PP msg
       -- , EHParser prs inp sym symmsg pos
       -- ) =>
-		ASTHandler
+		ASTHandler'
 		  {
 		  --- * Meta
 	  
@@ -65,8 +65,8 @@ data ASTHandler ast
 		  --- | Construct FPath from module name, path, suffix
 		  , _asthdlrMkFPath				:: EHCOpts -> HsName -> FPath -> String -> FPath
 
-		  --- | Suffix info (not used yet)
-		  , _asthdlrSuffixMp			:: Map.Map ASTFileVariation String
+		  --- | Suffix info
+		  , _asthdlrSuffixRel			:: ASTSuffixRel
 	  
 		  --- * Compile unit
 	  
@@ -76,18 +76,12 @@ data ASTHandler ast
 		  --- * Output
 	  
 		  --- | Write to an ast to a file in the IO monad, return True if could be done
-		  , _asthdlrOutputIO			:: ASTFileVariation -> EHCOpts -> EHCompileUnit -> HsName -> FPath -> FilePath -> ast -> IO Bool
+		  , _asthdlrOutputIO			:: ASTFileContentVariation -> EHCOpts -> EHCompileUnit -> HsName -> FPath -> FilePath -> ast -> IO Bool
 	  
 		  --- * Input, textual, parsing
 	  
 		  --- | Scanning parameterisation
 		  , _asthdlrParseScanOpts 		:: EHCOpts -> EHParseOpts -> ScanUtils.ScanOpts
-	  
-		  --- | Scanning
-		  -- , _asthdlrParseScan 			:: ScanUtils.ScanOpts -> FilePath -> Handle -> IO (Maybe inp)
-	  
-		  --- | Parsing
-		  -- , _asthdlrParseParse			:: EHCOpts -> inp -> Maybe (ast,[msg])
 	  
 		  --- | Parsing
 		  , _asthdlrParser				:: EHCOpts -> EHParseOpts -> Maybe (ASTParser ast)
@@ -95,19 +89,20 @@ data ASTHandler ast
 		  --- * Input, parsing
 
 		  --- | Input an ast
-		  , _asthdlrInput				:: forall m . EHCCompileRunner m => ASTFileVariation -> HsName -> EHCompilePhaseT m (Maybe ast)
+		  , _asthdlrInput				:: forall m . EHCCompileRunner m => ASTFileContentVariation -> HsName -> EHCompilePhaseT m (Maybe ast)
 
 		  }
+		  deriving Typeable
 %%]
 
-%%[8 export(emptyASTHandler)
-emptyASTHandler :: forall ast . ASTHandler ast
-emptyASTHandler
-  = ASTHandler
+%%[8 export(emptyASTHandler')
+emptyASTHandler' :: forall ast . ASTHandler' ast
+emptyASTHandler'
+  = ASTHandler'
       { _asthdlrName 				= "Unknown AST"
+      , _asthdlrSuffixRel 			= emptyASTSuffixRel
       
       , _asthdlrMkFPath				= mkOutputFPath
-      , _asthdlrSuffixMp 			= Map.empty
       
       , _asthdlrEcuStore			= const id
 
@@ -115,8 +110,21 @@ emptyASTHandler
 
       , _asthdlrInput 				= \_ _ -> return Nothing
       , _asthdlrParseScanOpts		= \_ _ -> ScanUtils.defaultScanOpts
-      -- , _asthdlrParseParse			= \_ _ -> (Nothing :: Maybe (ast,[String]))
-      -- , _asthdlrParseScan			= \_ _ _ -> return Nothing
       , _asthdlrParser				= \_ _ -> (Nothing :: Maybe (ASTParser ast))
       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST Handler, type hidden a la Dynamic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ASTHandler(..))
+data ASTHandler
+  = forall ast .
+      Typeable ast =>
+        ASTHandler (ASTHandler' ast)
+%%]
+
+%%[8 export(ASTHandlerMp)
+type ASTHandlerMp = Map.Map ASTType ASTHandler
 %%]

@@ -61,6 +61,10 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%[(8 corerun) ag import({CoreRun/AbsSyn})
 %%]
 
+%%[(8 corerun) hs
+deriving instance Typeable Mod
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CoreRun: Supporting types: fast access sequences/array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

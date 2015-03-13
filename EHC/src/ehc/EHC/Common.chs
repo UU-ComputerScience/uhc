@@ -27,6 +27,9 @@ Used by all compiler driver code
 %%[8 import({%{EH}Opts.CommandLine})
 %%]
 
+%%[8 import (qualified UHC.Util.RelMap as Rel)
+%%]
+
 %%[5050 import(System.Time, System.Directory)
 %%]
 
@@ -236,6 +239,9 @@ ecuStateToKind s
 data ASTType
   = ASTType_HS
   | ASTType_EH
+%%[[50
+  | ASTType_HI
+%%]]
 %%[[(8 core)
   | ASTType_Core
 %%]]
@@ -254,18 +260,54 @@ data ASTType
   deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
 %%]
 
-%%[8 export(ASTFileVariation(..))
--- | An 'Enum' of all file variations of ast we can deal with (in principle)
-data ASTFileVariation
-  = ASTFileVariation_Text
-  | ASTFileVariation_LitText
-  | ASTFileVariation_Binary
+%%[8 export(ASTFileContentVariation(..))
+-- | File content variations of ast we can deal with (in principle)
+data ASTFileContentVariation
+  = ASTFileContentVariation_Text
+  | ASTFileContentVariation_LitText
+  | ASTFileContentVariation_Binary
   deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
 %%]
 
 %%[8 export(ASTHandlerKey)
--- | Combination of 'ASTType' and 'ASTFileVariation' as key into map of handlers
-type ASTHandlerKey = (ASTType, ASTFileVariation)
+-- | Combination of 'ASTType' and 'ASTFileContentVariation' as key into map of handlers
+type ASTHandlerKey = (ASTType, ASTFileContentVariation)
+%%]
+
+%%[8 export(ASTFileUseVariation(..))
+-- | File usage variations of ast
+data ASTFileUseVariation
+  = ASTFileUseVariation_Cache		-- ^ internal use cache on file
+  | ASTFileUseVariation_Dump		-- ^ output: dumped, possibly usable as src later on
+  | ASTFileUseVariation_Target		-- ^ output: as target of compilation
+  | ASTFileUseVariation_Src			-- ^ input: src file
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+%%]
+
+%%[8 export(ASTSuffixKey)
+-- | Key for allowed suffixes, multiples allowed to cater for different suffixes
+type ASTSuffixKey = (ASTFileContentVariation, ASTFileUseVariation)
+%%]
+
+%%[8 export(ASTSuffixRel, mkASTSuffixRel, emptyASTSuffixRel, astsuffixLookupSuff)
+type ASTSuffixRel = Rel.Rel ASTSuffixKey String
+
+emptyASTSuffixRel :: ASTSuffixRel
+emptyASTSuffixRel = Rel.empty
+
+mkASTSuffixRel :: AssocL ASTSuffixKey String -> ASTSuffixRel
+mkASTSuffixRel = Rel.fromList
+
+astsuffixLookupSuff :: ASTSuffixKey -> ASTSuffixRel -> Maybe String
+astsuffixLookupSuff = Rel.lookupDom
+%%]
+
+%%[8 export(ASTFileTimingVariation(..))
+-- | File timing variations of ast
+data ASTFileTimingVariation
+  = ASTFileTimingVariation_Prev		-- ^ previously generated
+  | ASTFileTimingVariation_Current	-- ^ current one
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

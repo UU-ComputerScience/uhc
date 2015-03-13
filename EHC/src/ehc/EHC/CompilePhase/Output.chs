@@ -107,8 +107,8 @@ cpOutputSomeModules' write mkfp mknmsuff suff modNm mods = do
 -- | Abstraction for writing some module to output with variation in suffices
 cpOutputSomeModules
   :: EHCCompileRunner m
-     => ASTHandler mod -- (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO Bool)
-     -> ASTFileVariation
+     => ASTHandler' mod -- (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO Bool)
+     -> ASTFileContentVariation
      -> (Int -> String -> String)
      -> String
      -> HsName
@@ -133,8 +133,8 @@ cpOutputSomeModules astHdlr how mknmsuff suff modNm mods = do
 cpOutputSomeModule
   :: EHCCompileRunner m
      => (EHCompileUnit -> mod)
-     -> ASTHandler mod
-     -> ASTFileVariation
+     -> ASTHandler' mod
+     -> ASTFileContentVariation
      -> String
      -> String
      -> HsName
@@ -185,23 +185,23 @@ cpOutputTyCore suff modNm
 %%]
 
 %%[(8 codegen) export(cpOutputCore)
-cpOutputCore :: EHCCompileRunner m => ASTFileVariation -> String -> String -> HsName -> EHCompilePhaseT m FPath
+cpOutputCore :: EHCCompileRunner m => ASTFileContentVariation -> String -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputCore how nmsuff suff modNm =
     fmap (panicJust "cpOutputGrin.cpOutputSomeModule") $
-      cpOutputSomeModule ecuCore astHandler_Core how nmsuff suff modNm
+      cpOutputSomeModule ecuCore astHandler'_Core how nmsuff suff modNm
 %%]
 
 %%[(8 codegen grin) export(cpOutputGrin)
-cpOutputGrin :: EHCCompileRunner m => ASTFileVariation -> String -> HsName -> EHCompilePhaseT m FPath
+cpOutputGrin :: EHCCompileRunner m => ASTFileContentVariation -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputGrin how nmsuff modNm =
     fmap (panicJust "cpOutputGrin.cpOutputSomeModule") $
-      cpOutputSomeModule ecuGrin astHandler_Grin how nmsuff "grin" modNm
+      cpOutputSomeModule ecuGrin astHandler'_Grin how nmsuff "grin" modNm
 %%]
 
 %%[(8888 cmm) export(cpOutputCmmModules)
 cpOutputCmmModules
   :: EHCCompileRunner m => 
-        ASTFileVariation
+        ASTFileContentVariation
      -> (Int -> String -> String)
      -> String -> HsName
      -> [(String,Cmm.Module)]
@@ -213,7 +213,7 @@ cpOutputCmmModules _ mknmsuff suff modNm mods
 %%]
 
 %%[(8888 cmm) export(cpOutputCmm)
-cpOutputCmm :: EHCCompileRunner m => ASTFileVariation -> String -> HsName -> EHCompilePhaseT m FPath
+cpOutputCmm :: EHCCompileRunner m => ASTFileContentVariation -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputCmm binary suff modNm
   =  do  { cr <- get
          ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr

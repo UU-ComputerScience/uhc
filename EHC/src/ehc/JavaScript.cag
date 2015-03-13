@@ -47,6 +47,10 @@ emptyJavaScriptModule = JavaScriptModule_Mod [] [] []
 %%[(8 javascript) hs
 %%]
 
+%%[(8 javascript) hs
+deriving instance Typeable JavaScriptModule
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -70,6 +70,10 @@ DERIVING *
   : Eq, Ord
 %%]
 
+%%[(8 cmm) hs
+deriving instance Typeable Module
+%%]
+
 %%[(8 codegen cmm) ag
 DERIVING AllTy Tag
   : Eq, Ord

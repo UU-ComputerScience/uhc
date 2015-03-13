@@ -133,7 +133,7 @@ cpTransformCore optimScope modNm
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcoreOut
        -- ; cpOutputCoreModules CPOutputCoreHow_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler_Core ASTFileVariation_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules astHandler'_Core ASTFileContentVariation_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
 %%]
@@ -211,8 +211,8 @@ cpTransformJavaScript optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfjsOut
-       -- ; cpOutputJavaScriptModules ASTFileVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler_JavaScript ASTFileVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       -- ; cpOutputJavaScriptModules ASTFileContentVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules astHandler'_JavaScript ASTFileContentVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("JavaScript errors: " ++ nm) err) nms errs
        }
 %%]
@@ -240,8 +240,8 @@ cpTransformCmm optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcmmOut
-       -- ; cpOutputCmmModules ASTFileVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler_Cmm ASTFileVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       -- ; cpOutputCmmModules ASTFileContentVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules astHandler'_Cmm ASTFileContentVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Cmm errors: " ++ nm) err) nms errs
        }
 %%]

@@ -108,9 +108,14 @@ DERIVING CImport CExport
   : Ord
 %%]
 
+%%[(8 core) ag
+DERIVING *
+  : Typeable
+%%]
+
 %%[(50 core) ag
 DERIVING *
-  : Typeable, Data
+  : Data
 %%]
 
 %%[(50 core) ag

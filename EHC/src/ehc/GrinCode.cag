@@ -58,13 +58,19 @@
 %%[(8 grin) ag import({GrinCode/AbsSyn})
 DERIVING * - GrTag
   : Show, Eq
+%%[[8
+  , Typeable
+%%]]
 %%[[50
-  , Typeable, Data
+  , Data
 %%]]
 DERIVING GrTag
   : Show
+%%[[8
+  , Typeable
+%%]]
 %%[[50
-  , Typeable, Data
+  , Data
 %%]]
 %%]
 
