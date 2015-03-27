@@ -1,9 +1,17 @@
 # Changelog
 
+## 1.1.8.10 - 20150327
+
+- [build] Internal compilerdriver refactorization and start of rewrite with new compilerdriver based on a simple incremental DSL for describing compilation.
+
 ## 1.1.8.9 - 20150301
 
 - [build] Intro of dependency on template haskell due to start of use of a lens library (fclabels, via uhc-util)
 - [git] Tagging of versions, change in changelog maintenance (is not created from edit version, prepending version nr etc)
+
+## 1.1.8.8 - 20150301
+
+- unused version
 
 ## 1.1.8.7 - 20150219
 
