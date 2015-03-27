@@ -464,23 +464,28 @@ git-fixate-tagversion:
 	rm $(CHANGELOG).tmp
 	git tag "v$(EH_VERSION_FULL)"
 	git ci -m "Fixate/tag v$(EH_VERSION_FULL)"
+	ghc-pkg hide uhc-light-$(EH_VERSION_FULL)
 	$(MAKE) uhc-light
 
 bump-major: git-fixate-tagversion
 	@echo $$(($(EH_VERSION_MAJOR)+1)).0.0.0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
+	git ci -m "bumped version to `cat VERSION`"
 
 bump-minor: git-fixate-tagversion
 	@echo $(EH_VERSION_MAJOR).$$(($(EH_VERSION_MINOR)+1)).0.0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
+	git ci -m "bumped version to `cat VERSION`"
 
 bump-minorminor: git-fixate-tagversion
 	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$$(($(EH_VERSION_MINORMINOR)+1)).0 > VERSION ; \
 	echo "bumped version to `cat VERSION`"
+	git ci -m "bumped version to `cat VERSION`"
 
 bump-minorminorminor: git-fixate-tagversion
 	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$(EH_VERSION_MINORMINOR).$$(($(EH_VERSION_MINORMINORMINOR)+1)) > VERSION ; \
 	echo "bumped version to `cat VERSION`"
+	git ci -m "bumped version to `cat VERSION`"
 
 # ... and shortcuts
 
