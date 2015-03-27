@@ -10,6 +10,8 @@ Translation to another AST
 -- general imports
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set, qualified UHC.Util.FastSeq as Seq)
 %%]
+%%[8 import (UHC.Util.Lens)
+%%]
 %%[8 import(Control.Monad.State)
 %%]
 
@@ -98,7 +100,7 @@ cpTranslateHs2EH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateHs2EH modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbHsSem= ecuMbHSSem ecu
+                 mbHsSem= _ecuMbHSSem ecu
                  hsSem  = panicJust "cpTranslateHs2EH" mbHsSem
                  eh     = HSSem.eh_Syn_AGItf hsSem
                  errs   = Seq.toList $ HSSem.errSq_Syn_AGItf hsSem
@@ -118,7 +120,7 @@ cpTranslateEH2Output :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2Output modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbEHSem= ecuMbEHSem ecu
+                 mbEHSem= _ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Output" mbEHSem
 %%[[(8 hmtyinfer)
                  about  = "EH analyses: Type checking"
@@ -163,7 +165,7 @@ cpTranslateEH2Core :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2Core modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbEHSem= ecuMbEHSem ecu
+                 mbEHSem= _ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  core   = cmodTrfElimNonCodegenConstructs opts $ EHSem.cmodule_Syn_AGItf  ehSem
          ;  when (isJust mbEHSem)
@@ -177,7 +179,7 @@ cpTranslateEH2TyCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2TyCore modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbEHSem= ecuMbEHSem ecu
+                 mbEHSem= _ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  tycore = EHSem.tcmodule_Syn_AGItf ehSem
          ;  when (isJust mbEHSem)
@@ -193,7 +195,7 @@ cpTranslateCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCore2Grin modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbCoreSem = ecuMbCoreSem ecu
+                 mbCoreSem = _ecuMbCoreSem ecu
                  coreSem   = panicJust "cpTranslateCore2Grin" mbCoreSem
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
          ;  when (isJust mbCoreSem && ehcOptIsViaGrin opts)
@@ -219,7 +221,7 @@ cpTranslateCore2Jazy :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCore2Jazy modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-              mbCore    = ecuMbCore ecu
+              mbCore    = _ecuMbCore ecu
        ; when (isJust mbCore && targetIsJVM (ehcOptTarget opts))
               (cpUpdCU modNm $ ecuStoreJVMClassL $ cmod2JazyJVMModule opts $ fromJust mbCore)
        }
@@ -231,7 +233,7 @@ cpTranslateCore2JavaScript :: EHCCompileRunner m => HsName -> EHCompilePhaseT m 
 cpTranslateCore2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-              mbCore    = ecuMbCore ecu
+              mbCore    = _ecuMbCore ecu
               coreInh  = crsiCoreInh crsi
        ; when (isJust mbCore)
               (cpUpdCU modNm $ ecuStoreJavaScript $ cmod2JavaScriptModule opts (Core2GrSem.dataGam_Inh_CodeAGItf coreInh) $ fromJust mbCore)
@@ -261,7 +263,7 @@ cpTranslateGrin2Cmm :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateGrin2Cmm modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-              mbGrin    = ecuMbGrin ecu
+              mbGrin    = _ecuMbGrin ecu
               coreInh   = crsiCoreInh crsi
 %%[[50
        ; (lamMp, allImpNmL, impNmFldMpMp, expNmFldMp) <- cpGenGrinGenInfo modNm
@@ -285,7 +287,7 @@ cpTranslateCmm2JavaScript :: EHCCompileRunner m => HsName -> EHCompilePhaseT m (
 cpTranslateCmm2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-              mbCmm    = ecuMbCmm ecu
+              mbCmm    = _ecuMbCmm ecu
               coreInh   = crsiCoreInh crsi
        ; when (isJust mbCmm) $ do
            let (jsmod,errs) =
@@ -309,7 +311,7 @@ cpTranslateGrin2Bytecode modNm
                (liftIO $ putStrLn ("crsiModOffMp: " ++ show (crsiModOffMp crsi)))
         ; (lamMp, allImpNmL, impNmFldMpMp, expNmFldMp) <- cpGenGrinGenInfo modNm
 %%]]
-        ; let  mbGrin = ecuMbGrin ecu
+        ; let  mbGrin = _ecuMbGrin ecu
                grin   = panicJust "cpTranslateGrin2Bytecode1" mbGrin
                (bc,errs)
                       = grinMod2ByteCodeMod
@@ -339,7 +341,7 @@ cpTransformGrinHPTWholeProg :: EHCCompileRunner m => HsName -> EHCompilePhaseT m
 cpTransformGrinHPTWholeProg modNm
   =  do { cr <- get
         ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-               mbGrin = ecuMbGrin ecu
+               mbGrin = _ecuMbGrin ecu
                grin   = panicJust "cpTransformGrinHPTWholeProg" mbGrin
         ; when (isJust mbGrin)
                (liftIO $ GRINC.doCompileGrin (Right (fp,grin)) opts)
@@ -393,7 +395,7 @@ cpTranslateByteCode modNm
                       . ecuStoreCmm grinbcCmm
 %%]]
 %%[[50
-                      . ( let hii = ecuHIInfo ecu
+                      . ( let hii = ecu ^. ecuHIInfo
                           in  ecuStoreHIInfo
                                 (hii { HI.hiiLamMp = lamMpMergeFrom laminfoGrinByteCode (\gbi i -> i {laminfoGrinByteCode=gbi}) const emptyLamInfo' functionInfoExportMp $ HI.hiiLamMp hii
                                      })

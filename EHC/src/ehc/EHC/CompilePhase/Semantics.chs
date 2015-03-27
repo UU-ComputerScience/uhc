@@ -73,7 +73,7 @@ cpFoldCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCore2Grin modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbCore   = ecuMbCore ecu
+                 mbCore   = _ecuMbCore ecu
                  core     = panicJust "cpFoldCore2Grin" mbCore
                  coreInh  = crsiCoreInh crsi
                  coreSem  = Core2GrSem.wrap_CodeAGItf
@@ -95,7 +95,7 @@ cpFoldCore2CoreRun :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCore2CoreRun modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) 		= crBaseInfo modNm cr
-                 mbCore   				= ecuMbCore ecu
+                 mbCore   				= _ecuMbCore ecu
 %%[[8
                  hasMain  				= True
 %%][50
@@ -120,7 +120,7 @@ cpFoldCoreRunMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCoreRunMod modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbCoreRun= ecuMbCoreRun ecu
+                 mbCoreRun= _ecuMbCoreRun ecu
                  core     = panicJust "cpFoldCoreRunMod" mbCoreRun
                  inh      = CoreRun2ChkSem.Inh_AGItf
                                 { CoreRun2ChkSem.opts_Inh_AGItf = opts
@@ -144,7 +144,7 @@ cpFoldCoreMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCoreMod modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbCore   = ecuMbCore ecu
+                 mbCore   = _ecuMbCore ecu
                  core     = panicJust "cpFoldCoreMod" mbCore
                  inh      = Core2ChkSem.Inh_CodeAGItf
                                 { Core2ChkSem.opts_Inh_CodeAGItf = opts
@@ -171,7 +171,7 @@ cpFoldEH modNm
          ;  mieimpl <- cpGenModuleImportExportImpl modNm
 %%]]
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbEH   = ecuMbEH ecu
+                 mbEH   = _ecuMbEH ecu
                  ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf $ panicJust "cpFoldEH" mbEH)
                                            ((crsi ^. crsiEHInh)
                                                   { EHSem.moduleNm_Inh_AGItf         		= ecuModNm ecu
@@ -195,7 +195,7 @@ cpFoldHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHs modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbHS   = ecuMbHS ecu
+                 mbHS   = _ecuMbHS ecu
                  inh    = crsi ^. crsiHSInh
                  hsSem  = HSSem.wrap_AGItf (HSSem.sem_AGItf $ panicJust "cpFoldHs" mbHS)
                                            (inh { HSSem.opts_Inh_AGItf             = opts
@@ -242,7 +242,7 @@ cpFoldHsMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHsMod modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbHS       = ecuMbHS ecu
+                 mbHS       = _ecuMbHS ecu
                  inh        = crsiHSModInh crsi
                  hsSemMod   = HSSemMod.wrap_AGItf (HSSemMod.sem_AGItf $ panicJust "cpFoldHsMod" mbHS)
                                                   (inh { HSSemMod.gUniq_Inh_AGItf        = crsi ^. crsiHereUID
@@ -270,7 +270,7 @@ cpFoldHIInfo :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHIInfo modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbHIInfo   = ecuMbPrevHIInfo ecu
+                 mbHIInfo   = _ecuMbPrevHIInfo ecu
                  hiInfo     = panicJust "cpFoldHIInfo" mbHIInfo
                  hasMain    = HI.hiiHasMain hiInfo
          ;  when (isJust mbHIInfo && HI.hiiValidity hiInfo == HI.HIValidity_Ok)

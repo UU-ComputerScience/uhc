@@ -48,7 +48,7 @@ cpRunCoreRun :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpRunCoreRun modNm = do
     cr <- get
     let (ecu,_,opts,_) = crBaseInfo modNm cr
-        mbCore = ecuMbCore ecu
+        mbCore = _ecuMbCore ecu
 %%[[8
         (mainMod,impModL) = (modNm,[])
 %%][50
@@ -75,7 +75,7 @@ cpRunCoreRun2 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpRunCoreRun2 modNm = do
     cr <- get
     let (ecu,_,opts,_) = crBaseInfo modNm cr
-        mbCore = ecuMbCore ecu
+        mbCore = _ecuMbCore ecu
 %%[[8
     let (impModL, mainMod) = ([], cmod2CoreRun $ fromJust mbCore)
         hasMain = True
@@ -111,7 +111,7 @@ cpRunCoreRun3 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpRunCoreRun3 modNm = do
     cr <- get
     let (ecu,_,opts,_) = crBaseInfo modNm cr
-        mbCore = ecuMbCore ecu
+        mbCore = _ecuMbCore ecu
 %%[[8
     let (impModL, mainMod) = ([], cmod2CoreRun $ fromJust mbCore)
         hasMain = True

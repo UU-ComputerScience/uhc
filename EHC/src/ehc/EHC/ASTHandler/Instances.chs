@@ -37,13 +37,16 @@
 %%[8888 import (UHC.Util.Lens)
 %%]
 
-%%[8888 import (qualified UHC.Util.RelMap as Rel)
+%%[8 import (qualified UHC.Util.RelMap as Rel)
 %%]
 
 %%[8 import (Data.Typeable, GHC.Generics)
 %%]
 
 %%[8 import({%{EH}Base.ParseUtils})
+%%]
+
+%%[50 import(Control.Exception as CE)
 %%]
 
 -- Language syntax: HS, EH, Core, TyCore, Grin, ...
@@ -153,6 +156,12 @@
 %%[(8 codegen grinparser) import(qualified {%{EH}GrinCode.Parser} as GrinParser)
 %%]
 
+-- config
+%%[50 import(qualified {%{EH}Config} as Cfg)
+%%]
+%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ASTHandler': HS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,8 +173,8 @@ astHandler'_HS = mk emptyASTHandler'
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "Haskell"
             , _asthdlrSuffixRel			= mkASTSuffixRel
-            								[ ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Src), "hs" )
-            								, ( (ASTFileContentVariation_LitText, ASTFileUseVariation_Src), "lhs" )
+            								[ ( (ASTFileContent_Text	, ASTFileUse_Src), ("hs", ecuMbHS, tmlens) )
+            								, ( (ASTFileContent_LitText, ASTFileUse_Src), ("lhs", ecuMbHS, tmlens) )
             								]
             , _asthdlrEcuStore          = ecuStoreHS
             , _asthdlrParseScanOpts     = \opts popts -> hsScanOpts opts
@@ -177,12 +186,17 @@ astHandler'_HS = mk emptyASTHandler'
             
 {-
             -- the rest, avoid record update (http://hackage.haskell.org/trac/ghc/ticket/2595, http://breaks.for.alienz.org/blog/2011/10/21/record-update-for-insufficiently-polymorphic-field/) 
-            , _asthdlrMkFPath           = _asthdlrMkFPath
+            , _asthdlrMkOutputFPath           = _asthdlrMkOutputFPath
             , _asthdlrSuffixMp          = _asthdlrSuffixMp
-            , _asthdlrOutputIO          = _asthdlrOutputIO
             , _asthdlrInput             = _asthdlrInput
 -}
             }
+        tmlens =
+%%[[8
+          Nothing
+%%][50
+          Just ecuMbSrcTime
+%%]]
             
 %%]
 
@@ -197,7 +211,7 @@ astHandler'_EH = mk emptyASTHandler'
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "EH"
             , _asthdlrSuffixRel			= mkASTSuffixRel
-            								[ ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Src), "eh" )
+            								[ ( (ASTFileContent_Text	, ASTFileUse_Src), ("eh", ecuMbEH, Nothing) )
             								]
             , _asthdlrEcuStore          = ecuStoreEH
             , _asthdlrParseScanOpts     = \opts _ -> ehScanOpts opts
@@ -205,9 +219,8 @@ astHandler'_EH = mk emptyASTHandler'
             
 {-
             -- the rest, avoid record update (http://hackage.haskell.org/trac/ghc/ticket/2595, http://breaks.for.alienz.org/blog/2011/10/21/record-update-for-insufficiently-polymorphic-field/) 
-            , _asthdlrMkFPath           = _asthdlrMkFPath
+            , _asthdlrMkOutputFPath           = _asthdlrMkOutputFPath
             , _asthdlrSuffixMp          = _asthdlrSuffixMp
-            , _asthdlrOutputIO          = _asthdlrOutputIO
             , _asthdlrInput             = _asthdlrInput
 -}
             }
@@ -223,10 +236,44 @@ astHandler'_HI = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "HI"
-            , _asthdlrSuffixRel			= mkASTSuffixRel
-            								[ ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Cache), "hi" )
+            , _asthdlrSuffixRel			= mkASTSuffixRel'
+            								[ ( (ASTFileContent_Binary	, ASTFileUse_Cache)
+            								  , ("hi"
+            								    , [ (ASTFileTiming_Current, ecuMbHIInfo)
+            								      , (ASTFileTiming_Prev, ecuMbPrevHIInfo)
+            								      ]
+            								    , [ (ASTFileTiming_Prev, ecuMbHIInfoTime)
+            								      ]
+            								  ) )
             								]
+            , _asthdlrMkInputFPath		= \opts ecu modNm fp suff ->
+%%[[50
+              									fpathSetSuff suff fp
+%%][99
+												  -- if outputdir is specified, use that location to possibly read hi from.
+              									mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp suff
+%%]]
             , _asthdlrEcuStore          = ecuStoreHIInfo
+			, _asthdlrPutSerializeFileIO= default_asthdlrPutSerializeFileIO
+			, _asthdlrGetSerializeFileIO= \opts fp -> fmap Just $
+			                                CE.catch (getSGetFile (fpathToStr fp) (HI.sgetHIInfo opts))
+                                                     (\(_ :: SomeException) -> return $ HI.emptyHIInfo {HI.hiiValidity = HI.HIValidity_Absent})
+            , _asthdlrPostInputCheck	= \opts ecu modNm fp hiinfo -> case HI.hiiValidity hiinfo of
+%%[[99
+                                               HI.HIValidity_WrongMagic | not (ecuCanCompile ecu)
+                                                 ->   [rngLift emptyRange Err_WrongMagic
+                                                         (show modNm)
+                                                         (fpathToStr fp)
+                                                      ]
+                                               HI.HIValidity_Inconsistent | not (ecuCanCompile ecu)
+                                                 ->   [rngLift emptyRange Err_InconsistentHI
+                                                         (show modNm)
+                                                         (fpathToStr fp)
+                                                         [Sig.timestamp, Cfg.installVariant opts, show $ ehcOptTarget opts, show $ ehcOptTargetFlavor opts]
+                                                         [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  , show $ HI.hiiTarget hiinfo, show $ HI.hiiTargetFlavor hiinfo]
+                                                      ]
+%%]]
+                                               _ -> []
             }
 %%]
 
@@ -241,36 +288,44 @@ astHandler'_Core = mk emptyASTHandler'
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "Core"
             , _asthdlrSuffixRel			= mkASTSuffixRel
-            								[ ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Cache)	, Cfg.suffixDotlessBinaryCore )
-            								, ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Target)	, Cfg.suffixDotlessBinaryCore )
-            								, ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Src)		, Cfg.suffixDotlessOutputTextualCore )
-            								, ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Dump)		, Cfg.suffixDotlessOutputTextualCore )
-            								, ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Src)		, Cfg.suffixDotlessOutputTextualCore )
-            								, ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Dump)		, Cfg.suffixDotlessOutputTextualCore )
+            								[ ( (ASTFileContent_Binary	, ASTFileUse_Target)	, (Cfg.suffixDotlessBinaryCore, ecuMbCore, Nothing) )
+            								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, ("", ecuMbCore, Nothing) )
+            								, ( (ASTFileContent_Text	, ASTFileUse_Dump)		, (Cfg.suffixDotlessOutputTextualCore, ecuMbCore, Nothing) )
+            								, ( (ASTFileContent_Binary	, ASTFileUse_Src)		, ("", ecuMbCore, Nothing) )
+            								, ( (ASTFileContent_Binary	, ASTFileUse_Dump)		, (Cfg.suffixDotlessInputOutputBinaryCore, ecuMbCore, Nothing) )
+            								]
+            							  `Rel.union`
+            							  mkASTSuffixRel'
+            								[ ( (ASTFileContent_Binary	, ASTFileUse_Cache)
+            								  , (Cfg.suffixDotlessBinaryCore
+            								    , [ (ASTFileTiming_Current, ecuMbCore)
+            								      , (ASTFileTiming_Prev, ecuMbCore)
+            								      ]
+%%[[8
+            								    , []
+%%][50
+            								    , [ (ASTFileTiming_Prev, ecuMbCoreTime)
+            								      ]
+%%]]
+            								  ) )
             								]
             , _asthdlrEcuStore          = ecuStoreCore
 %%[[(8 corein)
             , _asthdlrParseScanOpts     = \opts _ -> coreScanOpts opts
             , _asthdlrParser            = \opts _ -> Just $ ASTParser (CorePrs.pCModule opts :: EHPrsAna Core.CModule)
 %%]]
-            , _asthdlrOutputIO          = \how opts _ _ fpC fnC cMod -> case how of
-                  ASTFileContentVariation_Text -> do
-                    let cMod' = cmodTrfEraseTyCore opts cMod
-                    putPPFPath fpC (ppCModule (opts {- ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts -}) cMod') 100
-                    return True
+            , _asthdlrPretty			= \opts _ ast -> Just $ ppCModule (opts {- ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts -}) $ cmodTrfEraseTyCore opts ast
 %%[[50
-                  ASTFileContentVariation_Binary -> do
-                    putSerializeFile fnC cMod
-                    return True
+			, _asthdlrPutSerializeFileIO= default_asthdlrPutSerializeFileIO
+			, _asthdlrGetSerializeFileIO= default_asthdlrGetSerializeFileIO
 %%]]
-                  _ -> return False
             
             -- the rest, avoid record update (http://hackage.haskell.org/trac/ghc/ticket/2595, http://breaks.for.alienz.org/blog/2011/10/21/record-update-for-insufficiently-polymorphic-field/) 
             -- , _asthdlrParseParse        = _asthdlrParseParse
             -- , _asthdlrParseScan         = _asthdlrParseScan
             -- , _asthdlrParser         = _asthdlrParser
 {-
-            , _asthdlrMkFPath           = _asthdlrMkFPath
+            , _asthdlrMkOutputFPath           = _asthdlrMkOutputFPath
             , _asthdlrSuffixMp          = _asthdlrSuffixMp
             , _asthdlrInput             = _asthdlrInput
 -}
@@ -288,35 +343,44 @@ astHandler'_CoreRun = mk emptyASTHandler'
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "CoreRun"
             , _asthdlrSuffixRel			= mkASTSuffixRel
-            								[ ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Cache)	, Cfg.suffixDotlessBinaryCoreRun )
-            								, ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Target)	, Cfg.suffixDotlessBinaryCoreRun )
-            								, ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Src)		, Cfg.suffixDotlessOutputTextualCoreRun )
-            								, ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Dump)		, Cfg.suffixDotlessOutputTextualCoreRun )
-            								, ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Src)		, Cfg.suffixDotlessOutputTextualCoreRun )
-            								, ( (ASTFileContentVariation_Binary	, ASTFileUseVariation_Dump)		, Cfg.suffixDotlessOutputTextualCoreRun )
+            								[ ( (ASTFileContent_Binary	, ASTFileUse_Target)	, (Cfg.suffixDotlessBinaryCoreRun, ecuMbCoreRun, Nothing) )
+            								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, ("", ecuMbCoreRun, Nothing) )
+            								, ( (ASTFileContent_Text	, ASTFileUse_Dump)		, (Cfg.suffixDotlessOutputTextualCoreRun, ecuMbCoreRun, Nothing) )
+            								, ( (ASTFileContent_Binary	, ASTFileUse_Src)		, ("", ecuMbCoreRun, Nothing) )
+            								, ( (ASTFileContent_Binary	, ASTFileUse_Dump)		, (Cfg.suffixDotlessInputOutputBinaryCoreRun, ecuMbCoreRun, Nothing) )
+            								]
+            							  `Rel.union`
+            							  mkASTSuffixRel'
+            								[ ( (ASTFileContent_Binary	, ASTFileUse_Cache)
+            								  , (Cfg.suffixDotlessBinaryCoreRun
+            								    , [ (ASTFileTiming_Current, ecuMbCoreRun)
+            								      , (ASTFileTiming_Prev, ecuMbCoreRun)
+            								      ]
+%%[[8
+            								    , []
+%%][50
+            								    , [ (ASTFileTiming_Prev, ecuMbCoreRunTime)
+            								      ]
+%%]]
+            								  ) )
             								]
             , _asthdlrEcuStore          = ecuStoreCoreRun
 %%[[(8 corein)
             , _asthdlrParseScanOpts     = \opts _ -> corerunScanOpts
             , _asthdlrParser            = \opts _ -> Just $ ASTParser (CoreRunPrs.pMod opts :: EHPrsAna CoreRun.Mod)
 %%]]
-            , _asthdlrOutputIO          = \how opts _ _ fpC fnC crMod -> case how of
-                  ASTFileContentVariation_Text -> do
-                    putPPFPath fpC (ppMod' opts crMod) 100
-                    return True
+            , _asthdlrPretty			= \opts _ ast -> Just $ ppMod' opts ast
 %%[[50
-                  ASTFileContentVariation_Binary -> do
-                    putSerializeFile fnC crMod
-                    return True
+			, _asthdlrPutSerializeFileIO= default_asthdlrPutSerializeFileIO
+			, _asthdlrGetSerializeFileIO= default_asthdlrGetSerializeFileIO
 %%]]
-                  _ -> return False
             
             -- the rest, avoid record update (http://hackage.haskell.org/trac/ghc/ticket/2595, http://breaks.for.alienz.org/blog/2011/10/21/record-update-for-insufficiently-polymorphic-field/) 
             -- , _asthdlrParseParse        = _asthdlrParseParse
             -- , _asthdlrParseScan         = _asthdlrParseScan
             -- , _asthdlrParser         = _asthdlrParser
 {-
-            , _asthdlrMkFPath           = _asthdlrMkFPath
+            , _asthdlrMkOutputFPath           = _asthdlrMkOutputFPath
             , _asthdlrSuffixMp          = _asthdlrSuffixMp
             , _asthdlrInput             = _asthdlrInput
 -}
@@ -333,20 +397,30 @@ astHandler'_Grin =
   emptyASTHandler'
 			{ _asthdlrName              = "Grin"
             , _asthdlrSuffixRel			= mkASTSuffixRel
-            								[ ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Dump)		, "grin" )
+            								[ ( (ASTFileContent_Text	, ASTFileUse_Dump), ( "grin", ecuMbGrin, Nothing ) )
+            								]
+            							  `Rel.union`
+            							  mkASTSuffixRel'
+            								[ ( (ASTFileContent_Binary	, ASTFileUse_Cache)
+            								  , ( "grin"		-- TBD: sort out suffixes, currently not used this stuff...
+            								    , [ (ASTFileTiming_Current, ecuMbGrin)
+            								      , (ASTFileTiming_Prev, ecuMbGrin)
+            								      ]
+%%[[8
+            								    , []
+%%][50
+            								    , [ (ASTFileTiming_Prev, ecuMbGrinTime)
+            								      ]
+%%]]
+            								  ) )
             								]
 			, _asthdlrParseScanOpts     = \opts _ -> grinScanOpts
 			, _asthdlrEcuStore          = ecuStoreGrin
-			, _asthdlrOutputIO          = \how _ _ _ fpC fnC gMod -> case how of
-				  ASTFileContentVariation_Text -> do
-					putPPFPath fpC (ppGrModule gMod) 100
-					return True
+            , _asthdlrPretty			= \_ _ ast -> Just $ ppGrModule ast
 %%[[50
-				  ASTFileContentVariation_Binary -> do
-					putSerializeFile fnC gMod
-					return True
+			, _asthdlrPutSerializeFileIO= default_asthdlrPutSerializeFileIO
+			, _asthdlrGetSerializeFileIO= default_asthdlrGetSerializeFileIO
 %%]]
-				  _ -> return False
 			}
 %%]
 
@@ -360,14 +434,10 @@ astHandler'_Cmm =
   emptyASTHandler'
 			{ _asthdlrName              = "Cmm"
             , _asthdlrSuffixRel			= mkASTSuffixRel
-            								[ ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Dump)		, "cmm" )
+            								[ ( (ASTFileContent_Text	, ASTFileUse_Dump)		, ("cmm", ecuMbCmm, Nothing) )
             								]
 			, _asthdlrEcuStore          = ecuStoreCmm
-			, _asthdlrOutputIO          = \how _ _ _ fpC fnC cmmMod -> case how of
-				  ASTFileContentVariation_Text -> do
-					putPPFPath fpC (ppCmmModule cmmMod) 100
-					return True
-				  _ -> return False
+            , _asthdlrPretty			= \_ _ ast -> Just $ ppCmmModule ast
 			}
 %%]
 
@@ -381,21 +451,18 @@ astHandler'_JavaScript =
   emptyASTHandler'
 			{ _asthdlrName              = "JavaScript"
             , _asthdlrSuffixRel			= mkASTSuffixRel
-            								[ ( (ASTFileContentVariation_Text	, ASTFileUseVariation_Target)		, "js" )
+            								[ ( (ASTFileContent_Text	, ASTFileUse_Target)		, ("js", ecuMbJavaScript, Nothing) )
             								]
 			, _asthdlrEcuStore          = ecuStoreJavaScript
-			, _asthdlrMkFPath           = \opts m f suff -> mkPerModuleOutputFPath opts True m f suff
-			, _asthdlrOutputIO          = \how _ ecu modNm fpC fnC jsMod -> case how of
-				  ASTFileContentVariation_Text -> do
+			, _asthdlrMkOutputFPath           = \opts m f suff -> mkPerModuleOutputFPath opts True m f suff
+            , _asthdlrPretty			= \opts ecu ast -> Just $
 %%[[8
-					let ppMod = ppJavaScriptModule jsMod
+					let ppMod = ppJavaScriptModule ast
 %%][50
 					let ppMod = vlist $ [p] ++ (if ecuIsMainMod ecu then [pmain] else [])
-							where (p,pmain) = ppJavaScriptModule jsMod
+							where (p,pmain) = ppJavaScriptModule ast
 %%]]
-					putPPFPath fpC ("//" >#< modNm >-< ppMod) 1000
-					return True
-				  _ -> return False
+					in  "//" >#< ecuModNm ecu >-< ppMod
 			}
 %%]
 
@@ -431,17 +498,30 @@ allASThandlerMp = Map.fromList
 %%]
 
 %%[8 export(asthandlerLookup)
--- | Lookup ast handler
+-- | Lookup ast handler, forcing a particular ast type
 asthandlerLookup :: Typeable ast => ASTType -> Maybe (ASTHandler' ast)
 asthandlerLookup t = case Map.lookup t allASThandlerMp of
     Just (ASTHandler h) -> cast h
     _                   -> Nothing
 %%]
 
-%%[8888 export(asthandlerLookupSuff)
--- | Lookup suffix
-asthandlerLookupSuff :: ASTType -> ASTSuffixKey -> Maybe String
-asthandlerLookupSuff t sk = do 
-    h <- asthandlerLookup t
-    astsuffixLookupSuff sk $ _asthdlrSuffixRel h
+%%[8 export(asthandlerLookup')
+-- | Lookup ast handler, allowing arbitrary type by hiding the type
+asthandlerLookup' :: ASTType -> (forall ast . ASTHandler' ast -> Maybe x) -> Maybe x
+asthandlerLookup' t f = case Map.lookup t allASThandlerMp of
+    Just (ASTHandler h) -> f h
+    _                   -> Nothing
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Defaults for ASTHandler' fields
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50
+default_asthdlrGetSerializeFileIO :: Serialize ast => EHCOpts -> FPath -> IO (Maybe ast)
+default_asthdlrGetSerializeFileIO _ fp = fmap Just $ getSerializeFile (fpathToStr fp)
+
+default_asthdlrPutSerializeFileIO :: Serialize ast => FilePath -> ast -> IO Bool
+default_asthdlrPutSerializeFileIO fn ast = putSerializeFile fn ast >> return True
+%%]
+

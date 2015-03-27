@@ -59,7 +59,7 @@ cpFromGrinTrf modNm trf m
   = do { cr <- get
        ; let (ecu,_,_,fp) = crBaseInfo modNm cr
        ; cpMsgGrinTrf modNm m
-       ; cpUpdCU modNm $ ecuStoreGrin $ trf $ fromJust $ ecuMbGrin ecu
+       ; cpUpdCU modNm $ ecuStoreGrin $ trf $ fromJust $ _ecuMbGrin ecu
        }
 %%]
 
@@ -110,7 +110,7 @@ cpTransformGrin modNm
                                          ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
                                                expNmFldMp     = crsiExpNmOffMp modNm crsi
                                                optim          = crsiOptim crsi
-                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmFldMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
+                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmFldMp) (optimGrInlMp optim) $ fromJust $ _ecuMbGrin ecu
                                          ; cpMsgGrinTrf modNm "inline"
                                          ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
                                          }
@@ -121,8 +121,8 @@ cpTransformGrin modNm
                               
                  optGrinNormal = map fst trafos
                  optGrinDump   = out 0 "from core" : concat [ [o,out n nm] | (n,(o,nm)) <- zip [1..] trafos ]
-                        where out n nm = void $ cpOutputGrin ASTFileContentVariation_Text ("-0" ++ show (10+n) ++ "-" ++ filter isAlpha nm) modNm
-         ;  when (isJust $ ecuMbGrin ecu)
+                        where out n nm = void $ cpOutputGrin ASTFileContent_Text ("-0" ++ show (10+n) ++ "-" ++ filter isAlpha nm) modNm
+         ;  when (isJust $ _ecuMbGrin ecu)
                  (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
          }
 %%]

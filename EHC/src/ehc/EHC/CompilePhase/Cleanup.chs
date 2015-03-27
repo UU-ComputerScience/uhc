@@ -33,29 +33,29 @@ Cleanup between phases
 cpCleanupHSMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupHSMod modNm
   = cpUpdCU modNm
-      (\e -> e { ecuMbHSSemMod     	  = Nothing
+      (\e -> e { _ecuMbHSSemMod     	  = Nothing
                }
       )
 
 cpCleanupHS :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupHS modNm
   = cpUpdCU modNm
-      (\e -> e { ecuMbHS              = Nothing
-               , ecuMbHSSem           = Nothing
+      (\e -> e { _ecuMbHS              = Nothing
+               , _ecuMbHSSem           = Nothing
                }
       )
 
 cpCleanupFoldEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupFoldEH modNm 
   = cpUpdCU modNm
-      (\e -> e { ecuMbEH              = Nothing
+      (\e -> e { _ecuMbEH              = Nothing
                }
       )
 
 cpCleanupEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupEH modNm
   = cpUpdCU modNm
-      (\e -> e { ecuMbEHSem           = Nothing
+      (\e -> e { _ecuMbEHSem           = Nothing
                }
       )
 %%]
@@ -65,15 +65,15 @@ cpCleanupCore :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpCleanupCore modNmL
   = cpSeq [cl m | m <- modNmL]
   where cl m = cpUpdCU m
-                  (\e -> e { ecuMbCore            = Nothing
+                  (\e -> e { _ecuMbCore            = Nothing
 %%[[(99 tycore)
                            , ecuMbTyCore          = Nothing
 %%]]
 %%[[(99 core)
-                           , ecuMbCoreSem         = Nothing
+                           , _ecuMbCoreSem         = Nothing
 %%]]
 %%[[(99 corein)
-                           , ecuMbCoreSemMod      = Nothing
+                           , _ecuMbCoreSemMod      = Nothing
 %%]]
                            }
                   )
@@ -83,7 +83,7 @@ cpCleanupCore modNmL
 cpCleanupCmm :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupCmm modNm
   = cpUpdCU modNm
-      (\e -> e { ecuMbCmm               = Nothing
+      (\e -> e { _ecuMbCmm               = Nothing
                }
       )
 %%]
@@ -93,7 +93,7 @@ cpCleanupGrin :: EHCCompileRunner m => [HsName] -> EHCompilePhaseT m ()
 cpCleanupGrin modNmL
   = cpSeq [cl m | m <- modNmL]
   where cl m = cpUpdCU m
-                  (\e -> e { ecuMbGrin            = Nothing
+                  (\e -> e { _ecuMbGrin            = Nothing
                            }
                   )
 
@@ -116,8 +116,8 @@ cpCleanupBytecode modNm
 cpCleanupCU :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupCU modNm
   = do { cpUpdCU modNm
-           (\e -> e { ecuHIInfo            = {- HI.hiiRetainAfterCleanup -} (ecuHIInfo e)
-                    , ecuMbOptim           = Nothing
+           (\e -> e { ecuMbOptim           = Nothing
+                    -- , _ecuHIInfo            = {- HI.hiiRetainAfterCleanup -} (_ecuHIInfo e)
                     }
            )
 %%[[(99 codegen grin)
@@ -132,10 +132,10 @@ cpCleanupCU modNm
 cpCleanupFlow :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpCleanupFlow modNm
   = cpUpdCU modNm
-      (\e -> e { ecuMbHSSemMod        = Nothing
+      (\e -> e { _ecuMbHSSemMod        = Nothing
                -- , ecuMbPrevHI          = Nothing
                -- , ecuMbPrevHISem       = Nothing
-               -- , ecuMbPrevHIInfo      = Nothing
+               -- , _ecuMbPrevHIInfo      = Nothing
                }
       )
 %%]

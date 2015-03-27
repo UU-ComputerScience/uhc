@@ -82,7 +82,7 @@ cpTransformCore optimScope modNm
        ; cpMsg' modNm VerboseALot "Transforming Core ..." Nothing fp
        
          -- transform
-       ; let  mbCore     = ecuMbCore ecu
+       ; let  mbCore     = _ecuMbCore ecu
               coreInh    = crsiCoreInh crsi
               trfcoreIn  = emptyTrfCore
                              { trfstMod             	= panicJust "cpTransformCore" mbCore
@@ -92,11 +92,11 @@ cpTransformCore optimScope modNm
 %%[[8
                                  -- , trfcoreIsLamLifted	= False
 %%][(50 corein)
-                                 -- , trfcoreIsLamLifted	= maybe False Core2ChkSem.isLamLifted_Syn_CodeAGItf $ ecuMbCoreSemMod ecu
+                                 -- , trfcoreIsLamLifted	= maybe False Core2ChkSem.isLamLifted_Syn_CodeAGItf $ _ecuMbCoreSemMod ecu
 %%]]
 %%[[(50 corein)
                                  , trfcoreNotYetTransformed
-                                 						= maybe (trfcoreNotYetTransformed emptyTrfCoreExtra) Core2ChkSem.notYetTransformed_Syn_CodeAGItf $ ecuMbCoreSemMod ecu
+                                 						= maybe (trfcoreNotYetTransformed emptyTrfCoreExtra) Core2ChkSem.notYetTransformed_Syn_CodeAGItf $ _ecuMbCoreSemMod ecu
 %%]]
 %%[[50
                                  , trfcoreExpNmOffMp    = crsiExpNmOffMpDbg "cpTransformCore" modNm crsi
@@ -117,7 +117,7 @@ cpTransformCore optimScope modNm
 
 %%[[50
          -- put back result: call info map (lambda arity, ...)
-       ; let hii   = ecuHIInfo ecu
+       ; let hii   = ecu ^. ecuHIInfo
              lamMp = HI.hiiLamMp hii
        ; cpUpdCU modNm
            ( ecuStoreHIInfo
@@ -133,7 +133,7 @@ cpTransformCore optimScope modNm
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcoreOut
        -- ; cpOutputCoreModules CPOutputCoreHow_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler'_Core ASTFileContentVariation_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules astHandler'_Core ASTFileContent_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
 %%]
@@ -173,7 +173,7 @@ cpTransformTyCore modNm
 
 %%[[99
          -- put back result: call info map (lambda arity, ...)
-       ; let hii   = ecuHIInfo ecu
+       ; let hii   = ecu ^. ecuHIInfo
              lamMp = HI.hiiLamMp hii
        ; cpUpdCU modNm
            ( ecuStoreHIInfo
@@ -196,7 +196,7 @@ cpTransformJavaScript optimScope modNm
        ; cpMsg' modNm VerboseALot "Transforming JavaScript ..." Nothing fp
        
          -- transform
-       ; let  mbJavaScript     = ecuMbJavaScript ecu
+       ; let  mbJavaScript     = _ecuMbJavaScript ecu
               trfjsIn  = emptyTrfJavaScript
                              { trfstMod           = panicJust "cpTransformJavaScript" mbJavaScript
                              , trfstUniq          = crsi ^. crsiNextUID
@@ -211,8 +211,8 @@ cpTransformJavaScript optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfjsOut
-       -- ; cpOutputJavaScriptModules ASTFileContentVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler'_JavaScript ASTFileContentVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       -- ; cpOutputJavaScriptModules ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules astHandler'_JavaScript ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("JavaScript errors: " ++ nm) err) nms errs
        }
 %%]
@@ -225,7 +225,7 @@ cpTransformCmm optimScope modNm
        ; cpMsg' modNm VerboseALot "Transforming Cmm ..." Nothing fp
        
          -- transform
-       ; let  mbCmm     = ecuMbCmm ecu
+       ; let  mbCmm     = _ecuMbCmm ecu
               trfcmmIn  = emptyTrfCmm
                              { trfstMod           = panicJust "cpTransformCmm" mbCmm
                              , trfstUniq          = crsi ^. crsiNextUID
@@ -240,8 +240,8 @@ cpTransformCmm optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcmmOut
-       -- ; cpOutputCmmModules ASTFileContentVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler'_Cmm ASTFileContentVariation_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       -- ; cpOutputCmmModules ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules astHandler'_Cmm ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Cmm errors: " ++ nm) err) nms errs
        }
 %%]

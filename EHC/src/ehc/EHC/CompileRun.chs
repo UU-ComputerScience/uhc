@@ -226,19 +226,19 @@ instance CompileRunStateInfo EHCompileRunStateInfo HsName () where
 %%]
 
 %%[8 export(EHCCompileRunner)
-class (MonadIO m, CompileRunner EHCompileUnitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)) => EHCCompileRunner m where
+class (MonadIO m, CompileRunner FileSuffInitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)) => EHCCompileRunner m where
 
 instance ( CompileRunStateInfo EHCompileRunStateInfo HsName ()
-         , CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState
+         , CompileUnit EHCompileUnit HsName FileLoc FileSuffInitState
          , CompileRunError Err ()
          -- , MonadError (CompileRunState Err) m
          -- , MonadState EHCompileRun (EHCompilePhaseAddonT m)
          , MonadIO m -- (EHCompilePhaseAddonT m)
          , Monad m
-         ) => CompileRunner EHCompileUnitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)
+         ) => CompileRunner FileSuffInitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)
 
 instance ( CompileRunStateInfo EHCompileRunStateInfo HsName ()
-         , CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState
+         , CompileUnit EHCompileUnit HsName FileLoc FileSuffInitState
          , CompileRunError Err ()
          -- , MonadError (CompileRunState Err) m
          -- , MonadState EHCompileRun (EHCompilePhaseAddonT m)
@@ -471,12 +471,12 @@ crPartitionNewerOlderImports :: HsName -> EHCompileRun -> ([EHCompileUnit],[EHCo
 crPartitionNewerOlderImports modNm cr
   = partition isNewer $ map (flip crCU cr) $ ecuImpNmL ecu
   where ecu = crCU modNm cr
-        t   = panicJust "crPartitionNewerOlderImports1" $ ecuMbHIInfoTime ecu
+        t   = panicJust "crPartitionNewerOlderImports1" $ _ecuMbHIInfoTime ecu
         isNewer ecu'
             | isJust mbt = t' `diffClockTimes` t > noTimeDiff
             | otherwise  = False
-            where t' = panicJust "crPartitionNewerOlderImports2" $ ecuMbHIInfoTime ecu'
-                  mbt = ecuMbHIInfoTime ecu'
+            where t' = panicJust "crPartitionNewerOlderImports2" $ _ecuMbHIInfoTime ecu'
+                  mbt = _ecuMbHIInfoTime ecu'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -514,10 +514,10 @@ crModNeedsCompile modNm cr
 %%% Compilation can actually be done?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 export(crModCanCompile)
+%%[5050 export(crModCanCompile)
 crModCanCompile :: HsName -> EHCompileRun -> Bool
 crModCanCompile modNm cr
-  = isJust (ecuMbSrcTime ecu) && ecuDirIsWritable ecu
+  = isJust (_ecuMbSrcTime ecu) && ecuDirIsWritable ecu
   where ecu = crCU modNm cr
 %%]
 

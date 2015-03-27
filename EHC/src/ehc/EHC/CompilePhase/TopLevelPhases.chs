@@ -25,7 +25,7 @@ level 2..6 : with prefix 'cpEhc'
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
-%%[8 import(qualified UHC.Util.FastSeq as Seq)
+%%[8 import(UHC.Util.Lens, qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[8 import(Control.Monad.State)
 %%]
@@ -246,13 +246,13 @@ cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , cpCleanupGrin impModNmL -- clean up unused Grin (moved here from cpCleanupCU)
 %%]]
            ]
-           ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContentVariation_Text "-fullgrin" mainModNm] else [])
+           ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-fullgrin" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
               ]
           )
   where mergeIntoOneBigGrin
           = do { cr <- get
-               ; cpUpdCU mainModNm (ecuStoreGrin (Grin.grModMerge [ panicJust "cpEhcGrinFullProgPostModulePhases.mergeIntoOneBigGrin" $ ecuMbGrin $ crCU m cr
+               ; cpUpdCU mainModNm (ecuStoreGrin (Grin.grModMerge [ panicJust "cpEhcGrinFullProgPostModulePhases.mergeIntoOneBigGrin" $ _ecuMbGrin $ crCU m cr
                                                                   | m <- modNmL
                                                                   ]
                                    )             )
@@ -263,7 +263,7 @@ cpEnsureGrin nm
 -- read Grin, or, if not available, read and process Core
   = do { cpGetPrevGrin nm
        ; cr <- get
-       ; when (isNothing $ ecuMbGrin $ crCU nm cr)
+       ; when (isNothing $ _ecuMbGrin $ crCU nm cr)
          $ do { cpGetPrevCore nm ; cpProcessCoreFold nm ; cpProcessCoreRest nm }
        }
 %%]
@@ -290,7 +290,7 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
                ; cpCleanupCore impModNmL -- clean up Core and CoreSem (it can still be read through cr in the next statement)
 %%]]
                }
-          where mOf m cr = panicJust "cpEhcCoreFullProgPostModulePhases.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
+          where mOf m cr = panicJust ("cpEhcCoreFullProgPostModulePhases.mergeIntoOneBigCore: " ++ show m) $ _ecuMbCore $ crCU m cr
 %%]
 
 %%[50 haddock
@@ -318,7 +318,7 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
   = do { cr <- get
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              needsCompile = crModNeedsCompile modNm cr
-             canCompile   = crModCanCompile modNm cr
+             canCompile   = ecuCanCompile ecu
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (liftIO $ putStrLn
                 (  show modNm
@@ -1063,7 +1063,7 @@ cpEhcCoreAnalyseModule modNm
   = do { cr <- get
        ; cpUpdateModOffMp [modNm]
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
-             coreSem = panicJust "cpEhcCoreAnalyseModule" $ ecuMbCoreSemMod ecu
+             coreSem = panicJust "cpEhcCoreAnalyseModule" $ _ecuMbCoreSemMod ecu
              errs = Seq.toList $ Core2ChkSem.errs_Syn_CodeAGItf coreSem
        ; cpSetLimitErrsWhen 5 "Core analysis" errs
        }
@@ -1076,7 +1076,7 @@ cpEhcCoreRunAnalyseModule modNm
   = do { cr <- get
        ; cpUpdateModOffMp [modNm]
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
-             corerunSem = panicJust "cpEhcCoreRunAnalyseModule" $ ecuMbCoreRunSemMod ecu
+             corerunSem = panicJust "cpEhcCoreRunAnalyseModule" $ _ecuMbCoreRunSemMod ecu
              errs = [] -- No errors -- Seq.toList $ CoreRun2ChkSem.errs_Syn_AGItf corerunSem
        ; cpSetLimitErrsWhen 5 "CoreRun analysis" errs
        }
@@ -1254,14 +1254,14 @@ cpProcessCoreBasic modNm
        ; cpSeq [ cpTransformCore OptimizationScope_PerModule modNm
 %%[[50
                , cpFlowHILamMp modNm
-               , void $ cpOutputCore    ASTFileContentVariation_Binary    {-[]-} "" Cfg.suffixDotlessBinaryCore    modNm
-               -- , void $ cpOutputSomeModule ecuCore astHandler'_Core ASTFileContentVariation_Binary "" Cfg.suffixDotlessBinaryCore modNm
+               , void $ cpOutputCore    ASTFileContent_Binary    {-[]-} "" Cfg.suffixDotlessBinaryCore    modNm
+               -- , void $ cpOutputSomeModule (^. ecuCore) astHandler'_Core ASTFileContent_Binary "" Cfg.suffixDotlessBinaryCore modNm
 %%]]
                , cpProcessCoreFold modNm
 %%[[(50 corerun)
                , when (targetIsCoreVariation (ehcOptTarget opts)) $
-                   void $ -- cpOutputCoreRun ASTFileContentVariation_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
-                          cpOutputSomeModule ecuCoreRun astHandler'_CoreRun ASTFileContentVariation_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
+                   void $ -- cpOutputCoreRun ASTFileContent_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
+                          cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
 %%]]
                ]
         }
@@ -1316,7 +1316,7 @@ cpProcessCoreRest modNm
        ; cpSeq (   []
 %%[[(8 grin)
                 ++ [ cpTranslateCore2Grin modNm ]
-                ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin ASTFileContentVariation_Binary "" modNm] else [])
+                ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin ASTFileContent_Binary "" modNm] else [])
 %%]]
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
@@ -1326,11 +1326,11 @@ cpProcessCoreRest modNm
 %%]]
 %%[[(8 coreout)
                 ++ (if CoreOpt_Dump `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore ASTFileContentVariation_Text {-[]-} "" Cfg.suffixDotlessOutputTextualCore modNm]
+                    then [void $ cpOutputCore ASTFileContent_Text {-[]-} "" Cfg.suffixDotlessOutputTextualCore modNm]
                     else [])
 %%[[50
                 ++ (if CoreOpt_DumpBinary `elem` ehcOptCoreOpts opts
-                    then [void $ cpOutputCore ASTFileContentVariation_Binary {-[]-} "" Cfg.suffixDotlessInputOutputBinaryCore modNm]
+                    then [void $ cpOutputCore ASTFileContent_Binary {-[]-} "" Cfg.suffixDotlessInputOutputBinaryCore modNm]
                     else [])
 %%]]
 %%]]
@@ -1354,7 +1354,7 @@ cpProcessCoreRunRest modNm
        ; cpSeq (   []
                 ++ (if CoreOpt_RunDump `elem` ehcOptCoreOpts opts
                     then -- [void $ cpOutputCore CPOutputCoreHow_CoreRun_Text {-[]-} "" Cfg.suffixDotlessInputOutputCoreRun modNm]
-                         [void $ cpOutputSomeModule ecuCoreRun astHandler'_CoreRun ASTFileContentVariation_Text "" Cfg.suffixDotlessInputOutputCoreRun modNm]
+                         [void $ cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Text "" Cfg.suffixDotlessInputOutputCoreRun modNm]
                     else [])
                 ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
                     then [cpRunCoreRun  modNm]
@@ -1371,9 +1371,9 @@ cpProcessGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessGrin modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; cpSeq (   (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContentVariation_Text "-000-initial" modNm] else [])
+       ; cpSeq (   (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
-                ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContentVariation_Text "-099-final" modNm]  else [])
+                ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-099-final" modNm]  else [])
 %%[[(8 wholeprogAnal)
                 ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTransformGrinHPTWholeProg modNm] else [])
 %%]]

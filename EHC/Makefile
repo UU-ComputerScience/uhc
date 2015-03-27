@@ -464,6 +464,7 @@ git-fixate-tagversion:
 	rm $(CHANGELOG).tmp
 	git tag "v$(EH_VERSION_FULL)"
 	git ci -m "Fixate/tag v$(EH_VERSION_FULL)"
+	$(MAKE) uhc-light
 
 bump-major: git-fixate-tagversion
 	@echo $$(($(EH_VERSION_MAJOR)+1)).0.0.0 > VERSION ; \

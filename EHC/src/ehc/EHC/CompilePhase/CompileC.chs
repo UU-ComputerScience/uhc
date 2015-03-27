@@ -220,7 +220,7 @@ cpPreprocessWithCPP pkgKeyDirL modNm
                              -- ; liftIO $ putStrLn ("pkgKeyDirL: " ++ show pkgKeyDirL)
                              ; liftIO $ putStrLn $ showShellCmd preCPP
                              })
-                  ; when (crModCanCompile modNm cr)
+                  ; when (ecuCanCompile ecu)
                          (do { liftIO $ fpathEnsureExists fpCPP
                              ; cpSystem' (Just $ fpathToStr fpCPP) preCPP
 %%[[99

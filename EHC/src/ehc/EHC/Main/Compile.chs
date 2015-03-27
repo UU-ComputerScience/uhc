@@ -36,7 +36,7 @@
 %%]
 
 -- alternate driver
-%%[8 import({%{EH}EHC.BuildFunction}, {%{EH}EHC.BuildFunction.Run})
+%%[8 import({%{EH}EHC.BuildFunction.Run})
 %%]
 
 -- general imports
@@ -45,10 +45,6 @@
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 %%[8 import(Control.Monad.State, Control.Monad.Error)
-%%]
-
--- Build function state
-%%[8 import({%{EH}EHC.BuildFunction})
 %%]
 
 -- module

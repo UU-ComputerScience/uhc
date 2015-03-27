@@ -25,7 +25,7 @@
 %%[8 export(FileSuffMp, emptyFileSuffMp, mkFileSuffMpHs)
 type FileSuffMp =
   [( FileSuffix				-- suffix
-   , EHCompileUnitState		-- initial state
+   , FileSuffInitState						
    , Bool					-- visible from commandline
    )]
 
@@ -35,33 +35,33 @@ emptyFileSuffMp = []
 -- | Allowed suffixes, order is significant.
 mkFileSuffMpHs :: EHCOpts -> FileSuffMp
 mkFileSuffMpHs opts
-  = [ ( Just "hs"  , ECUS_Haskell HSStart, True )
+  = [ ( Just "hs"  , (ECUS_Haskell HSStart, ASTType_HS, ASTFileContent_Text, ASTFileUse_Src), True )
 %%[[99
-    , ( Just "lhs" , ECUS_Haskell LHSStart, True )
+    , ( Just "lhs" , (ECUS_Haskell LHSStart, ASTType_HS, ASTFileContent_LitText, ASTFileUse_Src), True )
 %%]]
-    , ( Just "eh"  , ECUS_Eh EHStart, True )
+    , ( Just "eh"  , (ECUS_Eh EHStart, ASTType_EH, ASTFileContent_Text, ASTFileUse_Src), True )
 %%[[50
-    , ( Just "hi"  , ECUS_Haskell HIStart, False )
+    , ( Just "hi"  , (ECUS_Haskell HIStart, ASTType_HI, ASTFileContent_Binary, ASTFileUse_Cache), False )
 %%]]
 %%[[(8 grin)
     -- currently not supported
     -- , ( Just "grin", ECUS_Grin, True )
 %%]]
 %%[[(50 corerunin)
-    , ( Just Cfg.suffixDotlessBinaryCoreRun , ECUS_CoreRun CRRStartBinary, True )
+    , ( Just Cfg.suffixDotlessBinaryCoreRun , (ECUS_CoreRun CRRStartBinary, ASTType_CoreRun, ASTFileContent_Binary, ASTFileUse_Src), True )
 %%]]
 %%[[(50 corein)
-    , ( Just Cfg.suffixDotlessInputOutputTextualCore, ECUS_Core CRStartText, True   )
-    , ( Just Cfg.suffixDotlessInputOutputBinaryCore , ECUS_Core CRStartBinary, True )
+    , ( Just Cfg.suffixDotlessInputOutputTextualCore, (ECUS_Core CRStartText, ASTType_Core, ASTFileContent_Text, ASTFileUse_Src), True   )
+    , ( Just Cfg.suffixDotlessInputOutputBinaryCore , (ECUS_Core CRStartBinary, ASTType_Core, ASTFileContent_Binary, ASTFileUse_Src), True )
 %%]]
 %%[[(50 corebackend)
-    , ( Just Cfg.suffixDotlessBinaryCore , ECUS_Core CRStartBinary, False )
+    , ( Just Cfg.suffixDotlessBinaryCore , (ECUS_Core CRStartBinary, ASTType_Core, ASTFileContent_Binary, ASTFileUse_Src), False )
 %%]]
     ]
 %%[[(90 codegen)
     ++ (if targetIsOnUnixAndOrC (ehcOptTarget opts)
-        then [ ( Just "c"   , ECUS_C CStart, True )
-             , ( Just "o"   , ECUS_O OStart, True )
+        then [ ( Just "c"   , (ECUS_C CStart, ASTType_C, ASTFileContent_Text, ASTFileUse_Src), True )
+             , ( Just "o"   , (ECUS_O OStart, ASTType_O, ASTFileContent_Binary, ASTFileUse_Src), True )
              ]
         else []
        )
@@ -72,7 +72,7 @@ mkFileSuffMpHs opts
 -- Suffix map for empty suffix, defaults to .hs
 fileSuffMpHsNoSuff :: FileSuffMp
 fileSuffMpHsNoSuff
-  = [ ( Nothing  , ECUS_Haskell HSStart, False )
+  = [ ( Nothing  , (ECUS_Haskell HSStart, ASTType_HS, ASTFileContent_Text, ASTFileUse_Src), False )
     ]
 %%]
 

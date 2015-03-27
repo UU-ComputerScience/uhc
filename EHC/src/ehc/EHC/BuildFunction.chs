@@ -33,6 +33,9 @@ For now (20150218) a start of a build system replacement allowing declarative sp
 %%[8 import (UHC.Util.Lens)
 %%]
 
+%%[50 import (UHC.Util.Time)
+%%]
+
 %%[8 import (qualified UHC.Util.RelMap as Rel)
 %%]
 
@@ -94,19 +97,41 @@ data BFun' res where
     :: !HsName				--- ^ module name
     -> BFun' EHCOpts
 
+  --- | Get a particular AST from file for a module
+  ASTFromFile
+    :: !(HsName,Maybe FPath)			--- ^ module name and possibly known path
+    -> !ASTType							--- ^ content type
+    -> !ASTSuffixKey					--- ^ suffix and content variation
+    -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
+    -> BFun' (Maybe res)
+
+%%[[50
+  --- | Get the modification ClockTime of a file for a module
+  ModfTimeOfFile
+    :: !HsName							--- ^ module name and possibly known path
+    -> !ASTType							--- ^ content type
+    -> !ASTSuffixKey					--- ^ suffix and content variation
+    -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
+    -> BFun' (Maybe ClockTime)
+%%]]
+
 -- | Comparison which ignores GADT type info
 bfunCompare :: BFun' res1 -> BFun' res2 -> Ordering
 bfunCompare f1 f2 = case (f1,f2) of
-    (FPathSearchForFile 	a1 b1	, FPathSearchForFile 	a2 b2	) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (FPathOfImported    	a1   	, FPathOfImported    	a2   	) ->         a1 `compare` a2
-    (ImportsOf          	a1   	, ImportsOf          	a2   	) ->         a1 `compare` a2
-    (EcuOfName              a1   	, EcuOfName    			a2   	) ->         a1 `compare` a2
+    (FPathSearchForFile 	a1 b1		, FPathSearchForFile 	a2 b2		) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (FPathOfImported    	a1   		, FPathOfImported    	a2   		) ->         a1 `compare` a2
+    (ImportsOf          	a1   		, ImportsOf          	a2   		) ->         a1 `compare` a2
+    (EcuOfName              a1   		, EcuOfName    			a2   		) ->         a1 `compare` a2
 %%[[8
-    (EcuOfNameAndPath		a1 b1	, EcuOfNameAndPath		a2 b2	) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (EcuOfNameAndPath		a1 b1		, EcuOfNameAndPath		a2 b2		) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%][5050
-    (EcusOfNamesAndPaths	a1   	, EcusOfNamesAndPaths	a2   	) ->         a1 `compare` a2
+    (EcusOfNamesAndPaths	a1   		, EcusOfNamesAndPaths	a2   		) ->         a1 `compare` a2
 %%]]
-    (EHCOptsOf             	a1   	, EHCOptsOf				a2   	) ->         a1 `compare` a2
+    (EHCOptsOf             	a1   		, EHCOptsOf				a2   		) ->         a1 `compare` a2
+    (ASTFromFile            a1 b1 c1 d1	, ASTFromFile			a2 b2 c2 d2	) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
+%%[[50
+    (ModfTimeOfFile         a1 b1 c1 d1	, ModfTimeOfFile		a2 b2 c2 d2	) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
+%%]]
   where lexico (x:xs)
           | x == EQ   = lexico xs
           | otherwise = x
@@ -115,47 +140,26 @@ bfunCompare f1 f2 = case (f1,f2) of
 instance Ord (BFun' res) where
   compare = bfunCompare
 
--- deriving instance Generic (BFun' res)
--- instance Hashable (BFun' res)
 deriving instance Eq (BFun' res)
--- deriving instance (Data res, Typeable res) => Data (BFun' res)
 deriving instance Show (BFun' res)
 deriving instance Typeable BFun'
 
 instance Hashable (BFun' res) where
   hashWithSalt salt x = case x of
-	FPathSearchForFile 	a b	-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b
-	FPathOfImported	   	a	-> salt `hashWithSalt` (1::Int) `hashWithSalt` a
-	ImportsOf		   	a	-> salt `hashWithSalt` (2::Int) `hashWithSalt` a
-	EcuOfName		   	a	-> salt `hashWithSalt` (3::Int) `hashWithSalt` a
-	EHCOptsOf		   	a	-> salt `hashWithSalt` (4::Int) `hashWithSalt` a
+	FPathSearchForFile 	a b		-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b
+	FPathOfImported	   	a		-> salt `hashWithSalt` (1::Int) `hashWithSalt` a
+	ImportsOf		   	a		-> salt `hashWithSalt` (2::Int) `hashWithSalt` a
+	EcuOfName		   	a		-> salt `hashWithSalt` (3::Int) `hashWithSalt` a
+	EHCOptsOf		   	a		-> salt `hashWithSalt` (4::Int) `hashWithSalt` a
 %%[[8
-	EcuOfNameAndPath	a b	-> salt `hashWithSalt` (5::Int) `hashWithSalt` a `hashWithSalt` b
+	EcuOfNameAndPath	a b		-> salt `hashWithSalt` (5::Int) `hashWithSalt` a `hashWithSalt` b
 %%][5050
-	EcusOfNamesAndPaths a 	-> salt `hashWithSalt` (5::Int) `hashWithSalt` a
+	EcusOfNamesAndPaths a 		-> salt `hashWithSalt` (5::Int) `hashWithSalt` a
 %%]]
-
-{-
---- | Applicative: pure
-  Pure
-    :: res
-    -> BFun' res
-
-  --- | Applicative: <*>
-  App
-    :: BFun' (res1 -> res2)
-    -> BFun' res1
-    -> BFun' res2
-
-instance Functor BFun' where
-  fmap f (Pure  x) = Pure (f x)
-  fmap f (App g x) = App (fmap (f .) g) x
-  fmap _ _         = panic "BuildFuncion.Functor.BFun'"
-
-instance Applicative BFun' where
-  pure  = Pure
-  (<*>) = App
--}
+	ASTFromFile			a b	c d	-> salt `hashWithSalt` (6::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
+%%[[50
+	ModfTimeOfFile		a b	c d	-> salt `hashWithSalt` (7::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
+%%]]
 
 %%]
 
@@ -243,6 +247,14 @@ data BRef val where
   BRef_ECU
     :: !HsName					--- ^ module name
     -> BRef EHCompileUnit
+
+  --- | An AST embedded in a compile unit
+  BRef_AST
+    :: !HsName					--- ^ module name
+    -> ASTType							--- ^ content type
+    -> ASTSuffixKey						--- ^ suffix and content variation
+    -> ASTFileTiming			--- ^ timing (i.e. previous or current)
+    -> BRef val
 
   --- | Global options
   BRef_EHCOpts

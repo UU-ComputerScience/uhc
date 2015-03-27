@@ -11,6 +11,8 @@ JavaScript compilation
 %%]
 %%[(8 codegen javascript) import(qualified Data.Map as Map)
 %%]
+%%[(8 codegen javascript) import(UHC.Util.Lens)
+%%]
 %%[(8 codegen javascript) import(Control.Monad.State)
 %%]
 
@@ -78,8 +80,8 @@ cpCompileJavaScript how othModNmL modNm
 %%[[99
                                   {ehcOptOutputDir = Nothing}
 %%]]
-              mbJs            = ecuMbJavaScript ecu
-              fpOOpts o m f   = _asthdlrMkFPath astHandler'_JavaScript o m f Cfg.suffixJavaScriptLib
+              mbJs            = _ecuMbJavaScript ecu
+              fpOOpts o m f   = _asthdlrMkOutputFPath astHandler'_JavaScript o m f Cfg.suffixJavaScriptLib
               fpO m f         = fpOOpts opts m f
               fpExecOpts o    = mkPerExecOutputFPath o modNm fp (Just ("js", True))
               fpExec          = fpExecOpts opts
@@ -108,9 +110,9 @@ cpCompileJavaScript how othModNmL modNm
 
                   ; let Right jsDeps = jsDepsFound
 
-                  -- ; fpM <- cpOutputJavaScript ASTFileContentVariation_Text "" modNm
+                  -- ; fpM <- cpOutputJavaScript ASTFileContent_Text "" modNm
                   ; fpM <- fmap (panicJust "cpCompileJavaScript.cpOutputSomeModule") $
-                      cpOutputSomeModule ecuJavaScript astHandler'_JavaScript ASTFileContentVariation_Text "" Cfg.suffixJavaScriptLib modNm
+                      cpOutputSomeModule (^. ecuJavaScript) astHandler'_JavaScript ASTFileContent_Text "" Cfg.suffixJavaScriptLib modNm
                   
                   -- ; fileNmExec <- liftIO $ canonicalize $ fpathToStr fpExec 
 

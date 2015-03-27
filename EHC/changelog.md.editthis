@@ -1,4 +1,4 @@
-- [edit this] and this, adding new entries as needed
+- [build] Internal compilerdriver refactorization and start of rewrite with new compilerdriver based on a simple incremental DSL for describing compilation.
 
 ## 1.1.8.9 - 20150301
 

@@ -8,7 +8,7 @@ Output generation, on stdout or file
 %%]
 
 -- general imports
-%%[8 import(qualified UHC.Util.FastSeq as Seq)
+%%[8 import(UHC.Util.Lens, qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
@@ -108,7 +108,7 @@ cpOutputSomeModules' write mkfp mknmsuff suff modNm mods = do
 cpOutputSomeModules
   :: EHCCompileRunner m
      => ASTHandler' mod -- (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO Bool)
-     -> ASTFileContentVariation
+     -> ASTFileContent
      -> (Int -> String -> String)
      -> String
      -> HsName
@@ -118,13 +118,13 @@ cpOutputSomeModules astHdlr how mknmsuff suff modNm mods = do
     cr <- get
     let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
     forM (zip [1..] mods) $ \(nr,(nmsuff,mod)) -> do
-      let fpC     = _asthdlrMkFPath astHdlr opts modNm fp (suff ++ mknmsuff nr nmsuff) -- for now nmsuff after suff, but should be inside name
+      let fpC     = _asthdlrMkOutputFPath astHdlr opts modNm fp (suff ++ mknmsuff nr nmsuff) -- for now nmsuff after suff, but should be inside name
           fnC     = fpathToStr fpC
       okWrite <- if ecuSrcHasSuffix suff ecu
         then return False
         else liftIO $ do
-          fpathEnsureExists fpC
-          _asthdlrOutputIO astHdlr how opts ecu modNm fpC fnC mod
+          -- fpathEnsureExists fpC
+          asthdlrOutputIO astHdlr how opts ecu modNm fpC fnC mod
       return $ if okWrite then Just fpC else Nothing
 %%]
 
@@ -134,7 +134,7 @@ cpOutputSomeModule
   :: EHCCompileRunner m
      => (EHCompileUnit -> mod)
      -> ASTHandler' mod
-     -> ASTFileContentVariation
+     -> ASTFileContent
      -> String
      -> String
      -> HsName
@@ -185,23 +185,23 @@ cpOutputTyCore suff modNm
 %%]
 
 %%[(8 codegen) export(cpOutputCore)
-cpOutputCore :: EHCCompileRunner m => ASTFileContentVariation -> String -> String -> HsName -> EHCompilePhaseT m FPath
+cpOutputCore :: EHCCompileRunner m => ASTFileContent -> String -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputCore how nmsuff suff modNm =
     fmap (panicJust "cpOutputGrin.cpOutputSomeModule") $
-      cpOutputSomeModule ecuCore astHandler'_Core how nmsuff suff modNm
+      cpOutputSomeModule (^. ecuCore) astHandler'_Core how nmsuff suff modNm
 %%]
 
 %%[(8 codegen grin) export(cpOutputGrin)
-cpOutputGrin :: EHCCompileRunner m => ASTFileContentVariation -> String -> HsName -> EHCompilePhaseT m FPath
+cpOutputGrin :: EHCCompileRunner m => ASTFileContent -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputGrin how nmsuff modNm =
     fmap (panicJust "cpOutputGrin.cpOutputSomeModule") $
-      cpOutputSomeModule ecuGrin astHandler'_Grin how nmsuff "grin" modNm
+      cpOutputSomeModule (^. ecuGrin) astHandler'_Grin how nmsuff "grin" modNm
 %%]
 
 %%[(8888 cmm) export(cpOutputCmmModules)
 cpOutputCmmModules
   :: EHCCompileRunner m => 
-        ASTFileContentVariation
+        ASTFileContent
      -> (Int -> String -> String)
      -> String -> HsName
      -> [(String,Cmm.Module)]
@@ -213,11 +213,11 @@ cpOutputCmmModules _ mknmsuff suff modNm mods
 %%]
 
 %%[(8888 cmm) export(cpOutputCmm)
-cpOutputCmm :: EHCCompileRunner m => ASTFileContentVariation -> String -> HsName -> EHCompilePhaseT m FPath
+cpOutputCmm :: EHCCompileRunner m => ASTFileContent -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputCmm binary suff modNm
   =  do  { cr <- get
          ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                mbCmm  = ecuMbCmm ecu
+                mbCmm  = _ecuMbCmm ecu
                 cmm    = panicJust "cpOutputCmm" mbCmm
          ; cpMsg modNm VerboseALot "Emit Cmm"
          ; fmap head $ cpOutputCmmModules binary (\_ nm -> nm) "cmm" modNm [(suff,cmm)]
@@ -232,7 +232,7 @@ cpOutputByteCodeC suff modNm
                  bc       = panicJust "cpOutputByteCodeC bytecode" $ ecuMbBytecodeSem ecu
                  fpC      = mkOutputFPath opts modNm fp suff
 %%[[(8 cmm)
-                 cmm      = panicJust "cpOutputByteCodeC cmm" $ ecuMbCmm ecu
+                 cmm      = panicJust "cpOutputByteCodeC cmm" $ _ecuMbCmm ecu
                  fpCmm    = mkOutputFPath opts modNm fp (suff ++ "-cmm")
 %%]]
          ;  cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC     -- '
@@ -256,7 +256,7 @@ cpOutputHI suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mmi    = panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
-                 hii1   = ecuHIInfo ecu
+                 hii1   = ecu ^. ecuHIInfo
                  impNmS = ecuImpNmS ecu
                  hii2   = hii1 { HI.hiiValidity             = HI.HIValidity_Ok
                                , HI.hiiModuleNm             = modNm
@@ -297,15 +297,18 @@ cpOutputHI suff modNm
          ;  when (ehcOptVerbosity opts > VerboseALot)
                  (do { liftIO $ putPPLn ("hii3: " >#< hii3)
 %%[[(99 codegen hmtyinfer)
-                     ; liftIO $ putPPLn ("orph: " >#< vlist [ m >#< (fmap Set.toList $ HI.hiiMbOrphan $ ecuHIInfo me) | m <- Set.toList impNmS, let me = crCU m cr ])
+                     ; liftIO $ putPPLn ("orph: " >#< vlist [ m >#< (fmap Set.toList $ HI.hiiMbOrphan $ me ^. ecuHIInfo) | m <- Set.toList impNmS, let me = crCU m cr ])
 %%]]
 %%[[99
                      ; liftIO $ putPPLn ("used nms: " >#< (pp $ show $ ecuUsedNames ecu))
 %%]]
                      })
+{-
          ;  liftIO $ do { fpathEnsureExists fpH
-                      ; putSerializeFile fnH hii3
-                      }
+                        ; putSerializeFile fnH hii3
+                        }
+-}
+         ;  liftIO $ asthdlrOutputIO astHandler'_HI ASTFileContent_Binary opts ecu modNm fpH fnH hii3
          ;  now <- liftIO $ getClockTime
          ;  cpUpdCU modNm ( ecuStoreHIInfoTime now
 %%[[99

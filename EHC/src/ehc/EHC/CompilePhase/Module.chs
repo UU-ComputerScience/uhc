@@ -44,6 +44,9 @@ Module analysis
 %%[(50 codegen) hs import({%{EH}CodeGen.RefGenerator})
 %%]
 
+%%[50 import({%{EH}EHC.BuildFunction.Run})
+%%]
+
 %%[50 import({%{EH}Base.Debug})
 %%]
 
@@ -133,7 +136,7 @@ cpGetCoreRunModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT
 cpGetCoreRunModnameAndImports modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
-                 mbCrSemMod = ecuMbCoreRunSemMod ecu
+                 mbCrSemMod = _ecuMbCoreRunSemMod ecu
                  crSemMod   = panicJust "cpGetCoreRunModnameAndImports" mbCrSemMod
                  modNm'     = CoreRun2ChkSem.realModuleNm_Syn_AGItf crSemMod
          ;  cpMsg modNm VerboseDebug $ "cpGetCoreRunModnameAndImports: " ++ show modNm ++ " -> " ++ show modNm'
@@ -152,7 +155,7 @@ cpGetCoreModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT m 
 cpGetCoreModnameAndImports modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
-                 mbCrSemMod = ecuMbCoreSemMod ecu
+                 mbCrSemMod = _ecuMbCoreSemMod ecu
                  crSemMod   = panicJust "cpGetCoreModnameAndImports" mbCrSemMod
                  modNm'     = Core2ChkSem.realModuleNm_Syn_CodeAGItf crSemMod
          ;  cpMsg modNm VerboseDebug $ "cpGetCoreModnameAndImports: " ++ show modNm ++ " -> " ++ show modNm'
@@ -171,7 +174,7 @@ cpGetHsModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT m Hs
 cpGetHsModnameAndImports modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
-                 mbHsSemMod = ecuMbHSSemMod ecu
+                 mbHsSemMod = _ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsModnameAndImports" mbHsSemMod
                  modNm'     = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
                  upd        = ecuStoreHSDeclImpS ( -- (\v -> tr "XX" (pp $ Set.toList v) v) $ 
@@ -186,7 +189,7 @@ cpGetHsMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpGetHsMod modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
-                 mbHsSemMod = ecuMbHSSemMod ecu
+                 mbHsSemMod = _ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsMod" mbHsSemMod
                  mod        = HSSemMod.mod_Syn_AGItf hsSemMod
          ;  when (ehcOptVerbosity opts >= VerboseDebug)
@@ -201,18 +204,10 @@ cpGetMetaInfo :: EHCCompileRunner m => [GetMeta] -> HsName -> EHCompilePhaseT m 
 cpGetMetaInfo gm modNm
   =  do  {  cr <- get
          ;  let (ecu,_,opts,fp) = crBaseInfo modNm cr
-         ;  when (GetMeta_Src `elem` gm)
-                 (tm opts ecu ecuStoreSrcTime        (ecuSrcFilePath ecu))
-         {-
-         ;  when (GetMeta_HI `elem` gm)
-                 (tm opts ecu ecuStoreHITime
-%%[[50
-                                              (fpathSetSuff "hi"        fp     )
-%%][99
-                                              (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
-%%]]
-                 )
-         -}
+         ;  when (GetMeta_Src `elem` gm) $
+                 tm opts ecu ecuStoreSrcTime        (ecuSrcFilePath ecu)
+                 -- void $ bcall $ ModfTimeOfFile modNm ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+                 
          ;  when (GetMeta_HI `elem` gm)
                  (tm opts ecu ecuStoreHIInfoTime
 %%[[50
@@ -226,19 +221,23 @@ cpGetMetaInfo gm modNm
                  (tm opts ecu ecuStoreGrinTime      (fpathSetSuff "grin"      fp     ))
 %%]]
 %%[[(50 codegen)
-         ;  when (GetMeta_Core `elem` gm)
-                 (tm opts ecu ecuStoreCoreTime      (fpathSetSuff Cfg.suffixDotlessBinaryCore fp))
+         ;  when (GetMeta_Core `elem` gm) $
+                 -- tm opts ecu ecuStoreCoreTime      (fpathSetSuff Cfg.suffixDotlessBinaryCore fp)
+                 dfltPrev ASTType_Core modNm ecu
 %%]]
 %%[[(50 corerun)
-         ;  when (GetMeta_CoreRun `elem` gm)
-                 (tm opts ecu ecuStoreCoreRunTime   (fpathSetSuff Cfg.suffixDotlessBinaryCoreRun fp))
+         ;  when (GetMeta_CoreRun `elem` gm) $
+                 -- tm opts ecu ecuStoreCoreRunTime   (fpathSetSuff Cfg.suffixDotlessBinaryCoreRun fp)
+                 dfltPrev ASTType_CoreRun modNm ecu
 %%]]
 %%[[50
          ;  when (GetMeta_Dir `elem` gm)
                  (wr opts ecu ecuStoreDirIsWritable (                         fp     ))
 %%]]
          }
-  where tm :: EHCCompileRunner m => EHCOpts -> EHCompileUnit -> (ClockTime -> EHCompileUnit -> EHCompileUnit) -> FPath -> EHCompilePhaseT m ()
+  where dfltPrev astty modNm ecu = void $ bcall $ ModfTimeOfFile modNm astty (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+
+        tm :: EHCCompileRunner m => EHCOpts -> EHCompileUnit -> (ClockTime -> EHCompileUnit -> EHCompileUnit) -> FPath -> EHCompilePhaseT m ()
         tm opts ecu store fp
           = do { let n = fpathToStr fp
                ; nExists <- liftIO $ doesFileExist n
