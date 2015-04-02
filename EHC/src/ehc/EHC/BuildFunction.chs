@@ -103,7 +103,7 @@ data BFun' res where
     -> !ASTType							--- ^ content type
     -> !ASTSuffixKey					--- ^ suffix and content variation
     -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
-    -> BFun' (Maybe res)
+    -> BFun' res
 
 %%[[50
   --- | Get the modification ClockTime of a file for a module

@@ -38,6 +38,10 @@ CompilePhase building blocks: parsers
 %%[8 import({%{EH}EHC.ASTHandler.Instances})
 %%]
 
+-- Build function
+%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%]
+
 -- EH parser
 %%[8 import(qualified {%{EH}EH} as EH, qualified {%{EH}EH.Parser} as EHPrs)
 %%]
@@ -275,11 +279,12 @@ cpGetPrevCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m Core.CModule
 cpGetPrevCore modNm
   = do { cr <- get
        ; cpMsg modNm VerboseDebug "cpGetPrevCore"
-       ; let  ecu    = crCU modNm cr
-       ; when (isJust (_ecuMbCoreTime ecu) && isNothing (_ecuMbCore ecu)) $
+       -- ; let  ecu    = crCU modNm cr
+       -- ; when (isJust (_ecuMbCoreTime ecu) && isNothing (_ecuMbCore ecu)) $
               -- cpDecodeCore (Just Cfg.suffixDotlessBinaryCore) modNm
-              cpDecode' astHandler'_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev modNm
-       ; fmap (fromJust . _ecuMbCore) $ gets (crCU modNm)
+              -- cpDecode' astHandler'_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev modNm
+       -- ; fmap (fromJust . _ecuMbCore) $ gets (crCU modNm)
+       ; bcall $ ASTFromFile (modNm,Nothing) ASTType_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 

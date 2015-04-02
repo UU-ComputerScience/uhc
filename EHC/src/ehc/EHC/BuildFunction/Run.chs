@@ -39,7 +39,7 @@ Running of BuildFunction
 %%]
 %%[8 import (qualified Data.Map as Map)
 %%]
-%%[8 import (Control.Monad.State)
+%%[8 import (Control.Monad.State, Control.Monad.Error)
 %%]
 
 %%[50 import (System.Directory)
@@ -104,18 +104,48 @@ bcall bfun = do
                    modNm = mkHNm $ fpathBase fp
                breturn (modNm, fp)
       
-          ASTFromFile mf@(modNm,_) asttype skey tkey -> case asthandlerLookup asttype of
-               Just (hdlr :: ASTHandler' res) -> case astsuffixLookup skey $ _asthdlrSuffixRel hdlr of
-                 Just suffinfo -> do
-                   ecu <- bcall $ EcuOfNameAndPath Nothing mf
-                   let ref = BRef_AST modNm asttype skey tkey
-                   -- (_,set) <- bderef'
-                   -- TBD: the actual input
-                   -- breturn ref
-                   return Nothing 
-                 _ -> return Nothing
-               _ -> return Nothing
-          
+          ASTFromFile mf asttype skey@(astfcont,_) tkey -> do
+               ecu <- bcall $ EcuOfNameAndPath Nothing mf
+               let modNm = ecuModNm ecu
+                   fp    = ecuFilePath ecu
+                   ref   = BRef_AST modNm asttype skey tkey
+               opts <- bcall $ EHCOptsOf modNm
+%%[[8
+               let mbtm = Just undefined
+%%][50
+               mbtm <- bcall $ ModfTimeOfFile modNm asttype skey tkey
+%%]]
+               (_ :: Maybe res, mbset) <- bderef' ref
+               case (mbtm, mbset, asthandlerLookup asttype) of
+                 (Just _, Just set, Just (astHdlr :: ASTHandler' res)) | isJust mbi && isJust mbl -> case astfcont of
+%%[[50
+                      ASTFileContent_Binary -> do
+                        cpMsg' modNm VerboseALot "Decoding" Nothing fpC
+                        mbx@(~(Just x)) <- liftIO $ _asthdlrGetSerializeFileIO astHdlr opts fpC
+                        if isJust mbx
+                          then do
+                            let errs = _asthdlrPostInputCheck astHdlr opts ecu modNm fpC x
+                            if null errs
+                              then do 
+                                set x
+                                bmemo ref
+                                return x
+                              else do
+                                cpSetLimitErrsWhen 1 ("Decode AST check " ++ _asthdlrName astHdlr) errs
+                                dflt'
+                          else err "decoder"
+%%]]
+                      _ -> err "ast content handler"
+                   where mbi@(~(Just info)) = astsuffixLookup skey $ _asthdlrSuffixRel astHdlr
+                         mbl@(~(Just lens)) = Map.lookup tkey $ _astsuffinfoASTLensMp info
+                         fpC                = asthdlrMkInputFPath astHdlr opts ecu skey modNm fp
+                         err                = err' (_asthdlrName astHdlr)
+                 _ -> err' "" "ast handler/setter"
+            where dflt' = return undefined
+                  err' k m = do
+                    cpSetLimitErrsWhen 1 ("Decode " ++ k) [strMsg $ "No " ++ m ++ " for " ++ k ++ " (" ++ show skey ++ "/" ++ show tkey ++ ")"]
+                    dflt'
+
 %%[[50
           ModfTimeOfFile modNm asttype skey tkey -> case (asthandlerLookup' asttype $ \hdlr -> do
                                                               suffinfo <- astsuffixLookup skey $ _asthdlrSuffixRel hdlr
@@ -147,10 +177,13 @@ bcall bfun = do
         end
         return res
   where
+    -- lens access
     st    = crStateInfo ^* crsiBState
+    cstk  = st ^* bstateCallStack
 
-    start = st ^* bstateCallStack =$: (BFun bfun :)
-    end   = st ^* bstateCallStack =$: tail
+    -- call init/finalization
+    start = cstk =$: (BFun bfun :)
+    end   = cstk =$: tail
     
     -- memoize
     bmemo :: Typeable f => f res -> EHCompilePhaseT m ()
@@ -166,6 +199,7 @@ bcall bfun = do
         bmemo (Identity res)
         return res
 
+    -- lookup in cache
     lkup :: BFun' res -> BCache -> EHCompilePhaseT m (Maybe res)
     lkup bfun bcache =
         case bcacheLookup bfun bcache of
@@ -197,13 +231,15 @@ bderef' bref = do
               Just l -> do
                 ecu <- bcall $ EcuOfName modNm
                 return (ecu ^. l, Just $ \ast -> cpUpdCU modNm $ l ^= Just ast)
-              _ -> return (Nothing, Nothing)
-            _ -> return (Nothing, Nothing)
-          _ -> return (Nothing, Nothing)
+              _ -> dflt
+            _ -> dflt
+          _ -> dflt
+        where dflt = return (Nothing, Nothing)
 
 -- | Dereference an indirection into compilation state
 bderef :: forall res m . (Typeable res, EHCCompileRunner m) => BRef res -> EHCompilePhaseT m (Maybe res)
 bderef bref = fmap fst $ bderef' bref
 %%]
+
 
 

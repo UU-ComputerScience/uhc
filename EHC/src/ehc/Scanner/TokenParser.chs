@@ -13,7 +13,7 @@ Basic token parsers, for constants and other simple stuff.
 Note that everything is exported.
 %%]
 
-%%[1 module {%{EH}Scanner.TokenParser} import(UU.Parsing.Interface(IsParser(..)),UU.Parsing.Derived(pListSep, pPacked),UU.Scanner.Position(Pos),UU.Scanner.GenTokenParser)
+%%[1 module {%{EH}Scanner.TokenParser} import(UU.Parsing.Interface,UU.Parsing.Derived(pListSep, pPacked),UU.Scanner.Position(Pos),UU.Scanner.GenTokenParser)
 %%]
 
 %%[1.Token import(UU.Scanner.GenToken)

@@ -2,14 +2,6 @@
 
 ## 1.1.8.10 - 20150327
 
-- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
-
-## 1.1.8.10 - 20150327
-
-- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
-
-## 1.1.8.10 - 20150327
-
 - [build] Internal compilerdriver refactorization and start of rewrite with new compilerdriver based on a simple incremental DSL for describing compilation.
 
 ## 1.1.8.9 - 20150301
