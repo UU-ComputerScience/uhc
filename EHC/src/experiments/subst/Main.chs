@@ -10,13 +10,13 @@ Variants:
 %%[1 module Main
 %%]
 
-%%[1 import(System, Data.Char, Data.Maybe, Control.Monad, Control.Monad.State, System.Console.GetOpt, System.IO)
+%%[1 import(System.Environment, Data.Char, Data.Maybe, Control.Monad, Control.Monad.State, System.Console.GetOpt, System.IO)
 %%]
 
 %%[1 import(Data.Map as Map, Data.Set as Set, Data.List as List)
 %%]
 
-%%[1 import(EH.Util.Pretty)
+%%[1 import(UHC.Util.Pretty)
 %%]
 
 %%[31 import(Data.STRef, Control.Monad.ST)
