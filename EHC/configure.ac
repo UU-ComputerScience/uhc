@@ -189,6 +189,10 @@ AC_SUBST(ENABLE_CORESYSF,$enableCoreSysF)
 AC_ARG_ENABLE(tauphi, AS_HELP_STRING([--enable-tauphi],[include TauPhi language extension and analyses]), [enableTauPhi=yes], [enableTauPhi=no])
 AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)
 
+### enable options: use cabal sandbox for building libs, default is no
+AC_ARG_ENABLE(sandbox, AS_HELP_STRING([--enable-sandbox],[build EHC/UHC libs with cabal sandbox]), [enableSandbox=yes], [enableSandbox=no])
+AC_SUBST(ENABLE_SANDBOX,$enableSandbox)
+
 ### cpp
 AC_ARG_WITH(cpp,
 [AS_HELP_STRING([--with-cpp=<cpp preprocessor>],[Use a command different from 'cpp' to compile with CPP.])],
@@ -423,6 +427,21 @@ else
 fi
 AC_SUBST(GHC_CMD,$ghcCmd)
 AC_SUBST(GHC_VERSION, $ghcVersion)
+
+
+### 'with' option for cabal, by default cabal
+AC_ARG_WITH(cabal,
+[AS_HELP_STRING([--with-cabal=<cabal package installer>],[Use a command different from 'cabal' to build libraries with GHC.])],
+[ cabalCmd="$withval" ],
+[
+  if test "$CABAL" = ""; then
+    AC_PATH_PROG(cabalCmd,cabal)
+  else
+    cabalCmd=$CABAL
+  fi
+]
+)
+AC_SUBST(CABAL_CMD, $cabalCmd)
 
 ### 'with' option for ghc options
 AC_ARG_WITH(ghc-ehc-options,

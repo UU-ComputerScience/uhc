@@ -1,4 +1,5 @@
-- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
+- [build] Strict version equality dependency on uhc-util, uulib
+- [core api] Core api no longer needs ANormal patch ([#50](https://github.com/UU-ComputerScience/uhc/pull/50)).
 
 ## 1.1.8.10 - 20150327
 

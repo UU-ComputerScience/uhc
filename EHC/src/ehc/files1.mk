@@ -392,6 +392,17 @@ $(LIB_EHC_SETUP_HS_DRV): $(EHC_MKF)
 $(LIB_EHC_SETUP2): $(LIB_EHC_SETUP_HS_DRV)
 	$(call GHC_CABAL,$<,$@)
 
+ifeq ($(ENABLE_SANDBOX),yes)
+$(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(INSABS_EHC_LIB_ALL_AG) $(EHC_MKF)
+	mkdir -p $(@D)
+	cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) && \
+	$(CABAL) sandbox init && \
+	$(CABAL) install --only-dependencies && \
+	$(CABAL) configure $(CABAL_SETUP_OPTS) && \
+	$(CABAL) build && \
+	echo $@ > $@
+else
+# The cabal user install version of the above, i.e. not using cabal sandbox (available with cabal 1.18)
 $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(INSABS_EHC_LIB_ALL_AG) $(EHC_MKF)
 	mkdir -p $(@D)
 	cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) && \
@@ -399,6 +410,7 @@ $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(INSABS_EHC_LIB_ALL
 	$(LIB_EHC_SETUP) build && \
 	$(LIB_EHC_SETUP) install && \
 	echo $@ > $@
+endif
 
 $(INSABS_EHC_LIB_ALL_AG): $(INSTALLABS_VARIANT_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%
 	mkdir -p $(@D)

@@ -94,6 +94,11 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX		:= @TOPLEVEL_SYSTEM_ABSPATH_PREFIX@
 # inclusion of features
 ###########################################################################################
 
+# use cabal sandbox
+ifeq (@ENABLE_SANDBOX@,yes)
+ENABLE_SANDBOX				:= yes
+endif
+
 # include java code generation
 ifeq (@ENABLE_JAVA@,yes)
 ENABLE_JAVA					:= yes

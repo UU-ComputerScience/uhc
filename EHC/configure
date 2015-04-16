@@ -703,6 +703,8 @@ ghcPkgCmd
 GHC_CMD1
 GHC_GEN_OPTIONS
 GHC_EHC_OPTIONS
+CABAL_CMD
+cabalCmd
 GHC_VERSION
 GHC_CMD
 ghcCmd
@@ -728,6 +730,7 @@ arCmd
 RANLIB_CMD
 ranlibCmd
 cppCmd
+ENABLE_SANDBOX
 ENABLE_TAUPHI
 ENABLE_CORESYSF
 ENABLE_CORE_ASINPOUTP
@@ -819,6 +822,7 @@ enable_tycore
 enable_core_asinpoutp
 enable_coresysf
 enable_tauphi
+enable_sandbox
 with_cpp
 with_aspects
 with_build_suffix
@@ -833,6 +837,7 @@ with_cabal_config_options
 with_ehc_unixtool_prefix
 with_haddock
 with_hc
+with_cabal
 with_ghc_ehc_options
 with_uuagc
 with_shuffle
@@ -1477,6 +1482,7 @@ Optional Features:
                           backend and source language
   --enable-coresysf       include System F type generation for Core
   --enable-tauphi         include TauPhi language extension and analyses
+  --enable-sandbox        build EHC/UHC libs with cabal sandbox
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1521,6 +1527,9 @@ Optional Packages:
   --with-hc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
                           GHC.
+  --with-cabal=<cabal package installer>
+                          Use a command different from 'cabal' to build
+                          libraries with GHC.
   --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
                           Additional options to pass to GHC when compiling
                           EHC.
@@ -3182,6 +3191,17 @@ fi
 ENABLE_TAUPHI=$enableTauPhi
 
 
+### enable options: use cabal sandbox for building libs, default is no
+# Check whether --enable-sandbox was given.
+if test "${enable_sandbox+set}" = set; then :
+  enableval=$enable_sandbox; enableSandbox=yes
+else
+  enableSandbox=no
+fi
+
+ENABLE_SANDBOX=$enableSandbox
+
+
 ### cpp
 
 # Check whether --with-cpp was given.
@@ -3791,6 +3811,65 @@ fi
 GHC_CMD=$ghcCmd
 
 GHC_VERSION=$ghcVersion
+
+
+
+### 'with' option for cabal, by default cabal
+
+# Check whether --with-cabal was given.
+if test "${with_cabal+set}" = set; then :
+  withval=$with_cabal;  cabalCmd="$withval"
+else
+
+  if test "$CABAL" = ""; then
+    # Extract the first word of "cabal", so it can be a program name with args.
+set dummy cabal; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_cabalCmd+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $cabalCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_cabalCmd="$cabalCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_cabalCmd="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+cabalCmd=$ac_cv_path_cabalCmd
+if test -n "$cabalCmd"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cabalCmd" >&5
+$as_echo "$cabalCmd" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  else
+    cabalCmd=$CABAL
+  fi
+
+
+fi
+
+CABAL_CMD=$cabalCmd
 
 
 ### 'with' option for ghc options
