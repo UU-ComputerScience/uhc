@@ -506,7 +506,7 @@ then
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util==0.1.5.3"
             ;;
           uulib)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib==0.9.20"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"
             ;;
           base)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} base>=4.7&&<5"
