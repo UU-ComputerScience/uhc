@@ -4,8 +4,8 @@
 --
 -- Intended for constructing basic Core Programs. Use the binary serialization from `UHC.Util.Binary`
 -- to produce a core file, which can be compiled by UHC.
--- You will need to install the full UHC Compiler Suite in addition to uhc-light for this, and Core support
--- in UHC has to be enabled (use the @--enable-core-asinpoutp@ configure option). See <https://github.com/UU-ComputerScience/uhc> for more details.
+-- You will need to install the full UHC Compiler Suite in addition to uhc-light for this.
+-- See <https://github.com/UU-ComputerScience/uhc> for more details.
 --
 -- A small example program can be found at <https://github.com/UU-ComputerScience/uhc/tree/master/EHC/demo/CoreApi/> .
 -- In general, it is also a good idea to see what kind of Core UHC generates for Haskell files. To do this,
@@ -351,17 +351,7 @@ mkModule :: HsName    -- ^ The name of the module.
     -> EC.CExpr            -- ^ The body of the module.
     -> EC.CModule
 mkModule mod exps imps meta body =
-  EC.CModule_Mod mod exps imps meta body'
-  -- TODO this is a work around, it forces UHC to recognize that
-  -- this core file is not yet lambda-lifted.
-  -- See issue #36.
-  where body' = mkLet1Plain dummyName (mkApp
-                    (mkLam [mkUniqueHsName prefix [] "dummy-arg"] unit)
-                    [ unit ]
-                    ) body
-        unit = mkUnit defaultEHCOpts
-        dummyName = hsnUniqifyStr HsNameUniqifier_CoreAPI prefix $ hsnPrefixQual mod (hsnFromString "dummy")
-        prefix = "nl.uu.uhc.core-api.lambda-lift-fix"
+  EC.CModule_Mod mod exps imps meta body
 
 -- | Creates an import.
 mkImport :: HsName -- ^ The module to import.
