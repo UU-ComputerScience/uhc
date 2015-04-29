@@ -1463,7 +1463,7 @@ rowExtCmp (n1,_) (n2,_) = n1 `rowLabCmp` n2
 
 %%[(8 hmtyinfer || hmtyast) hs export(tyRowOffsetOrder)
 tyRowOffsetOrder :: (a -> Int) -> AssocL HsName a -> AssocL HsName a
-tyRowOffsetOrder off = sortOn (off . snd)
+tyRowOffsetOrder off = sortOnLazy (off . snd)
 {-# INLINE tyRowOffsetOrder #-}
 %%]
 

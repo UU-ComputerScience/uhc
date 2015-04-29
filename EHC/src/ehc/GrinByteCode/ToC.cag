@@ -1298,7 +1298,7 @@ SEM Module
                                                                 | (gcref,ci,i) <- cis
                                                                 ]
                                                             where cis = [ (maybe gencNULL (gencAddrArrayAt @ppNmGCStackInfosTbl) $ ciGCStackInfo ci, ci, i)
-                                                                        | (ci,i) <- sortOn snd $ Map.toList $ snd @instrs.callInfoMp
+                                                                        | (ci,i) <- sortOnLazy snd $ Map.toList $ snd @instrs.callInfoMp
                                                                         ]
                                                                   mkci Nothing               = [gencNULL                       , none, none]
                                                                   mkci (Just (s,Nothing   )) = [gencAddrArrayAt @ppNmBytePool s, none, none]
@@ -1309,7 +1309,7 @@ SEM Module
                                                     bcode   = ppTbl' "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
                                                     bytePool= ppTbl' "Word8" @ppNmBytePool
                                                                      [ ppCmtC @lhs.opts (loc >#< bytePoolEntryComment e) >-< vlist enc
-                                                                     | (e,loc) <- sortOn (fst.snd) $ Map.toList $ snd @bytePoolMp
+                                                                     | (e,loc) <- sortOnLazy (fst.snd) $ Map.toList $ snd @bytePoolMp
                                                                      , let enc = bytePoolEntryEncoding e
                                                                      , not (null enc)
                                                                      ]
@@ -1350,10 +1350,10 @@ SEM Module
                                                     cafGlEntryIndices = ppTbl' "HalfWord" @ppNmCafGlEntryIndicesTbl [ genc i | i <- @cafEntryL ]
                                                     nrCafs = length @cafEntryL
                                                     glEntries = ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ gencAddrArrayAt @ppNmByteCodeTbl c | c <- Map.elems glEntryMp ]
-                                                    gcStackInfoL = sortOn snd $ Map.toList $ snd @instrs.gcStackInfoMp
+                                                    gcStackInfoL = sortOnLazy snd $ Map.toList $ snd @instrs.gcStackInfoMp
                                                     gcStackInfosTbl = ppTbl' "GCStackInfo" @ppNmGCStackInfosTbl [ mk i | (i,_) <- gcStackInfoL ]
                                                               where mk (GCStackInfo sz (len,loc)) = ppCurlysCommasBlock [genc sz, genc len, gencAddrArrayAt @ppNmBytePool (bytePoolLocOff loc)]
-                                                    functionInfosTbl = ppTbl' "FunctionInfo" @ppNmFunctionInfoTbl $ map mk $ sortOn snd $ Map.toList $ snd @instrs.functionInfoMp
+                                                    functionInfosTbl = ppTbl' "FunctionInfo" @ppNmFunctionInfoTbl $ map mk $ sortOnLazy snd $ Map.toList $ snd @instrs.functionInfoMp
                                                               where mk (FunctionInfo (_,loc) _ sz flgs,_)
                                                                       = ppCurlysCommas [ genc (Cfg.sizeofWord * sz)
                                                                                        , ppListSep "" "" " || " $ maybeNull [FunctionInfoFlag_None] id flgs

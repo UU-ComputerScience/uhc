@@ -60,7 +60,7 @@ cpGenModuleImportExportImpl modNm
        -- ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu
        ; return $ emptyModuleImportExportImpl
            { mieimplLamMp 			= Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
-           , mieimplUsedModNmL 		= if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst modOffMp ] else []
+           , mieimplUsedModNmL 		= if ecuIsMainMod ecu then [ m | (m,_) <- sortOnLazy snd $ Map.toList $ Map.map fst modOffMp ] else []
            , mieimplHsName2FldMpMp 	= Map.fromList
                [ (n,(o,mp))
                | (n,o) <- refGen 0 1 impNmL

@@ -130,7 +130,7 @@ fvsTransClosure lamFvSMp varFvSMp
 %%[(8 codegen tycore) export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
 fvLAsArg :: VarIntroMp -> FvS -> VarIntroL
 fvLAsArg cvarIntroMp fvS
-  =  sortOn (vintroLev . snd)
+  =  sortOnLazy (vintroLev . snd)
      $ filter (\(_,cvi) -> vintroLev cvi > cLevModule)
      $ map (\n -> (n,vintroLookup n cvarIntroMp))
      $ Set.toList fvS
