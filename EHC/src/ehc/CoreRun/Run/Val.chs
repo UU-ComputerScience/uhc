@@ -566,7 +566,7 @@ rvalDatatypeMpFromMod (Mod_Mod {metas_Mod_Mod=metas})
       [ ( show tn'
         , emptyRValDataconstrInfo
             { rdciNm2Tg = Map.fromList cts
-            , rdciTg2Nm = crarrayFromList $ map fst $ sortOn snd cts
+            , rdciTg2Nm = crarrayFromList $ map fst $ sortOnLazy snd cts
             , rdciMods  = mods
             })
       | Meta_Data {tyNm_Meta_Data=tn, dataCons_Meta_Data=constrs} <- metas

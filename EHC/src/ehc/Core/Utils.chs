@@ -134,7 +134,7 @@ fvsTransClosure lamFvSMp varFvSMp
 %%[(8 codegen) export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
 fvLAsArg :: CVarIntroMp -> FvS -> CVarIntroL
 fvLAsArg cvarIntroMp fvS
-  =  sortOn (cviLev . snd)
+  =  sortOnLazy (cviLev . snd)
      $ filter (\(_,cvi) -> cviLev cvi > cLevModule)
      $ map (\n -> (n,cviLookup n cvarIntroMp))
      $ Set.toList fvS

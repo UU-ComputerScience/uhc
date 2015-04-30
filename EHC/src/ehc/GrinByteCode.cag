@@ -314,7 +314,7 @@ ststGCEncoding stState
            $ fillGaps 0 sz
            $ map (\l@((o,p) : _) -> (o,length l,p))
            $ consecutiveBy (\(o1,p1) (o2,p2) -> o1 == o2-1 && p1 == p2)
-           $ sortOn fst
+           $ sortOnLazy fst
            $ Map.toList
            $ gcpermitMpCanonicalize
            $ ststGCPermitMp stState
@@ -629,7 +629,7 @@ linkChainMpResolve labelLocMp keyMp
               in  (Map.insert k (LinkChainResolvedInfo (lckeyKind k) info' diff) m, mbabsloc)
           )
           (Map.empty,Nothing)
-  $ sortOn (snd.snd)
+  $ sortOnLazy (snd.snd)
   $ [ (k, (i, linkChainId (\l -> Map.lookup l labelLocMp) Just (lckeyId k)))
     | (k,i) <- Map.toList keyMp
     ]
