@@ -36,7 +36,7 @@ module %%@{%{EH}%%}CoreRun.API.Internal
 import %%@{%{EH}%%}CoreRun.API
 -- import %%@{%{EH}%%}CoreRun.Prim as CR
 import %%@{%{EH}%%}CoreRun as CR
-import %%@{%{EH}%%}CoreRun.Run as CR
+import %%@{%{EH}%%}CoreRun.Run as CR hiding(Alt)
 
 
 %%]

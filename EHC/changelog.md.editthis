@@ -1,4 +1,4 @@
-- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
+- [compatibility] ghc 7.10 compat, name clash of 'Alt' apparently now globally visible
 
 ## 1.1.8.12 - 20150430
 

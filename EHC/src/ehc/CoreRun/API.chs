@@ -81,7 +81,7 @@ import %%@{%{EH}%%}Base.API
 import %%@{%{EH}%%}CoreRun as CR
 import %%@{%{EH}%%}CoreRun.Pretty as CR
 import %%@{%{EH}%%}CoreRun.Parser as CR
-import %%@{%{EH}%%}CoreRun.Run as CR
+import %%@{%{EH}%%}CoreRun.Run as CR (runCoreRun, strMsg)
 import %%@{%{EH}%%}CoreRun.Run.Val as CR
 import %%@{%{EH}%%}CoreRun.Run.Val.RunExplStk as CR
 

@@ -13,7 +13,7 @@
 %%[(8 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
-%%[(8 corerun) hs import({%{EH}CoreRun}, {%{EH}CoreRun.Prim})
+%%[(8 corerun) hs import({%{EH}CoreRun} as CR, {%{EH}CoreRun.Prim})
 %%]
 
 %%[(8 corerun) hs import(qualified UHC.Util.FastSeq as Seq, qualified Data.Map as Map)
@@ -100,7 +100,7 @@ class (Monad m, MonadIO m, Functor m) => RunSem r s v m a
   rsemSExp :: SExp -> RunT' r s v m a
 
   -- | Alt
-  rsemAlt :: Alt -> RunT' r s v m a
+  rsemAlt :: CR.Alt -> RunT' r s v m a
   rsemAlt a = do
     case a of
       Alt_Alt {expr_Alt_Alt=e} -> rsemExp e
