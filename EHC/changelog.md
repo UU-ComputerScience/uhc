@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.8.11 - 20150430
+## 1.1.8.12 - 20150430
 
 - [compatibility] ghc 7.10 compatibility, indirectly via uhc-util
 - [build] Initial work on sandbox builds, to be enabled by --enable-sandbox flag to ./configure. Does not work yet.
