@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.9.0 - 20150430
+
+- [compatibility] ghc 7.10 compat, name clash of 'Alt' apparently now globally visible
+
 ## 1.1.8.12 - 20150430
 
 - [compatibility] ghc 7.10 compatibility, indirectly via uhc-util
