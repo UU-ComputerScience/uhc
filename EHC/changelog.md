@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.8.11 - 20150430
+
+- [compatibility] ghc 7.10 compatibility, indirectly via uhc-util
+- [build] Initial work on sandbox builds, to be enabled by --enable-sandbox flag to ./configure. Does not work yet.
+- [build] Strict version equality dependency on uhc-util, uulib
+- [core api] Core api no longer needs ANormal patch ([#50](https://github.com/UU-ComputerScience/uhc/pull/50)).
+
 ## 1.1.8.10 - 20150327
 
 - [build] Internal compilerdriver refactorization and start of rewrite with new compilerdriver based on a simple incremental DSL for describing compilation.
