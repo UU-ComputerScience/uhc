@@ -64,11 +64,14 @@ ehc-variant:
 	  $(if $(EHC_CFG_USE_RULER),EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))",) \
 	  ehc-variant-dflt
 
+# 20140416 AD: contains incomplete tryout work to make cabal sandbox work...
 ehc-variant-dflt: \
 		$(EHC_ALL_DPDS) \
 		$(LIB_EHC_INS_FLAG)
 	mkdir -p $(dir $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)) && \
-	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EHC_PKG_NAME) \
+	$(GHC) --make \
+	       $(if $(ENABLE_SANDBOX),--package-conf=$(EHC_BLD_LIBEHC_VARIANT_PREFIX)dist/package.conf.inplace,) \
+	       $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EHC_PKG_NAME) \
 	       -i$(EHC_BLD_VARIANT_ASPECTS_PREFIX) $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_MAIN).hs -o $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_CODEGEN), \
 	  if test -x $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) ; then \
@@ -77,6 +80,9 @@ ehc-variant-dflt: \
 	    done \
 	  fi \
 	,)
+
+#--package-conf=$(EHC_BLD_LIBEHC_VARIANT_PREFIX).cabal-sandbox/*.conf.d
+#	       $(if $(ENABLE_SANDBOX),--package-db=$(EHC_BLD_LIBEHC_VARIANT_PREFIX).cabal-sandbox/x86_64-osx-ghc-7.8.3-packages.conf.d,) \
 
 ###########################################################################################
 # rules for ehcr runner

@@ -393,9 +393,12 @@ $(LIB_EHC_SETUP2): $(LIB_EHC_SETUP_HS_DRV)
 	$(call GHC_CABAL,$<,$@)
 
 ifeq ($(ENABLE_SANDBOX),yes)
+# cabal sandbox version
+# Note/TBD: configure should be done before installing dpds, in particular choice of compiler cannot be done correctly now
 $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(INSABS_EHC_LIB_ALL_AG) $(EHC_MKF)
 	mkdir -p $(@D)
 	cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) && \
+	echo "documentation: False" > cabal.config && \
 	$(CABAL) sandbox init && \
 	$(CABAL) install --only-dependencies && \
 	$(CABAL) configure $(CABAL_SETUP_OPTS) && \

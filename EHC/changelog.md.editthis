@@ -1,3 +1,4 @@
+- [compatibility] ghc 7.10 compatibility, indirectly via uhc-util
 - [build] Initial work on sandbox builds, to be enabled by --enable-sandbox flag to ./configure. Does not work yet.
 - [build] Strict version equality dependency on uhc-util, uulib
 - [core api] Core api no longer needs ANormal patch ([#50](https://github.com/UU-ComputerScience/uhc/pull/50)).
