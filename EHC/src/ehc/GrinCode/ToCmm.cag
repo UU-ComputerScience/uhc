@@ -1183,7 +1183,7 @@ SEM GrModule
 %%[[5050
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
                                                       (offMpKeysSorted @lhs.impNmFldMpMp)
-                                                      [ m | (n,_) <- sortOn snd $ Map.toList @lhs.expNmFldMp
+                                                      [ m | (n,_) <- sortOnLazy snd $ Map.toList @lhs.expNmFldMp
                                                           , let m = panicJust ("ToCmm.GrModule.Mod: " ++ show n) (Map.lookup n @entryNmMp)
                                                       ]
 %%]]

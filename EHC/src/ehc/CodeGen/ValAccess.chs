@@ -145,7 +145,7 @@ type HsName2FldMpMp = HsName2RefMpMp Fld Fld
 %%[(50 codegen) hs export(offMpKeysSorted,offMpMpKeysSet)
 -- | Module names, sorted on import order, which is included as 0-based offset (used as index in import entry table)
 offMpKeysSorted :: (Ord mref, RefOfFld Fld mref) => HsName2FldMpMp -> AssocL HsName mref
-offMpKeysSorted m = sortOn snd [ (n, refOfFld o) | (n,(o,_)) <- Map.toList m ]
+offMpKeysSorted m = sortOnLazy snd [ (n, refOfFld o) | (n,(o,_)) <- Map.toList m ]
 
 offMpMpKeysSet :: HsName2RefMpMp mref meref -> HsNameS
 offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]

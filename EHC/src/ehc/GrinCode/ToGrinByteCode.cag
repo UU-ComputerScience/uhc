@@ -695,13 +695,13 @@ SEM GrModule
 %%[[50
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
                                                       (offMpKeysSorted @lhs.impNmFldMpMp)
-                                                      [ m | (n,_) <- sortOn snd $ Map.toList @lhs.expNmFldMp
+                                                      [ m | (n,_) <- sortOnLazy snd $ Map.toList @lhs.expNmFldMp
                                                           , let m = panicJust ("ToGrinByteCode.GrModule.Mod: " ++ show n) (Map.lookup n @entryNmMp)
                                                       ]
 %%]]
                                                       @entryL
                                                       (Seq.toList @i)
-                                                      [ c | (c,_) <- sortOn (cfldGlobInx . snd) $ Map.toList $ conststMp @bindL.constSt ]
+                                                      [ c | (c,_) <- sortOnLazy (cfldGlobInx . snd) $ Map.toList $ conststMp @bindL.constSt ]
                                                       [ i | (i,True) <- zip [0..] @isCafL ]
                                                       (fldInt @mainEntryFld)
 %%[[90

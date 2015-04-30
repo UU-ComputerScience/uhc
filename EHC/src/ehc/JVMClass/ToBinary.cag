@@ -479,7 +479,7 @@ SEM Class
                                                  ## u2 @minor
                                                  ## u2 @major
                                                  ## u2 (cpInx @lhs.cpf)    -- constant pool ...
-                                                 ## (Seq.unions $ map snd $ sortOn fst $ Map.elems $ cpMp @lhs.cpf)
+                                                 ## (Seq.unions $ map snd $ sortOnLazy fst $ Map.elems $ cpMp @lhs.cpf)
                                                  ## u2 @flags.u2
                                                  ## u2 @thisInx
                                                  ## u2 @superInx
@@ -703,7 +703,7 @@ SEM Case
 
 %%[(8 java)
 SEM Instr
-  | Switch          loc         .   sortedCases =   sortOn fst @cases.cases
+  | Switch          loc         .   sortedCases =   sortOnLazy fst @cases.cases
                                 .   nrCases     =   length @sortedCases
                                 .   (selsOfCases,lblsOfCases)
                                                 =   unzip @sortedCases
@@ -797,7 +797,7 @@ patchBytesWithLblUseDef lblDefMp lblUseMp bs
           where (bs1,bs2) = splitAt (at-pos) bs
                 bs3       = merge (at+sz) us (drop sz bs2)
         sortedUses
-          = sortOn fst
+          = sortOnLazy fst
               [ (at,diff how l relto)
               | (l,uses) <- Map.toList lblUseMp
               , (LblUse how at relto) <- uses
