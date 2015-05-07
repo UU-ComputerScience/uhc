@@ -44,6 +44,8 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
+%%[(8 codegen counting) import({%{EH}Core.Trf.CountingAnalysis})
+%%]
 %%[(8 codegen wholeprogAnal) import({%{EH}Core.Trf.FindNullaries})
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
@@ -254,6 +256,9 @@ trfCore opts optimScope dataGam modNm trfcore
                ; when (targetDoesHPTAnalysis (ehcOptTarget opts))
                       t_find_null
 %%]]
+%%[[(8 counting)
+               ; t_counting_analysis
+%%]]
                ; when (ehcOptOptimizes Optimize_StrictnessAnalysis opts)
                       (do { t_let_defbefuse
                           ; t_ana_relev
@@ -304,6 +309,10 @@ trfCore opts optimScope dataGam modNm trfcore
         t_float_glob    = liftTrfModPlain  osm "float-glob"         $ cmodTrfFloatToGlobal
 %%[[(8 wholeprogAnal)
         t_find_null     = liftTrfModPlain  osm "find-null"          $ cmodTrfFindNullaries
+%%]]
+%%[[(8 counting)
+        t_counting_analysis 
+                        = liftTrfModPlain  osm "analysis"           $ cmodTrfAnalysis dataGam
 %%]]
         t_ana_relev     = liftTrfModWithStateExtra osm "ana-relev" lamMpPropagate
                                                                $ \s -> cmodTrfAnaRelevance opts dataGam (trfcoreInhLamMp $ trfstExtra s)

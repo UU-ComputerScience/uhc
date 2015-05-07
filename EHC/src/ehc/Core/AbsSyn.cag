@@ -43,9 +43,9 @@ DATA CodeAGItf
 %%[(8 core)
 DATA CModule
   | Mod         moduleNm        : {HsName}
-                exports			: CExportL
-                imports			: CImportL
-                declMetas		: CDeclMetaL
+                exports     : CExportL
+                imports     : CImportL
+                declMetas   : CDeclMetaL
                 expr            : CExpr
                 -- ctagsMp         : {CTagsMp}
 %%]
@@ -57,24 +57,24 @@ DATA CModule
 %%[(8 core)
 DATA CExport
   -- export of plain (value) identifiers
-  | Export		nm				: {HsName}
+  | Export    nm        : {HsName}
   
   -- export of data types with (optional) list of constructors also exported (absent means all of them are exported)
-  | ExportData	nm				: {HsName}
-  				mbConNmL		: {Maybe [HsName]}
+  | ExportData  nm        : {HsName}
+          mbConNmL    : {Maybe [HsName]}
 
-TYPE CExportL	= [CExport]
+TYPE CExportL = [CExport]
 
-SET AllExport	= CExportL CExport
+SET AllExport = CExportL CExport
 %%]
 
 %%[(8 core)
 DATA CImport
-  | Import		nm				: {HsName}
+  | Import    nm        : {HsName}
 
-TYPE CImportL	= [CImport]
+TYPE CImportL = [CImport]
 
-SET AllImport	= CImportL CImport
+SET AllImport = CImportL CImport
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,24 +83,24 @@ SET AllImport	= CImportL CImport
 
 %%[(8 core)
 DATA CDeclMeta
-  | Data		tyNm			: {HsName}
-  				dataCons		: CDataConL
+  | Data    tyNm      : {HsName}
+          dataCons    : CDataConL
 
-TYPE CDeclMetaL	= [CDeclMeta]
+TYPE CDeclMetaL = [CDeclMeta]
 
-SET AllDeclMeta	= CDeclMeta CDeclMetaL
+SET AllDeclMeta = CDeclMeta CDeclMetaL
 
 -- Equivalent of data type def holding the minimal pieces of info required for codegen
 DATA CDataCon
-  | Con			conNm			: {HsName}
-  				tagNr			: {Int}				-- runtime tag
-  				arity			: {Int}				-- nr of fields, excluding tag
+  | Con     conNm     : {HsName}
+          tagNr     : {Int}       -- runtime tag
+          arity     : {Int}       -- nr of fields, excluding tag
 
-TYPE CDataConL	= [CDataCon]
+TYPE CDataConL  = [CDataCon]
 
-SET AllDataCon	= CDataCon CDataConL
+SET AllDataCon  = CDataCon CDataConL
 
-SET AllMetaNT 	= AllDeclMeta AllDataCon
+SET AllMetaNT   = AllDeclMeta AllDataCon
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,7 +167,7 @@ DATA CExpr
 
 %%[[(8888 corerun)
   -- only for running
-  | VarRRef		ref				: {RRef}		-- Index into array (instead of name)
+  | VarRRef   ref       : {RRef}    -- Index into array (instead of name)
 %%]]
 
 %%[[9090
@@ -182,7 +182,7 @@ DATA CExpr
 %%[(8 core)
 -- for debugging
 DATA CExpr
-  | Dbg			info			: {String}
+  | Dbg     info      : {String}
 %%]
 
 %%[(9 core)
@@ -199,7 +199,7 @@ DATA CExpr
 %%]
 
 %%[(8888 core)
-TYPE MbCExpr	= MAYBE CExpr
+TYPE MbCExpr  = MAYBE CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,7 +220,7 @@ DATA CExpr
   | Cast        expr            : CExpr
                 ty              : CExpr
 %%]
-  | Inject      expr            : Expr		-- l0 only: special case of cast/coerce which injects a tuple into a datatype for a specific tag, expr must be of a node (of prod type)
+  | Inject      expr            : Expr    -- l0 only: special case of cast/coerce which injects a tuple into a datatype for a specific tag, expr must be of a node (of prod type)
                 tag             : CTag
                 ty              : Expr
 
@@ -230,13 +230,13 @@ DATA CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 core)
-TYPE CMetas 	= (CMetaBind,CMetaVal)
+TYPE CMetas   = (CMetaBind,CMetaVal)
 
 DATA CMetaBind
-  | Plain		-- by default a binding is Plain
+  | Plain   -- by default a binding is Plain
   | Function0   -- special case of Plain, indicating it is a nullary function on top level (that is, the RHS is the computational part for a CAF)
   | Function1   -- special case of Plain, indicating it is a non-nullary function on top level (that is, the RHS is a lambda)
-  | Apply0	    -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
+  | Apply0      -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
 
 DATA CMetaVal
   | Val
@@ -247,9 +247,9 @@ DATA CMetaVal
   | Track         track  : {Track}
 %%]]
 
-SET AllMetaVal	= CMetaVal CMetas
+SET AllMetaVal  = CMetaVal CMetas
 SET AllMetaBind = CMetaBind CMetas
-SET AllMeta		= CMetaVal CMetaBind CMetas
+SET AllMeta   = CMetaVal CMetaBind CMetas
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -266,22 +266,22 @@ DATA CExpr
 %%[(8 core)
 -- | ann for CExpr
 DATA CExprAnn
-  | Ty			ty				: {Ty}
-  | Coe			coe				: {RelevCoe}
-  | Debug		info			: {String}
+  | Ty      ty        : {Ty}
+  | Coe     coe       : {RelevCoe}
+  | Debug   info      : {String}
 
 -- | ann for name intro
 DATA CBindAnn
-  | Coe			coe				: {RelevCoe}
+  | Coe     coe       : {RelevCoe}
 %%]
 
 %%[(8 core)
-TYPE CBindAnnL	= [CBindAnn]
+TYPE CBindAnnL  = [CBindAnn]
 %%]
 
 %%[(8 core)
-SET AllExprAnn	= CExprAnn
-SET AllBindAnn	= CBindAnn CBindAnnL
+SET AllExprAnn  = CExprAnn
+SET AllBindAnn  = CBindAnn CBindAnnL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -301,22 +301,22 @@ DATA CBound
                 expr            : CExpr
 
   -- a (keyed) CMetas
-  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
-  				cmetas			: CMetas
+  | Meta    aspectKeyS    : {ACoreBindAspectKeyS}
+          cmetas      : CMetas
   
   -- a (keyed) RelevTy
-  | RelevTy		aspectKeyS		: {ACoreBindAspectKeyS}
-  				relevTy			: {RelevTy}
+  | RelevTy   aspectKeyS    : {ACoreBindAspectKeyS}
+          relevTy     : {RelevTy}
   
   -- a (keyed) CExpr
-  | Val		    aspectKeyS		: {ACoreBindAspectKeyS}
-  				mlev			: {MetaLev}
-  				lbl				: {CLbl}
-  				expr 			: CExpr
+  | Val       aspectKeyS    : {ACoreBindAspectKeyS}
+          mlev      : {MetaLev}
+          lbl       : {CLbl}
+          expr      : CExpr
   
   -- a (keyed) Ty, of the binding, (1) either the default for Bind, or (2, not yet used) for a Val with the same aspectKeyS
-  | Ty		    aspectKeyS		: {ACoreBindAspectKeyS}
-  				ty 			 	: {Ty}
+  | Ty        aspectKeyS    : {ACoreBindAspectKeyS}
+          ty        : {Ty}
   
 %%[[90
   -- FFE binding (not yet implemented for all backends)
@@ -326,14 +326,14 @@ DATA CBound
                 ty              : {Ty}
 %%]]
 
-TYPE CBindL     	=   [CBind]
-TYPE CBoundL		=	[CBound]
+TYPE CBindL       =   [CBind]
+TYPE CBoundL    = [CBound]
 %%]
 
 %%[(8 core)
 SET AllBound        =   CBound CBoundL
-SET AllBindOnly 	=   CBind CBindL
-SET AllBind     	=   AllBindOnly AllBound
+SET AllBindOnly   =   CBind CBindL
+SET AllBind       =   AllBindOnly AllBound
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -347,46 +347,46 @@ DATA CBind
                 bindAspects     : CBindAspectL
 
 DATA CExpr
-  | Var         nm              : {HsName}			-- reference to the Val of a CBindAspect
-  				aspectKeyS		: {ACoreBindAspectKeyS}
+  | Var         nm              : {HsName}      -- reference to the Val of a CBindAspect
+          aspectKeyS    : {ACoreBindAspectKeyS}
 %%]
 
 -- new
 %%[(8889 core)
 DATA CBindAspect
   -- the classical binding to a CExpr; transitional
-  | Bind		bindMeta        : CMetas
+  | Bind    bindMeta        : CMetas
                 expr            : CExpr
   
   -- + FFI/FFE stuff
 
   -- binding to a runtime related value, keyed
-  | Val			aspectKeyS		: {ACoreBindAspectKeyS}
-  				encoding		: CValTy
-  				expr            : CExpr
+  | Val     aspectKeyS    : {ACoreBindAspectKeyS}
+          encoding    : CValTy
+          expr            : CExpr
   
   -- non-runtime binding info/annotation, keyed
-  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
-  				meta            : CMetas
+  | Meta    aspectKeyS    : {ACoreBindAspectKeyS}
+          meta            : CMetas
 
-TYPE CBindAspectL	=	[CBindAspect]
+TYPE CBindAspectL = [CBindAspect]
 
 DATA CValTy
-  | Unknown											-- type yet to be determined, only for transition to this encoding
-  | Boxed		props			: {CValTyPropS}		-- boxed
-  				mbVal			: MbCValTy			-- perhaps we know more about the contents
-  | Fun			args			: CValTyLL			-- known calling convention, specifying arg/res arity/grouping, boxedness/evaluation
-  				res				: CValTyL
-  | Basic		basicannot		: {BasicAnnot}		-- unboxed (and evaluated), with additional annotation about its basic size & type
+  | Unknown                     -- type yet to be determined, only for transition to this encoding
+  | Boxed   props     : {CValTyPropS}   -- boxed
+          mbVal     : MbCValTy      -- perhaps we know more about the contents
+  | Fun     args      : CValTyLL      -- known calling convention, specifying arg/res arity/grouping, boxedness/evaluation
+          res       : CValTyL
+  | Basic   basicannot    : {BasicAnnot}    -- unboxed (and evaluated), with additional annotation about its basic size & type
   
-TYPE MbCValTy		=	MAYBE CValTy
-TYPE CValTyL		=	[CValTy ]
-TYPE CValTyLL		=	[CValTyL]
+TYPE MbCValTy   = MAYBE CValTy
+TYPE CValTyL    = [CValTy ]
+TYPE CValTyLL   = [CValTyL]
 
 DATA CValTyProp
   | Evaluated
 
-TYPE CValTyPropS	=	SET CValTyProp
+TYPE CValTyPropS  = SET CValTyProp
 
 %%]
 
@@ -421,7 +421,7 @@ DATA CPatFld
   | Fld         lbl             : {HsName}
                 offset          : CExpr
                 bind            : CBind
-                fldAnns			: CBindAnnL
+                fldAnns     : CBindAnnL
 
 TYPE CPatFldL   =   [CPatFld]
 %%]
