@@ -22,3 +22,17 @@ build-*/
 t/
 doc/
 klad*
+
+runbenchmark.pl
+Config.chs
+ConfigDefines.chs
+GITHASH
+HsBaseConfig.h
+HsDirectoryConfig.h
+HsTimeConfig.h
+HsUnixConfig.h
+MachDeps.h
+OSSpecific.hs
+shared.mk
+text2text.cabal
+.gitignore~
