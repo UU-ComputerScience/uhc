@@ -17,6 +17,9 @@
 %%[(7 hmtyinfer) hs import({%{EH}Error}) 
 %%]
 
+%%[(8 counting) hs import(qualified {%{EH}Core.CountingAnalysis.Types} as CA) 
+%%]
+
 %%[(7 hmtyinfer) import(qualified Data.Map as Map)
 %%]
 %%[(7 hmtyinfer) import(qualified Data.Set as Set)
@@ -88,7 +91,10 @@ emptyDataConFldAnnInfo
 data DataTagInfo
   = DataTagInfo
       { dtiFldMp    		:: !DataFldMp				-- map of field names to offset
-      , dtiFldTyL			:: !FldTyL					-- association list of maybe a field name with types
+      , dtiFldTyL     :: !FldTyL          -- association list of maybe a field name with types
+%%[[(8 counting)
+      , dtiFldAnnTyL			:: ![CA.Rho CA.AnnotatedType]					-- list of annotated types (conversion of dtiFldTyL)
+%%]]
       , dtiConFldAnnL		:: ![DataConFldAnnInfo]		-- per constructor field (with or without name) annotation info
       , dtiConNm			:: !HsName					-- constructor name (duplicate of key of gamma leading to this info)
       , dtiConTy			:: !Ty						-- type of constructor, without final tyVarMp applied
@@ -105,7 +111,11 @@ type DataConstrTagMp = Map.Map HsName DataTagInfo
 
 emptyDataTagInfo
   = DataTagInfo
-      Map.empty [] [] hsnUnknown (appDbg "emptyDataTagInfo")
+      Map.empty []
+%%[[(8 counting)
+      []
+%%]]
+      [] hsnUnknown (appDbg "emptyDataTagInfo")
 %%[[8
       emptyCTag []
 %%]]
@@ -150,6 +160,9 @@ data DataGamInfo
       { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)
       , dgiDataTy 			:: !Ty					-- the type sum of product
       , dgiDataKi 			:: !Ty					-- the kind
+%%[[(8 counting)
+      , dgiAnnVars      :: ![CA.Var]      -- all annatotation variables 
+%%]]
 %%[[50
       , dgiConstrNmL 		:: ![HsName]			-- all constructor names
 %%]]
@@ -200,16 +213,25 @@ mkDGI
 %%[[92
      -> Maybe Int
 %%]]
+%%[[(8 counting)
+     -> [CA.Var]
+%%]]
      -> DataGamInfo
 %%]]
 mkDGI tyNm dty ki cNmL m nt
 %%[[92
       mbGener
 %%]]
+%%[[(8 counting)
+      anns
+%%]]
   = DataGamInfo
       tyNm
       dty
       ki
+%%[[(8 counting)
+      anns
+%%]]
 %%[[50
       cNmL
 %%]]
@@ -243,6 +265,9 @@ mkDGIPlain tyNm dty dki cNmL m
 %%[[92
           Nothing
 %%]]
+%%[[(8 counting)
+          []
+%%]]
 
 %%]
 
@@ -255,7 +280,7 @@ mkDGIForCodegenOnly tyNm m
 
 %%[(7 hmtyinfer) export(emptyDataGamInfo,emptyDGI)
 emptyDataGamInfo, emptyDGI :: DataGamInfo
-emptyDataGamInfo = mkDGIPlain hsnUnknown (appDbg "emptyDataGamInfo") (appDbg "mkDGIPlain")  [] Map.empty
+emptyDataGamInfo = mkDGIPlain hsnUnknown (appDbg "emptyDataGamInfo") (appDbg "mkDGIPlain") [] Map.empty
 emptyDGI = emptyDataGamInfo
 %%]
 
@@ -399,9 +424,15 @@ instance Serialize DataConFldAnnInfo where
   sget = liftM DataConFldAnnInfo sget
 
 instance Serialize DataTagInfo where
-%%[[50
+%%[[(50 counting)
+  sput (DataTagInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
+  sget = liftM8 DataTagInfo sget sget sget sget sget sget sget sget
+%%][50
   sput (DataTagInfo a b c d e f g) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g
   sget = liftM7 DataTagInfo sget sget sget sget sget sget sget
+%%][(91 counting)
+  sput (DataTagInfo a b c d e f g h i) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i
+  sget = liftM9 DataTagInfo sget sget sget sget sget sget sget sget sget
 %%][91
   sput (DataTagInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
   sget = liftM8 DataTagInfo sget sget sget sget sget sget sget sget
@@ -412,11 +443,24 @@ instance Serialize DataFldInConstr where
   sget = liftM DataFldInConstr sget
 
 instance Serialize DataGamInfo where
-%%[[50
+%%[[(50 counting)
+  sput (DataGamInfo a b c d e f g h i) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i
+  sget = liftM9 DataGamInfo sget sget sget sget sget sget sget sget sget
+%%][50
   sput (DataGamInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
   sget = liftM8 DataGamInfo sget sget sget sget sget sget sget sget
+%%][(92 counting)
+  sput (DataGamInfo a b c d e f g h i j) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i >> sput j
+  sget = liftM10 DataGamInfo sget sget sget sget sget sget sget sget sget sget
 %%][92
   sput (DataGamInfo a b c d e f g h i) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i
   sget = liftM9 DataGamInfo sget sget sget sget sget sget sget sget sget
 %%]]
+
+liftM10  :: (Monad m) => (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> a8 -> a9 -> a10 -> r)
+           -> m a1 -> m a2 -> m a3 -> m a4 -> m a5 -> m a6 -> m a7 -> m a8 -> m a9 -> m a10 -> m r
+liftM10 f m1 m2 m3 m4 m5 m6 m7 m8 m9 m10
+  = do { x1 <- m1; x2 <- m2; x3 <- m3; x4 <- m4; x5 <- m5; x6 <- m6; x7 <- m7; x8 <- m8; x9 <- m9; x10 <- m10
+       ; return (f x1 x2 x3 x4 x5 x6 x7 x8 x9 x10)
+       }
 %%]

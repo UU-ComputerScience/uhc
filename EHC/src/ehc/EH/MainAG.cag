@@ -81,6 +81,10 @@
 %%]
 %%[(8 codegen) hs import({%{EH}Core.Subst})
 %%]
+%%[(8 counting) hs import(qualified {%{EH}Core.CountingAnalysis.Types} as CA)
+%%]
+%3%[(8 counting) hs import(qualified {%{EH}EH.AbsSyn} as AS)
+%3%]
 
 %%[(90 codegen) hs import({%{EH}CodeGen.BuiltinPrims},{%{EH}Foreign})
 %%]

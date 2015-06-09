@@ -49,7 +49,7 @@ SEM DataConstr
 %%][31
                 mbGadtTyExpr
 %%]]
-                	        .   kiVarMp				=   foVarMp @fo_ `varUpd` @fldsKiVarMp
+                            .   kiVarMp             =   foVarMp @fo_ `varUpd` @fldsKiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
@@ -95,6 +95,157 @@ SEM AGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Building annotated dataGam for Counting analysis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting)
+
+ATTR AllNT [ | caFreshVar: {CA.Var} | ]
+ATTR AllNT [ caAnnDataMap: {Map.Map HsName Int} | | caAnnDataPartial USE {Map.union} {Map.empty} : {Map.Map HsName Int} ]
+ATTR AllDataField AllTyExpr [ caDeeper: Bool | | ]
+ATTR DataField TyExpr [ | | caAnnTy: {CA.Rho CA.AnnotatedType}]
+ATTR TyExpr [ | | caIsFunc: {Maybe Bool}]
+ATTR DataFields TyExprs [ | | caAnnTyList: {[CA.Rho CA.AnnotatedType]}]
+ATTR AllDataConstr AllDataField AllTyExpr [ caBaseDataTypeName: HsName caBaseAnnDataType: {CA.AnnotatedType} | | ]
+
+SEM DataFields TyExprs
+  | Cons
+    lhs.caAnnTyList        = @hd.caAnnTy : @tl.caAnnTyList
+  | Nil
+    lhs.caAnnTyList        = []
+
+SEM AGItf
+  | AGItf
+    expr.caFreshVar = 0
+    expr.caAnnDataMap = extractNumAnns @lhs.dataGam
+
+SEM Decls
+  | Cons
+    tl.caAnnDataMap = Map.union @hd.caAnnDataPartial @lhs.caAnnDataMap
+
+SEM Decl
+  | Data
+    lhs.caAnnDataPartial = Map.singleton @tyNm $ length @loc.caAnnVars
+    loc.caAnnVars = [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
+    constrs.caBaseDataTypeName = @tyNm
+    constrs.caBaseAnnDataType = CA.DataTy @tyNm (map CA.AnnVar @loc.caAnnVars) $ map (\x -> case x of Ty_Var y _ -> CA.TyVar $ mkHNm y) @tyVars.tyL
+
+SEM TyExpr
+  | *
+    lhs.caAnnTy = CA.replaceRho @lhs.caBaseAnnDataType @loc.caAnnTy
+    loc.caAnn1 = if @lhs.caDeeper then CA.annTop else CA.AnnVar $ @lhs.caFreshVar + 1
+    loc.caAnn2 = if @lhs.caDeeper then CA.annTop else CA.AnnVar @lhs.caFreshVar
+    loc.caAnnTyf = \x -> CA.Rho (CA.Eta x @loc.caAnn1) @loc.caAnn2
+    loc.caIsFunc = Nothing
+  | Var
+    lhs.caFreshVar = if @lhs.caDeeper then @lhs.caFreshVar else @lhs.caFreshVar + 2
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyVar @nm
+  | Con
+    lhs.caIsFunc = case hsnBaseUnpack @nm of
+                    Just ("->", _) -> Just True
+                    _ -> Nothing
+    loc.caIsSelf = @nm == @lhs.caBaseDataTypeName
+    loc.caAnnTySelf = CA.TyVar $ hsnMkNr (-1) OrigNone
+    loc.caAnnTyNotSelf = CA.DataTy @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar + 1) [1 .. @loc.caNumAnn])  []
+    loc.caAnnTy = @loc.caAnnTyf $  if @loc.caIsSelf then @loc.caAnnTySelf else @loc.caAnnTyNotSelf
+    lhs.caFreshVar = if @lhs.caDeeper then @lhs.caFreshVar else @lhs.caFreshVar + 2 + @loc.caNumAnn
+    loc.caNumAnn = if @loc.caIsSelf then 0                                              
+                   else case Map.lookup @nm @lhs.caAnnDataMap of
+                          Just n -> n
+                          _ -> panic $ "Could not find data type " ++ show @nm ++". Mutual recursive and non-direct self recursive data types are not supported"
+    loc.caToAnn = if @lhs.caDeeper then const CA.annTop else CA.AnnVar 
+  | App
+    lhs.caIsFunc = case @func.caIsFunc of
+                    Just True -> Just False
+                    _ -> Nothing
+    loc.caAnnTy = case @func.caIsFunc of
+                    Just True -> @arg.caAnnTy
+                    Just False -> @loc.caAnnTyf $ CA.TyFunc @func.caAnnTy $ CA.stripRho @arg.caAnnTy
+                    -- Assume type constructor application
+                    _ -> case @func.caAnnTy of
+                          -- TODO does not deal with 
+                          CA.Rho (CA.Eta (CA.DataTy n ann ty) a1) a2 -> CA.Rho (CA.Eta (CA.DataTy n ann (ty ++ [CA.stripRhoEta @arg.caAnnTy])) a1) a2
+                          _ -> @func.caAnnTy
+
+    func.caDeeper = True --case @func.caIsFunc of
+                    --Just _ -> True
+                    --_ -> @lhs.caDeeper
+    arg.caDeeper = True -- case @func.caIsFunc of
+                    --Just _ -> True
+                    --_ -> @lhs.caDeeper
+  | * - Var Con App
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "Unsupported"
+
+SEM DataConstr
+  | Constr
+    fields.caDeeper = False
+    mbGadtTyExpr.caDeeper = False -- not sure how this works with annotated types
+
+-- not relevant but it prevents warnings
+SEM Decl
+  | TySig
+    tyExpr.caDeeper = False
+    tyExpr.caBaseDataTypeName = hsnEmpty
+    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+  | FFI
+    tyExpr.caDeeper = False
+    tyExpr.caBaseDataTypeName = hsnEmpty
+    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+  | Type
+    tyExpr.caDeeper = False
+    tyExpr.caBaseDataTypeName = hsnEmpty
+    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+%%[[90
+  | FFE
+    tyExpr.caDeeper = False
+    tyExpr.caBaseDataTypeName = hsnEmpty
+    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+%%]]
+  | Class
+    tyPrExpr.caDeeper = False
+    tyPrExpr.caBaseDataTypeName = hsnEmpty
+    tyPrExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+  | Instance
+    tyPrExpr.caDeeper = False
+    tyPrExpr.caBaseDataTypeName = hsnEmpty
+    tyPrExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+  | InstanceIntro
+    prExpr.caDeeper = False
+    prExpr.caBaseDataTypeName = hsnEmpty
+    prExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+  | Default
+    tyExprs.caDeeper = False
+    tyExprs.caBaseDataTypeName = hsnEmpty
+    tyExprs.caBaseAnnDataType = CA.TyError "Unsupported"
+
+SEM Expr
+  | TypeAs
+    tyExpr.caDeeper = False
+    tyExpr.caBaseDataTypeName = hsnEmpty
+    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+  | AppImpl
+    argPr.caDeeper = False
+    argPr.caBaseDataTypeName = hsnEmpty
+    argPr.caBaseAnnDataType = CA.TyError "Unsupported"
+  | LamImpl
+    argPr.caDeeper = False
+    argPr.caBaseDataTypeName = hsnEmpty
+    argPr.caBaseAnnDataType = CA.TyError "Unsupported"
+
+SEM PatExpr
+  | TypeAs
+    tyExpr.caDeeper = False
+    tyExpr.caBaseDataTypeName = hsnEmpty
+    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+
+{
+extractNumAnns :: DataGam -> Map HsName Int
+extractNumAnns dg = Map.fromList $ map f $ gamToAssocL dg
+  where f (x, y) = (x, length $ dgiAnnVars y)
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gathering tag info for data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -104,9 +255,9 @@ ATTR AllDecl [ | | gathDeclDataGam USE {`gamUnion`} {emptyGam}: DataGam ]
 SEM Decl
   | Data        loc         .   dataTyVarIdL        =   map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL
                             .   dgi                 =   mkDGI @tyNm
-                            								  ([@dataTy] `appArr` @dataAltTy)
-                            								  (tkgiKi @dataTkgi)
-                            								  @constrs.dataConstrNmL @constrs.dataConstrTagMp
+                                                              ([@dataTy] `appArr` @dataAltTy)
+                                                              (tkgiKi @dataTkgi)
+                                                              @constrs.dataConstrNmL @constrs.dataConstrTagMp
 %%[[7
                                                               @isNewtype
 %%][90
@@ -117,6 +268,9 @@ SEM Decl
 %%]]
 %%[[92
                                                               @mbGenerInfo
+%%]]
+%%[[(8 counting)
+                                                              @loc.caAnnVars
 %%]]
                 lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 
@@ -151,17 +305,17 @@ SEM DataConstr
 SEM DataConstr
   | Constr
 %%[[5    
-  				loc         .	dataConGadtTyL		=	[]
+                loc         .   dataConGadtTyL      =   []
 %%][31
-  				loc         .	dataConGadtTyL		=	[ mkTyPr $ Pred_Eq (mkTyVar v) t | (v,t) <- varmpToAssocTyL @gadtTyVarMp ]
+                loc         .   dataConGadtTyL      =   [ mkTyPr $ Pred_Eq (mkTyVar v) t | (v,t) <- varmpToAssocTyL @gadtTyVarMp ]
 %%]]
 
 %%[[5
-  				loc			.   dataConTyL          =   @fields.tyL
+                loc         .   dataConTyL          =   @fields.tyL
 %%][7
-  							.   dataConFldTyL       =   @fields.fldTyL
-  							.   dataConTyL          =   assocLElts @dataConFldTyL
-				 			.	dataConGadtFldTyL	=	zip (repeat Nothing) @dataConGadtTyL ++ @dataConFldTyL
+                            .   dataConFldTyL       =   @fields.fldTyL
+                            .   dataConTyL          =   assocLElts @dataConFldTyL
+                            .   dataConGadtFldTyL   =   zip (repeat Nothing) @dataConGadtTyL ++ @dataConFldTyL
 %%]]
 %%[[8
 %%]]
@@ -189,7 +343,7 @@ ATTR AllDataConstr [ | patValGam: ValGam | ]
 
 SEM DataConstr
   | Constr      loc         .   dataConTy           =   @dataConTyL `appArr` @lhs.dataTy
-                            .	dataConGadtTy		=	@gadtTyVarMp `varUpd` @dataConTy
+                            .   dataConGadtTy       =   @gadtTyVarMp `varUpd` @dataConTy
                             .   dataConTyFv         =   varFree @lhs.dataTy
                             .   dataConProdTy       =   appProdApp @dataConGadtFldTyL
                             .   dataConProdTyFv     =   varFree @dataConProdTy
@@ -314,10 +468,10 @@ SEM DataConstr
                                                             mkfs = foldl (\m (ml,_) -> maybe m (\l -> (l,mk):m) ml) []
                                                         in  Map.fromList $ mkfs $ @dataConGadtFldTyL
 %%][8
-  | Constr      loc			.	fldRefL				=	refGen 0 1 $ zipWith (\pn (ml,_) -> maybe pn id ml) positionalFldNames @dataConGadtFldTyL
-  				            .   fldMp               =   Map.fromList $ catMaybes $ zipWith (\(_,r) (ml,_) -> fmap (\l -> (l,emptyDataFldInfo {dfiOffset = r})) ml) @fldRefL @dataConGadtFldTyL
+  | Constr      loc         .   fldRefL             =   refGen 0 1 $ zipWith (\pn (ml,_) -> maybe pn id ml) positionalFldNames @dataConGadtFldTyL
+                            .   fldMp               =   Map.fromList $ catMaybes $ zipWith (\(_,r) (ml,_) -> fmap (\l -> (l,emptyDataFldInfo {dfiOffset = r})) ml) @fldRefL @dataConGadtFldTyL
 {-
-  				            .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
+                            .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
                                                             mkfs = fst . foldl (\(m,o) (ml,_) -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
                                                         in  Map.fromList $ mkfs $ @dataConGadtFldTyL
 -}
@@ -342,7 +496,10 @@ SEM DataConstr
                                                           , dtiConTy        = @dataConTyAsVar
 %%[[(8 codegen)
                                                           , dtiCTag         = @ctag
-                                                          , dtiFldRefL		= assocLElts @fldRefL
+                                                          , dtiFldRefL      = assocLElts @fldRefL
+%%]]
+%%[[(8 counting)
+                                                          , dtiFldAnnTyL    = @fields.caAnnTyList
 %%]]
 %%[[91
                                                           , dtiMbFixityPrio = @mbFixityPrio
@@ -352,8 +509,8 @@ SEM DataConstr
                             .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
                             .   arity               =   length @dataConGadtFldTyL
                             .   ctag                =   patchTyInfoCTag @lhs.tyNm @lhs.maxArity $ mkOnlyConInfoCTag @conNm @tag @arity
-                            							-- 20141016 AD: patch should not be necessary, to be sorted out,
-                            							-- codegen somewhere depends on this info prematurely (before full gathering) to be available
+                                                        -- 20141016 AD: patch should not be necessary, to be sorted out,
+                                                        -- codegen somewhere depends on this info prematurely (before full gathering) to be available
 %%]]
 %%]
 
@@ -404,7 +561,7 @@ ATTR AllDataField [ | | fldAnnL USE {++} {[]}: {[DataConFldAnnInfo]} ]
 
 SEM DataField
   | Field       lhs         .   fldAnnL             =   replicate @nrFieldsForLabel
-  														  ( DataConFldAnnInfo
+                                                          ( DataConFldAnnInfo
 %%[[8
                                                               (maybe Strictness_NonStrict id @tyExpr.mbStrictness)
 %%]]

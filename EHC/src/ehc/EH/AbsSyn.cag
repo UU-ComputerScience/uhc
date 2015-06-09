@@ -48,7 +48,7 @@ DATA Decl
                     tyVars          : TyVars
                     constrs         : DataConstrs
 %%[[92
-					mbGenerInfo		: {Maybe Int}		-- max kind arity for generic behavior, currently \in {0,1}
+                    mbGenerInfo     : {Maybe Int}       -- max kind arity for generic behavior, currently \in {0,1}
 %%]]
 %%]
 
@@ -90,10 +90,10 @@ Representation types + instances for generic deriving
 
 %%[92
 DATA Decl
-  | GenerRep        maxArity		: {Int}						-- max required unsaturated type arguments
-  					tyNm            : {HsName}					-- type name
-  					conNmL			: {[HsName]}		-- constructors + field names
-  					recFldNmL		: {[(HsName,[HsName])]}		-- record constructors + field names
+  | GenerRep        maxArity        : {Int}                     -- max required unsaturated type arguments
+                    tyNm            : {HsName}                  -- type name
+                    conNmL          : {[HsName]}        -- constructors + field names
+                    recFldNmL       : {[(HsName,[HsName])]}     -- record constructors + field names
 %%]
 
 %%[93
@@ -129,8 +129,8 @@ DATA TyExpr
 
 %%[2.TyExpr
 DATA TyExpr
-  | Wild											-- wildcard tyvar over which the TyExpr will not quantify, but later let binding will
-  | Mono											-- same as Wild, but no quantification in the let binding either
+  | Wild                                            -- wildcard tyvar over which the TyExpr will not quantify, but later let binding will
+  | Mono                                            -- same as Wild, but no quantification in the let binding either
 %%]
 
 %%[3.TyExpr
@@ -339,7 +339,7 @@ DATA Expr
                     body            : Expr
   | AppTop          expr            : Expr
   | Parens          expr            : Expr
-  | TypeAs          isScoped		: {Bool}			-- ^ Are the type vars in 'tyExpr' to be lexically scoped? Used for: f a :: t = e, rewritten to \a -> (e :: t)
+  | TypeAs          isScoped        : {Bool}            -- ^ Are the type vars in 'tyExpr' to be lexically scoped? Used for: f a :: t = e, rewritten to \a -> (e :: t)
                     tyExpr          : TyExpr
                     expr            : Expr
   | Ann             ann             : ExprAnn
@@ -359,8 +359,8 @@ DATA Expr
                     alts            : CaseAlts
 %%[[8
                     mbCaseIds       : {Maybe UIDS}
-                    caseFailS       : {UIDS}			-- can fail on these fail ids, encodes that this case implements a guard
-                    isTupOfArg      : {Bool}			-- tupling, only done as uncurry of arguments of lambda
+                    caseFailS       : {UIDS}            -- can fail on these fail ids, encodes that this case implements a guard
+                    isTupOfArg      : {Bool}            -- tupling, only done as uncurry of arguments of lambda
 %%]]
 %%]
 
@@ -447,7 +447,7 @@ DATA PatExpr
 %%[8
 DATA PatExpr
   | Irrefutable     patExpr         : PatExpr
-  | Bang	     	patExpr         : PatExpr
+  | Bang            patExpr         : PatExpr
 %%]
 
 %%[97
@@ -495,7 +495,7 @@ DATA DataConstr
                     fields          : DataFields
 %%]]
 %%[[31
-					mbGadtTyExpr	: MbTyExpr			-- the constrained result ty for GADT
+                    mbGadtTyExpr    : MbTyExpr          -- the constrained result ty for GADT
 %%]]
 %%[[41
                     eqs             : DataConstrEqs
@@ -572,7 +572,7 @@ DATA Decl
                     mbDefaultInstNm : {Maybe HsName}
                     decls           : Decls
 %%[[92
-					generDerivs		: {[(HsName,HsName)]}			-- generically derivable fields, with their default
+                    generDerivs     : {[(HsName,HsName)]}           -- generically derivable fields, with their default
 %%]]
   | Instance        mbNmElim        : {Maybe (HsName,Bool)}
                     instVariant     : InstVariant

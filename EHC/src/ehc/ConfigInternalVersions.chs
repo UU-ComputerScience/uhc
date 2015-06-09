@@ -31,12 +31,12 @@ internalVersionCombined =
 
 %%[50 hs export(internalVersionHI, internalVersionCore, internalVersionCoreRun)
 -- | For binary/serialized HI .hi files and all data stored there
-internalVersionHI = mkInternalVersion 1
+internalVersionHI = mkInternalVersion 2
 
 -- | For binary/serialized Core .cr/.bcr/.tcr etc files
-internalVersionCore = mkInternalVersion 20
+internalVersionCore = mkInternalVersion 21
 
 -- | For binary/serialized CoreRun .crr/.bcrr./tcrr etc files
-internalVersionCoreRun = mkInternalVersion 6
+internalVersionCoreRun = mkInternalVersion 7
 %%]
 

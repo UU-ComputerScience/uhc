@@ -44,7 +44,7 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
-%%[(8 codegen counting) import({%{EH}Core.Trf.CountingAnalysis})
+%%[(8 counting) import({%{EH}Core.Trf.CountingAnalysis})
 %%]
 %%[(8 codegen wholeprogAnal) import({%{EH}Core.Trf.FindNullaries})
 %%]
@@ -312,7 +312,7 @@ trfCore opts optimScope dataGam modNm trfcore
 %%]]
 %%[[(8 counting)
         t_counting_analysis 
-                        = liftTrfModPlain  osm "analysis"           $ cmodTrfAnalysis dataGam
+                        = liftTrfModPlain  osm "counting-analysis"           $ cmodTrfAnalysisCounting dataGam
 %%]]
         t_ana_relev     = liftTrfModWithStateExtra osm "ana-relev" lamMpPropagate
                                                                $ \s -> cmodTrfAnaRelevance opts dataGam (trfcoreInhLamMp $ trfstExtra s)
