@@ -26,6 +26,10 @@ Running of BuildFunction
 %%[99 import ({%{EH}Base.PackageDatabase})
 %%]
 
+-- parsing, scanning
+%%[8 import ({%{EH}Base.ParseUtils}, UHC.Util.ScanUtils as ScanUtils)
+%%]
+
 -- source handling
 %%[8 import ({%{EH}EHC.ASTHandler}, {%{EH}EHC.ASTHandler.Instances})
 %%]
@@ -117,7 +121,7 @@ bcall bfun = do
 %%]]
                (_ :: Maybe res, mbset) <- bderef' ref
                case (mbtm, mbset, asthandlerLookup asttype) of
-                 (Just _, Just set, Just (astHdlr :: ASTHandler' res)) | isJust mbi && isJust mbl -> case astfcont of
+                 (Just _, Just set, Just (astHdlr :: ASTHandler' res)) {- | isJust mbi && isJust mbl -} -> case astfcont of
 %%[[50
                       ASTFileContent_Binary -> do
                         cpMsg' modNm VerboseALot "Decoding" Nothing fpC
@@ -133,25 +137,55 @@ bcall bfun = do
                               else do
                                 cpSetLimitErrsWhen 1 ("Decode AST check " ++ _asthdlrName astHdlr) errs
                                 dflt'
-                          else err "decoder"
+                          else err fp "decoder"
 %%]]
-                      _ -> err "ast content handler"
+                      ASTFileContent_Text -> do
+                        let --
+%%[[8
+                            popts       = defaultEHParseOpts
+%%][50
+                            popts       = _astsuffinfoUpdParseOpts info defaultEHParseOpts
+%%]]
+                            sopts       = _asthdlrParseScanOpts astHdlr opts popts
+                            description = "Parse (" ++ (if ScanUtils.scoLitmode sopts then "Literate " else "") ++ _asthdlrName astHdlr ++ " syntax) of module `" ++ show modNm ++ "`"
+                            seterrs     = cpSetLimitErrsWhen 5 description
+                        case _asthdlrParser astHdlr opts popts of
+                          Just (ASTParser p) -> do
+                            (res,errs) <- parseWithFPath sopts popts p fp -- (maybe (ecuFilePath (crCU modNm cr)) id mbFp)
+                            -- cpUpdCU modNm (_asthdlrEcuStore astHdlr res)
+                            if null errs
+                              then do
+                                set res
+                                bmemo ref
+                                return res
+                              else do
+                                if ehpoptsStopAtErr popts
+                                  then return ()
+                                  else seterrs errs
+                                dflt'
+                          _ -> do
+                            seterrs [strMsg $ "No parser for " ++ _asthdlrName astHdlr]
+                            dflt'
+
+                      _ -> err fp "ast content handler"
+
                    where mbi@(~(Just info)) = astsuffixLookup skey $ _asthdlrSuffixRel astHdlr
                          mbl@(~(Just lens)) = Map.lookup tkey $ _astsuffinfoASTLensMp info
                          fpC                = asthdlrMkInputFPath astHdlr opts ecu skey modNm fp
-                         err                = err' (_asthdlrName astHdlr)
-                 _ -> err' "" "ast handler/setter"
+                         err fp             = err' fp (_asthdlrName astHdlr)
+                 _ -> err' fp "" "ast handler/setter"
             where dflt' = return undefined
-                  err' k m = do
-                    cpSetLimitErrsWhen 1 ("Decode " ++ k) [strMsg $ "No " ++ m ++ " for " ++ k ++ " (" ++ show skey ++ "/" ++ show tkey ++ ")"]
+                  err' fp k m = do
+                    cpSetLimitErrsWhen 1 ("Decode " ++ k ++ " for file " ++ fpathToStr fp) [strMsg $ "No " ++ m ++ " for " ++ k ++ " (" ++ show skey ++ "/" ++ show tkey ++ ")"]
                     dflt'
 
 %%[[50
-          ModfTimeOfFile modNm asttype skey tkey -> case (asthandlerLookup' asttype $ \hdlr -> do
-                                                              suffinfo <- astsuffixLookup skey $ _asthdlrSuffixRel hdlr
-                                                              lens <- Map.lookup tkey $ _astsuffinfoModfTimeMp suffinfo
-                                                              return (_astsuffinfoSuff suffinfo, lens)
-                                                         ) of
+          ModfTimeOfFile modNm asttype skey tkey -> case
+            (asthandlerLookup' asttype $ \hdlr -> do
+                 suffinfo <- astsuffixLookup skey $ _asthdlrSuffixRel hdlr
+                 lens <- Map.lookup tkey $ _astsuffinfoModfTimeMp suffinfo
+                 return (_astsuffinfoSuff suffinfo, lens)
+            ) of
                  Just (suff, lens) -> do
                         cr <- get
                         let (ecu,_,opts,fp) = crBaseInfo modNm cr

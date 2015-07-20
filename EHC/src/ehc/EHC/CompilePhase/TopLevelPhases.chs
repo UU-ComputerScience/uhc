@@ -32,6 +32,10 @@ level 2..6 : with prefix 'cpEhc'
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
 
+-- build call
+%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%]
+
 -- trace, debug
 %%[8 import(System.IO.Unsafe, Debug.Trace)
 %%]
@@ -865,6 +869,7 @@ cpEhcHaskellImport
           doCPP
           = cpSeq [ when doCPP (cpPreprocessWithCPP pkgKeyDirL modNm)
                   , cpParseHsImport (hsstateIsLiteral hsst) modNm
+                  -- , bcall $ ASTFromFile (modNm,Nothing) ASTType_HS (ASTFileContent_Text, ASTFileUse_SrcImport) ASTFileTiming_Current
                   ]
 %%]]
         foldAndImport modNm

@@ -172,12 +172,78 @@ astHandler'_HS = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) =
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "Haskell"
+            {-
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Text	, ASTFileUse_Src), ("hs", ecuMbHS, tmlens) )
             								, ( (ASTFileContent_LitText, ASTFileUse_Src), ("lhs", ecuMbHS, tmlens) )
             								]
+            -}
+            , _asthdlrSuffixRel			= mkASTSuffixRel'
+            								[ ( (ASTFileContent_Text	, ASTFileUse_Src)
+            								  , ("hs"
+            								    , [ (ASTFileTiming_Current, ecuMbHS)
+            								      ]
+%%[[8
+            								    , []
+%%][50
+            								    , [ (ASTFileTiming_Current, ecuMbSrcTime)
+            								      ]
+%%]]
+            								    , id
+            								  ) )
+            								, ( (ASTFileContent_Text	, ASTFileUse_SrcImport)
+            								  , ("hs"
+            								    , [ (ASTFileTiming_Current, ecuMbHS)
+            								      ]
+%%[[8
+            								    , []
+%%][50
+            								    , [ (ASTFileTiming_Current, ecuMbSrcTime)
+            								      ]
+%%]]
+%%[[8
+            								    , id
+%%][50
+            								    , \o -> o {ehpoptsStopAtErr=True, ehpoptsForImport=True}
+%%]]
+            								  ) )
+            								, ( (ASTFileContent_LitText	, ASTFileUse_Src)
+            								  , ("lhs"
+            								    , [ (ASTFileTiming_Current, ecuMbHS)
+            								      ]
+%%[[8
+            								    , []
+%%][50
+            								    , [ (ASTFileTiming_Current, ecuMbSrcTime)
+            								      ]
+%%]]
+%%[[8
+            								    , id
+%%][99
+            								    , \o -> o {ehpoptsLitMode=True}
+%%]]
+            								  ) )
+            								, ( (ASTFileContent_LitText	, ASTFileUse_SrcImport)
+            								  , ("lhs"
+            								    , [ (ASTFileTiming_Current, ecuMbHS)
+            								      ]
+%%[[8
+            								    , []
+%%][50
+            								    , [ (ASTFileTiming_Current, ecuMbSrcTime)
+            								      ]
+%%]]
+%%[[8
+            								    , id
+%%][50
+            								    , \o -> o {ehpoptsStopAtErr=True, ehpoptsForImport=True}
+%%][99
+            								    , \o -> o {ehpoptsLitMode=True, ehpoptsStopAtErr=True, ehpoptsForImport=True}
+%%]]
+            								  ) )
+            								]
             , _asthdlrEcuStore          = ecuStoreHS
-            , _asthdlrParseScanOpts     = \opts popts -> hsScanOpts opts
+            , _asthdlrParseScanOpts     = \opts _ -> hsScanOpts opts
             , _asthdlrParser            = \opts popts -> Just $ ASTParser $
 %%[[50
                                             if ehpoptsForImport popts then HSPrs.pAGItfImport opts else
@@ -191,12 +257,14 @@ astHandler'_HS = mk emptyASTHandler'
             , _asthdlrInput             = _asthdlrInput
 -}
             }
+        {-
         tmlens =
 %%[[8
           Nothing
 %%][50
           Just ecuMbSrcTime
 %%]]
+        -}
             
 %%]
 
@@ -244,6 +312,7 @@ astHandler'_HI = mk emptyASTHandler'
             								      ]
             								    , [ (ASTFileTiming_Prev, ecuMbHIInfoTime)
             								      ]
+            								    , id
             								  ) )
             								]
             , _asthdlrMkInputFPath		= \opts ecu modNm fp suff ->
@@ -307,6 +376,7 @@ astHandler'_Core = mk emptyASTHandler'
             								    , [ (ASTFileTiming_Prev, ecuMbCoreTime)
             								      ]
 %%]]
+            								    , id
             								  ) )
             								]
             , _asthdlrEcuStore          = ecuStoreCore
@@ -362,6 +432,7 @@ astHandler'_CoreRun = mk emptyASTHandler'
             								    , [ (ASTFileTiming_Prev, ecuMbCoreRunTime)
             								      ]
 %%]]
+            								    , id
             								  ) )
             								]
             , _asthdlrEcuStore          = ecuStoreCoreRun
@@ -412,6 +483,7 @@ astHandler'_Grin =
             								    , [ (ASTFileTiming_Prev, ecuMbGrinTime)
             								      ]
 %%]]
+            								    , id
             								  ) )
             								]
 			, _asthdlrParseScanOpts     = \opts _ -> grinScanOpts

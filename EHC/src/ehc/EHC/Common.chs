@@ -291,6 +291,7 @@ data ASTFileUse
   | ASTFileUse_Dump			-- ^ output: dumped, possibly usable as src later on
   | ASTFileUse_Target		-- ^ output: as target of compilation
   | ASTFileUse_Src			-- ^ input: src file
+  | ASTFileUse_SrcImport	-- ^ input: import stuff only from src file
   | ASTFileUse_Unknown		-- ^ unknown
   deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
 
@@ -310,6 +311,42 @@ data ASTFileTiming
   deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
 
 instance Hashable ASTFileTiming
+%%]
+
+%%[8888 export(ASTFileReadAmount(..))
+-- | Read amount of info
+data ASTFileReadAmount
+  = ASTFileReadAmount_Plain		-- ^ fully as is
+%%[[50
+  | ASTFileReadAmount_Import	-- ^ only import info
+%%]]
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+
+instance Hashable ASTFileReadAmount
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST semantics type: ASTSemType
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ASTSemType(..))
+-- | An 'Enum' of all semantics we may want to extract from an AST
+data ASTSemType
+  = -- | plain AG sem fold over HS
+    ASTSemType_HSPlainFold
+%%[[50
+  | -- | fold over HS required to extract import info, deal with pragmas, etc
+    ASTSemType_HSImportFold
+%%]]
+  | -- | only a particular AST (isolated from other AG attrs)
+    ASTSemType_IsolatedAST		
+      { astsemtypeIsolatedASTType	:: !ASTType
+      }
+  | -- | only a particular PP (isolated from other AG attrs)
+    ASTSemType_IsolatedPP		
+  deriving (Eq, Ord, Typeable, Generic, Show)
+
+instance Hashable ASTSemType
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

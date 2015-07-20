@@ -175,6 +175,7 @@ data ASTSuffixInfo ast
       , _astsuffinfoASTLensMp	:: Map.Map ASTFileTiming (Lens EHCompileUnit (Maybe ast))
 %%[[50
       , _astsuffinfoModfTimeMp	:: Map.Map ASTFileTiming (Lens EHCompileUnit (Maybe ClockTime))
+      , _astsuffinfoUpdParseOpts:: EHParseOpts -> EHParseOpts
 %%]]
       }
   deriving (Typeable, Generic)
@@ -202,6 +203,7 @@ mkASTSuffixRel'
 %%][50
        , AssocL ASTFileTiming (Lens EHCompileUnit (Maybe ClockTime))
 %%]]
+       , EHParseOpts -> EHParseOpts
        )
      -> ASTSuffixRel ast
 mkASTSuffixRel' l = Rel.fromList
@@ -211,9 +213,10 @@ mkASTSuffixRel' l = Rel.fromList
         (Map.fromList il)
 %%[[50
         (Map.fromList cl)
+        updopts
 %%]]
     )
-  | (sk,(s,il,cl)) <- l
+  | (sk,(s,il,cl,updopts)) <- l
   ]
 
 mkASTSuffixRel
@@ -237,6 +240,7 @@ mkASTSuffixRel l = mkASTSuffixRel' $
 %%][50
       , maybe [] (\c -> [(ASTFileTiming_Current,c)]) mc
 %%]]
+      , id
     ) )
   | (sk,(s,i,mc)) <- l
   ]

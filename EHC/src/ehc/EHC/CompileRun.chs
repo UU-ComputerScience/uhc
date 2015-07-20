@@ -226,14 +226,19 @@ instance CompileRunStateInfo EHCompileRunStateInfo HsName () where
 %%]
 
 %%[8 export(EHCCompileRunner)
-class (MonadIO m, CompileRunner FileSuffInitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)) => EHCCompileRunner m where
+class ( MonadIO m
+      -- , MonadIO (EHCompilePhaseAddonT m)
+      , CompileRunner FileSuffInitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)
+      )
+  => EHCCompileRunner m where
 
 instance ( CompileRunStateInfo EHCompileRunStateInfo HsName ()
          , CompileUnit EHCompileUnit HsName FileLoc FileSuffInitState
          , CompileRunError Err ()
          -- , MonadError (CompileRunState Err) m
          -- , MonadState EHCompileRun (EHCompilePhaseAddonT m)
-         , MonadIO m -- (EHCompilePhaseAddonT m)
+         , MonadIO m
+         -- , MonadIO (EHCompilePhaseAddonT m)
          , Monad m
          ) => CompileRunner FileSuffInitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)
 
@@ -242,9 +247,19 @@ instance ( CompileRunStateInfo EHCompileRunStateInfo HsName ()
          , CompileRunError Err ()
          -- , MonadError (CompileRunState Err) m
          -- , MonadState EHCompileRun (EHCompilePhaseAddonT m)
-         , MonadIO m -- (EHCompilePhaseAddonT m)
+         , MonadIO m
+         -- , MonadIO (EHCompilePhaseAddonT m)
          , Monad m
          ) => EHCCompileRunner m
+
+{-
+instance (MonadState s m) => MonadState s (EHCompilePhaseAddonT m) where
+  get = lift MS.get
+  put = lift . MS.put
+
+instance (MonadIO m) => MonadIO (EHCompilePhaseAddonT m) where
+  liftIO = lift . liftIO
+-}
 %%]
 
 %%[8 export(EHCompileRun,EHCompilePhaseT,EHCompilePhase)
