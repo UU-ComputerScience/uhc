@@ -23,6 +23,11 @@ Running of BuildFunction
 %%[8888 import ({%{EH}EHC.Main.Compile})
 %%]
 
+-- low level (compilation) passes
+%%[8 import ({%{EH}EHC.CompilePhase.CompileC})
+%%]
+
+-- package
 %%[99 import ({%{EH}Base.PackageDatabase})
 %%]
 
@@ -43,7 +48,7 @@ Running of BuildFunction
 %%]
 %%[8 import (qualified Data.Map as Map)
 %%]
-%%[8 import (Control.Monad.State, Control.Monad.Error)
+%%[8 import (Control.Applicative, Control.Monad.State, Control.Monad.Error)
 %%]
 
 %%[50 import (System.Directory)
@@ -75,8 +80,9 @@ bcall bfun = do
 
           EcuOfNameAndPath mbPrev (modNm,mbFp) -> do
                opts <- bcall $ EHCOptsOf modNm
-               let isTopModule = isJust mbFp
-                   searchPath = ehcOptImportFileLocPath opts
+               let -- mbFp            = astFileNameOverrideToMaybe overrFp
+                   isTopModule     = isJust mbFp
+                   searchPath      = ehcOptImportFileLocPath opts
 %%[[8
                    adaptFileSuffMp = id
 %%][50
@@ -108,8 +114,8 @@ bcall bfun = do
                    modNm = mkHNm $ fpathBase fp
                breturn (modNm, fp)
       
-          ASTFromFile mf asttype skey@(astfcont,_) tkey -> do
-               ecu <- bcall $ EcuOfNameAndPath Nothing mf
+          ASTFromFile (modNmAsked,overr) (AlwaysEq chkTimeStamp) asttype skey@(astfcont,_) tkey -> do
+               ecu <- bcall $ EcuOfNameAndPath Nothing (modNmAsked, astFileNameOverrideToMaybe overr)
                let modNm = ecuModNm ecu
                    fp    = ecuFilePath ecu
                    ref   = BRef_AST modNm asttype skey tkey
@@ -120,8 +126,10 @@ bcall bfun = do
                mbtm <- bcall $ ModfTimeOfFile modNm asttype skey tkey
 %%]]
                (_ :: Maybe res, mbset) <- bderef' ref
-               case (mbtm, mbset, asthandlerLookup asttype) of
-                 (Just _, Just set, Just (astHdlr :: ASTHandler' res)) {- | isJust mbi && isJust mbl -} -> case astfcont of
+               let mbhdlr = asthandlerLookup asttype
+                   mkfp hdlr = asthdlrMkInputFPath hdlr opts ecu skey modNm fp
+               case (mbset, mbhdlr) of
+                 (Just set, Just (astHdlr :: ASTHandler' res)) | chkTimeStamp == ASTFileTimeHandleHow_Ignore || isJust mbtm {- | isJust mbi && isJust mbl -} -> case astfcont of
 %%[[50
                       ASTFileContent_Binary -> do
                         cpMsg' modNm VerboseALot "Decoding" Nothing fpC
@@ -137,7 +145,7 @@ bcall bfun = do
                               else do
                                 cpSetLimitErrsWhen 1 ("Decode AST check " ++ _asthdlrName astHdlr) errs
                                 dflt'
-                          else err fp "decoder"
+                          else err "decoder"
 %%]]
                       ASTFileContent_Text -> do
                         let --
@@ -167,14 +175,22 @@ bcall bfun = do
                             seterrs [strMsg $ "No parser for " ++ _asthdlrName astHdlr]
                             dflt'
 
-                      _ -> err fp "ast content handler"
+                      _ -> err "ast content handler"
 
                    where mbi@(~(Just info)) = astsuffixLookup skey $ _asthdlrSuffixRel astHdlr
                          mbl@(~(Just lens)) = Map.lookup tkey $ _astsuffinfoASTLensMp info
-                         fpC                = asthdlrMkInputFPath astHdlr opts ecu skey modNm fp
-                         err fp             = err' fp (_asthdlrName astHdlr)
-                 _ -> err' fp "" "ast handler/setter"
-            where dflt' = return undefined
+                         fpC                = mkfp astHdlr
+                         err                = err' fpC (_asthdlrName astHdlr)
+
+                 _ | isNothing mbhdlr               -> err1 "ast handler"
+                   | isNothing mbset                -> err2 mbhdlr "ast setter"
+                   | chkTimeStamp == ASTFileTimeHandleHow_AbsenceIsError && isNothing mbtm
+                                                    -> err2 mbhdlr "file time info (probably non existent)"
+                   | otherwise                      -> dflt'
+                   where err1               = err' fp (show asttype)
+                         err2 (Just h)      = err' (mkfp h) (_asthdlrName h)
+
+            where dflt' = return $ panic $ "BuildFunction.Run.bcall undefined result related to " ++ show modNmAsked -- return undefined
                   err' fp k m = do
                     cpSetLimitErrsWhen 1 ("Decode " ++ k ++ " for file " ++ fpathToStr fp) [strMsg $ "No " ++ m ++ " for " ++ k ++ " (" ++ show skey ++ "/" ++ show tkey ++ ")"]
                     dflt'
@@ -184,12 +200,15 @@ bcall bfun = do
             (asthandlerLookup' asttype $ \hdlr -> do
                  suffinfo <- astsuffixLookup skey $ _asthdlrSuffixRel hdlr
                  lens <- Map.lookup tkey $ _astsuffinfoModfTimeMp suffinfo
-                 return (_astsuffinfoSuff suffinfo, lens)
+                 return
+                   ( lens
+                   , \opts ecu fp -> _asthdlrMkInputFPath hdlr opts ecu modNm fp (_astsuffinfoSuff suffinfo)
+                   )
             ) of
-                 Just (suff, lens) -> do
+                 Just (lens, mkfp) -> do
                         cr <- get
                         let (ecu,_,opts,fp) = crBaseInfo modNm cr
-                        tm opts ecu ((lens ^=) . Just) (fpathSetSuff suff fp)
+                        tm opts ecu ((lens ^=) . Just) (mkfp opts ecu fp)
                  _ -> return Nothing
             where
               tm opts ecu store fp = do
@@ -203,6 +222,12 @@ bcall bfun = do
                       cpUpdCU modNm $ store t
                       return $ Just t
                     else return Nothing
+%%]]
+
+%%[[99
+          FPathPreprocessedWithCPP pkgKeyDirL modNm -> do
+               Just <$> cpPreprocessWithCPP pkgKeyDirL modNm
+
 %%]]
           
           _ -> panic $ "BuildFunction.Run.bcall: not implemented: " ++ show bfun

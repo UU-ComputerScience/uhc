@@ -776,7 +776,7 @@ General purpose info for which comparison always yields EQ.
 This is to fool 'deriving' when info is added for debugging purposes only.
 
 %%[1 export(AlwaysEq(..))
-data AlwaysEq a = AlwaysEq a
+data AlwaysEq a = AlwaysEq { unAlwaysEq :: a }
 
 instance Eq (AlwaysEq a) where
   _ == _ = True
@@ -789,6 +789,10 @@ instance Show a => Show (AlwaysEq a) where
 
 instance PP a => PP (AlwaysEq a) where
   pp (AlwaysEq x) = pp x
+
+instance Hashable (AlwaysEq a) where
+  hashWithSalt salt _ = hashWithSalt salt (12345 :: Int) -- arbitarry, but constant
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

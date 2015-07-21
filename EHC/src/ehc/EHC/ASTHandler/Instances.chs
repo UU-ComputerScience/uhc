@@ -358,9 +358,9 @@ astHandler'_Core = mk emptyASTHandler'
             { _asthdlrName              = "Core"
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Binary	, ASTFileUse_Target)	, (Cfg.suffixDotlessBinaryCore, ecuMbCore, Nothing) )
-            								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, ("", ecuMbCore, Nothing) )
+            								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, (Cfg.suffixDotlessOutputTextualCore, ecuMbCore, Nothing) )
             								, ( (ASTFileContent_Text	, ASTFileUse_Dump)		, (Cfg.suffixDotlessOutputTextualCore, ecuMbCore, Nothing) )
-            								, ( (ASTFileContent_Binary	, ASTFileUse_Src)		, ("", ecuMbCore, Nothing) )
+            								, ( (ASTFileContent_Binary	, ASTFileUse_Src)		, (Cfg.suffixDotlessInputOutputBinaryCore, ecuMbCore, Nothing) )
             								, ( (ASTFileContent_Binary	, ASTFileUse_Dump)		, (Cfg.suffixDotlessInputOutputBinaryCore, ecuMbCore, Nothing) )
             								]
             							  `Rel.union`
@@ -414,9 +414,9 @@ astHandler'_CoreRun = mk emptyASTHandler'
             { _asthdlrName              = "CoreRun"
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Binary	, ASTFileUse_Target)	, (Cfg.suffixDotlessBinaryCoreRun, ecuMbCoreRun, Nothing) )
-            								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, ("", ecuMbCoreRun, Nothing) )
+            								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, (Cfg.suffixDotlessOutputTextualCoreRun, ecuMbCoreRun, Nothing) )
             								, ( (ASTFileContent_Text	, ASTFileUse_Dump)		, (Cfg.suffixDotlessOutputTextualCoreRun, ecuMbCoreRun, Nothing) )
-            								, ( (ASTFileContent_Binary	, ASTFileUse_Src)		, ("", ecuMbCoreRun, Nothing) )
+            								, ( (ASTFileContent_Binary	, ASTFileUse_Src)		, (Cfg.suffixDotlessInputOutputBinaryCoreRun, ecuMbCoreRun, Nothing) )
             								, ( (ASTFileContent_Binary	, ASTFileUse_Dump)		, (Cfg.suffixDotlessInputOutputBinaryCoreRun, ecuMbCoreRun, Nothing) )
             								]
             							  `Rel.union`

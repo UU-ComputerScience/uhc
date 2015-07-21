@@ -313,6 +313,31 @@ data ASTFileTiming
 instance Hashable ASTFileTiming
 %%]
 
+%%[8 export(ASTFileNameOverride(..), astFileNameOverrideToMaybe)
+-- | Overriding an automatically chosen name (based on module name)
+data ASTFileNameOverride
+  = ASTFileNameOverride_AsIs			-- ^ fully as is
+  | ASTFileNameOverride_FPath	 FPath	-- ^ with FPath
+  deriving (Eq, Ord, Typeable, Generic, Show)
+
+astFileNameOverrideToMaybe :: ASTFileNameOverride -> Maybe FPath
+astFileNameOverrideToMaybe (ASTFileNameOverride_FPath fp) = Just fp
+astFileNameOverrideToMaybe _                              = Nothing
+
+instance Hashable ASTFileNameOverride
+%%]
+
+%%[8 export(ASTFileTimeHandleHow(..))
+-- | How to handle possibly previously timing info of file
+data ASTFileTimeHandleHow
+  = ASTFileTimeHandleHow_Ignore			-- ^ just don't do anything with it
+  | ASTFileTimeHandleHow_AbsenceIsError	-- ^ if not there, file is not there, error
+  | ASTFileTimeHandleHow_AbsenceIgnore	-- ^ if not there, file is not there, ignore
+  deriving (Eq, Ord, Typeable, Generic, Show)
+
+instance Hashable ASTFileTimeHandleHow
+%%]
+
 %%[8888 export(ASTFileReadAmount(..))
 -- | Read amount of info
 data ASTFileReadAmount
