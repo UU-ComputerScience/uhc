@@ -36,6 +36,10 @@
 WRAPPER AGItf
 %%]
 
+%%[99 hs
+deriving instance Typeable Syn_AGItf
+%%]
+
 %%[99 ag import({HS/Pragmas})
 %%]
 
