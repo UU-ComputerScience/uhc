@@ -330,7 +330,8 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
   = do { cr <- get
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              needsCompile = crModNeedsCompile modNm cr
-             canCompile   = ecuCanCompile ecu
+             -- canCompile   = ecuCanCompile ecu
+       ; canCompile <- bcall $ EcuCanCompile modNm
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (liftIO $ putStrLn
                 (  show modNm
@@ -875,7 +876,8 @@ cpEhcHaskellImport
                   ]
 %%][99
           doCPP
-          = cpSeq [ when doCPP (void $ cpPreprocessWithCPP pkgKeyDirL modNm)
+          = cpSeq [ -- when doCPP (void $ bcall $ FPathPreprocessedWithCPP pkgKeyDirL modNm)
+                    when doCPP (void $ cpPreprocessWithCPP pkgKeyDirL modNm)
                   , cpParseHsImport (hsstateIsLiteral hsst) modNm
                   -- , bcall $ ASTFromFile (modNm,ASTFileNameOverride_AsIs) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (ASTFileContent_Text, ASTFileUse_SrcImport) ASTFileTiming_Current
                   ]
@@ -901,16 +903,17 @@ cpEhcHaskellParse
      pkgKeyDirL
 %%]]
      modNm
-  = do
+  = do ecu <- bcall $ EcuOf modNm
 %%[[8
        cpParseHs modNm
 %%][99
        if doCPP 
          then do	-- 20150721 AD: this alternative should be done by else branch too
-           void $ cpPreprocessWithCPP pkgKeyDirL modNm
+           -- bcall $ FPathPreprocessedWithCPP pkgKeyDirL modNm
+           cpPreprocessWithCPP pkgKeyDirL modNm
            cpParseHs litmode modNm
          else do
-           (_ :: HS.AGItf) <- bcall $ ASTFromFile (modNm,ASTFileNameOverride_AsIs) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+           (_ :: HS.AGItf) <- bcall $ ASTFromFile (modNm,ASTFileNameOverride_AsIs) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
            return ()
 %%]]
        cpMsg modNm VerboseALot "Parsing done"

@@ -42,8 +42,8 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[50 import({%{EH}EHC.CompileGroup})
 %%]
--- Build function state
-%%[8 import({%{EH}EHC.BuildFunction})
+-- State, also build function state
+%%[8 import({%{EH}EHC.CompileRun.Base}) export(module {%{EH}EHC.CompileRun.Base})
 %%]
 -- Language syntax: Core
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
@@ -78,8 +78,7 @@ An EHC compile run maintains info for one compilation invocation
 %%% Time
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(EHCTime, EHCTimeDiff, getEHCTime, ehcTimeDiff, ehcTimeDiffFmt)
-type EHCTime = Integer
+%%[99 export(EHCTimeDiff, getEHCTime, ehcTimeDiff, ehcTimeDiffFmt)
 type EHCTimeDiff = Integer
 
 getEHCTime :: IO EHCTime
@@ -98,13 +97,7 @@ ehcTimeDiffFmt t
         fm n x = strPadLeft '0' n (show x)
 %%]
 
-%%[99 export(EHCIOInfo(..),newEHCIOInfo)
-data EHCIOInfo
-  = EHCIOInfo
-      { ehcioinfoStartTime			:: EHCTime
-      , ehcioinfoLastTime			:: EHCTime
-      }
-
+%%[99 export(newEHCIOInfo)
 newEHCIOInfo :: IO (IORef EHCIOInfo)
 newEHCIOInfo
   = do t <- getEHCTime
@@ -126,81 +119,6 @@ unsafeTimedPerformIO
 unsafeTimedPerformIO inforef io
   = unsafePerformIO $
     do info <- readIORef inforef
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile run combinators
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(EHCompileRunStateInfo(..))
-data EHCompileRunStateInfo
-  = EHCompileRunStateInfo
-      { _crsiOpts       :: !EHCOpts                             -- options
-      , _crsiNextUID    :: !UID                                 -- unique id, the next one
-      , _crsiHereUID    :: !UID                                 -- unique id, the current one
-      , _crsiHSInh      :: !HSSem.Inh_AGItf                     -- current inh attrs for HS sem
-      , _crsiEHInh      :: !EHSem.Inh_AGItf                     -- current inh attrs for EH sem
-      , _crsiFileSuffMp :: FileSuffMp							-- allowed suffixes
-%%[[(8 codegen)
-      , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
-%%]]
-%%[[(8 corerun)
-      , crsiCore2RunInh	:: !CoreRun.Nm2RefMp       				-- current inh attrs for Core2CoreRun sem
-%%]]
-%%[[50
-      , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
-      , crsiHSModInh    :: !HSSemMod.Inh_AGItf                  -- current inh attrs for HS module analysis sem
-      , crsiModMp       :: !ModMp                               -- import/export info for modules
-      , crsiGrpMp       :: (Map.Map HsName EHCompileGroup)      -- not yet used, for mut rec modules
-      , crsiOptim       :: !Optim                               -- inter module optimisation info
-%%]]
-%%[[(50 codegen)
-      , crsiModOffMp    :: !VA.HsName2FldMpMp              		-- mapping of all modules + exp entries to offsets in module + exp tables
-%%]]
-%%[[99
-      , crsiEHCIOInfo	:: !(IORef EHCIOInfo)					-- unsafe info
-      , crsiFilesToRm   :: ![FPath]                             -- files to clean up (remove)
-%%]]
-      , _crsiBState		:: !BState								-- Build state for use of build functions
-      }
-%%]
-
-%%[8 export(crsiOpts, crsiNextUID, crsiHereUID, crsiHSInh, crsiEHInh, crsiBState, crsiFileSuffMp)
-mkLabel ''EHCompileRunStateInfo
-%%]
-
-%%[8 export(emptyEHCompileRunStateInfo)
-emptyEHCompileRunStateInfo :: EHCompileRunStateInfo
-emptyEHCompileRunStateInfo
-  = EHCompileRunStateInfo
-      { _crsiOpts       =   defaultEHCOpts
-      , _crsiNextUID    =   uidStart
-      , _crsiHereUID    =   uidStart
-      , _crsiHSInh      =   panic "emptyEHCompileRunStateInfo.crsiHSInh"
-      , _crsiEHInh      =   panic "emptyEHCompileRunStateInfo.crsiEHInh"
-      , _crsiFileSuffMp =	emptyFileSuffMp
-%%[[(8 codegen)
-      , crsiCoreInh     =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
-%%]]
-%%[[(8 corerun)
-      , crsiCore2RunInh	=   panic "emptyEHCompileRunStateInfo.crsiCoreRunInh"
-%%]]
-%%[[50
-      , crsiMbMainNm    =   Nothing
-      , crsiHSModInh    =   panic "emptyEHCompileRunStateInfo.crsiHSModInh"
-      , crsiModMp       =   Map.empty
-      , crsiGrpMp       =   Map.empty
-      , crsiOptim       =   defaultOptim
-%%]]
-%%[[(50 codegen)
-      , crsiModOffMp    =   Map.empty
-%%]]
-%%[[99
-      , crsiEHCIOInfo   =   panic "emptyEHCompileRunStateInfo.crsiEHCIOInfo"
-      , crsiFilesToRm   =   []
-%%]]
-      , _crsiBState   	=   emptyBState
-      }
 %%]
 
 %%[(50 codegen) export(crsiExpNmOffMpDbg, crsiExpNmOffMp)
@@ -529,10 +447,10 @@ crModNeedsCompile modNm cr
 %%% Compilation can actually be done?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5050 export(crModCanCompile)
-crModCanCompile :: HsName -> EHCompileRun -> Bool
-crModCanCompile modNm cr
-  = isJust (_ecuMbSrcTime ecu) && ecuDirIsWritable ecu
+%%[5050 export(crEcuCanCompile)
+crEcuCanCompile :: HsName -> EHCompileRun -> Bool
+crEcuCanCompile modNm cr
+  = isJust (_ecuMbSrcTime ecu) && _ecuDirIsWritable ecu
   where ecu = crCU modNm cr
 %%]
 

@@ -914,7 +914,7 @@ fmap2Tuple snd = fmap (\x -> (x,snd))
 %%% Monad abbreviations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(whenM, unlessM)
+%%[1 export(whenM, unlessM, ifM)
 -- | Variation of `when` where Boolean condition is computed in a monad
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM c m = do
@@ -928,6 +928,14 @@ unlessM c m = do
   c' <- c
   unless c' m
 {-# INLINE unlessM #-}
+
+-- | Variation of `if` where Boolean condition is computed in a monad
+ifM :: Monad m => m Bool -> m a -> m a -> m a
+ifM c mt me = do
+  c' <- c
+  if c' then mt else me
+{-# INLINE ifM #-}
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

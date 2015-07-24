@@ -46,7 +46,7 @@ C + CPP compilation
 %%% Compile actions: C compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(gccDefs)
 gccDefs :: EHCOpts -> [String] -> CmdLineOpts
 gccDefs opts builds
   = map (\(d,mbval) -> cppOpt $ CmdFlag_Define ("__UHC" ++ d ++ "__") mbval)
@@ -60,7 +60,7 @@ gccDefs opts builds
 
 %%]
 
-%%[(99 codegen)
+%%[(99 codegen) export(gccInclDirs)
 gccInclDirs :: EHCOpts -> [PkgModulePartition] -> [FilePath]
 gccInclDirs opts pkgKeyDirL = ds ++ (map fst $ Map.elems pdmp)
   where (ds,pdmp) = pkgPartInclDirs opts pkgKeyDirL

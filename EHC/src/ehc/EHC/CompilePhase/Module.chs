@@ -231,8 +231,9 @@ cpGetMetaInfo gm modNm
                  dfltPrev ASTType_CoreRun modNm ecu
 %%]]
 %%[[50
-         ;  when (GetMeta_Dir `elem` gm)
-                 (wr opts ecu ecuStoreDirIsWritable (                         fp     ))
+         ;  when (GetMeta_Dir `elem` gm) $
+                 wr opts ecu ecuStoreDirIsWritable fp
+                 -- void $ bcall $ DirOfModIsWriteable modNm
 %%]]
          }
   where dfltPrev astty modNm ecu = void $ bcall $ ModfTimeOfFile modNm astty (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev

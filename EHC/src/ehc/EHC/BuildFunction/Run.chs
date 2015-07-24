@@ -40,6 +40,10 @@ Running of BuildFunction
 %%]
 
 -- general imports
+%%[8 import (qualified {%{EH}Config} as Cfg)
+%%]
+%%[8 import({%{EH}Opts.CommandLine})
+%%]
 %%[8 import (UHC.Util.Lens)
 %%]
 %%[8888 import (qualified UHC.Util.RelMap as Rel)
@@ -52,6 +56,10 @@ Running of BuildFunction
 %%]
 
 %%[50 import (System.Directory)
+%%]
+
+-- Module
+%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,11 +80,17 @@ bcall bfun = do
         start
         -- actual execution
         res <- case bfun of
+          CRSI -> do
+               fmap (panicJust "BuildFunction.Run.bcall CRSI") $ bderef BRef_CRSI
+
+          EcuOf modNm -> do
+               fmap (panicJust "BuildFunction.Run.bcall EcuOf") $ bderef (BRef_ECU modNm)
+
           EcuOfName modNm -> do
                bcall $ EcuOfNameAndPath Nothing (modNm, Nothing)
            
           EHCOptsOf modNm -> do
-               fmap (panicJust "EHCOptsOf") $ bderef (BRef_EHCOpts modNm)
+               fmap (panicJust "BuildFunction.Run.bcall EHCOptsOf") $ bderef (BRef_EHCOpts modNm)
 
           EcuOfNameAndPath mbPrev (modNm,mbFp) -> do
                opts <- bcall $ EHCOptsOf modNm
@@ -147,7 +161,7 @@ bcall bfun = do
                                 dflt'
                           else err "decoder"
 %%]]
-                      ASTFileContent_Text -> do
+                      fc | fc `elem` [ASTFileContent_Text, ASTFileContent_LitText] -> do
                         let --
 %%[[8
                             popts       = defaultEHParseOpts
@@ -175,7 +189,7 @@ bcall bfun = do
                             seterrs [strMsg $ "No parser for " ++ _asthdlrName astHdlr]
                             dflt'
 
-                      _ -> err "ast content handler"
+                      fc -> err $ "ast content handler " ++ show fc
 
                    where mbi@(~(Just info)) = astsuffixLookup skey $ _asthdlrSuffixRel astHdlr
                          mbl@(~(Just lens)) = Map.lookup tkey $ _astsuffinfoASTLensMp info
@@ -209,7 +223,7 @@ bcall bfun = do
                         cr <- get
                         let (ecu,_,opts,fp) = crBaseInfo modNm cr
                         tm opts ecu ((lens ^=) . Just) (mkfp opts ecu fp)
-                 _ -> return Nothing
+                 _ -> breturn Nothing
             where
               tm opts ecu store fp = do
                   let n = fpathToStr fp
@@ -220,14 +234,100 @@ bcall bfun = do
                       t <- liftIO $ fpathGetModificationTime fp
                       when (ehcOptVerbosity opts >= VerboseDebug) $ liftIO $ putStrLn ("time stamp of: " ++ show (ecuModNm ecu) ++ ", time: " ++ show t)
                       cpUpdCU modNm $ store t
-                      return $ Just t
-                    else return Nothing
+                      breturn $ Just t
+                    else
+                      breturn Nothing
+
+          DirOfModIsWriteable modNm -> do
+               ecu <- bcall $ EcuOfName modNm
+               let fp = ecuFilePath ecu
+               pm <- liftIO $ getPermissions (maybe "." id $ fpathMbDir fp)
+               let res = writable pm
+               -- liftIO $ putStrLn (fpathToStr fp ++ " writ " ++ show res)
+               cpUpdCU modNm $ ecuDirIsWritable ^= res
+               breturn res
+
+          EcuCanCompile modNm -> do
+               ecu  <- bcall $ EcuOfName modNm
+               isWr <- bcall $ DirOfModIsWriteable modNm
+               mbTm <- bcall $ ModfTimeOfFile modNm (ecu ^. ecuASTType) (ecu ^. ecuASTFileContent, ecu ^. ecuASTFileUse) ASTFileTiming_Current
+               breturn $ isJust mbTm && isWr
+                     
+%%]]
+
+%%[[50
+          FoldHsMod modNm -> do
+               ecu  <- bcall $ EcuOfName modNm
+               hs   <- bcall $ ASTFromFile (modNm,ASTFileNameOverride_AsIs) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_SrcImport) ASTFileTiming_Current
+               crsi <- bcall CRSI
+               opts <- bcall $ EHCOptsOf modNm
+               let  -- (ecu,crsi,opts,_) = crBaseInfo modNm cr
+                    inh        = crsiHSModInh crsi
+                    hsSemMod   = HSSemMod.wrap_AGItf (HSSemMod.sem_AGItf hs)
+                                                     (inh { HSSemMod.gUniq_Inh_AGItf        = crsi ^. crsiHereUID
+                                                          , HSSemMod.moduleNm_Inh_AGItf     = modNm
+                                                          })
+                    hasMain= HSSemMod.mainValExists_Syn_AGItf hsSemMod
+%%[[99
+                    pragmas = HSSemMod.fileHeaderPragmas_Syn_AGItf hsSemMod
+                    (ecuOpts,modifiedOpts)
+                            = ehcOptUpdateWithPragmas pragmas opts
+%%]]
+               cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
+                             . ecuSetHasMain hasMain
+%%[[99
+                             . ecuStorePragmas pragmas
+                             . (if modifiedOpts then ecuStoreOpts ecuOpts else id)
+%%]]
+                             )
+               breturn
+                 ( hsSemMod
+                 , hasMain
+%%[[99
+                 , pragmas
+                 , if modifiedOpts then Just ecuOpts else Nothing
+%%]]
+                 )
 %%]]
 
 %%[[99
           FPathPreprocessedWithCPP pkgKeyDirL modNm -> do
-               Just <$> cpPreprocessWithCPP pkgKeyDirL modNm
+               -- Just <$> cpPreprocessWithCPP pkgKeyDirL modNm
+               -- cr <- get
+               opts <- bcall $ EHCOptsOf modNm
+               ecu  <- bcall $ EcuOf modNm
+               let fp              = ecuFilePath ecu
+                   fpCPP           = fpathSetSuff {- mkOutputFPath opts modNm fp -} (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
+                   -- fpCPP           = fpathSetBase {- mkOutputFPath opts modNm fp -} (fpathBase fp ++ "-cpp") fp
+                   shellCmdCpp     = Cfg.shellCmdOverride opts Cfg.shellCmdCpp PgmExec_CPP
+                   shellCmdCppOpts = execOptsPlain $ Map.findWithDefault [] shellCmdCpp $ ehcOptExecOptsMp opts
+                   preCPP  = mkShellCmd' [Cmd_CPP,Cmd_CPP_Preprocessing] shellCmdCpp
+                               (  Cfg.cppOpts ++ gccDefs opts ["CPP"]
+                               ++ map cppOptF shellCmdCppOpts -- [ {- "traditional-cpp", -} {- "std=gnu99", -} "fno-show-column", "P" ]
+%%[[(99 codegen)
+                               ++ [ cppOptI d | d <- gccInclDirs opts pkgKeyDirL ]
+%%]]
+                               ++ ehcOptCmdLineOpts opts
+                               ++ map (cppArg . fpathToStr) [ fp ] -- , fpCPP ]
+                               )
+               when (ehcOptVerbosity opts >= VerboseALot) $ do
+                 cpMsg modNm VerboseALot "CPP"
+                 -- liftIO $ putStrLn ("pkg db: " ++ show (ehcOptPkgDb opts))
+                 -- liftIO $ putStrLn ("pkg srch filter: " ++ (show $ ehcOptPackageSearchFilter opts))
+                 -- liftIO $ putStrLn ("exposed pkgs: " ++ show (pkgExposedPackages $ ehcOptPkgDb opts))
+                 -- liftIO $ putStrLn ("pkgKeyDirL: " ++ show pkgKeyDirL)
+                 liftIO $ putStrLn $ showShellCmd preCPP
 
+               -- when (ecuCanCompile ecu)
+               ifM (bcall $ EcuCanCompile modNm) 
+                 (do liftIO $ fpathEnsureExists fpCPP
+                     cpSystem' (Just $ fpathToStr fpCPP) preCPP
+                     cpRegisterFilesToRm [fpCPP]
+                     cpUpdCU modNm (ecuStoreCppFilePath fpCPP)
+                     breturn $ Just fpCPP
+                 )
+                 (do breturn Nothing
+                 )
 %%]]
           
           _ -> panic $ "BuildFunction.Run.bcall: not implemented: " ++ show bfun
@@ -276,6 +376,7 @@ bderef' :: forall res m . (Typeable res, EHCCompileRunner m) => BRef res -> EHCo
 bderef' bref = do
     cr <- get
     case bref of
+      BRef_CRSI -> return (Just $ cr ^. crStateInfo, Nothing) 
       BRef_ECU modNm -> return (crMbCU modNm cr, Just $ \ecu -> cpUpdCU modNm (const ecu))
       BRef_EHCOpts modNm -> return (Just choose, Nothing)
         where opts = cr ^. crStateInfo ^. crsiOpts

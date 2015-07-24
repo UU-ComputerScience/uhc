@@ -205,7 +205,7 @@ data EHCompileUnit
       , _ecuMbPrevHIInfo     :: !(Maybe HI.HIInfo)                  -- possible HI info of previous run
       , ecuMbOptim           :: !(Maybe Optim)
       , _ecuMbHIInfo         :: !(Maybe HI.HIInfo)                  -- HI info of module
-      , ecuDirIsWritable     :: !Bool                               -- can be written in dir of module?
+      , _ecuDirIsWritable    :: !Bool                               -- can be written in dir of module?
 %%]]
 %%[[99
       , ecuMbOpts            :: (Maybe EHCOpts)                     -- possibly per module adaption of options (caused by pragmas)
@@ -232,23 +232,14 @@ mkLabel ''EHCompileUnit
 ecuCore = isoMb "ecuMbCore" ecuMbCore
 ecuCoreSem = isoMb "ecuMbCoreSem" ecuMbCoreSem
 %%]
-%%[(50 core) export(ecuMbCoreTime, ecuCoreTime)
-ecuCoreTime = isoMb "ecuMbCoreTime" ecuMbCoreTime
-%%]
 %%[(8 grin) export(ecuMbGrin, ecuGrin)
 ecuGrin = isoMb "ecuMbGrin" ecuMbGrin
-%%]
-%%[(50 grin) export(ecuMbGrinTime, ecuGrinTime)
-ecuGrinTime = isoMb "ecuMbGrinTime" ecuMbGrinTime
 %%]
 %%[(8 javascript) export(ecuMbJavaScript, ecuJavaScript)
 ecuJavaScript = isoMb "ecuMbJavaScript" ecuMbJavaScript
 %%]
 %%[(8 corerun) export(ecuMbCore2CoreRunSem, ecuMbCoreRun, ecuCoreRun)
 ecuCoreRun = isoMb "ecuMbCoreRun" ecuMbCoreRun
-%%]
-%%[(50 corerun) export(ecuMbCoreRunTime, ecuCoreRunTime)
-ecuCoreRunTime = isoMb "ecuMbCoreRunTime" ecuMbCoreRunTime
 %%]
 %%[(8 corein) export(ecuMbCoreSemMod, ecuCoreSemMod)
 ecuCoreSemMod = isoMb "ecuMbCoreSemMod" ecuMbCoreSemMod
@@ -270,6 +261,21 @@ ecuPrevHIInfo = isoMb "ecuMbPrevHIInfo" ecuMbPrevHIInfo
 ecuHSSemMod = isoMb "ecuMbHSSemMod" ecuMbHSSemMod
 ecuSrcTime = isoMb "ecuMbSrcTime" ecuMbSrcTime
 ecuHIInfoTime = isoMb "ecuMbHIInfoTime" ecuMbHIInfoTime
+%%]
+
+%%[50 export(ecuDirIsWritable)
+%%]
+
+%%[(50 core) export(ecuMbCoreTime, ecuCoreTime)
+ecuCoreTime = isoMb "ecuMbCoreTime" ecuMbCoreTime
+%%]
+
+%%[(50 grin) export(ecuMbGrinTime, ecuGrinTime)
+ecuGrinTime = isoMb "ecuMbGrinTime" ecuMbGrinTime
+%%]
+
+%%[(50 corerun) export(ecuMbCoreRunTime, ecuCoreRunTime)
+ecuCoreRunTime = isoMb "ecuMbCoreRunTime" ecuMbCoreRunTime
 %%]
 
 %%[99 export(ecuMbPrevSearchInfo, ecuPrevSearchInfo)
@@ -386,7 +392,7 @@ emptyECU
       , _ecuMbPrevHIInfo     = Nothing
       , ecuMbOptim           = Nothing
       , _ecuMbHIInfo         = Nothing
-      , ecuDirIsWritable     = False
+      , _ecuDirIsWritable    = False
 %%]]
 %%[[99
       , ecuMbOpts            = Nothing
@@ -477,26 +483,26 @@ instance FileLocatable EHCompileUnit FileLoc where
 
 %%[8
 instance CompileUnit EHCompileUnit HsName FileLoc FileSuffInitState where
-  cuDefault         = emptyECU
-  cuFPath           = ecuFilePath
-  cuLocation        = fileLocation
-  cuKey             = ecuModNm
-  cuState u         = (ecuState u, _ecuASTType u, _ecuASTFileContent u, _ecuASTFileUse u)
-  cuUpdFPath        = ecuStoreSrcFilePath
-  cuUpdLocation     = ecuStoreFileLocation
-  cuUpdState (s,t,c,u) = ecuStoreState s . (ecuASTType ^= t) . (ecuASTFileContent ^= c) . (ecuASTFileUse ^= u)
-  cuUpdKey   nm u   = u {ecuModNm = nm}
+  cuDefault             = emptyECU
+  cuFPath               = ecuFilePath
+  cuLocation            = fileLocation
+  cuKey                 = ecuModNm
+  cuState u             = (ecuState u, _ecuASTType u, _ecuASTFileContent u, _ecuASTFileUse u)
+  cuUpdFPath            = ecuStoreSrcFilePath
+  cuUpdLocation         = ecuStoreFileLocation
+  cuUpdState (s,t,c,u)  = ecuStoreState s . (ecuASTType ^= t) . (ecuASTFileContent ^= c) . (ecuASTFileUse ^= u)
+  cuUpdKey   nm u       = u {ecuModNm = nm}
 %%[[8
-  cuImports         = const []
+  cuImports             = const []
 %%][50
-  cuImports         = ecuImpNmL
+  cuImports             = ecuImpNmL
 %%]]
 %%[[(99 codegen)
-  cuParticipation u = if not (Set.null $ Set.filter (Pragma.pragmaIsExcludeTarget $ ecuTarget u) $ ecuPragmas u)
-                      then [CompileParticipation_NoImport]
-                      else []
+  cuParticipation u     = if not (Set.null $ Set.filter (Pragma.pragmaIsExcludeTarget $ ecuTarget u) $ ecuPragmas u)
+                          then [CompileParticipation_NoImport]
+                          else []
 %%][99
-  cuParticipation u = []
+  cuParticipation u     = []
 %%]]
 
 -- instance FPathError Err
@@ -723,7 +729,7 @@ ecuStoreGrinTime x ecu = ecu { _ecuMbGrinTime = Just x }
 
 %%[50 export(ecuStoreDirIsWritable)
 ecuStoreDirIsWritable :: EcuUpdater Bool
-ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
+ecuStoreDirIsWritable x ecu = ecu { _ecuDirIsWritable = x }
 %%]
 
 %%[99 export(ecuStoreOpts,ecuStorePragmas,ecuStoreUsedNames,ecuSetTarget)
@@ -804,5 +810,5 @@ ecuCanUseHIInsteadOfHS ecu
 %%[50 export(ecuCanCompile)
 -- | Compilation can actually be done?
 ecuCanCompile :: EHCompileUnit -> Bool
-ecuCanCompile ecu = isJust (_ecuMbSrcTime ecu) && ecuDirIsWritable ecu
+ecuCanCompile ecu = isJust (_ecuMbSrcTime ecu) && _ecuDirIsWritable ecu
 %%]
