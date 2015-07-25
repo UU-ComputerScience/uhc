@@ -39,7 +39,7 @@ data CHR cnstr guard subst
       , chrBody         :: ![cnstr]
       }
 %%[[50
-  deriving (Typeable, Data)
+  deriving (Typeable, Data, Generic)
 %%]]
 
 emptyCHRGuard :: [a]
@@ -155,6 +155,6 @@ instance (ForceEval c, ForceEval g) => ForceEval (CHR c g s) where
 
 %%[(50 hmtyinfer || hmtyast)
 instance (Serialize c,Serialize g,Serialize s) => Serialize (CHR c g s) where
-  sput (CHR a b c d) = sput a >> sput b >> sput c >> sput d
-  sget = liftM4 CHR sget sget sget sget
+  -- sput (CHR a b c d) = sput a >> sput b >> sput c >> sput d
+  -- sget = liftM4 CHR sget sget sget sget
 %%]

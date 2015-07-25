@@ -154,7 +154,7 @@ data StoredCHR p i g s
       , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
       }
 %%[[50
-  deriving (Typeable, Data)
+  deriving (Typeable, Data, Generic)
 %%]]
 
 -- | The size of the simplification part of a CHR
@@ -167,7 +167,7 @@ newtype CHRStore pred info guard subst
       { chrstoreTrie    :: CHRTrie Key [StoredCHR pred info guard subst]
       }
 %%[[50
-  deriving (Typeable, Data)
+  deriving (Typeable, Data, Generic)
 %%]]
 
 mkCHRStore trie = CHRStore trie
@@ -803,11 +803,11 @@ slvMatch env chr cnstrs
 
 %%[(50 hmtyinfer)
 instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (CHRStore p i g s) where
-  sput (CHRStore a) = sput a
-  sget = liftM CHRStore sget
+  -- sput (CHRStore a) = sput a
+  -- sget = liftM CHRStore sget
   
 instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (StoredCHR p i g s) where
-  sput (StoredCHR a b c d) = sput a >> sput b >> sput c >> sput d
-  sget = liftM4 StoredCHR sget sget sget sget
+  -- sput (StoredCHR a b c d) = sput a >> sput b >> sput c >> sput d
+  -- sget = liftM4 StoredCHR sget sget sget sget
 %%]
 

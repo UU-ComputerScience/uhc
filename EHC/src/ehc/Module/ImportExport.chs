@@ -63,7 +63,7 @@ data ModEnt
       , mentOwns    :: !(Set.Set ModEnt)
       , mentRange	:: !Range
       }
-  deriving (Show)
+  deriving (Show, Generic)
 
 instance Eq ModEnt where
   e1 == e2 = mentKind e1 == mentKind e2 && mentIdOcc e1 == mentIdOcc e2
@@ -574,7 +574,7 @@ instance ForceEval ModEnt where
 
 %%[50
 instance Serialize ModEnt where
-  sput (ModEnt a b c d) = sput a >> sput b >> sput c >> sput d
-  sget = liftM4 ModEnt sget sget sget sget
+  -- sput (ModEnt a b c d) = sput a >> sput b >> sput c >> sput d
+  -- sget = liftM4 ModEnt sget sget sget sget
 %%]
 

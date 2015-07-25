@@ -55,7 +55,7 @@ data Pragma
       { pragmaExcludeTargets   		:: [Target]
       }
 %%]]
-  deriving (Eq,Ord,Show,Typeable,Data)
+  deriving (Eq,Ord,Show,Typeable,Data, Generic)
 
 %%]
 
@@ -115,40 +115,40 @@ pragmaInvolvesCmdLine _                     = False
 
 %%[99
 instance Serialize Pragma where
-  sput (Pragma_NoImplicitPrelude        ) = sputWord8 0
-  sput (Pragma_CPP                      ) = sputWord8 1
-  sput (Pragma_Derivable  a b c         ) = sputWord8 2 >> sput a >> sput b >> sput c
-  sput (Pragma_NoGenericDeriving        ) = sputWord8 3
-  sput (Pragma_GenericDeriving          ) = sputWord8 4
-  sput (Pragma_ExtensibleRecords        ) = sputWord8 5
-  sput (Pragma_ExcludeIfTarget a        ) = sputWord8 6 >> sput a
-  sput (Pragma_Fusion        			) = sputWord8 7
-  sput (Pragma_NoBangPatterns           ) = sputWord8 8
-  sput (Pragma_BangPatterns             ) = sputWord8 9
-  sput (Pragma_OptionsUHC      a        ) = sputWord8 10 >> sput a
-  sput (Pragma_NoPolyKinds       		) = sputWord8 11
-  sput (Pragma_PolyKinds         		) = sputWord8 12
-  sput (Pragma_NoOverloadedStrings		) = sputWord8 13
-  sput (Pragma_OverloadedStrings 		) = sputWord8 14
-  sget = do t <- sgetWord8
-            case t of
-              0  -> return Pragma_NoImplicitPrelude
-              1  -> return Pragma_CPP
-              2  -> liftM3 Pragma_Derivable              sget sget sget
-              3  -> return Pragma_NoGenericDeriving
-              4  -> return Pragma_GenericDeriving
-              5  -> return Pragma_ExtensibleRecords
-%%[[(99 codegen)
-              6  -> liftM  Pragma_ExcludeIfTarget        sget
-%%]]
-              7  -> return Pragma_Fusion
-              8  -> return Pragma_NoBangPatterns
-              9  -> return Pragma_BangPatterns
-              10 -> liftM  Pragma_OptionsUHC             sget
-              11 -> return Pragma_NoPolyKinds       
-              12 -> return Pragma_PolyKinds         
-              13 -> return Pragma_NoOverloadedStrings
-              14 -> return Pragma_OverloadedStrings 
+--   sput (Pragma_NoImplicitPrelude        ) = sputWord8 0
+--   sput (Pragma_CPP                      ) = sputWord8 1
+--   sput (Pragma_Derivable  a b c         ) = sputWord8 2 >> sput a >> sput b >> sput c
+--   sput (Pragma_NoGenericDeriving        ) = sputWord8 3
+--   sput (Pragma_GenericDeriving          ) = sputWord8 4
+--   sput (Pragma_ExtensibleRecords        ) = sputWord8 5
+--   sput (Pragma_ExcludeIfTarget a        ) = sputWord8 6 >> sput a
+--   sput (Pragma_Fusion        			) = sputWord8 7
+--   sput (Pragma_NoBangPatterns           ) = sputWord8 8
+--   sput (Pragma_BangPatterns             ) = sputWord8 9
+--   sput (Pragma_OptionsUHC      a        ) = sputWord8 10 >> sput a
+--   sput (Pragma_NoPolyKinds       		) = sputWord8 11
+--   sput (Pragma_PolyKinds         		) = sputWord8 12
+--   sput (Pragma_NoOverloadedStrings		) = sputWord8 13
+--   sput (Pragma_OverloadedStrings 		) = sputWord8 14
+--   sget = do t <- sgetWord8
+--             case t of
+--               0  -> return Pragma_NoImplicitPrelude
+--               1  -> return Pragma_CPP
+--               2  -> liftM3 Pragma_Derivable              sget sget sget
+--               3  -> return Pragma_NoGenericDeriving
+--               4  -> return Pragma_GenericDeriving
+--               5  -> return Pragma_ExtensibleRecords
+-- %%[[(99 codegen)
+--               6  -> liftM  Pragma_ExcludeIfTarget        sget
+-- %%]]
+--               7  -> return Pragma_Fusion
+--               8  -> return Pragma_NoBangPatterns
+--               9  -> return Pragma_BangPatterns
+--               10 -> liftM  Pragma_OptionsUHC             sget
+--               11 -> return Pragma_NoPolyKinds       
+--               12 -> return Pragma_PolyKinds         
+--               13 -> return Pragma_NoOverloadedStrings
+--               14 -> return Pragma_OverloadedStrings 
 
 %%]
 

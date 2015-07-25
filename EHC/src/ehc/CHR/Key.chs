@@ -40,7 +40,7 @@ data Key
 %%]]
   deriving ( Eq, Ord
 %%[[50
-           , Typeable, Data
+           , Typeable, Data, Generic
 %%]]
            )
 %%]
@@ -167,23 +167,23 @@ instance TTKeyable x => TreeTrieKeyable x Key where
 
 %%[50
 instance Serialize Key where
-  sput (Key_HNm  a) = sputWord8 0 >> sput a
-  sput (Key_UID  a) = sputWord8 1 >> sput a
-  sput (Key_Str  a) = sputWord8 2 >> sput a
-%%[[(50 hmtyinfer || hmtyast)
-  sput (Key_TyQu a) = sputWord8 3 >> sput a
-  sput (Key_Ty   a) = sputWord8 4 >> sput a
-%%]]
-  sget = do
-    t <- sgetWord8
-    case t of
-      0 -> liftM  Key_HNm  sget
-      1 -> liftM  Key_UID  sget
-      2 -> liftM  Key_Str  sget
-%%[[(50 hmtyinfer || hmtyast)
-      3 -> liftM  Key_TyQu sget
-      4 -> liftM  Key_Ty   sget
-%%]]
+--   sput (Key_HNm  a) = sputWord8 0 >> sput a
+--   sput (Key_UID  a) = sputWord8 1 >> sput a
+--   sput (Key_Str  a) = sputWord8 2 >> sput a
+-- %%[[(50 hmtyinfer || hmtyast)
+--   sput (Key_TyQu a) = sputWord8 3 >> sput a
+--   sput (Key_Ty   a) = sputWord8 4 >> sput a
+-- %%]]
+--   sget = do
+--     t <- sgetWord8
+--     case t of
+--       0 -> liftM  Key_HNm  sget
+--       1 -> liftM  Key_UID  sget
+--       2 -> liftM  Key_Str  sget
+-- %%[[(50 hmtyinfer || hmtyast)
+--       3 -> liftM  Key_TyQu sget
+--       4 -> liftM  Key_Ty   sget
+-- %%]]
 %%]
 
 %%[9999

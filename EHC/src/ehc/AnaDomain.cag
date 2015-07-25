@@ -33,7 +33,7 @@ Analysis domains
 DERIVING *
   : Show
 %%[[50
-  , Typeable, Data
+  , Typeable, Data, Generic
 %%]]
 
 DERIVING *
@@ -532,59 +532,59 @@ instance Serialize RQuant where
   sget = sgetEnum8
 
 instance Serialize RelevQual where
-  sput (RelevQual_SubEval a b        ) = sputWord8 0 >> sput a >> sput b
-  -- sput (RelevQual_Alt     a b c d e f) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e >> sput f
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM2 RelevQual_SubEval         sget sget
-            -- 1 -> liftM6 RelevQual_Alt             sget sget sget sget sget sget
+  -- sput (RelevQual_SubEval a b        ) = sputWord8 0 >> sput a >> sput b
+  -- -- sput (RelevQual_Alt     a b c d e f) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e >> sput f
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> liftM2 RelevQual_SubEval         sget sget
+  --           -- 1 -> liftM6 RelevQual_Alt             sget sget sget sget sget sget
 
 instance Serialize RelevTy where
-  sput (RelevTy_Ana   a        ) = sputWord8 0 >> sput a
-  sput (RelevTy_Fun   a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
-  sput (RelevTy_None           ) = sputWord8 2
-  sput (RelevTy_Err   a        ) = sputWord8 3 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM  RelevTy_Ana         sget
-            1 -> liftM5 RelevTy_Fun         sget sget sget sget sget
-            2 -> return RelevTy_None
-            3 -> liftM  RelevTy_Err         sget
+  -- sput (RelevTy_Ana   a        ) = sputWord8 0 >> sput a
+  -- sput (RelevTy_Fun   a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  -- sput (RelevTy_None           ) = sputWord8 2
+  -- sput (RelevTy_Err   a        ) = sputWord8 3 >> sput a
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> liftM  RelevTy_Ana         sget
+  --           1 -> liftM5 RelevTy_Fun         sget sget sget sget sget
+  --           2 -> return RelevTy_None
+  --           3 -> liftM  RelevTy_Err         sget
 
 instance Serialize RelevCoe where
-  sput (RelevCoe_Id             ) = sputWord8 0
-  sput (RelevCoe_Err     a      ) = sputWord8 1 >> sput a
-  sput (RelevCoe_Comp    a b    ) = sputWord8 2 >> sput a >> sput b
-  sput (RelevCoe_Fun     a b    ) = sputWord8 3 >> sput a >> sput b
-  sput (RelevCoe_Cast    a      ) = sputWord8 4 >> sput a
-  sput (RelevCoe_Eval    a b    ) = sputWord8 5 >> sput a >> sput b
-  sput (RelevCoe_CastTy  a b    ) = sputWord8 6 >> sput a >> sput b
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> return RelevCoe_Id
-            1 -> liftM  RelevCoe_Err         sget
-            2 -> liftM2 RelevCoe_Comp        sget sget
-            3 -> liftM2 RelevCoe_Fun         sget sget
-            4 -> liftM  RelevCoe_Cast        sget
-            5 -> liftM2 RelevCoe_Eval        sget sget
-            6 -> liftM2 RelevCoe_CastTy      sget sget
+  -- sput (RelevCoe_Id             ) = sputWord8 0
+  -- sput (RelevCoe_Err     a      ) = sputWord8 1 >> sput a
+  -- sput (RelevCoe_Comp    a b    ) = sputWord8 2 >> sput a >> sput b
+  -- sput (RelevCoe_Fun     a b    ) = sputWord8 3 >> sput a >> sput b
+  -- sput (RelevCoe_Cast    a      ) = sputWord8 4 >> sput a
+  -- sput (RelevCoe_Eval    a b    ) = sputWord8 5 >> sput a >> sput b
+  -- sput (RelevCoe_CastTy  a b    ) = sputWord8 6 >> sput a >> sput b
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> return RelevCoe_Id
+  --           1 -> liftM  RelevCoe_Err         sget
+  --           2 -> liftM2 RelevCoe_Comp        sget sget
+  --           3 -> liftM2 RelevCoe_Fun         sget sget
+  --           4 -> liftM  RelevCoe_Cast        sget
+  --           5 -> liftM2 RelevCoe_Eval        sget sget
+  --           6 -> liftM2 RelevCoe_CastTy      sget sget
 
 instance Serialize AnaEval where
-  sput (AnaEval_Var   a      ) = sputWord8 0 >> sput a
-  sput (AnaEval_WHNF         ) = sputWord8 1
-  sput (AnaEval_Lazy         ) = sputWord8 2
-  sput (AnaEval_Meet  a      ) = sputWord8 3 >> sput a
-  sput (AnaEval_Join  a      ) = sputWord8 4 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM  AnaEval_Var         sget
-            1 -> return AnaEval_WHNF         
-            2 -> return AnaEval_Lazy         
-            3 -> liftM  AnaEval_Meet        sget
-            4 -> liftM  AnaEval_Join        sget
+  -- sput (AnaEval_Var   a      ) = sputWord8 0 >> sput a
+  -- sput (AnaEval_WHNF         ) = sputWord8 1
+  -- sput (AnaEval_Lazy         ) = sputWord8 2
+  -- sput (AnaEval_Meet  a      ) = sputWord8 3 >> sput a
+  -- sput (AnaEval_Join  a      ) = sputWord8 4 >> sput a
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> liftM  AnaEval_Var         sget
+  --           1 -> return AnaEval_WHNF         
+  --           2 -> return AnaEval_Lazy         
+  --           3 -> liftM  AnaEval_Meet        sget
+  --           4 -> liftM  AnaEval_Join        sget
 
 %%]

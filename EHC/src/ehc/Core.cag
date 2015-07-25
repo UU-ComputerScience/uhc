@@ -115,7 +115,7 @@ DERIVING *
 
 %%[(50 core) ag
 DERIVING *
-  : Data
+  : Data, Generic
 %%]
 
 %%[(50 core) ag
@@ -782,208 +782,208 @@ instance AbstractCore CExpr CMetaVal CBind CBound ACoreAppLikeMetaBound CBindCat
 
 %%[(50 core) hs
 instance Serialize CModule where
-  sput (CModule_Mod   a b c d e) = {- sputWord8 0 >> -} sput a >> sput b >> sput c >> sput d >> sput e
-  sget
-    = do {- t <- sgetWord8
-         case t of
-            0 -> -} liftM5 CModule_Mod         sget sget sget sget sget
+  -- sput (CModule_Mod   a b c d e) = {- sputWord8 0 >> -} sput a >> sput b >> sput c >> sput d >> sput e
+  -- sget
+  --   = do {- t <- sgetWord8
+  --        case t of
+  --           0 -> -} liftM5 CModule_Mod         sget sget sget sget sget
 
 instance Serialize CExport where
-  sput (CExport_Export     a  ) = sputWord8 0 >> sput a
-  sput (CExport_ExportData a b) = sputWord8 1 >> sput a >> sput b
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM   CExport_Export       sget
-            1 -> liftM2  CExport_ExportData	  sget sget
+  -- sput (CExport_Export     a  ) = sputWord8 0 >> sput a
+  -- sput (CExport_ExportData a b) = sputWord8 1 >> sput a >> sput b
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> liftM   CExport_Export       sget
+  --           1 -> liftM2  CExport_ExportData	  sget sget
 
 instance Serialize CImport where
-  sput (CImport_Import a  ) = {- sputWord8 0 >> -} sput a
-  sget
-    = do {- t <- sgetWord8
-         case t of
-            0 -> -} liftM   CImport_Import       sget
+  -- sput (CImport_Import a  ) = {- sputWord8 0 >> -} sput a
+  -- sget
+  --   = do {- t <- sgetWord8
+  --        case t of
+  --           0 -> -} liftM   CImport_Import       sget
 
 instance Serialize CDeclMeta where
-  sput (CDeclMeta_Data   a b) = {- sputWord8 0 >> -} sput a >> sput b
-  sget
-    = do {- t <- sgetWord8
-         case t of
-            0 -> -} liftM2  CDeclMeta_Data         sget sget
+  -- sput (CDeclMeta_Data   a b) = {- sputWord8 0 >> -} sput a >> sput b
+  -- sget
+  --   = do {- t <- sgetWord8
+  --        case t of
+  --           0 -> -} liftM2  CDeclMeta_Data         sget sget
 
 instance Serialize CDataCon where
-  sput (CDataCon_Con   a b c) = {- sputWord8 0 >> -} sput a >> sput b >> sput c
-  sget
-    = do {- t <- sgetWord8
-         case t of
-            0 -> -} liftM3  CDataCon_Con         sget sget sget
+  -- sput (CDataCon_Con   a b c) = {- sputWord8 0 >> -} sput a >> sput b >> sput c
+  -- sget
+  --   = do {- t <- sgetWord8
+  --        case t of
+  --           0 -> -} liftM3  CDataCon_Con         sget sget sget
 
 instance Serialize CExpr where
-  sput (CExpr_Let       a b c       ) = sputWord8  0 >> sput a >> sput b >> sput c
-  sput (CExpr_App       a b         ) = sputWord8  1 >> sput a >> sput b
-  sput (CExpr_Lam       a b         ) = sputWord8  2 >> sput a >> sput b
-  sput (CExpr_Case      a b c       ) = sputWord8  3 >> sput a >> sput b >> sput c
-  sput (CExpr_Var       a           ) = sputWord8  4 >> sput a
-  sput (CExpr_Int       a           ) = sputWord8  5 >> sput a
-  sput (CExpr_Char      a           ) = sputWord8  6 >> sput a
-  sput (CExpr_String    a           ) = sputWord8  7 >> sput a
-  sput (CExpr_Tup       a           ) = sputWord8  8 >> sput a
-  sput (CExpr_TupDel    a b c d     ) = sputWord8  9 >> sput a >> sput b >> sput c >> sput d
-  sput (CExpr_TupIns    a b c d e   ) = sputWord8 10 >> sput a >> sput b >> sput c >> sput d >> sput e
-  sput (CExpr_TupUpd    a b c d e   ) = sputWord8 11 >> sput a >> sput b >> sput c >> sput d >> sput e
-  sput (CExpr_CaseAltFail
-                        a b         ) = sputWord8 12 >> sput a >> sput b
-  sput (CExpr_Hole      a           ) = sputWord8 13 >> sput a
-  sput (CExpr_HoleLet   a b         ) = sputWord8 14 >> sput a >> sput b
-  sput (CExpr_ImplsApp  a b         ) = sputWord8 15 >> sput a >> sput b
-  sput (CExpr_ImplsLam  a b         ) = sputWord8 16 >> sput a >> sput b
-  sput (CExpr_CoeArg                ) = sputWord8 17
-%%[[97
-  sput (CExpr_Integer   a           ) = sputWord8 18 >> sput a
-%%]]
-  sput (CExpr_Ann       a b         ) = sputWord8 19 >> sput a >> sput b
-  sput (CExpr_FFI       a b c d     ) = sputWord8 20 >> sput a >> sput b >> sput c >> sput d
-  sput (CExpr_Dbg       a           ) = sputWord8 21 >> sput a
-%%[[(50 coresysf)
-  sput (CExpr_Arr       a b         ) = sputWord8 22 >> sput a >> sput b
-  sput (CExpr_Cast      a b         ) = sputWord8 23 >> sput a >> sput b
-%%]]
-  sget
-    = do t <- sgetWord8
-         case t of
-           0  -> liftM3 CExpr_Let           sget sget sget
-           1  -> liftM2 CExpr_App           sget sget
-           2  -> liftM2 CExpr_Lam           sget sget
-           3  -> liftM3 CExpr_Case          sget sget sget
-           4  -> liftM  CExpr_Var           sget
-           5  -> liftM  CExpr_Int           sget
-           6  -> liftM  CExpr_Char          sget
-           7  -> liftM  CExpr_String        sget
-           8  -> liftM  CExpr_Tup           sget
-           9  -> liftM4 CExpr_TupDel        sget sget sget sget
-           10 -> liftM5 CExpr_TupIns        sget sget sget sget sget
-           11 -> liftM5 CExpr_TupUpd        sget sget sget sget sget
-           12 -> liftM2 CExpr_CaseAltFail   sget sget
-           13 -> liftM  CExpr_Hole          sget
-           14 -> liftM2 CExpr_HoleLet       sget sget
-           15 -> liftM2 CExpr_ImplsApp      sget sget
-           16 -> liftM2 CExpr_ImplsLam      sget sget
-           17 -> return CExpr_CoeArg    
-%%[[97
-           18 -> liftM  CExpr_Integer       sget
-%%]]
-           19 -> liftM2 CExpr_Ann           sget sget
-           20 -> liftM4 CExpr_FFI           sget sget sget sget
-           21 -> liftM  CExpr_Dbg           sget
-%%[[(50 coresysf)
-           22 -> liftM2 CExpr_Arr           sget sget
-           23 -> liftM2 CExpr_Cast          sget sget
-%%]]
+--   sput (CExpr_Let       a b c       ) = sputWord8  0 >> sput a >> sput b >> sput c
+--   sput (CExpr_App       a b         ) = sputWord8  1 >> sput a >> sput b
+--   sput (CExpr_Lam       a b         ) = sputWord8  2 >> sput a >> sput b
+--   sput (CExpr_Case      a b c       ) = sputWord8  3 >> sput a >> sput b >> sput c
+--   sput (CExpr_Var       a           ) = sputWord8  4 >> sput a
+--   sput (CExpr_Int       a           ) = sputWord8  5 >> sput a
+--   sput (CExpr_Char      a           ) = sputWord8  6 >> sput a
+--   sput (CExpr_String    a           ) = sputWord8  7 >> sput a
+--   sput (CExpr_Tup       a           ) = sputWord8  8 >> sput a
+--   sput (CExpr_TupDel    a b c d     ) = sputWord8  9 >> sput a >> sput b >> sput c >> sput d
+--   sput (CExpr_TupIns    a b c d e   ) = sputWord8 10 >> sput a >> sput b >> sput c >> sput d >> sput e
+--   sput (CExpr_TupUpd    a b c d e   ) = sputWord8 11 >> sput a >> sput b >> sput c >> sput d >> sput e
+--   sput (CExpr_CaseAltFail
+--                         a b         ) = sputWord8 12 >> sput a >> sput b
+--   sput (CExpr_Hole      a           ) = sputWord8 13 >> sput a
+--   sput (CExpr_HoleLet   a b         ) = sputWord8 14 >> sput a >> sput b
+--   sput (CExpr_ImplsApp  a b         ) = sputWord8 15 >> sput a >> sput b
+--   sput (CExpr_ImplsLam  a b         ) = sputWord8 16 >> sput a >> sput b
+--   sput (CExpr_CoeArg                ) = sputWord8 17
+-- %%[[97
+--   sput (CExpr_Integer   a           ) = sputWord8 18 >> sput a
+-- %%]]
+--   sput (CExpr_Ann       a b         ) = sputWord8 19 >> sput a >> sput b
+--   sput (CExpr_FFI       a b c d     ) = sputWord8 20 >> sput a >> sput b >> sput c >> sput d
+--   sput (CExpr_Dbg       a           ) = sputWord8 21 >> sput a
+-- %%[[(50 coresysf)
+--   sput (CExpr_Arr       a b         ) = sputWord8 22 >> sput a >> sput b
+--   sput (CExpr_Cast      a b         ) = sputWord8 23 >> sput a >> sput b
+-- %%]]
+--   sget
+--     = do t <- sgetWord8
+--          case t of
+--            0  -> liftM3 CExpr_Let           sget sget sget
+--            1  -> liftM2 CExpr_App           sget sget
+--            2  -> liftM2 CExpr_Lam           sget sget
+--            3  -> liftM3 CExpr_Case          sget sget sget
+--            4  -> liftM  CExpr_Var           sget
+--            5  -> liftM  CExpr_Int           sget
+--            6  -> liftM  CExpr_Char          sget
+--            7  -> liftM  CExpr_String        sget
+--            8  -> liftM  CExpr_Tup           sget
+--            9  -> liftM4 CExpr_TupDel        sget sget sget sget
+--            10 -> liftM5 CExpr_TupIns        sget sget sget sget sget
+--            11 -> liftM5 CExpr_TupUpd        sget sget sget sget sget
+--            12 -> liftM2 CExpr_CaseAltFail   sget sget
+--            13 -> liftM  CExpr_Hole          sget
+--            14 -> liftM2 CExpr_HoleLet       sget sget
+--            15 -> liftM2 CExpr_ImplsApp      sget sget
+--            16 -> liftM2 CExpr_ImplsLam      sget sget
+--            17 -> return CExpr_CoeArg    
+-- %%[[97
+--            18 -> liftM  CExpr_Integer       sget
+-- %%]]
+--            19 -> liftM2 CExpr_Ann           sget sget
+--            20 -> liftM4 CExpr_FFI           sget sget sget sget
+--            21 -> liftM  CExpr_Dbg           sget
+-- %%[[(50 coresysf)
+--            22 -> liftM2 CExpr_Arr           sget sget
+--            23 -> liftM2 CExpr_Cast          sget sget
+-- %%]]
 
 instance Serialize CMetaVal where
-  sput (CMetaVal_Val                ) = sputWord8 0
-  sput (CMetaVal_Dict               ) = sputWord8 1
-  sput (CMetaVal_DictClass      a   ) = sputWord8 2 >> sput a
-  sput (CMetaVal_DictInstance   a   ) = sputWord8 3 >> sput a
-  sput (CMetaVal_Track          a   ) = sputWord8 4 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> return CMetaVal_Val                    
-            1 -> return CMetaVal_Dict
-            2 -> liftM  CMetaVal_DictClass          sget
-            3 -> liftM  CMetaVal_DictInstance       sget
-            4 -> liftM  CMetaVal_Track              sget
+  -- sput (CMetaVal_Val                ) = sputWord8 0
+  -- sput (CMetaVal_Dict               ) = sputWord8 1
+  -- sput (CMetaVal_DictClass      a   ) = sputWord8 2 >> sput a
+  -- sput (CMetaVal_DictInstance   a   ) = sputWord8 3 >> sput a
+  -- sput (CMetaVal_Track          a   ) = sputWord8 4 >> sput a
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> return CMetaVal_Val                    
+  --           1 -> return CMetaVal_Dict
+  --           2 -> liftM  CMetaVal_DictClass          sget
+  --           3 -> liftM  CMetaVal_DictInstance       sget
+  --           4 -> liftM  CMetaVal_Track              sget
 
 instance Serialize CExprAnn where
-  sput (CExprAnn_Ty    a) = sputWord8 0 >> sput a
-  sput (CExprAnn_Coe   a) = sputWord8 1 >> sput a
-  sput (CExprAnn_Debug _) = sputWord8 2
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM  CExprAnn_Ty         sget            
-            1 -> liftM  CExprAnn_Coe        sget            
-            2 -> return (CExprAnn_Debug     "")
+  -- sput (CExprAnn_Ty    a) = sputWord8 0 >> sput a
+  -- sput (CExprAnn_Coe   a) = sputWord8 1 >> sput a
+  -- sput (CExprAnn_Debug _) = sputWord8 2
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> liftM  CExprAnn_Ty         sget            
+  --           1 -> liftM  CExprAnn_Coe        sget            
+  --           2 -> return (CExprAnn_Debug     "")
 
 instance Serialize CBindAnn where
-  sput (CBindAnn_Coe   a) = sputWord8 0 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM  CBindAnn_Coe         sget            
+  -- sput (CBindAnn_Coe   a) = sputWord8 0 >> sput a
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> liftM  CBindAnn_Coe         sget            
 
 instance Serialize CBound where
-  sput (CBound_Bind     a b      ) = sputWord8 0 >> sput a >> sput b
-  -- sput (CBound_FFI   a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
-%%[[90
-  sput (CBound_FFE      a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
-%%]]
-  sput (CBound_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
-  sput (CBound_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
-  sput (CBound_Val     a b c d  ) = sputWord8 5 >> sput a >> sput b >> sput c >> sput d
-  sput (CBound_Ty      a b      ) = sputWord8 6 >> sput a >> sput b
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM2 CBound_Bind          sget sget
-            -- 1 -> liftM4 CBound_FFI           sget sget sget sget
-%%[[90           
-            2 -> liftM4 CBound_FFE           sget sget sget sget
-%%]]
-            3 -> liftM2 CBound_RelevTy       sget sget
-            4 -> liftM2 CBound_Meta          sget sget
-            5 -> liftM4 CBound_Val           sget sget sget sget
-            6 -> liftM2 CBound_Ty            sget sget
+--   sput (CBound_Bind     a b      ) = sputWord8 0 >> sput a >> sput b
+--   -- sput (CBound_FFI   a b c d  ) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d
+-- %%[[90
+--   sput (CBound_FFE      a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
+-- %%]]
+--   sput (CBound_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
+--   sput (CBound_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
+--   sput (CBound_Val     a b c d  ) = sputWord8 5 >> sput a >> sput b >> sput c >> sput d
+--   sput (CBound_Ty      a b      ) = sputWord8 6 >> sput a >> sput b
+--   sget
+--     = do t <- sgetWord8
+--          case t of
+--             0 -> liftM2 CBound_Bind          sget sget
+--             -- 1 -> liftM4 CBound_FFI           sget sget sget sget
+-- %%[[90           
+--             2 -> liftM4 CBound_FFE           sget sget sget sget
+-- %%]]
+--             3 -> liftM2 CBound_RelevTy       sget sget
+--             4 -> liftM2 CBound_Meta          sget sget
+--             5 -> liftM4 CBound_Val           sget sget sget sget
+--             6 -> liftM2 CBound_Ty            sget sget
 
 instance Serialize CBind where
-  sput (CBind_Bind a b      ) = {- sputWord8 0 >> -} sput a >> sput b
-  sget
-    = do {- t <- sgetWord8
-         case t of
-            0 -> -} liftM2 CBind_Bind          sget sget
+  -- sput (CBind_Bind a b      ) = {- sputWord8 0 >> -} sput a >> sput b
+  -- sget
+  --   = do {- t <- sgetWord8
+  --        case t of
+  --           0 -> -} liftM2 CBind_Bind          sget sget
 
 instance Serialize CAlt where
-  sput (CAlt_Alt   a b      ) = {- sputWord8 0 >> -} sput a >> sput b
-  sget
-    = do {- t <- sgetWord8
-         case t of
-            0 -> -} liftM2 CAlt_Alt         sget sget         
+  -- sput (CAlt_Alt   a b      ) = {- sputWord8 0 >> -} sput a >> sput b
+  -- sget
+  --   = do {- t <- sgetWord8
+  --        case t of
+  --           0 -> -} liftM2 CAlt_Alt         sget sget         
 
 instance Serialize CPat where
-  sput (CPat_Var       a        ) = sputWord8 0 >> sput a
-  sput (CPat_Con       a b c    ) = sputWord8 1 >> sput a >> sput b >> sput c
-  sput (CPat_Int       a        ) = sputWord8 2 >> sput a
-  sput (CPat_Char      a        ) = sputWord8 3 >> sput a
-%%[[97
-  sput (CPat_BoolExpr  a        ) = sputWord8 4 >> sput a
-%%]]
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM  CPat_Var         sget         
-            1 -> liftM3 CPat_Con         sget sget sget      
-            2 -> liftM  CPat_Int         sget         
-            3 -> liftM  CPat_Char        sget         
-%%[[97
-            4 -> liftM  CPat_BoolExpr    sget         
-%%]]
+--   sput (CPat_Var       a        ) = sputWord8 0 >> sput a
+--   sput (CPat_Con       a b c    ) = sputWord8 1 >> sput a >> sput b >> sput c
+--   sput (CPat_Int       a        ) = sputWord8 2 >> sput a
+--   sput (CPat_Char      a        ) = sputWord8 3 >> sput a
+-- %%[[97
+--   sput (CPat_BoolExpr  a        ) = sputWord8 4 >> sput a
+-- %%]]
+--   sget
+--     = do t <- sgetWord8
+--          case t of
+--             0 -> liftM  CPat_Var         sget         
+--             1 -> liftM3 CPat_Con         sget sget sget      
+--             2 -> liftM  CPat_Int         sget         
+--             3 -> liftM  CPat_Char        sget         
+-- %%[[97
+--             4 -> liftM  CPat_BoolExpr    sget         
+-- %%]]
 
 instance Serialize CPatRest where
-  sput (CPatRest_Var   a        ) = sputWord8 0 >> sput a
-  sput (CPatRest_Empty          ) = sputWord8 1
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> liftM  CPatRest_Var           sget         
-            1 -> return CPatRest_Empty  
+  -- sput (CPatRest_Var   a        ) = sputWord8 0 >> sput a
+  -- sput (CPatRest_Empty          ) = sputWord8 1
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> liftM  CPatRest_Var           sget         
+  --           1 -> return CPatRest_Empty  
 
 instance Serialize CPatFld where
-  sput (CPatFld_Fld   a b c d ) = {- sputWord8 0 >> -} sput a >> sput b >> sput c >> sput d
-  sget
-    = do {- t <- sgetWord8
-         case t of
-            0 -> -} liftM4 CPatFld_Fld         sget sget sget sget
+  -- sput (CPatFld_Fld   a b c d ) = {- sputWord8 0 >> -} sput a >> sput b >> sput c >> sput d
+  -- sget
+  --   = do {- t <- sgetWord8
+  --        case t of
+  --           0 -> -} liftM4 CPatFld_Fld         sget sget sget sget
 
 instance Serialize CBindCateg where
   sput = sputEnum8

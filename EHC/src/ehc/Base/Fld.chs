@@ -37,6 +37,7 @@ data Fld' inx
       { _fldNm	:: !(Maybe HsName)
       , _fldInx	:: !(Maybe inx)
       }
+  deriving (Generic)
 
 type Fld = Fld' Int
 
@@ -141,7 +142,7 @@ deriving instance Data x => Data (Fld' x)
 
 %%[50
 instance Serialize x => Serialize (Fld' x) where
-  sput (Fld a b) = sput a >> sput b
-  sget = liftM2 Fld sget sget
+  -- sput (Fld a b) = sput a >> sput b
+  -- sget = liftM2 Fld sget sget
 %%]
 

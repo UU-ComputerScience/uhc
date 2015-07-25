@@ -66,6 +66,7 @@ cmodTrfAnalysisCountingUnique = cmodTrfAnalysis False
 ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 ATTR AllNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
+ATTR CodeAGItf AllNT [ subtyping: Bool | | ]
 
 %%]
 
@@ -74,87 +75,86 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) ag
-ATTR CodeAGItf AllNT [ subtyping: Bool | | ]
-ATTR AllNT [ | freshVar: {Var} | constrs USE {++} {[]}: {Constraints}]
-ATTR AllExprBase [ | env: Env | ty: {Eta AnnotatedType}]
-ATTR CBind CBound [ | | name: HsName]
-ATTR AllExprBase [ isSeq: Bool | | ]
+-- ATTR AllNT [ | freshVar: {Var} | constrs USE {++} {[]}: {Constraints}]
+-- ATTR AllExprBase [ | env: Env | ty: {Eta AnnotatedType}]
+-- ATTR CBind CBound [ | | name: HsName]
+-- ATTR AllExprBase [ isSeq: Bool | | ]
 
--- Ensure type is defined everywhere
-SEM AllExprBase
-  | *
-    -- should be lazy but are not
-    loc.ty = Eta (TyError $ "Unsupported expression: " ++ show @loc.cTrf) annBot
+-- -- Ensure type is defined everywhere
+-- SEM AllExprBase
+--   | *
+--     -- should be lazy but are not
+--     loc.ty = Eta (TyError $ "Unsupported expression: " ++ show @loc.cTrf) annBot
 
-SEM CodeAGItf
-  | AGItf
-    module.freshVar = 0
+-- SEM CodeAGItf
+--   | AGItf
+--     module.freshVar = 0
 
-SEM CModule
-  | *
-    expr.env = Map.empty
-    expr.isSeq = False
+-- SEM CModule
+--   | *
+--     expr.env = Map.empty
+--     expr.isSeq = False
 
-SEM CBind
-  | Bind
-    lhs.name = @nm
+-- SEM CBind
+--   | Bind
+--     lhs.name = @nm
 
-SEM CBound
-  | Bind
-    lhs.ty = @expr.ty
-    lhs.name = case @expr.cTrf of
-                CExpr_Var (ACoreBindRef n _) -> n
-                _ -> panic "Code is not in ANormalForm"
-  | * - Bind
-    lhs.name = mkHNm $ "Not supported CBound alternative: " ++ show @loc.cTrf
+-- SEM CBound
+--   | Bind
+--     lhs.ty = @expr.ty
+--     lhs.name = case @expr.cTrf of
+--                 CExpr_Var (ACoreBindRef n _) -> n
+--                 _ -> panic "Code is not in ANormalForm"
+--   | * - Bind
+--     lhs.name = mkHNm $ "Not supported CBound alternative: " ++ show @loc.cTrf
 
-SEM CExpr
-  | Var
-    lhs.freshVar = @lhs.freshVar + 3
-    loc.tau = TyVar $ mkHNm $ "CA" + (show $ @lhs.freshVar + 0)
-    loc.sigma = SchemeVar $ mkHNm $ "CA" + (show $ @lhs.freshVar + 1)
-    loc.nu = AnnVar $ @lhs.freshVar + 2
-    lhs.constrs = [InstC @loc.sigma @loc.tau]
-    lhs.env = Map.singleton (acbrefNm @ref) $ Rho (Eta @loc.sigma @loc.nu) annOne 
-    lhs.ty = Eta @loc.tau @loc.nu
-  | Lam
-    loc.nu2 = AnnVar $ @lhs.freshVar + 0
-    loc.tau = TyVar $ mkHNm $ "CA" + (show $ @lhs.freshVar + 1)
-    ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind.name @body.env
-    bind.freshVar = @lhs.freshVar + 2
-    (loc.scheme, lhs.freshVar) = envLookup @loc.fv @body.env @bind.name
-    lhs.constrs = SchemeC (EqC (stripRhoEta @loc.scheme) (SForAll Set.empty [] @loc.tau)) : @body.constrs ++ @loc.c2
-    lhs.ty = Eta (TyFunc (fmap (const @loc.tau) @loc.scheme) @body.ty) @loc.nu2 
-  | App
-    ((loc.c2a, loc.tyArg), loc.fv1) = sub @func.freshVar True @func.ty
-    ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 @lhs.subtyping @arg.ty
-    func.freshVar = @lhs.freshVar + 3
-    loc.delta2 = AnnVar $ @lhs.freshVar + 0
-    loc.sigma3 = Eta (TyVar $ mkHNm $ "CA" + (show $ @lhs.freshVar + 1)) $ AnnVar $ @lhs.freshVar + 2
-    ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ (Map.adjust (\(Rho sigma4 _) -> Rho sigma4 @loc.delta2) (@arg.name) @arg.env)
-    lhs.constrs = AnnC (EqC (getAnnEta @loc.tyFunc) annOne) : 
-                    TyC (EqC (stripEta @loc.tyFunc) (TyFunc (Rho @loc.tyArg @loc.delta2) @loc.sigma3)) :
-                    @loc.c1a ++ @func.constrs ++ @loc.c2a ++ @arg.constrs ++ @loc.c3
-    lhs.ty = @loc.sigma3
-  | Let
-    loc.isThisSeq = case @categ of
-                    CBindCateg_Strict -> True
-                    _ -> False
-    binds.isSeq = @loc.isThisSeq
+-- SEM CExpr
+--   | Var
+--     lhs.freshVar = @lhs.freshVar + 3
+--     loc.tau = TyVar $ mkHNm $ "CA" + (show $ @lhs.freshVar + 0)
+--     loc.sigma = SchemeVar $ mkHNm $ "CA" + (show $ @lhs.freshVar + 1)
+--     loc.nu = AnnVar $ @lhs.freshVar + 2
+--     lhs.constrs = [InstC @loc.sigma @loc.tau]
+--     lhs.env = Map.singleton (acbrefNm @ref) $ Rho (Eta @loc.sigma @loc.nu) annOne 
+--     lhs.ty = Eta @loc.tau @loc.nu
+--   | Lam
+--     loc.nu2 = AnnVar $ @lhs.freshVar + 0
+--     loc.tau = TyVar $ mkHNm $ "CA" + (show $ @lhs.freshVar + 1)
+--     ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind.name @body.env
+--     bind.freshVar = @lhs.freshVar + 2
+--     (loc.scheme, lhs.freshVar) = envLookup @loc.fv @body.env @bind.name
+--     lhs.constrs = SchemeC (EqC (stripRhoEta @loc.scheme) (SForAll Set.empty [] @loc.tau)) : @body.constrs ++ @loc.c2
+--     lhs.ty = Eta (TyFunc (fmap (const @loc.tau) @loc.scheme) @body.ty) @loc.nu2 
+--   | App
+--     ((loc.c2a, loc.tyArg), loc.fv1) = sub @func.freshVar True @func.ty
+--     ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 @lhs.subtyping @arg.ty
+--     func.freshVar = @lhs.freshVar + 3
+--     loc.delta2 = AnnVar $ @lhs.freshVar + 0
+--     loc.sigma3 = Eta (TyVar $ mkHNm $ "CA" + (show $ @lhs.freshVar + 1)) $ AnnVar $ @lhs.freshVar + 2
+--     ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ (Map.adjust (\(Rho sigma4 _) -> Rho sigma4 @loc.delta2) (@arg.name) @arg.env)
+--     lhs.constrs = AnnC (EqC (getAnnEta @loc.tyFunc) annOne) : 
+--                     TyC (EqC (stripEta @loc.tyFunc) (TyFunc (Rho @loc.tyArg @loc.delta2) @loc.sigma3)) :
+--                     @loc.c1a ++ @func.constrs ++ @loc.c2a ++ @arg.constrs ++ @loc.c3
+--     lhs.ty = @loc.sigma3
+--   | Let
+--     loc.isThisSeq = case @categ of
+--                     CBindCateg_Strict -> True
+--                     _ -> False
+--     binds.isSeq = @loc.isThisSeq
     
-  | Tup -- How to deal with these as tuple, data constroctor
-  | Case
-  | Int
-  | Char
-  | String
-%%[[(97 core)
-  | Integer
-%%]]
-  -- not supported
-  -- | FFI
-  -- | CaseAltFail
-  -- | TupDel
-  -- | TupIns
-  -- | TupUpd
+--   | Tup -- How to deal with these as tuple, data constroctor
+--   | Case
+--   | Int
+--   | Char
+--   | String
+-- %%[[(97 core)
+--   | Integer
+-- %%]]
+--   -- not supported
+--   -- | FFI
+--   -- | CaseAltFail
+--   -- | TupDel
+--   -- | TupIns
+--   -- | TupUpd
 %%]
 

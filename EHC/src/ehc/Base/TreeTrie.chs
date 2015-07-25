@@ -65,13 +65,13 @@ candidates is returned.
 data TreeTrie1Key k
   = TT1K_One    !k
   | TT1K_Any                            -- used to wildcard match a single node in a tree
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 -- | A key in a layer of TreeTrieMpKey
 data TreeTrieMp1Key k
   = TTM1K       [TreeTrie1Key k]
   | TTM1K_Any                           -- used to wildcard match multiple children, internal only
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 -- | The key into a map used internally by the trie
 type TreeTrieMpKey k
@@ -241,7 +241,7 @@ data TreeTrie k v
       , ttrieSubs        :: TreeTrieChildren k v                                    -- children
       }
 %%[[50
- deriving (Typeable, Data)
+ deriving (Typeable, Data, Generic)
 %%]]
 
 emptyTreeTrie, empty :: TreeTrie k v
@@ -501,26 +501,26 @@ deleteListByKey keys ttrie = foldl (\t k -> deleteByKey k t) ttrie keys
 
 %%[50
 instance Serialize k => Serialize (TreeTrie1Key k) where
-  sput (TT1K_Any            ) = sputWord8 0
-  sput (TT1K_One   a        ) = sputWord8 1 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> return TT1K_Any
-            1 -> liftM  TT1K_One         sget
+  -- sput (TT1K_Any            ) = sputWord8 0
+  -- sput (TT1K_One   a        ) = sputWord8 1 >> sput a
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> return TT1K_Any
+  --           1 -> liftM  TT1K_One         sget
 
 instance Serialize k => Serialize (TreeTrieMp1Key k) where
-  sput (TTM1K_Any            ) = sputWord8 0 -- >> sput a
-  sput (TTM1K       a        ) = sputWord8 1 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-            0 -> return TTM1K_Any     -- sget
-            1 -> liftM  TTM1K         sget
+  -- sput (TTM1K_Any            ) = sputWord8 0 -- >> sput a
+  -- sput (TTM1K       a        ) = sputWord8 1 >> sput a
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --           0 -> return TTM1K_Any     -- sget
+  --           1 -> liftM  TTM1K         sget
 
 instance (Ord k, Serialize k, Serialize v) => Serialize (TreeTrie k v) where
-  sput (TreeTrie a b) = sput a >> sput b
-  sget = liftM2 TreeTrie sget sget
+  -- sput (TreeTrie a b) = sput a >> sput b
+  -- sget = liftM2 TreeTrie sget sget
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -44,7 +44,7 @@ data TyGamInfo
       { tgiTy :: !Ty
       }
 %%]]
-      deriving Show
+      deriving (Show, Generic)
 %%]
 
 %%[(50 hmtyinfer)
@@ -240,6 +240,6 @@ instance ForceEval TyGamInfo where
 
 %%[(50 hmtyinfer || hmtyast)
 instance Serialize TyGamInfo where
-  sput (TyGamInfo a) = sput a
-  sget = liftM TyGamInfo sget
+  -- sput (TyGamInfo a) = sput a
+  -- sget = liftM TyGamInfo sget
 %%]

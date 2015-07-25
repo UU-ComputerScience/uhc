@@ -100,7 +100,7 @@ data Boxing
       }
   | Boxing_Enum			-- encoding for Enum				-- ?? necessary
   | Boxing_Opaque		-- don't know anything, leave as is
-  deriving Eq
+  deriving (Eq, Generic)
 %%]
 
 %%[(8 codegen) hs
@@ -210,15 +210,15 @@ deriving instance Data Boxing
 
 %%[(50 codegen) hs
 instance Serialize Boxing where
-  sput (Boxing_UnboxedTy          a) = sputWord8 0 >> sput a
-  sput (Boxing_Enum            	   ) = sputWord8 1
-  sput (Boxing_Opaque              ) = sputWord8 2
-  sget = do
-    t <- sgetWord8
-    case t of
-      0 -> liftM  Boxing_UnboxedTy 			sget
-      1 -> return Boxing_Enum
-      2 -> return Boxing_Opaque
+  -- sput (Boxing_UnboxedTy          a) = sputWord8 0 >> sput a
+  -- sput (Boxing_Enum            	   ) = sputWord8 1
+  -- sput (Boxing_Opaque              ) = sputWord8 2
+  -- sget = do
+  --   t <- sgetWord8
+  --   case t of
+  --     0 -> liftM  Boxing_UnboxedTy 			sget
+  --     1 -> return Boxing_Enum
+  --     2 -> return Boxing_Opaque
 
 instance Serialize UnboxedTy where
   sput = sputEnum8

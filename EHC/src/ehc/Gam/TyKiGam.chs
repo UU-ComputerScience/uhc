@@ -42,7 +42,7 @@ data TyKiGamInfo
 %%[[(6 hmtyinfer || hmtyast)
       { tkgiKi :: !Ty }
 %%]]
-      deriving Show
+      deriving (Show, Generic)
 
 emptyTKGI :: TyKiGamInfo
 emptyTKGI
@@ -241,7 +241,7 @@ instance ForceEval TyKiGamInfo where
 
 %%[(50 hmtyinfer || hmtyast)
 instance Serialize TyKiGamInfo where
-  sput (TyKiGamInfo a) = sput a
-  sget = liftM TyKiGamInfo sget
+  -- sput (TyKiGamInfo a) = sput a
+  -- sget = liftM TyKiGamInfo sget
 %%]
 

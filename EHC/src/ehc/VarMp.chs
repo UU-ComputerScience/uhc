@@ -235,7 +235,7 @@ data VarMpInfo
   deriving
     ( Eq, Ord, Show
 %%[[50
-    , Typeable, Data
+    , Typeable, Data, Generic
 %%]]
     )
 %%]
@@ -608,24 +608,24 @@ instance PP VarMpInfo where
 
 %%[(50 hmtyinfer || hmtyast)
 instance Serialize VarMpInfo where
-  sput (VMITy      a) = sputWord8 0  >> sput a
-  sput (VMIImpls   a) = sputWord8 1  >> sput a
-  sput (VMIScope   a) = sputWord8 2  >> sput a
-  sput (VMIPred    a) = sputWord8 3  >> sput a
-  sput (VMIAssNm   a) = sputWord8 4  >> sput a
-  sput (VMILabel   a) = sputWord8 5  >> sput a
-  sput (VMIOffset  a) = sputWord8 6  >> sput a
-  sput (VMIPredSeq a) = sputWord8 7  >> sput a
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM VMITy      sget
-              1 -> liftM VMIImpls   sget
-              2 -> liftM VMIScope   sget
-              3 -> liftM VMIPred    sget
-              4 -> liftM VMIAssNm   sget
-              5 -> liftM VMILabel   sget
-              6 -> liftM VMIOffset  sget
-              7 -> liftM VMIPredSeq sget
+  -- sput (VMITy      a) = sputWord8 0  >> sput a
+  -- sput (VMIImpls   a) = sputWord8 1  >> sput a
+  -- sput (VMIScope   a) = sputWord8 2  >> sput a
+  -- sput (VMIPred    a) = sputWord8 3  >> sput a
+  -- sput (VMIAssNm   a) = sputWord8 4  >> sput a
+  -- sput (VMILabel   a) = sputWord8 5  >> sput a
+  -- sput (VMIOffset  a) = sputWord8 6  >> sput a
+  -- sput (VMIPredSeq a) = sputWord8 7  >> sput a
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM VMITy      sget
+  --             1 -> liftM VMIImpls   sget
+  --             2 -> liftM VMIScope   sget
+  --             3 -> liftM VMIPred    sget
+  --             4 -> liftM VMIAssNm   sget
+  --             5 -> liftM VMILabel   sget
+  --             6 -> liftM VMIOffset  sget
+  --             7 -> liftM VMIPredSeq sget
 
 
 %%]

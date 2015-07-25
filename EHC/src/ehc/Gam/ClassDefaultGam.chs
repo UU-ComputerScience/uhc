@@ -35,7 +35,7 @@ data ClassDefaultGamInfo
       { cldiDefaultTypes	:: [Ty]
       }
 %%[[50
-      deriving (Data,Typeable)
+      deriving (Data,Typeable, Generic)
 %%]]
 %%]
 
@@ -72,7 +72,7 @@ clDfGamLookupDefault fi pr clDfGam
 
 %%[(50 hmtyinfer)
 instance Serialize ClassDefaultGamInfo where
-  sput (ClassDefaultGamInfo a) = sput a
-  sget = liftM ClassDefaultGamInfo sget
+  -- sput (ClassDefaultGamInfo a) = sput a
+  -- sget = liftM ClassDefaultGamInfo sget
 %%]
 

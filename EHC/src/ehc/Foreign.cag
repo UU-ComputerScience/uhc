@@ -37,7 +37,7 @@
 %%[90
 DERIVING AllForeign ForeignExpr
   : Show, Eq
-  , Typeable, Data
+  , Typeable, Data, Generic
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,68 +142,68 @@ data ForeignDirection
 
 %%[90 hs
 instance Serialize ForeignExpr where
-  sput (ForeignExpr_Ent         ) = sputWord8 0
-  sput (ForeignExpr_EntNm    a  ) = sputWord8 1  >> sput a
-  sput (ForeignExpr_Arg      a  ) = sputWord8 2  >> sput a
-  sput (ForeignExpr_Sel      a b) = sputWord8 3  >> sput a >> sput b
-  sput (ForeignExpr_Inx      a b) = sputWord8 4  >> sput a >> sput b
-  sput (ForeignExpr_Ptr      a  ) = sputWord8 5  >> sput a
-  sput (ForeignExpr_Call     a  ) = sputWord8 6  >> sput a
-  sput (ForeignExpr_CallArgs a b) = sputWord8 7  >> sput a >> sput b
-  sput (ForeignExpr_AllArg      ) = sputWord8 8
-  sput (ForeignExpr_Str      a  ) = sputWord8 9  >> sput a
-  sput (ForeignExpr_ObjData     ) = sputWord8 10
-  sput (ForeignExpr_NewObj   a  ) = sputWord8 11 >> sput a
-  sget = do
-    t <- sgetWord8
-    case t of
-        0  -> return ForeignExpr_Ent
-        1  -> liftM  ForeignExpr_EntNm       sget
-        2  -> liftM  ForeignExpr_Arg         sget
-        3  -> liftM2 ForeignExpr_Sel         sget sget
-        4  -> liftM2 ForeignExpr_Inx         sget sget
-        5  -> liftM  ForeignExpr_Ptr         sget
-        6  -> liftM  ForeignExpr_Call        sget
-        7  -> liftM2 ForeignExpr_CallArgs    sget sget
-        8  -> return ForeignExpr_AllArg
-        9  -> liftM  ForeignExpr_Str         sget
-        10 -> return ForeignExpr_ObjData
-        11 -> liftM  ForeignExpr_NewObj      sget
+  -- sput (ForeignExpr_Ent         ) = sputWord8 0
+  -- sput (ForeignExpr_EntNm    a  ) = sputWord8 1  >> sput a
+  -- sput (ForeignExpr_Arg      a  ) = sputWord8 2  >> sput a
+  -- sput (ForeignExpr_Sel      a b) = sputWord8 3  >> sput a >> sput b
+  -- sput (ForeignExpr_Inx      a b) = sputWord8 4  >> sput a >> sput b
+  -- sput (ForeignExpr_Ptr      a  ) = sputWord8 5  >> sput a
+  -- sput (ForeignExpr_Call     a  ) = sputWord8 6  >> sput a
+  -- sput (ForeignExpr_CallArgs a b) = sputWord8 7  >> sput a >> sput b
+  -- sput (ForeignExpr_AllArg      ) = sputWord8 8
+  -- sput (ForeignExpr_Str      a  ) = sputWord8 9  >> sput a
+  -- sput (ForeignExpr_ObjData     ) = sputWord8 10
+  -- sput (ForeignExpr_NewObj   a  ) = sputWord8 11 >> sput a
+  -- sget = do
+  --   t <- sgetWord8
+  --   case t of
+  --       0  -> return ForeignExpr_Ent
+  --       1  -> liftM  ForeignExpr_EntNm       sget
+  --       2  -> liftM  ForeignExpr_Arg         sget
+  --       3  -> liftM2 ForeignExpr_Sel         sget sget
+  --       4  -> liftM2 ForeignExpr_Inx         sget sget
+  --       5  -> liftM  ForeignExpr_Ptr         sget
+  --       6  -> liftM  ForeignExpr_Call        sget
+  --       7  -> liftM2 ForeignExpr_CallArgs    sget sget
+  --       8  -> return ForeignExpr_AllArg
+  --       9  -> liftM  ForeignExpr_Str         sget
+  --       10 -> return ForeignExpr_ObjData
+  --       11 -> liftM  ForeignExpr_NewObj      sget
 
 
 instance Serialize ForeignEnt where
-  sput (ForeignEnt_CCall        	a) = sputWord8 0 >> sput a
-  sput (ForeignEnt_PlainCall    	a) = sputWord8 1 >> sput a
-  sput (ForeignEnt_PrimCall     	a) = sputWord8 2 >> sput a
-  sput (ForeignEnt_JavaScriptCall  	a) = sputWord8 3 >> sput a
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM ForeignEnt_CCall       	sget
-              1 -> liftM ForeignEnt_PlainCall   	sget
-              2 -> liftM ForeignEnt_PrimCall    	sget
-              3 -> liftM ForeignEnt_JavaScriptCall 	sget
+  -- sput (ForeignEnt_CCall        	a) = sputWord8 0 >> sput a
+  -- sput (ForeignEnt_PlainCall    	a) = sputWord8 1 >> sput a
+  -- sput (ForeignEnt_PrimCall     	a) = sputWord8 2 >> sput a
+  -- sput (ForeignEnt_JavaScriptCall  	a) = sputWord8 3 >> sput a
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM ForeignEnt_CCall       	sget
+  --             1 -> liftM ForeignEnt_PlainCall   	sget
+  --             2 -> liftM ForeignEnt_PrimCall    	sget
+  --             3 -> liftM ForeignEnt_JavaScriptCall 	sget
 
 instance Serialize CCall where
-  sput (CCall_Id      a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
-  sput (CCall_Dynamic        ) = sputWord8 1
-  sput (CCall_Wrapper        ) = sputWord8 2
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM4 CCall_Id      sget sget sget sget
-              1 -> return CCall_Dynamic
-              2 -> return CCall_Wrapper
+  -- sput (CCall_Id      a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
+  -- sput (CCall_Dynamic        ) = sputWord8 1
+  -- sput (CCall_Wrapper        ) = sputWord8 2
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM4 CCall_Id      sget sget sget sget
+  --             1 -> return CCall_Dynamic
+  --             2 -> return CCall_Wrapper
 
 instance Serialize PlainCall where
-  sput (PlainCall_Id      a) = sputWord8 0 >> sput a
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM  PlainCall_Id sget
+  -- sput (PlainCall_Id      a) = sputWord8 0 >> sput a
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM  PlainCall_Id sget
 
 instance Serialize PrimCall where
-  sput (PrimCall_Id      a b) = sputWord8 0 >> sput a >> sput b
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM2 PrimCall_Id sget sget
+  -- sput (PrimCall_Id      a b) = sputWord8 0 >> sput a >> sput b
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM2 PrimCall_Id sget sget
 
 {-
 instance Serialize JavaScriptCall where
@@ -213,14 +213,14 @@ instance Serialize JavaScriptCall where
               0 -> liftM4 JavaScriptCall_Id sget sget sget sget
 -}
 instance Serialize JavaScriptCall where
-  sput (JavaScriptCall_Id          a b c) = sputWord8 0 >> sput a >> sput b >> sput c
-  sput (JavaScriptCall_Dynamic          ) = sputWord8 1
-  sput (JavaScriptCall_Wrapper          ) = sputWord8 2
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM3 JavaScriptCall_Id sget sget sget
-              1 -> return JavaScriptCall_Dynamic
-              2 -> return JavaScriptCall_Wrapper
+  -- sput (JavaScriptCall_Id          a b c) = sputWord8 0 >> sput a >> sput b >> sput c
+  -- sput (JavaScriptCall_Dynamic          ) = sputWord8 1
+  -- sput (JavaScriptCall_Wrapper          ) = sputWord8 2
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM3 JavaScriptCall_Id sget sget sget
+  --             1 -> return JavaScriptCall_Dynamic
+  --             2 -> return JavaScriptCall_Wrapper
 
 %%]
 

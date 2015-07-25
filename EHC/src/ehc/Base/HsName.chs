@@ -1121,27 +1121,27 @@ data Track
   | TrackCtx Int
   | TrackSelect Int Track
   | TrackVarApply HsName [Track]
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 %%]
 
 %%[(50 codegen) hs
 
 instance Serialize Track where
-  sput (TrackNone             ) = sputWord8 0
-  sput (TrackSelf             ) = sputWord8 1
-  sput (TrackCtx        a     ) = sputWord8 2 >> sput a
-  sput (TrackSelect     a  b  ) = sputWord8 3 >> sput a >> sput b
-  sput (TrackVarApply   a  b  ) = sputWord8 4 >> sput a >> sput b
+  -- sput (TrackNone             ) = sputWord8 0
+  -- sput (TrackSelf             ) = sputWord8 1
+  -- sput (TrackCtx        a     ) = sputWord8 2 >> sput a
+  -- sput (TrackSelect     a  b  ) = sputWord8 3 >> sput a >> sput b
+  -- sput (TrackVarApply   a  b  ) = sputWord8 4 >> sput a >> sput b
 
-  sget
-    = do t <- sgetWord8
-         case t of
-           0 -> return TrackNone
-           1 -> return TrackSelf
-           2 -> liftM  TrackCtx      sget
-           3 -> liftM2 TrackSelect   sget sget
-           4 -> liftM2 TrackVarApply sget sget
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --          0 -> return TrackNone
+  --          1 -> return TrackSelf
+  --          2 -> liftM  TrackCtx      sget
+  --          3 -> liftM2 TrackSelect   sget sget
+  --          4 -> liftM2 TrackVarApply sget sget
 
 deriving instance Data Track
 deriving instance Typeable Track

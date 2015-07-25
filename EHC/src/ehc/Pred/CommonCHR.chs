@@ -58,7 +58,7 @@ data RedHowAnnotation
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable, Data
+    , Typeable, Data, Generic
 %%]]
     )
 %%]
@@ -122,7 +122,7 @@ data ByScopeRedHow
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable, Data
+    , Typeable, Data, Generic
 %%]]
     )
 
@@ -220,50 +220,50 @@ predOccCnstrMpLiftScope sc
 
 %%[(50 hmtyinfer)
 instance Serialize ByScopeRedHow where
-  sput (ByScopeRedHow_Prove          ) = sputWord8 0
-  sput (ByScopeRedHow_Assume         ) = sputWord8 1
-  sput (ByScopeRedHow_Other a        ) = sputWord8 2 >> sput a
-  sget = do
-    t <- sgetWord8
-    case t of
-      0 -> return ByScopeRedHow_Prove
-      1 -> return ByScopeRedHow_Assume
-      2 -> liftM  ByScopeRedHow_Other   sget
+  -- sput (ByScopeRedHow_Prove          ) = sputWord8 0
+  -- sput (ByScopeRedHow_Assume         ) = sputWord8 1
+  -- sput (ByScopeRedHow_Other a        ) = sputWord8 2 >> sput a
+  -- sget = do
+  --   t <- sgetWord8
+  --   case t of
+  --     0 -> return ByScopeRedHow_Prove
+  --     1 -> return ByScopeRedHow_Assume
+  --     2 -> liftM  ByScopeRedHow_Other   sget
 
 instance Serialize RedHowAnnotation where
-  sput (RedHow_ByInstance       a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c -- >> sput d
-  sput (RedHow_BySuperClass     a b c  ) = sputWord8 1  >> sput a >> sput b >> sput c
-  sput (RedHow_ProveObl         a b    ) = sputWord8 2  >> sput a >> sput b
-  sput (RedHow_Assumption       a b    ) = sputWord8 3  >> sput a >> sput b
-  sput (RedHow_ByScope          a      ) = sputWord8 4  >> sput a
-  sput (RedHow_ByLabel          a b c  ) = sputWord8 5  >> sput a >> sput b >> sput c
-  sput (RedHow_Lambda           a b    ) = sputWord8 6  >> sput a >> sput b
-%%[[41
-  sput (RedHow_ByEqSymmetry          ) = sputWord8 7
-  sput (RedHow_ByEqTrans             ) = sputWord8 8
-  sput (RedHow_ByEqCongr             ) = sputWord8 9
-  sput (RedHow_ByEqTyReduction  a b  ) = sputWord8 10 >> sput a >> sput b
-  sput (RedHow_ByPredSeqUnpack       ) = sputWord8 11
-  sput (RedHow_ByEqFromAssume        ) = sputWord8 12
-  sput (RedHow_ByEqIdentity          ) = sputWord8 13
-%%]]
-  sget = do t <- sgetWord8
-            case t of
-              0  -> liftM3 RedHow_ByInstance       sget sget sget -- sget
-              1  -> liftM3 RedHow_BySuperClass     sget sget sget 
-              2  -> liftM2 RedHow_ProveObl         sget sget 
-              3  -> liftM2 RedHow_Assumption       sget sget 
-              4  -> liftM  RedHow_ByScope          sget 
-              5  -> liftM3 RedHow_ByLabel          sget sget sget
-              6  -> liftM2 RedHow_Lambda           sget sget 
-%%[[41
-              7  -> return RedHow_ByEqSymmetry     
-              8  -> return RedHow_ByEqTrans        
-              9  -> return RedHow_ByEqCongr        
-              10 -> liftM2 RedHow_ByEqTyReduction  sget sget 
-              11 -> return RedHow_ByPredSeqUnpack  
-              12 -> return RedHow_ByEqFromAssume   
-              13 -> return RedHow_ByEqIdentity     
+--   sput (RedHow_ByInstance       a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c -- >> sput d
+--   sput (RedHow_BySuperClass     a b c  ) = sputWord8 1  >> sput a >> sput b >> sput c
+--   sput (RedHow_ProveObl         a b    ) = sputWord8 2  >> sput a >> sput b
+--   sput (RedHow_Assumption       a b    ) = sputWord8 3  >> sput a >> sput b
+--   sput (RedHow_ByScope          a      ) = sputWord8 4  >> sput a
+--   sput (RedHow_ByLabel          a b c  ) = sputWord8 5  >> sput a >> sput b >> sput c
+--   sput (RedHow_Lambda           a b    ) = sputWord8 6  >> sput a >> sput b
+-- %%[[41
+--   sput (RedHow_ByEqSymmetry          ) = sputWord8 7
+--   sput (RedHow_ByEqTrans             ) = sputWord8 8
+--   sput (RedHow_ByEqCongr             ) = sputWord8 9
+--   sput (RedHow_ByEqTyReduction  a b  ) = sputWord8 10 >> sput a >> sput b
+--   sput (RedHow_ByPredSeqUnpack       ) = sputWord8 11
+--   sput (RedHow_ByEqFromAssume        ) = sputWord8 12
+--   sput (RedHow_ByEqIdentity          ) = sputWord8 13
+-- %%]]
+--   sget = do t <- sgetWord8
+--             case t of
+--               0  -> liftM3 RedHow_ByInstance       sget sget sget -- sget
+--               1  -> liftM3 RedHow_BySuperClass     sget sget sget 
+--               2  -> liftM2 RedHow_ProveObl         sget sget 
+--               3  -> liftM2 RedHow_Assumption       sget sget 
+--               4  -> liftM  RedHow_ByScope          sget 
+--               5  -> liftM3 RedHow_ByLabel          sget sget sget
+--               6  -> liftM2 RedHow_Lambda           sget sget 
+-- %%[[41
+--               7  -> return RedHow_ByEqSymmetry     
+--               8  -> return RedHow_ByEqTrans        
+--               9  -> return RedHow_ByEqCongr        
+--               10 -> liftM2 RedHow_ByEqTyReduction  sget sget 
+--               11 -> return RedHow_ByPredSeqUnpack  
+--               12 -> return RedHow_ByEqFromAssume   
+--               13 -> return RedHow_ByEqIdentity     
 %%]]
 
 %%]

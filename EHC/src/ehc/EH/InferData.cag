@@ -91,7 +91,7 @@ SEM AGItf
 ATTR AGItf [ dataGam: DataGam | | ]
 
 SEM AGItf
-  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
+  | AGItf       expr        .   dataGam             =   (specialtrace @expr.gathDataGam) `gamUnion` @lhs.dataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,7 +104,7 @@ ATTR AllNT [ | caFreshVar: {CA.Var} | ]
 ATTR AllNT [ caAnnDataMap: {Map.Map HsName Int} | | caAnnDataPartial USE {Map.union} {Map.empty} : {Map.Map HsName Int} ]
 ATTR AllDataField AllTyExpr [ caDeeper: Bool | | ]
 ATTR DataField TyExpr [ | | caAnnTy: {CA.Rho CA.AnnotatedType}]
-ATTR TyExpr [ | | caIsFunc: {Maybe Bool}]
+ATTR TyExpr [ | |  caIsFunc: {Maybe Bool}]
 ATTR DataFields TyExprs [ | | caAnnTyList: {[CA.Rho CA.AnnotatedType]}]
 ATTR AllDataConstr AllDataField AllTyExpr [ caBaseDataTypeName: HsName caBaseAnnDataType: {CA.AnnotatedType} | | ]
 
@@ -117,7 +117,7 @@ SEM DataFields TyExprs
 SEM AGItf
   | AGItf
     expr.caFreshVar = 0
-    expr.caAnnDataMap = extractNumAnns @lhs.dataGam
+    expr.caAnnDataMap = Map.union baseAnnTypes $ extractNumAnns @lhs.dataGam
 
 SEM Decls
   | Cons
@@ -152,7 +152,7 @@ SEM TyExpr
     loc.caNumAnn = if @loc.caIsSelf then 0                                              
                    else case Map.lookup @nm @lhs.caAnnDataMap of
                           Just n -> n
-                          _ -> panic $ "Could not find data type " ++ show @nm ++". Mutual recursive and non-direct self recursive data types are not supported"
+                          _ -> traceShow ("***", "not found", @nm, "****") 0 -- panic $ "Could not find data type " ++ show @nm ++". Mutual recursive and non-direct self recursive data types are not supported"
     loc.caToAnn = if @lhs.caDeeper then const CA.annTop else CA.AnnVar 
   | App
     lhs.caIsFunc = case @func.caIsFunc of
@@ -173,8 +173,33 @@ SEM TyExpr
     arg.caDeeper = True -- case @func.caIsFunc of
                     --Just _ -> True
                     --_ -> @lhs.caDeeper
-  | * - Var Con App
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "Unsupported"
+  -- | * - Var Con App
+  --   loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "Unsupported"
+
+  | AppTop
+    loc.caAnnTy = @tyExpr.caAnnTy
+  | Parens
+    loc.caAnnTy = @tyExpr.caAnnTy
+  | Ann
+    loc.caAnnTy = @tyExpr.caAnnTy
+  | Wild
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedWild"
+  | Mono
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedMono"
+  | VarWild
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedVarWild"
+  | Quant
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedQuant"
+  | Row
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedRow"
+  | Pred
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedPred"
+  | Impls
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedImpls"
+  | NoImpls
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedNoImpls"
+  | Lam
+    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedLam"
 
 SEM DataConstr
   | Constr
@@ -186,62 +211,75 @@ SEM Decl
   | TySig
     tyExpr.caDeeper = False
     tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTySig"
   | FFI
     tyExpr.caDeeper = False
     tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedFFI"
   | Type
     tyExpr.caDeeper = False
     tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedType"
 %%[[90
   | FFE
     tyExpr.caDeeper = False
     tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedFFE"
 %%]]
   | Class
     tyPrExpr.caDeeper = False
     tyPrExpr.caBaseDataTypeName = hsnEmpty
-    tyPrExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyPrExpr.caBaseAnnDataType = CA.TyError "UnsupportedClass"
   | Instance
     tyPrExpr.caDeeper = False
     tyPrExpr.caBaseDataTypeName = hsnEmpty
-    tyPrExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyPrExpr.caBaseAnnDataType = CA.TyError "UnsupportedInstance"
   | InstanceIntro
     prExpr.caDeeper = False
     prExpr.caBaseDataTypeName = hsnEmpty
-    prExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    prExpr.caBaseAnnDataType = CA.TyError "UnsupportedInstanceIntro"
   | Default
     tyExprs.caDeeper = False
     tyExprs.caBaseDataTypeName = hsnEmpty
-    tyExprs.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyExprs.caBaseAnnDataType = CA.TyError "UnsupportedDefault"
 
 SEM Expr
   | TypeAs
     tyExpr.caDeeper = False
     tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTypeAs"
   | AppImpl
     argPr.caDeeper = False
     argPr.caBaseDataTypeName = hsnEmpty
-    argPr.caBaseAnnDataType = CA.TyError "Unsupported"
+    argPr.caBaseAnnDataType = CA.TyError "UnsupportedAppImpl"
   | LamImpl
     argPr.caDeeper = False
     argPr.caBaseDataTypeName = hsnEmpty
-    argPr.caBaseAnnDataType = CA.TyError "Unsupported"
+    argPr.caBaseAnnDataType = CA.TyError "UnsupportedLamImpl"
 
 SEM PatExpr
   | TypeAs
     tyExpr.caDeeper = False
     tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "Unsupported"
+    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTypeAs"
 
 {
 extractNumAnns :: DataGam -> Map HsName Int
 extractNumAnns dg = Map.fromList $ map f $ gamToAssocL dg
   where f (x, y) = (x, length $ dgiAnnVars y)
+
+baseAnnTypes :: Map HsName Int
+baseAnnTypes = Map.fromList [
+    (mkHNm "Int", 0),
+    (mkHNm "Bool", 0),
+    (mkHNm "Char", 0)
+  ]
+
+specialtrace :: DataGam -> DataGam
+specialtrace dg = traceShow dgl dg
+  where dgl = map f $ gamToAssocL dg
+        f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> (dtiFldTyL x, dtiFldAnnTyL x)) $ dgiConstrTagMp dgi) 
+
 }
 %%]
 

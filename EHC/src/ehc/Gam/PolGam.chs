@@ -35,7 +35,8 @@
 
 %%[(17 hmtyinfer || hmtyast) export(PolGamInfo(..), PolGam, mapPolGam,mkPGI)
 -- If this changes, also change {%{EH}ConfigInternalVersions}
-data PolGamInfo = PolGamInfo { pgiPol :: Polarity } deriving Show
+data PolGamInfo = PolGamInfo { pgiPol :: Polarity } 
+  deriving (Show, Generic)
 
 mkPGI :: Ty -> PolGamInfo
 mkPGI t = PolGamInfo t
@@ -134,7 +135,7 @@ instance ForceEval PolGamInfo where
 
 %%[(50 hmtyinfer)
 instance Serialize PolGamInfo where
-  sput (PolGamInfo a) = sput a
-  sget = liftM PolGamInfo sget
+  -- sput (PolGamInfo a) = sput a
+  -- sget = liftM PolGamInfo sget
 %%]
 

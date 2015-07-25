@@ -44,7 +44,7 @@ data Constraint p info
                     , cnstrVarMp :: VarMp           -- additional bindings for type (etc.) variables, i.e. improving substitution
 %%]]
                     }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(mkReduction)
@@ -239,13 +239,13 @@ instance (PP p, PP info) => PP (Constraint p info) where
 
 %%[(50 hmtyinfer || hmtyast)
 instance (Serialize p, Serialize i) => Serialize (Constraint p i) where
-  sput (Prove     a      ) = sputWord8 0 >> sput a
-  sput (Assume    a      ) = sputWord8 1 >> sput a
-  sput (Reduction a b c d) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM  Prove     sget
-              1 -> liftM  Assume    sget
-              2 -> liftM4 Reduction sget sget sget sget
+  -- sput (Prove     a      ) = sputWord8 0 >> sput a
+  -- sput (Assume    a      ) = sputWord8 1 >> sput a
+  -- sput (Reduction a b c d) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM  Prove     sget
+  --             1 -> liftM  Assume    sget
+  --             2 -> liftM4 Reduction sget sget sget sget
 %%]
 

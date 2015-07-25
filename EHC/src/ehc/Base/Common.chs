@@ -20,9 +20,6 @@
 %%[1 import(UHC.Util.Hashable) export (module UHC.Util.Hashable)
 %%]
 
-%%[99 import(GHC.Generics(Generic))
-%%]
-
 %%[1 import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
@@ -1091,9 +1088,11 @@ deriving instance Typeable KnownPrim
 %%[50
 deriving instance Typeable VarUIDHsName
 deriving instance Data VarUIDHsName
+deriving instance Generic VarUIDHsName
 
 deriving instance Typeable TagDataInfo
 deriving instance Data TagDataInfo
+deriving instance Generic TagDataInfo
 
 deriving instance Typeable Fixity
 deriving instance Data Fixity
@@ -1104,12 +1103,14 @@ deriving instance Typeable  AlwaysEq
 deriving instance Typeable1 AlwaysEq
 #endif
 deriving instance Data x => Data (AlwaysEq x)
+deriving instance Generic (AlwaysEq x)
 
 deriving instance Typeable PredOccId
 deriving instance Data PredOccId
 
 deriving instance Typeable CLbl
 deriving instance Data CLbl
+deriving instance Generic CLbl
 
 %%]
 
@@ -1127,28 +1128,28 @@ instance Serialize KnownPrim where
   sget = sgetPlain
 
 instance Serialize TagDataInfo where
-  sput (TagDataInfo a b) = sput a >> sput b
-  sget = liftM2 TagDataInfo sget sget
+  -- sput (TagDataInfo a b) = sput a >> sput b
+  -- sget = liftM2 TagDataInfo sget sget
 
 instance Serialize VarUIDHsName where
-  sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
-  sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
-  sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM2 VarUIDHs_Name sget sget
-              1 -> liftM  VarUIDHs_UID  sget
-              2 -> liftM  VarUIDHs_Var  sget
+  -- sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
+  -- sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
+  -- sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM2 VarUIDHs_Name sget sget
+  --             1 -> liftM  VarUIDHs_UID  sget
+  --             2 -> liftM  VarUIDHs_Var  sget
 
 instance Serialize CLbl where
-  sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
-  sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
-  sput (CLbl_None    ) = sputWord8 2
-  sget = do t <- sgetWord8
-            case t of
-              0 -> liftM  CLbl_Nm 	sget
-              1 -> liftM  CLbl_Tag  sget
-              2 -> return CLbl_None
+  -- sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
+  -- sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
+  -- sput (CLbl_None    ) = sputWord8 2
+  -- sget = do t <- sgetWord8
+  --           case t of
+  --             0 -> liftM  CLbl_Nm 	sget
+  --             1 -> liftM  CLbl_Tag  sget
+  --             2 -> return CLbl_None
 
 instance Binary Fixity where
   put = putEnum8
@@ -1163,8 +1164,8 @@ instance Binary x => Binary (AlwaysEq x) where
   get = liftM AlwaysEq get
 
 instance Serialize x => Serialize (AlwaysEq x) where
-  sput (AlwaysEq x) = sput x
-  sget = liftM AlwaysEq sget
+  -- sput (AlwaysEq x) = sput x
+  -- sget = liftM AlwaysEq sget
 
 instance Binary PredOccId where
   put (PredOccId a) = put a

@@ -236,6 +236,8 @@ TYPE GrAdaptL   =   [GrAdapt]
 SET AllAdapt    =   GrAdapt GrAdaptL
 SET AllSplit    =   GrSplit GrSplitL
 
+DERIVING GrAdapt GrSplit : Generic
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

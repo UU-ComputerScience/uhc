@@ -47,7 +47,7 @@ data ClGamInfo
 %%]]
        }
 %%]]
-       deriving Show
+       deriving (Show, Generic)
 
 type ClGam     = Gam HsName ClGamInfo
 
@@ -92,15 +92,15 @@ instance ForceEval ClGamInfo where
 
 %%[(50 hmtyinfer)
 instance Serialize ClGamInfo where
-%%[[50
-  sput (ClGamInfo a b c d) = sput a >> sput b >> sput c >> sput d
-%%][92
-  sput (ClGamInfo a b c d e) = sput a >> sput b >> sput c >> sput d >> sput e
-%%]]
-%%[[50
-  sget = liftM4 ClGamInfo sget sget sget sget
-%%][92
-  sget = liftM5 ClGamInfo sget sget sget sget sget
-%%]]
+-- %%[[50
+--   sput (ClGamInfo a b c d) = sput a >> sput b >> sput c >> sput d
+-- %%][92
+--   sput (ClGamInfo a b c d e) = sput a >> sput b >> sput c >> sput d >> sput e
+-- %%]]
+-- %%[[50
+--   sget = liftM4 ClGamInfo sget sget sget sget
+-- %%][92
+--   sget = liftM5 ClGamInfo sget sget sget sget sget
+-- %%]]
 %%]
 

@@ -360,7 +360,7 @@ data BasicAnnot
   	  , baIsSigned	:: Bool
   	  }
 %%]]
-  deriving (Show,Eq)
+  deriving (Show,Eq, Generic)
 %%]
 
 %%[(8 grin) hs export(basicAnnotWord)
@@ -432,19 +432,19 @@ instance Serialize BasicSize where
 
 %%[(50 codegen) hs
 instance Serialize BasicAnnot where
-  sput (BasicAnnot_None                 ) = sputWord8 0
-%%[[(8 grin)
-  sput (BasicAnnot_Dflt                 ) = sputWord8 1
-  sput (BasicAnnot_Size          a b c d) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
-%%]]
-  sget = do
-    t <- sgetWord8
-    case t of
-      0 -> return BasicAnnot_None
-%%[[(8 grin)
-      1 -> return BasicAnnot_Dflt
-      2 -> liftM4 BasicAnnot_Size 			sget sget sget sget
-%%]]
+--   sput (BasicAnnot_None                 ) = sputWord8 0
+-- %%[[(8 grin)
+--   sput (BasicAnnot_Dflt                 ) = sputWord8 1
+--   sput (BasicAnnot_Size          a b c d) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
+-- %%]]
+--   sget = do
+--     t <- sgetWord8
+--     case t of
+--       0 -> return BasicAnnot_None
+-- %%[[(8 grin)
+--       1 -> return BasicAnnot_Dflt
+--       2 -> liftM4 BasicAnnot_Size 			sget sget sget sget
+-- %%]]
 %%]
 
 %%[(50 grin) hs

@@ -38,7 +38,8 @@
 
 %%[1 export(FixityGam, FixityGamInfo(..), defaultFixityGamInfo)
 -- If this changes, also change {%{EH}ConfigInternalVersions}
-data FixityGamInfo = FixityGamInfo { fgiPrio :: !Int, fgiFixity :: !Fixity } deriving Show
+data FixityGamInfo = FixityGamInfo { fgiPrio :: !Int, fgiFixity :: !Fixity } 
+  deriving (Show, Generic)
 
 defaultFixityGamInfo = FixityGamInfo fixityMaxPrio Fixity_Infixl
 
@@ -88,6 +89,6 @@ instance ForceEval FixityGamInfo
 
 %%[50
 instance Serialize FixityGamInfo where
-  sput (FixityGamInfo a b) = sput a >> sput b
-  sget = liftM2 FixityGamInfo sget sget
+  -- sput (FixityGamInfo a b) = sput a >> sput b
+  -- sget = liftM2 FixityGamInfo sget sget
 %%]

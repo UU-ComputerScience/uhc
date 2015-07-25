@@ -43,7 +43,7 @@ data ValGamInfo
 %%[[(1 hmtyinfer || hmtyast)
       { vgiTy :: Ty }		-- strictness has negative mem usage effect. Why??
 %%]]
-      deriving Show
+      deriving (Show, Generic)
 
 type ValGam = Gam HsName ValGamInfo
 %%]
@@ -167,7 +167,7 @@ instance ForceEval ValGamInfo where
 
 %%[(50 hmtyinfer || hmtyast)
 instance Serialize ValGamInfo where
-  sput (ValGamInfo a) = sput a
-  sget = liftM ValGamInfo sget
+  -- sput (ValGamInfo a) = sput a
+  -- sget = liftM ValGamInfo sget
 %%]
 

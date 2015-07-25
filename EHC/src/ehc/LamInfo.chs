@@ -69,7 +69,7 @@ data StackTraceInfo
   | StackTraceInfo_IsStackTraceEquiv	HsName		-- is a stack traced equivalent
   deriving ( Show
 %%[[50
-           , Data, Typeable
+           , Data, Typeable, Generic
 %%]]
            )
 %%]
@@ -81,7 +81,7 @@ data FusionRole
   | FusionRole_BuildLeft	-- role of g in 'convert g,h'
   | FusionRole_BuildRight	-- role of h in 'convert g,h'
   deriving ( Enum, Show
-           , Data,Typeable
+           , Data,Typeable, Generic
            )
 %%]
 
@@ -116,7 +116,7 @@ data LamInfoBindAsp
 %%]]
   deriving ( Show
 %%[[50
-           , Data, Typeable
+           , Data, Typeable, Generic
 %%]]
            )
 
@@ -146,7 +146,7 @@ data LamInfo
       }
   deriving ( Show
 %%[[50
-           , Data, Typeable
+           , Data, Typeable, Generic
 %%]]
            )
 
@@ -298,7 +298,7 @@ data GrinByteCodeLamInfo
   deriving
      ( Show
 %%[[50
-     , Typeable, Data
+     , Typeable, Data, Generic
 %%]]
      )
 
@@ -335,8 +335,8 @@ initLamMp = emptyLamMp
 
 %%[(50 grin) hs
 instance Serialize GrinByteCodeLamInfo where
-  sput (GrinByteCodeLamInfo a) = sput a
-  sget = liftM  GrinByteCodeLamInfo sget
+  -- sput (GrinByteCodeLamInfo a) = sput a
+  -- sget = liftM  GrinByteCodeLamInfo sget
 %%]
 
 %%[(93 codegen) hs
@@ -347,46 +347,46 @@ instance Serialize FusionRole where
 
 %%[(50 codegen) hs
 instance Serialize LamInfoBindAsp where
-  sput (LamInfoBindAsp_RelevTy  	a) = sputWord8 0 >> sput a
-  sput (LamInfoBindAsp_Ty 			a) = sputWord8 1 >> sput a
-  sput (LamInfoBindAsp_Core 	  a b) = sputWord8 2 >> sput a >> sput b
-%%[[93
-  sput (LamInfoBindAsp_FusionRole 	a) = sputWord8 3 >> sput a
-%%]]
-%%[[(8888 coresysf)
-  sput (LamInfoBindAsp_SysfTy   	a) = sputWord8 4 >> sput a
-%%]]
-  sget = do
-    t <- sgetWord8
-    case t of
-      0 -> liftM  LamInfoBindAsp_RelevTy  	sget
-      1 -> liftM  LamInfoBindAsp_Ty 		sget
-      2 -> liftM2 LamInfoBindAsp_Core 		sget sget
-%%[[93
-      3 -> liftM  LamInfoBindAsp_FusionRole sget
-%%]]
-%%[[(8888 coresysf)
-      4 -> liftM  LamInfoBindAsp_SysfTy		sget
-%%]]
+--   sput (LamInfoBindAsp_RelevTy  	a) = sputWord8 0 >> sput a
+--   sput (LamInfoBindAsp_Ty 			a) = sputWord8 1 >> sput a
+--   sput (LamInfoBindAsp_Core 	  a b) = sputWord8 2 >> sput a >> sput b
+-- %%[[93
+--   sput (LamInfoBindAsp_FusionRole 	a) = sputWord8 3 >> sput a
+-- %%]]
+-- %%[[(8888 coresysf)
+--   sput (LamInfoBindAsp_SysfTy   	a) = sputWord8 4 >> sput a
+-- %%]]
+--   sget = do
+--     t <- sgetWord8
+--     case t of
+--       0 -> liftM  LamInfoBindAsp_RelevTy  	sget
+--       1 -> liftM  LamInfoBindAsp_Ty 		sget
+--       2 -> liftM2 LamInfoBindAsp_Core 		sget sget
+-- %%[[93
+--       3 -> liftM  LamInfoBindAsp_FusionRole sget
+-- %%]]
+-- %%[[(8888 coresysf)
+--       4 -> liftM  LamInfoBindAsp_SysfTy		sget
+-- %%]]
 
 instance Serialize LamInfo where
-%%[[(50 grin)
-  sput (LamInfo a b c d) = sput a >> sput b >> sput c >> sput d
-  sget = liftM4 LamInfo  sget sget sget sget
-%%][50
-  sput (LamInfo a b c) = sput a >> sput b >> sput c
-  sget = liftM3 LamInfo  sget sget sget
-%%]]
+-- %%[[(50 grin)
+--   sput (LamInfo a b c d) = sput a >> sput b >> sput c >> sput d
+--   sget = liftM4 LamInfo  sget sget sget sget
+-- %%][50
+--   sput (LamInfo a b c) = sput a >> sput b >> sput c
+--   sget = liftM3 LamInfo  sget sget sget
+-- %%]]
 
 instance Serialize StackTraceInfo where
-  sput (StackTraceInfo_None                ) = sputWord8 0
-  sput (StackTraceInfo_HasStackTraceEquiv a) = sputWord8 1 >> sput a
-  sput (StackTraceInfo_IsStackTraceEquiv  a) = sputWord8 2 >> sput a
-  sget
-    = do t <- sgetWord8
-         case t of
-           0 -> return StackTraceInfo_None
-           1 -> liftM  StackTraceInfo_HasStackTraceEquiv sget
-           2 -> liftM  StackTraceInfo_IsStackTraceEquiv  sget
+  -- sput (StackTraceInfo_None                ) = sputWord8 0
+  -- sput (StackTraceInfo_HasStackTraceEquiv a) = sputWord8 1 >> sput a
+  -- sput (StackTraceInfo_IsStackTraceEquiv  a) = sputWord8 2 >> sput a
+  -- sget
+  --   = do t <- sgetWord8
+  --        case t of
+  --          0 -> return StackTraceInfo_None
+  --          1 -> liftM  StackTraceInfo_HasStackTraceEquiv sget
+  --          2 -> liftM  StackTraceInfo_IsStackTraceEquiv  sget
 %%]
 

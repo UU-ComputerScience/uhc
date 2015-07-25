@@ -392,7 +392,7 @@ data ACoreBindAspectKey
 %%[[93
   | ACoreBindAspectKey_FusionRole           -- fusion role
 %%]]
-  deriving (Eq,Ord)
+  deriving (Eq,Ord, Generic)
 
 instance Show ACoreBindAspectKey where
   show ACoreBindAspectKey_Default       = "dft"
@@ -528,7 +528,7 @@ data ACoreBindRef
       { acbrefNm        :: !HsName
       , acbrefMbAspKey  :: !(Maybe ACoreBindAspectKeyS)
       }
-  deriving (Eq,Ord)
+  deriving (Eq,Ord, Generic)
 
 acoreMkRef :: HsName -> ACoreBindRef
 acoreMkRef n = ACoreBindRef n Nothing
@@ -1494,7 +1494,7 @@ data CaseAltFailReason
   | CaseAltFailReason_Continue
       { cafailCaseId        :: UID              -- failed as part of case match attempt, but continues with code identified by id
       }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord, Generic)
 
 instance PP CaseAltFailReason where
   pp (CaseAltFailReason_Continue i) = pp i
@@ -1624,50 +1624,50 @@ instance Serialize ACoreBindAspectKey where
 
 %%[(50 codegen) hs
 instance Serialize ACoreBindAspectKey where
-  sput (ACoreBindAspectKey_Default       ) = sputWord8 0
-  sput (ACoreBindAspectKey_Strict        ) = sputWord8 1
-  sput (ACoreBindAspectKey_Ty            ) = sputWord8 2
-  sput (ACoreBindAspectKey_RelevTy       ) = sputWord8 3
-  sput (ACoreBindAspectKey_Debug         ) = sputWord8 4
-  sput (ACoreBindAspectKey_Core          ) = sputWord8 5
-%%[[(8 coresysf)
-  sput (ACoreBindAspectKey_SysF a        ) = sputWord8 6 >> sput a
-%%]]
-%%[[93
-  sput (ACoreBindAspectKey_FusionRole    ) = sputWord8 7
-%%]]
-  sget = do
-    t <- sgetWord8
-    case t of
-        0 -> return ACoreBindAspectKey_Default   
-        1 -> return ACoreBindAspectKey_Strict    
-        2 -> return ACoreBindAspectKey_Ty        
-        3 -> return ACoreBindAspectKey_RelevTy   
-        4 -> return ACoreBindAspectKey_Debug     
-        5 -> return ACoreBindAspectKey_Core      
-%%[[(8 coresysf)
-        6 -> liftM  ACoreBindAspectKey_SysF         sget    
-%%]]
-%%[[93
-        7 -> return ACoreBindAspectKey_FusionRole
-%%]]
+--   sput (ACoreBindAspectKey_Default       ) = sputWord8 0
+--   sput (ACoreBindAspectKey_Strict        ) = sputWord8 1
+--   sput (ACoreBindAspectKey_Ty            ) = sputWord8 2
+--   sput (ACoreBindAspectKey_RelevTy       ) = sputWord8 3
+--   sput (ACoreBindAspectKey_Debug         ) = sputWord8 4
+--   sput (ACoreBindAspectKey_Core          ) = sputWord8 5
+-- %%[[(8 coresysf)
+--   sput (ACoreBindAspectKey_SysF a        ) = sputWord8 6 >> sput a
+-- %%]]
+-- %%[[93
+--   sput (ACoreBindAspectKey_FusionRole    ) = sputWord8 7
+-- %%]]
+--   sget = do
+--     t <- sgetWord8
+--     case t of
+--         0 -> return ACoreBindAspectKey_Default   
+--         1 -> return ACoreBindAspectKey_Strict    
+--         2 -> return ACoreBindAspectKey_Ty        
+--         3 -> return ACoreBindAspectKey_RelevTy   
+--         4 -> return ACoreBindAspectKey_Debug     
+--         5 -> return ACoreBindAspectKey_Core      
+-- %%[[(8 coresysf)
+--         6 -> liftM  ACoreBindAspectKey_SysF         sget    
+-- %%]]
+-- %%[[93
+--         7 -> return ACoreBindAspectKey_FusionRole
+-- %%]]
 %%]
 
 %%[(50 codegen) hs
 instance Serialize ACoreBindRef where
-  sput (ACoreBindRef a b) = sput a >> sput b
-  sget = liftM2 ACoreBindRef sget sget
+  -- sput (ACoreBindRef a b) = sput a >> sput b
+  -- sget = liftM2 ACoreBindRef sget sget
 %%]
 
 %%[(50 codegen) hs
 instance Serialize CaseAltFailReason where
-  sput (CaseAltFailReason_Continue a) = sputWord8 0 >> sput a
-  sput (CaseAltFailReason_Absence   ) = sputWord8 1
-  sget = do
-    t <- sgetWord8
-    case t of
-      0 -> liftM  CaseAltFailReason_Continue sget
-      1 -> return CaseAltFailReason_Absence
+  -- sput (CaseAltFailReason_Continue a) = sputWord8 0 >> sput a
+  -- sput (CaseAltFailReason_Absence   ) = sputWord8 1
+  -- sget = do
+  --   t <- sgetWord8
+  --   case t of
+  --     0 -> liftM  CaseAltFailReason_Continue sget
+  --     1 -> return CaseAltFailReason_Absence
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
