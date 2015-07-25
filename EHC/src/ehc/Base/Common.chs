@@ -471,8 +471,26 @@ thd (a,b,c) = c
 
 %%[8 export(Verbosity(..))
 data Verbosity
-  = VerboseQuiet | VerboseMinimal | VerboseNormal | VerboseALot | VerboseDebug
+  = VerboseQuiet		-- nothing at all
+  | VerboseMinimal
+  | VerboseNormal		-- basic info
+  | VerboseALot
+  | VerboseDebug
   deriving (Eq,Ord,Enum)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(TraceOn(..), allTraceOnMp)
+-- | Trace on specific topic(s)
+data TraceOn
+  = TraceOn_BuildFun		-- build functions (bcall, ...)
+  deriving (Eq,Ord,Enum,Show,Typeable,Bounded)
+
+allTraceOnMp :: Map.Map String TraceOn
+allTraceOnMp = str2stMpWithShow (strToLower . showUnprefixedWithTypeable 1) 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1080,9 +1098,15 @@ allKnownPrimMp
 %%% Mapping from String to something, provided enough meta info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(str2stMp, str2stMpWithOmit, showStr2stMp)
+%%[1 export(str2stMp, str2stMpWithOmit, str2stMpWithShow, showStr2stMp)
+str2stMpWithOmitShow :: (Enum opt, Bounded opt, Eq opt) => (opt -> String) -> [opt] -> Map.Map String opt
+str2stMpWithOmitShow shw omits = Map.fromList [ (shw o, o) | o <- [minBound .. maxBound] \\ omits ]
+
 str2stMpWithOmit :: (Show opt, Enum opt, Bounded opt, Eq opt) => [opt] -> Map.Map String opt
-str2stMpWithOmit omits = Map.fromList [ (show o, o) | o <- [minBound .. maxBound] \\ omits ]
+str2stMpWithOmit = str2stMpWithOmitShow show
+
+str2stMpWithShow :: (Enum opt, Bounded opt, Eq opt) => (opt -> String) -> Map.Map String opt
+str2stMpWithShow shw = str2stMpWithOmitShow shw []
 
 str2stMp :: (Show opt, Enum opt, Bounded opt, Eq opt) => Map.Map String opt
 str2stMp = str2stMpWithOmit []

@@ -396,6 +396,10 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
 %%[[50
      ,  Option "c"  ["compile-only"]        (NoArg oCompileOnly)                    "compile only, do not link"
 %%]]
+%%[[8
+     ,  Option ""   ["debug-traceon"]
+                                            (ReqArg oTraceOn "aspects")             ("debug: trace on specific aspects: " ++ showStr2stMp allTraceOnMp)
+%%]]
 %%[[50
      ,  Option ""   ["debug-stopat-hi-error"]
                                             (boolArg oStopAtHIError)                "debug: stop at .hi parse error (default=off)"
@@ -624,6 +628,9 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
 %%]]
 %%[[(8 codegen grin)
          oRTSInfo    s   o =  o { ehcOptGenRTSInfo     = read s       }
+%%]]
+%%[[(8 codegen)
+         oTraceOn      s o = o {ehcOptTraceOn = optOpts allTraceOnMp s ++ ehcOptTraceOn o}
 %%]]
 %%[[(8 codegen)
          oOptimization ms o

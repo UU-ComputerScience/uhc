@@ -883,8 +883,8 @@ cpEhcHaskellImport
                   ]
 %%]]
         foldAndImport modNm
-          = do -- cpFoldHsMod modNm
-               bcall $ FoldHsMod modNm
+          = do cpFoldHsMod modNm
+               -- bcall $ FoldHsMod modNm
                cpGetHsModnameAndImports modNm
                
 %%]

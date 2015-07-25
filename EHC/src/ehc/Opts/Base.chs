@@ -292,6 +292,7 @@ data EHCOpts
       ,  ehcOptImportFileLocPath
                               ::  FileLocPath
       ,  ehcOptVerbosity      ::  Verbosity         -- verbosity level
+      ,  ehcOptTraceOn        ::  [TraceOn]         -- on what to trace
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptEnvironment    ::  EHCEnvironment    -- runtime environment
@@ -468,6 +469,9 @@ emptyEHCOpts
       ,  ehcOptVerbosity        =   VerboseNormal
 %%][100
       ,  ehcOptVerbosity        =   VerboseMinimal
+%%]]
+%%[[8
+      ,  ehcOptTraceOn          =   []
 %%]]
 %%[[8
       ,  ehcOptEmitHS           =   False

@@ -269,6 +269,9 @@ instance Ord BFun where
 
 instance Hashable BFun where
   hashWithSalt salt (BFun {bfcdFun=x}) = hashWithSalt salt x
+
+instance Show BFun where
+  show (BFun {bfcdFun=x}) = show x
 %%]
 
 %%[8 export(BFunCacheEntry(..))

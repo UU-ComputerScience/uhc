@@ -68,29 +68,34 @@ Running of BuildFunction
 
 %%[8 export(bcall)
 -- | Execute a build function, possibly caching/memoizing a result
-bcall :: forall res m . (Typeable res) => EHCCompileRunner m => BFun' res -> EHCompilePhaseT m res
+bcall :: forall res m . (Typeable res, EHCCompileRunner m) => BFun' res -> EHCompilePhaseT m res
 bcall bfun = do
     bcache <- getl $ st ^* bstateCache
     
     mbCachedRes <- lkup bfun bcache
+    
     case mbCachedRes of
-      Just res -> return res
+      Just res -> do
+        -- debug
+        cpTr TraceOn_BuildFun ["cach " ++ show bfun]
+        -- immediate result
+        return res
+
       _ -> do
+        -- debug
+        getl cstk >>= \stk -> cpTr TraceOn_BuildFun $ [">>>> " ++ show bfun] ++ map show stk
         -- prepare
         start
         -- actual execution
         res <- case bfun of
-          CRSI -> do
-               fmap (panicJust "BuildFunction.Run.bcall CRSI") $ bderef BRef_CRSI
+          CRSI -> brefto bfun BRef_CRSI
 
-          EcuOf modNm -> do
-               fmap (panicJust "BuildFunction.Run.bcall EcuOf") $ bderef (BRef_ECU modNm)
+          EcuOf modNm -> brefto bfun $ BRef_ECU modNm
 
           EcuOfName modNm -> do
                bcall $ EcuOfNameAndPath Nothing (modNm, Nothing)
            
-          EHCOptsOf modNm -> do
-               fmap (panicJust "BuildFunction.Run.bcall EHCOptsOf") $ bderef (BRef_EHCOpts modNm)
+          EHCOptsOf modNm -> brefto bfun $ BRef_EHCOpts modNm
 
           EcuOfNameAndPath mbPrev (modNm,mbFp) -> do
                opts <- bcall $ EHCOptsOf modNm
@@ -152,10 +157,7 @@ bcall bfun = do
                           then do
                             let errs = _asthdlrPostInputCheck astHdlr opts ecu modNm fpC x
                             if null errs
-                              then do 
-                                set x
-                                bmemo ref
-                                return x
+                              then ret ref x
                               else do
                                 cpSetLimitErrsWhen 1 ("Decode AST check " ++ _asthdlrName astHdlr) errs
                                 dflt'
@@ -170,24 +172,19 @@ bcall bfun = do
 %%]]
                             sopts       = _asthdlrParseScanOpts astHdlr opts popts
                             description = "Parse (" ++ (if ScanUtils.scoLitmode sopts then "Literate " else "") ++ _asthdlrName astHdlr ++ " syntax) of module `" ++ show modNm ++ "`"
-                            seterrs     = cpSetLimitErrsWhen 5 description
+                            seterrs es  = cpSetLimitErrsWhen 5 description es >> dflt'
                         case _asthdlrParser astHdlr opts popts of
                           Just (ASTParser p) -> do
                             (res,errs) <- parseWithFPath sopts popts p fp -- (maybe (ecuFilePath (crCU modNm cr)) id mbFp)
                             -- cpUpdCU modNm (_asthdlrEcuStore astHdlr res)
                             if null errs
-                              then do
-                                set res
-                                bmemo ref
-                                return res
+                              then ret ref res
                               else do
                                 if ehpoptsStopAtErr popts
-                                  then return ()
+                                  then ret ref res
                                   else seterrs errs
-                                dflt'
                           _ -> do
                             seterrs [strMsg $ "No parser for " ++ _asthdlrName astHdlr]
-                            dflt'
 
                       fc -> err $ "ast content handler " ++ show fc
 
@@ -195,6 +192,7 @@ bcall bfun = do
                          mbl@(~(Just lens)) = Map.lookup tkey $ _astsuffinfoASTLensMp info
                          fpC                = mkfp astHdlr
                          err                = err' fpC (_asthdlrName astHdlr)
+                         ret ref res        = set res >> bmemo ref >> return res
 
                  _ | isNothing mbhdlr               -> err1 "ast handler"
                    | isNothing mbset                -> err2 mbhdlr "ast setter"
@@ -334,6 +332,11 @@ bcall bfun = do
 
         -- finalize
         end
+
+        -- debug
+        getl cstk >>= \stk -> cpTr TraceOn_BuildFun $ ["<<<< " ++ show bfun] ++ map show stk
+
+        -- the result
         return res
   where
     -- lens access
@@ -349,8 +352,16 @@ bcall bfun = do
     bmemo res = do
         (BFun bfun : _) <- getl $ st ^* bstateCallStack
         case cast bfun of
-          Just bfun -> st ^* bstateCache =$: bcacheInsert bfun res
+          Just bfun -> do
+               cpTr TraceOn_BuildFun $ ["memo " ++ show bfun]
+               st ^* bstateCache =$: bcacheInsert bfun res
           _ -> panic $ "BuildFunction.Run.bcall.bmemo: " ++ show bfun
+
+    -- construct a reference to something and also yield corresponding result
+    brefto :: BFun' res -> BRef res -> EHCompilePhaseT m res
+    brefto bfun ref = do
+        bmemo ref
+        fmap (panicJust $ "BuildFunction.Run.bcall " ++ show bfun) $ bderef ref
 
     -- memoize & return
     breturn :: res -> EHCompilePhaseT m res

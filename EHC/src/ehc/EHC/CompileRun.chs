@@ -283,7 +283,25 @@ cpRmFilesToRm
 %%% Compile actions: message
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 export(cpTr)
+-- | Tracing
+cpTr :: EHCCompileRunner m => TraceOn -> [String] -> EHCompilePhaseT m ()
+cpTr ton ms = do
+    cr <- MS.get
+    let (_,opts) = crBaseInfo' cr
+    when (ton `elem` ehcOptTraceOn opts) $ liftIO $ pr ms
+  where pr []      = return ()
+        pr [m]     = putStrLn $ show ton ++ ": " ++ m
+        pr (m:ms)  = do pr [m]
+                        forM_ ms $ \m -> putStrLn $ "  " ++ m
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: message
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8 export(cpMsg,cpMsg')
+-- | Message
 cpMsg :: EHCCompileRunner m => HsName -> Verbosity -> String -> EHCompilePhaseT m ()
 cpMsg modNm v m
   = do { cr <- MS.get
