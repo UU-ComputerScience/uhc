@@ -487,6 +487,7 @@ data Verbosity
 -- | Trace on specific topic(s)
 data TraceOn
   = TraceOn_BuildFun		-- build functions (bcall, ...)
+  | TraceOn_BuildFPaths		-- build fpaths constructed
   deriving (Eq,Ord,Enum,Show,Typeable,Bounded)
 
 allTraceOnMp :: Map.Map String TraceOn

@@ -438,11 +438,16 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSStart
 %%]]
              -> do { cpEhcHaskellModulePrepareSrc modNm
+{-
+-}
                    ; modNm2 <- cpEhcHaskellImport stnext
 %%[[99
                                                   (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
                                                   modNm
+{-
+                   ; (modNm2, _) <- bcall $ HsModnameAndImports modNm
+-}
                    ; cpEhcHaskellModulePrepareHS2 modNm2
                    ; cpMsg modNm2 VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
@@ -479,7 +484,8 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSOnlyImports
 %%]]
              -> do { cpMsg modNm VerboseMinimal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
-                   ; cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts st
+                   ; isTopMod <- bcall $ IsTopMod modNm
+                   ; cpEhcHaskellModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts st
 %%[[99
                                                    (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
@@ -546,7 +552,8 @@ cpEhcModuleCompile1 targHSState modNm
              where isBinary = cst == CRRStartBinary
            (ECUS_CoreRun CRROnlyImports,Just (ECUS_CoreRun CRRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling CoreRun"
-                   ; cpEhcCoreRunModuleAfterImport (ecuIsTopMod ecu) opts modNm
+                   ; isTopMod <- bcall $ IsTopMod modNm
+                   ; cpEhcCoreRunModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_CoreRun CRRAllSem))
                    ; return defaultResult
                    }
@@ -563,7 +570,8 @@ cpEhcModuleCompile1 targHSState modNm
              where isBinary = cst == CRStartBinary
            (ECUS_Core CROnlyImports,Just (ECUS_Core CRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
-                   ; cpEhcCoreModuleAfterImport (ecuIsTopMod ecu) opts modNm
+                   ; isTopMod <- bcall $ IsTopMod modNm
+                   ; cpEhcCoreModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult
                    }
@@ -914,7 +922,8 @@ cpEhcHaskellParse
            cpPreprocessWithCPP pkgKeyDirL modNm
            cpParseHs litmode modNm
          else do
-           (_ :: HS.AGItf) <- bcall $ ASTFromFile (modNm,ASTFileNameOverride_AsIs) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+           -- (_ :: HS.AGItf) <- bcall $ ASTFromFile (modNm,ASTFileNameOverride_AsIs) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+           cpParseHs litmode modNm
            return ()
 %%]]
        cpMsg modNm VerboseALot "Parsing done"

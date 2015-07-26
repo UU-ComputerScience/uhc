@@ -100,7 +100,7 @@ cpParseWithFPath
           Just (ASTParser p) -> do
                (res,errs) <- parseWithFPath sopts popts p (maybe (ecuFilePath (crCU modNm cr)) id mbFp)
                cpUpdCU modNm (_asthdlrEcuStore astHdlr res)
-               unless (ehpoptsStopAtErr popts) $ seterrs errs
+               unless (ehpoptsOkToStopAtErr popts) $ seterrs errs
           _ -> seterrs [strMsg $ "No parser for " ++ _asthdlrName astHdlr]
       }
 %%]
@@ -135,12 +135,12 @@ cpParseHs litmode = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpopts
 
 %%[50.cpParseHsImport export(cpParseHsImport)
 cpParseHsImport :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpParseHsImport = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpoptsStopAtErr=True, ehpoptsForImport=True}) Nothing
+cpParseHsImport = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpoptsOkToStopAtErr=True, ehpoptsForImport=True}) Nothing
 %%]
 
 %%[99 -50.cpParseHsImport export(cpParseHsImport)
 cpParseHsImport :: EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m ()
-cpParseHsImport litmode = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpoptsStopAtErr=True, ehpoptsLitMode=litmode, ehpoptsForImport=True}) Nothing
+cpParseHsImport litmode = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpoptsOkToStopAtErr=True, ehpoptsLitMode=litmode, ehpoptsForImport=True}) Nothing
 %%]
 
 %%[(8888 corein) export(cpParseCoreWithFPath)
@@ -216,7 +216,7 @@ cpDecode'' astHdlr skey tkey modNm
              mbi@(~(Just info)) = astsuffixLookup skey $ _asthdlrSuffixRel astHdlr
              mbl@(~(Just lens)) = Map.lookup tkey $ _astsuffinfoASTLensMp info
              -- fpC                = fpathSetSuff (_astsuffinfoSuff info) fp
-             fpC                = asthdlrMkInputFPath astHdlr opts ecu skey modNm fp
+             fpC                = asthdlrMkInputFPath astHdlr opts ecu (ASTFileSuffOverride_Suff skey) modNm fp
        ; if isJust mbi && isJust mbl
          then do
            cpMsg' modNm VerboseALot "Decoding" Nothing fpC

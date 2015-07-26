@@ -204,7 +204,7 @@ astHandler'_HS = mk emptyASTHandler'
 %%[[8
             								    , id
 %%][50
-            								    , \o -> o {ehpoptsStopAtErr=True, ehpoptsForImport=True}
+            								    , \o -> o {ehpoptsOkToStopAtErr=True, ehpoptsForImport=True}
 %%]]
             								  ) )
             								, ( (ASTFileContent_LitText	, ASTFileUse_Src)
@@ -236,9 +236,9 @@ astHandler'_HS = mk emptyASTHandler'
 %%[[8
             								    , id
 %%][50
-            								    , \o -> o {ehpoptsStopAtErr=True, ehpoptsForImport=True}
+            								    , \o -> o {ehpoptsOkToStopAtErr=True, ehpoptsForImport=True}
 %%][99
-            								    , \o -> o {ehpoptsLitMode=True, ehpoptsStopAtErr=True, ehpoptsForImport=True}
+            								    , \o -> o {ehpoptsLitMode=True, ehpoptsOkToStopAtErr=True, ehpoptsForImport=True}
 %%]]
             								  ) )
             								]

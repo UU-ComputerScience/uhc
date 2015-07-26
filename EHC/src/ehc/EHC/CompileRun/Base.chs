@@ -160,12 +160,22 @@ data BFun' res where
   EcuCanCompile
     :: !HsName							--- ^ module name and possibly known path
     -> BFun' Bool
+
+  --- | Module is top module, i.e. specified at commandline with possibly different name than module name in file
+  IsTopMod
+    :: !HsName							--- ^ module name and possibly known path
+    -> BFun' Bool
 %%]]
 
 %%[[50
   --- | The result of folding over a module for import/module analysis
   FoldHsMod
     :: !HsName							--- ^ module name and possibly known path
+%%[[50
+    -> !(Maybe ())						--- ^ dummy
+%%][99
+    -> !(Maybe [PkgModulePartition])	--- ^ optionally do CPP with module partitioning into pkgs
+%%]]
     -> BFun'
          ( HSSemMod.Syn_AGItf			-- all semantics
          , Bool							-- has main?
@@ -174,6 +184,14 @@ data BFun' res where
          , Maybe EHCOpts				-- possibly adapted options
 %%]]
          )
+
+  --- | The actual module name and imported modules
+  HsModnameAndImports
+    :: !HsName							--- ^ module name and possibly known path
+    -> BFun'
+         ( HsName						-- module name
+         , Set.Set HsName				-- imported module names
+         )
 %%]]
 
 %%[[99
@@ -181,7 +199,11 @@ data BFun' res where
   FPathPreprocessedWithCPP
     :: [PkgModulePartition]				--- ^ partitioning of modules into packages
     -> !HsName							--- ^ module name and possibly known path
-    -> BFun' (Maybe FPath)
+    -> BFun' FPath
+
+  --- | Exposed packages
+  ExposedPackages
+    :: BFun' [PkgModulePartition]
 %%]]
 
 -- | Comparison which ignores GADT type info
@@ -204,12 +226,15 @@ bfunCompare f1 f2 = case (f1,f2) of
     (ModfTimeOfFile         	a1 b1 c1 d1		, ModfTimeOfFile			a2 b2 c2 d2		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
     (DirOfModIsWriteable		a1   			, DirOfModIsWriteable		a2   			) ->         a1 `compare` a2
     (EcuCanCompile				a1 				, EcuCanCompile				a2 				) ->         a1 `compare` a2
+    (IsTopMod					a1 				, IsTopMod					a2 				) ->         a1 `compare` a2
 %%]]
 %%[[50
-    (FoldHsMod					a1 				, FoldHsMod					a2 				) ->         a1 `compare` a2
+    (FoldHsMod					a1 b1			, FoldHsMod					a2 b2			) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (HsModnameAndImports		a1 				, HsModnameAndImports		a2 				) ->         a1 `compare` a2
 %%]]
 %%[[99
     (FPathPreprocessedWithCPP	a1 b1 			, FPathPreprocessedWithCPP	a2 b2 			) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (ExposedPackages							, ExposedPackages							) -> EQ
 %%]]
   where lexico (x:xs)
           | x == EQ   = lexico xs
@@ -225,7 +250,7 @@ deriving instance Typeable BFun'
 
 instance Hashable (BFun' res) where
   hashWithSalt salt x = case x of
-	CRSI 									-> salt `hashWithSalt` (maxBound::Int)
+	CRSI 									-> salt `hashWithSalt` (maxBound-1::Int)
 	FPathSearchForFile 			a b			-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b
 	FPathOfImported	   			a			-> salt `hashWithSalt` (1::Int) `hashWithSalt` a
 	ImportsOf		   			a			-> salt `hashWithSalt` (2::Int) `hashWithSalt` a
@@ -242,12 +267,15 @@ instance Hashable (BFun' res) where
 	ModfTimeOfFile				a b	c d		-> salt `hashWithSalt` (8::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
 	DirOfModIsWriteable 		a 			-> salt `hashWithSalt` (9::Int) `hashWithSalt` a
 	EcuCanCompile		 		a 			-> salt `hashWithSalt` (10::Int) `hashWithSalt` a
+	IsTopMod			 		a 			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a
 %%]]
 %%[[50
-	FoldHsMod			 		a 			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a
+	FoldHsMod			 		a b			-> salt `hashWithSalt` (12::Int) `hashWithSalt` a `hashWithSalt` b
+	HsModnameAndImports			a 			-> salt `hashWithSalt` (13::Int) `hashWithSalt` a
 %%]]
 %%[[99
-	FPathPreprocessedWithCPP	a b			-> salt `hashWithSalt` (12::Int) `hashWithSalt` a `hashWithSalt` b
+	FPathPreprocessedWithCPP	a b			-> salt `hashWithSalt` (14::Int) `hashWithSalt` a `hashWithSalt` b
+	ExposedPackages							-> salt `hashWithSalt` (maxBound-2::Int)
 %%]]
 
 %%]
@@ -308,6 +336,10 @@ data BRef val where
   BRef_CRSI
     :: BRef EHCompileRunStateInfo
 
+  --- | Global info: exposed packages
+  BRef_ExposedPackages
+    :: BRef [PkgModulePartition]
+
   --- | Compile unit
   BRef_ECU
     :: !HsName					--- ^ module name
@@ -327,6 +359,7 @@ data BRef val where
     -> BRef EHCOpts
   
 deriving instance Typeable BRef
+deriving instance Show (BRef val)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

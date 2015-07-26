@@ -316,15 +316,26 @@ instance Hashable ASTFileTiming
 %%[8 export(ASTFileNameOverride(..), astFileNameOverrideToMaybe)
 -- | Overriding an automatically chosen name (based on module name)
 data ASTFileNameOverride
-  = ASTFileNameOverride_AsIs			-- ^ fully as is
-  | ASTFileNameOverride_FPath	 FPath	-- ^ with FPath
+  = ASTFileNameOverride_AsIs					-- ^ fully as is
+  | ASTFileNameOverride_FPath	 		FPath	-- ^ with FPath as replacement
+  | ASTFileNameOverride_FPathAsTop	 	FPath	-- ^ with FPath as top level module path
   deriving (Eq, Ord, Typeable, Generic, Show)
 
 astFileNameOverrideToMaybe :: ASTFileNameOverride -> Maybe FPath
-astFileNameOverrideToMaybe (ASTFileNameOverride_FPath fp) = Just fp
-astFileNameOverrideToMaybe _                              = Nothing
+astFileNameOverrideToMaybe (ASTFileNameOverride_FPathAsTop fp) 	= Just fp
+astFileNameOverrideToMaybe _                              		= Nothing
 
 instance Hashable ASTFileNameOverride
+%%]
+
+%%[8 export(ASTFileSuffOverride(..))
+-- | Overriding an automatically chosen name (based on module name)
+data ASTFileSuffOverride
+  = ASTFileSuffOverride_AsIs							-- ^ fully as is
+  | ASTFileSuffOverride_Suff	 		ASTSuffixKey	-- ^ with suff from key as replacement
+  deriving (Eq, Ord, Typeable, Generic, Show)
+
+instance Hashable ASTFileSuffOverride
 %%]
 
 %%[8 export(ASTFileTimeHandleHow(..))

@@ -602,6 +602,13 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
+  | CannotCreateFile    lhs     .  pp   =   ppMsgErr    ("cannot create file")
+                                                        (    "module              :" >#< @modNm
+                                                         >-< "file                :" >#< @file
+                                                        )
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 

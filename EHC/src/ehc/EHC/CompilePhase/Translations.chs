@@ -33,6 +33,10 @@ Translation to another AST
 %%[(8 codegen cmm) hs import({%{EH}CodeGen.Const} as Const (emptyConstSt))
 %%]
 
+-- build call
+%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%]
+
 -- EH semantics
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
 %%]
@@ -119,6 +123,9 @@ cpTranslateHs2EH modNm
 cpTranslateEH2Output :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2Output modNm
   =  do  {  cr <- get
+%%[[50
+         ;  isTopMod <- bcall $ IsTopMod modNm
+%%]]
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbEHSem= _ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Output" mbEHSem
@@ -146,12 +153,12 @@ cpTranslateEH2Output modNm
                      ; when (ehcOptShowAst opts)
                             (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][99
-                     ; when (ecuIsTopMod ecu && ehcOptShowAst opts)
+                     ; when (isTopModu && ehcOptShowAst opts)
                             (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][100
 %%]]
 %%[[(99 hmtyinfer tyderivtree)
-                     ; when (ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
+                     ; when (isTopMod && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)
 %%][100
 %%]]

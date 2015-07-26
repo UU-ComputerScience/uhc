@@ -293,7 +293,9 @@ asthdlrOutputIO hdlr how opts ecu modNm fpC fnC ast = do
 
 %%[8 export(asthdlrMkInputFPath)
 -- | Construct a FPath given a handler
-asthdlrMkInputFPath :: ASTHandler' ast -> EHCOpts -> EHCompileUnit -> ASTSuffixKey -> HsName -> FPath -> FPath
-asthdlrMkInputFPath hdlr opts ecu skey modNm fp = _asthdlrMkInputFPath hdlr opts ecu modNm fp suff
-  where suff = maybe "" id $ astsuffixLookupSuff skey $ _asthdlrSuffixRel hdlr
+asthdlrMkInputFPath :: ASTHandler' ast -> EHCOpts -> EHCompileUnit -> ASTFileSuffOverride -> HsName -> FPath -> FPath
+asthdlrMkInputFPath hdlr opts ecu overr modNm fp = _asthdlrMkInputFPath hdlr opts ecu modNm fp suff
+  where suff = case overr of
+          ASTFileSuffOverride_Suff skey -> maybe "" id $ astsuffixLookupSuff skey $ _asthdlrSuffixRel hdlr
+          ASTFileSuffOverride_AsIs      -> fpathSuff fp
 %%]
