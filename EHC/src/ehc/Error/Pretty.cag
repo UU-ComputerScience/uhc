@@ -358,7 +358,7 @@ SEM Err
   | FileNotFound        lhs     .  pp   =   ppMsgErr    "File not found"
                                                         (    "file name         :" >#< @fileName
                                                          >-< "searched locations:" >#< vlist (map (text.show) @locations)
-                                                         -- >-< "attempted suffixes:" >#< ppCommas' (map pp $ catMaybes @suffixes)
+                                                         >-< "attempted suffixes:" >#< ppCommas' (map pp $ catMaybes @suffixes)
                                                         )
 %%[[99
                                                         @range

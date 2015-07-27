@@ -26,6 +26,7 @@ data ModuleImportExportImpl
       , mieimplHsName2FldMpMp	:: HsName2FldMpMp	-- ^ imported modules fld mp
       , mieimplHsName2FldMp		:: HsName2FldMp		-- ^ export fld map
       }
+  deriving (Typeable)
 
 emptyModuleImportExportImpl = ModuleImportExportImpl Map.empty [] Map.empty Map.empty
 %%]

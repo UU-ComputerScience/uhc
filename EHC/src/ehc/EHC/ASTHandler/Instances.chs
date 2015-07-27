@@ -328,19 +328,20 @@ astHandler'_HI = mk emptyASTHandler'
 			                                CE.catch (getSGetFile (fpathToStr fp) (HI.sgetHIInfo opts))
                                                      (\(_ :: SomeException) -> return $ HI.emptyHIInfo {HI.hiiValidity = HI.HIValidity_Absent})
             , _asthdlrPostInputCheck	= \opts ecu modNm fp hiinfo -> case HI.hiiValidity hiinfo of
+                                               HI.HIValidity_Ok -> []
 %%[[99
                                                HI.HIValidity_WrongMagic | not (ecuCanCompile ecu)
-                                                 ->   [rngLift emptyRange Err_WrongMagic
-                                                         (show modNm)
-                                                         (fpathToStr fp)
-                                                      ]
+                                                 -> [rngLift emptyRange Err_WrongMagic
+                                                       (show modNm)
+                                                       (fpathToStr fp)
+                                                    ]
                                                HI.HIValidity_Inconsistent | not (ecuCanCompile ecu)
-                                                 ->   [rngLift emptyRange Err_InconsistentHI
-                                                         (show modNm)
-                                                         (fpathToStr fp)
-                                                         [Sig.timestamp, Cfg.installVariant opts, show $ ehcOptTarget opts, show $ ehcOptTargetFlavor opts]
-                                                         [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  , show $ HI.hiiTarget hiinfo, show $ HI.hiiTargetFlavor hiinfo]
-                                                      ]
+                                                 -> [rngLift emptyRange Err_InconsistentHI
+                                                       (show modNm)
+                                                       (fpathToStr fp)
+                                                       [Sig.timestamp, Cfg.installVariant opts, show $ ehcOptTarget opts, show $ ehcOptTargetFlavor opts]
+                                                       [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  , show $ HI.hiiTarget hiinfo, show $ HI.hiiTargetFlavor hiinfo]
+                                                    ]
 %%]]
                                                _ -> []
             }

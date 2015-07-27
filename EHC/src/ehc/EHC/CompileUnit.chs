@@ -136,7 +136,6 @@ data EHCompileUnit
       { ecuSrcFilePath       :: !FPath
 %%[[99
       , ecuMbCppFilePath     :: !(Maybe FPath)
-      , _ecuMbPrevSearchInfo :: !(Maybe PrevSearchInfo)
 %%]]
       , ecuFileLocation      :: !FileLoc
       , ecuGrpNm             :: !HsName
@@ -206,6 +205,7 @@ data EHCompileUnit
       , ecuMbOptim           :: !(Maybe Optim)
       , _ecuMbHIInfo         :: !(Maybe HI.HIInfo)                  -- HI info of module
       , _ecuDirIsWritable    :: !Bool                               -- can be written in dir of module?
+      , _ecuMbPrevSearchInfo :: !(Maybe PrevSearchInfo)             -- file search info required for imported module search
 %%]]
 %%[[99
       , ecuMbOpts            :: (Maybe EHCOpts)                     -- possibly per module adaption of options (caused by pragmas)
@@ -263,7 +263,8 @@ ecuSrcTime = isoMb "ecuMbSrcTime" ecuMbSrcTime
 ecuHIInfoTime = isoMb "ecuMbHIInfoTime" ecuMbHIInfoTime
 %%]
 
-%%[50 export(ecuDirIsWritable)
+%%[50 export(ecuDirIsWritable, ecuMbPrevSearchInfo, ecuPrevSearchInfo)
+ecuPrevSearchInfo = isoMb "ecuMbPrevSearchInfo" ecuMbPrevSearchInfo
 %%]
 
 %%[(50 core) export(ecuMbCoreTime, ecuCoreTime)
@@ -276,10 +277,6 @@ ecuGrinTime = isoMb "ecuMbGrinTime" ecuMbGrinTime
 
 %%[(50 corerun) export(ecuMbCoreRunTime, ecuCoreRunTime)
 ecuCoreRunTime = isoMb "ecuMbCoreRunTime" ecuMbCoreRunTime
-%%]
-
-%%[99 export(ecuMbPrevSearchInfo, ecuPrevSearchInfo)
-ecuPrevSearchInfo = isoMb "ecuMbPrevSearchInfo" ecuMbPrevSearchInfo
 %%]
 
 %%[50 export(ecuHSDeclImpNmS, ecuHIDeclImpNmS, ecuHIUsedImpNmS)
@@ -321,7 +318,6 @@ emptyECU
       { ecuSrcFilePath       = emptyFPath
 %%[[99
       , ecuMbCppFilePath     = Nothing
-      , _ecuMbPrevSearchInfo = Nothing
 %%]]
       , ecuFileLocation      = emptyFileLoc
       , ecuGrpNm             = hsnUnknown
@@ -393,6 +389,7 @@ emptyECU
       , ecuMbOptim           = Nothing
       , _ecuMbHIInfo         = Nothing
       , _ecuDirIsWritable    = False
+      , _ecuMbPrevSearchInfo = Nothing
 %%]]
 %%[[99
       , ecuMbOpts            = Nothing

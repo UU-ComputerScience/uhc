@@ -92,7 +92,7 @@ Translation to another AST
 %%[(50 codegen grin) import({%{EH}LamInfo})
 %%]
 -- ModuleImportExportImpl
-%%[(50 codegen) import({%{EH}EHC.CompilePhase.Common}, {%{EH}CodeGen.ModuleImportExportImpl})
+%%[(50 codegen) import({%{EH}CodeGen.ModuleImportExportImpl})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -260,7 +260,9 @@ cpGenGrinGenInfo
        , HsName2FldMp
        )
 cpGenGrinGenInfo modNm
-  = do mieimpl <- cpGenModuleImportExportImpl modNm
+  = do opts <- bcall $ EHCOptsOf modNm
+       -- mieimpl <- cpGenModuleImportExportImpl modNm
+       mieimpl <- bcall $ ImportExportImpl (mkNamePrevFileSearchKey modNm) (ehcOptOptimizationScope opts)
        return (mieimplLamMp mieimpl, mieimplUsedModNmL mieimpl, mieimplHsName2FldMpMp mieimpl, mieimplHsName2FldMp mieimpl)
 %%]
 

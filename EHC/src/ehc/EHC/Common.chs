@@ -313,7 +313,7 @@ data ASTFileTiming
 instance Hashable ASTFileTiming
 %%]
 
-%%[8 export(ASTFileNameOverride(..), astFileNameOverrideToMaybe)
+%%[8 export(ASTFileNameOverride(..))
 -- | Overriding an automatically chosen name (based on module name)
 data ASTFileNameOverride
   = ASTFileNameOverride_AsIs					-- ^ fully as is
@@ -321,9 +321,11 @@ data ASTFileNameOverride
   | ASTFileNameOverride_FPathAsTop	 	FPath	-- ^ with FPath as top level module path
   deriving (Eq, Ord, Typeable, Generic, Show)
 
+{-
 astFileNameOverrideToMaybe :: ASTFileNameOverride -> Maybe FPath
 astFileNameOverrideToMaybe (ASTFileNameOverride_FPathAsTop fp) 	= Just fp
 astFileNameOverrideToMaybe _                              		= Nothing
+-}
 
 instance Hashable ASTFileNameOverride
 %%]
@@ -404,6 +406,7 @@ type FileSuffInitState =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(PrevSearchInfo)
+-- | Info returned from first module/import analysis required for imports done from that module
 type PrevSearchInfo = (HsName,(FPath,FileLoc))
 %%]
 
@@ -420,6 +423,27 @@ prevSearchInfoAdaptedSearchPath (Just (prevNm,(prevFp,prevLoc))) searchPath
 	  _ -> searchPath
 prevSearchInfoAdaptedSearchPath _ searchPath = searchPath
 %%]
+
+%%[8 export(FileSearchKey, PrevFileSearchKey, mkNamePrevFileSearchKey)
+-- | Search key for a file to be compiled
+type FileSearchKey =
+  ( HsName						-- module name
+  , ASTFileNameOverride			-- possibly an alternate/overriding file path
+  )
+
+-- | Full search key for a file to be compiled
+type PrevFileSearchKey =
+  ( FileSearchKey
+  , Maybe PrevSearchInfo		-- possible context provided as a result of a previous compile yielding imports
+  )
+
+mkNamePrevFileSearchKey :: HsName -> PrevFileSearchKey
+mkNamePrevFileSearchKey n = ((n,ASTFileNameOverride_AsIs),Nothing)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Info & Adaption of search path
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% How to compile the final step for a target

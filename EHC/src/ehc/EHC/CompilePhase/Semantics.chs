@@ -23,8 +23,6 @@ Folding over AST to compute semantics
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
 %%]
-%%[(50 codegen) import({%{EH}EHC.CompilePhase.Common})
-%%]
 
 -- build call
 %%[8 import({%{EH}EHC.BuildFunction.Run})
@@ -171,11 +169,12 @@ cpFoldCoreMod modNm
 cpFoldEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldEH modNm
   =  do  {  cr <- get
-%%[[(50 codegen)
-         ;  mieimpl <- cpGenModuleImportExportImpl modNm
-%%]]
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbEH   = _ecuMbEH ecu
+%%[[(50 codegen)
+         -- ;  mieimpl <- cpGenModuleImportExportImpl modNm
+         ;  mieimpl <- bcall $ ImportExportImpl (mkNamePrevFileSearchKey modNm) (ehcOptOptimizationScope opts)
+%%]]
+         ;  let  mbEH   = _ecuMbEH ecu
                  ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf $ panicJust "cpFoldEH" mbEH)
                                            ((crsi ^. crsiEHInh)
                                                   { EHSem.moduleNm_Inh_AGItf         		= ecuModNm ecu
@@ -194,7 +193,7 @@ cpFoldEH modNm
          }
 %%]
 
-%%[8 export(cpFoldHs)
+%%[8888 export(cpFoldHs)
 cpFoldHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHs modNm
   =  do  {  cr <- get

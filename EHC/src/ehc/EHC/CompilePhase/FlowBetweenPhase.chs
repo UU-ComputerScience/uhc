@@ -26,6 +26,10 @@ XXX
 %%[8 import({%{EH}EHC.CompileRun})
 %%]
 
+-- build call
+%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%]
+
 -- module related
 %%[50 import({%{EH}Module.ImportExport}, {%{EH}EHC.CompilePhase.Module})
 %%]
@@ -358,7 +362,8 @@ cpFlowCoreSemBeforeFold modNm
                           . ecuStoreHIUsedImpS usedImpS
                           . ecuStoreIntrodModS introdModS
                           )
-         ;  impNmL <- cpGenImpNmInfo modNm
+         -- ;  impNmL <- cpGenImportNameInfo modNm
+         ;  impNmL <- bcall $ ImportNameInfo (mkNamePrevFileSearchKey modNm) (ehcOptOptimizationScope opts)
          ;  cpUpdCU modNm ( ecuStoreCore $ cmodSetImports impNmL core
                           )
          }

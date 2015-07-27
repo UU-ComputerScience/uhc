@@ -305,10 +305,10 @@ cpUpdateModOffMp modNmL@(modNm:_)
 %%% Generate list of all imported modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen) export(cpGenImpNmInfo)
+%%[(50 codegen) export(cpGenImportNameInfo)
 -- | Compute imported module names
-cpGenImpNmInfo :: EHCCompileRunner m => HsName -> EHCompilePhaseT m [HsName]
-cpGenImpNmInfo modNm
+cpGenImportNameInfo :: EHCCompileRunner m => HsName -> EHCompilePhaseT m [HsName]
+cpGenImportNameInfo modNm
   = do { cr <- get
        ; let (ecu,crsi,opts,fp) = crBaseInfo modNm cr
              isWholeProg = ehcOptOptimizationScope opts > OptimizationScope_PerModule
