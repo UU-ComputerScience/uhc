@@ -46,7 +46,7 @@ data FileLocKind
   | FileLocKind_Pkg	PkgKey							-- specific package
   					String							-- with the dir inside package it was found
   | FileLocKind_PkgDb								-- yet unknown package in the package database
-  deriving (Eq,Ord,Generic)
+  deriving (Eq,Ord,Generic,Typeable)
 
 instance Hashable FileLocKind
 
@@ -76,7 +76,7 @@ data FileLoc
       {	filelocKind		:: FileLocKind
       , filelocDir		:: String
       }
-  deriving (Eq,Ord,Generic)
+  deriving (Eq,Ord,Generic,Typeable)
 
 instance Hashable FileLoc
 

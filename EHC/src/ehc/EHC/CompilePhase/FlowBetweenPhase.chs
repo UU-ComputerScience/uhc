@@ -37,7 +37,7 @@ XXX
 %%]
 
 -- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 
 -- HS semantics
@@ -363,7 +363,7 @@ cpFlowCoreSemBeforeFold modNm
                           . ecuStoreIntrodModS introdModS
                           )
          -- ;  impNmL <- cpGenImportNameInfo modNm
-         ;  impNmL <- bcall $ ImportNameInfo (mkNamePrevFileSearchKey modNm) (ehcOptOptimizationScope opts)
+         ;  impNmL <- bcall $ ImportNameInfo (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
          ;  cpUpdCU modNm ( ecuStoreCore $ cmodSetImports impNmL core
                           )
          }

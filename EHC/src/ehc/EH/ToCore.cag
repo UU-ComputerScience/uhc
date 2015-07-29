@@ -82,7 +82,7 @@ SEM AGItf
                                                         (   [ CExport_ExportData (hsnQualified tn) (Just [ hsnQualified cn | (cn,_) <- cs ]) | (tn,cs) <- alldata ]
                                                          ++ [ CExport_Export (hsnQualified n) | n <- Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl, n `Set.notMember` allConNmS ]
                                                         )
-                                                        (map CImport_Import $ Set.toList $ iumHSDeclModules @lhs.importUsedModules)
+                                                        (map CImport_Import $ Set.toList $ iumSrcDeclModules @lhs.importUsedModules)
 %%]]
                                                         [ CDeclMeta_Data tn [ CDataCon_Con cn (ctagTag ctag) (ctagArity ctag) | (cn,ctag) <- cs ]
                                                         | (tn,cs) <- alldata

@@ -1,5 +1,6 @@
 %%[0 hs
 {-# LANGUAGE GADTs #-}
+-- {-# LANGUAGE RecursiveDo #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -71,16 +72,26 @@ Running of BuildFunction
 %%]
 
 -- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 
 -- HS semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 
--- Core semantics
+-- Core syntax and semantics
 -- TBD: this depends on grin gen, but should also be available for Core, so in a CoreXXXSem
-%%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%[(8 core) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%]
+%%[(8 core corerun) import(qualified {%{EH}Core.ToCoreRun} as Core2CoreRunSem)
+%%]
+%%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
+%%]
+
+-- CoreRun syntax and semantics
+%%[(8 corerun) import(qualified {%{EH}CoreRun} as CoreRun)
+%%]
+%%[(50 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
 %%]
 
 -- Pragma
@@ -99,25 +110,43 @@ Running of BuildFunction
 -- | Execute a build function, possibly caching/memoizing a result
 bcall :: forall res m . (Typeable res, EHCCompileRunner m) => BFun' res -> EHCompilePhaseT m res
 bcall bfun = do
-    bcache <- getl $ st ^* bstateCache
-    
+    -- query cache
+    bcache      <- getl $ st ^* bstateCache
     mbCachedRes <- lkup bfun bcache
     
     case mbCachedRes of
       Just res -> do
-        -- debug
+        -- debug/trace
         cpTr TraceOn_BuildFun ["cache " ++ show bfun]
         -- immediate result
         return res
 
       _ -> do
-        -- debug
+        -- debug/trace
         getl cstk >>= \stk -> cpTr TraceOn_BuildFun $ [">>>>> " ++ show bfun] ++ map show stk
         -- prepare
         start
+        
         -- actual execution
         res <- case bfun of
           CRSI -> brefto bfun BRef_CRSI
+
+%%[[50
+          CRSIWithImps mbPrev imps -> do
+               impsmp <- bcall $ ImportsRecursiveWithImps mbPrev imps
+               let compileOrder = scc [ (n, Set.toList i) | (n,i) <- Map.toList impsmp ]
+               -- cpTr TraceOn_BuildSccImports $ [show modNm' ++ " " ++ show imps] ++ [show compileOrder]
+               bcall $ CRSI
+%%]]
+
+          CRSIOfName modSearchKey -> do
+%%[[8
+               bcall $ CRSI
+%%][50
+               ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               (modNm', imps) <- bcall $ ImportsOfName modSearchKey
+               bcall $ CRSIWithImps (_ecuMbPrevSearchInfo ecu) imps
+%%]]
 
 %%[[99
           ExposedPackages -> brefto bfun BRef_ExposedPackages
@@ -125,9 +154,29 @@ bcall bfun = do
 
           EHCOptsOf modNm -> brefto bfun $ BRef_EHCOpts modNm
 
+%%[[50
+          ImportsOfName modSearchKey -> do
+               ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               (nm, imps, _) <- bcall $ ModnameAndImports modSearchKey (_ecuASTType ecu)
+               breturn (nm, imps)
+
+          ImportsRecursiveWithImps mbPrev imps -> do
+               -- ecu     <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               recimps <- fmap Map.unions $ forM (Set.toList imps) $ \imp -> do
+                 (nm', imps', recimps') <- bcall $ ImportsRecursiveOfName $ mkPrevFileSearchKeyWithNameMbPrev imp mbPrev
+                 return $ Map.insert nm' imps' recimps'
+               breturn (recimps)
+
+          ImportsRecursiveOfName modSearchKey -> do
+               ecu        <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               (nm, imps) <- bcall $ ImportsOfName modSearchKey
+               recimps    <- bcall $ ImportsRecursiveWithImps (_ecuMbPrevSearchInfo ecu) imps
+               breturn (nm, imps, recimps)
+%%]]
+
           EcuOf modNm -> brefto bfun $ BRef_ECU modNm
 
-          -- does not work...
+          -- does not typecheck...
           -- EcuMbOf modNm -> brefto' bfun $ BRef_ECU modNm
 
           EcuOfName modNm -> do
@@ -182,13 +231,13 @@ bcall bfun = do
                cpTr TraceOn_BuildFPaths ["FPathSearchForFile: " ++ show modNm ++ ", " ++ fpathToStr fp]
                breturn (modNm, fp)
       
-          ASTFromFile fileSearchKey@((modNmAsked,overr),_) (AlwaysEq chkTimeStamp) asttype skey@(astfcont,_) tkey -> do
+          ASTFromFile modSearchKey@((modNmAsked,overr),_) (AlwaysEq chkTimeStamp) asttype skey@(astfcont,_) tkey -> do
                (ecu, fp, suffoverr) <- case overr of
                  ASTFileNameOverride_FPath fp -> (bcall $ EcuOf modNmAsked) >>= \ecu -> return (ecu, fp, ASTFileSuffOverride_AsIs)
-                 _	                          -> (bcall $ EcuOfPrevNameAndPath fileSearchKey) >>= \ecu -> return (ecu, ecuSrcFilePath ecu, ASTFileSuffOverride_Suff skey)
+                 _	                          -> (bcall $ EcuOfPrevNameAndPath modSearchKey) >>= \ecu -> return (ecu, ecuSrcFilePath ecu, ASTFileSuffOverride_Suff skey)
                  
                let modNm = ecuModNm ecu
-                   ref   = BRef_AST fileSearchKey asttype skey tkey
+                   ref   = BRef_AST modSearchKey asttype skey tkey
                    
 %%[[8
                let mbtm = Just undefined
@@ -266,16 +315,16 @@ bcall bfun = do
           ModfTimeOfFile modNm asttype skey tkey -> case
             (asthandlerLookup' asttype $ \hdlr -> do
                  suffinfo <- astsuffixLookup skey $ _asthdlrSuffixRel hdlr
-                 lens <- Map.lookup tkey $ _astsuffinfoModfTimeMp suffinfo
+                 let mblens = Map.lookup tkey $ _astsuffinfoModfTimeMp suffinfo
                  return
-                   ( lens
+                   ( mblens
                    , \opts ecu fp -> _asthdlrMkInputFPath hdlr opts ecu modNm fp (_astsuffinfoSuff suffinfo)
                    )
             ) of
-                 Just (lens, mkfp) -> do
+                 Just (mblens, mkfp) -> do
                         cr <- get
                         let (ecu,_,opts,fp) = crBaseInfo modNm cr
-                        tm opts ecu ((lens ^=) . Just) (mkfp opts ecu fp)
+                        tm opts ecu (maybe (const id) (\lens -> (lens ^=) . Just) mblens) (mkfp opts ecu fp)
                  _ -> breturn Nothing
             where
               tm opts ecu store fp = do
@@ -313,20 +362,20 @@ bcall bfun = do
 %%]]
 
 %%[[50
-          FoldHsMod fileSearchKey@((modNm,overr),mbPrev) mbPkgKeyDirLForCPP@(~(Just pkgKeyDirL)) -> do
+          FoldHsMod modSearchKey@((modNm,overr),mbPrev) mbPkgKeyDirLForCPP@(~(Just pkgKeyDirL)) -> do
 %%[[99
                let doCPP = isJust mbPkgKeyDirLForCPP
 %%]]
                overr' <-
 %%[[99
                  if doCPP
-                   then fmap ASTFileNameOverride_FPath $ bcall $ FPathPreprocessedWithCPP pkgKeyDirL fileSearchKey
+                   then fmap ASTFileNameOverride_FPath $ bcall $ FPathPreprocessedWithCPP pkgKeyDirL modSearchKey
                    else
 %%]]
                         return ASTFileNameOverride_AsIs
-               let fileSearchKey' = ((modNm,overr'),mbPrev)
-               ecu  <- bcall $ EcuOfPrevNameAndPath fileSearchKey'
-               hs   <- bcall $ ASTFromFile fileSearchKey' (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_SrcImport) ASTFileTiming_Current
+               let modSearchKey' = ((modNm,overr'),mbPrev)
+               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey'
+               hs   <- bcall $ ASTFromFile modSearchKey' (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_SrcImport) ASTFileTiming_Current
                crsi <- bcall $ CRSI
                opts <- bcall $ EHCOptsOf modNm
                let  -- (ecu,crsi,opts,_) = crBaseInfo modNm cr
@@ -357,7 +406,30 @@ bcall bfun = do
 %%]]
                  )
 
-          HsModnameAndImports fileSearchKey@((modNm,_),_) -> do
+          ModnameAndImports modSearchKey@((modNm,_),mbPrev) asttype -> do
+               -- ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               case asttype of
+                 ASTType_HS -> bcall $ HsModnameAndImports modSearchKey
+                 ASTType_EH -> return (modNm, Set.empty, mbPrev)
+                 ASTType_HI -> do
+                   (_, impNmS, _, _) <- bcall $ FoldHIInfo modSearchKey
+                   breturn (modNm, impNmS, mbPrev)
+%%[[(50 corein)
+                 ASTType_Core -> do
+                   (_, modNm', impNmS, _, _, newPrev) <- bcall $ FoldCoreMod modSearchKey
+                   breturn (modNm', impNmS, newPrev)
+%%]]
+%%[[(50 corerunin)
+                 ASTType_CoreRun -> do
+                   (_, modNm', impNmS, _, _, newPrev) <- bcall $ FoldCoreRunMod modSearchKey
+                   breturn (modNm', impNmS, newPrev)
+%%]]
+                 _ -> do 
+                   cpSetLimitErrsWhen 1 "Imports" [rngLift emptyRange Err_Str $ "Cannot extract module name and imports from " ++ show modNm ++ " (" ++ show asttype ++ ")" ]
+                   -- should not arrive at usage of this result
+                   breturn $ panic $ "BuildFunction.Run.bcall ModnameAndImports: " ++ show modNm
+
+          HsModnameAndImports modSearchKey@((modNm,_),_) -> do
 %%[[50
                let mbPkgKeyDirL = Nothing
 %%][99
@@ -373,7 +445,7 @@ bcall bfun = do
 %%[[99
                  , pragmas, mbOpts
 %%]]
-                 ) <- bcall $ FoldHsMod fileSearchKey mbPkgKeyDirL
+                 ) <- bcall $ FoldHsMod modSearchKey mbPkgKeyDirL
 
 %%[[50
                let resFold2@( hsSemMod, _ ) = resFold1
@@ -387,28 +459,16 @@ bcall bfun = do
                     && (not $ null $ filter pragmaInvolvesCmdLine $ Set.toList pragmas)
                   then do
                     let doCPP2 = doCPP || Set.member Pragma_CPP pragmas
-                    bcall $ FoldHsMod fileSearchKey $ mkMbPkgKeyDirL doCPP2
+                    bcall $ FoldHsMod modSearchKey $ mkMbPkgKeyDirL doCPP2
                   else return resFold1
 %%]]
                let modNm'     = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
                    impNmS     = HSSemMod.modImpNmS_Syn_AGItf hsSemMod
-                   upd        = ecuStoreHSDeclImpS impNmS
-               ecu <- bcall $ EcuOf modNm
-               modNmNew <- ifM (bcall $ IsTopMod modNm)
-                 (do
-                   cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
-                   return modNm'
-                 )
-                 (do
-                   cpUpdCU modNm upd
-                   return modNm
-                 )
-               let newPrev = Just (modNmNew, (ecuSrcFilePath ecu, ecuFileLocation ecu))
-               cpUpdCU modNmNew $ ecuMbPrevSearchInfo ^= newPrev
+               (modNmNew, newPrev) <- newModNm modNm modNm' $ ecuStoreSrcDeclImpS impNmS
                return (modNmNew, impNmS, newPrev)
 
-          FoldHIInfo fileSearchKey@((modNm,_),_) -> do
-               hiInfo <- bcall $ ASTFromFile fileSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_HI (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+          FoldHIInfo modSearchKey@((modNm,_),_) -> do
+               hiInfo <- bcall $ ASTFromFile modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_HI (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
                opts   <- bcall $ EHCOptsOf modNm
                crsi   <- bcall $ CRSI
                let hasMain= HI.hiiHasMain hiInfo
@@ -438,19 +498,19 @@ bcall bfun = do
                  , hasMain
                  )
                
-          ImportNameInfo fileSearchKey@((modNm,_),_) optimScope -> do
-               ecu <- bcall $ EcuOfPrevNameAndPath fileSearchKey
+          ImportNameInfo modSearchKey@((modNm,_),_) optimScope -> do
+               ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
                let isWholeProg = optimScope > OptimizationScope_PerModule
                    impNmL     | isWholeProg = []
                               | otherwise   = ecuImpNmL ecu
                return impNmL
   
                
-          ImportExportImpl fileSearchKey@((modNm,_),_) optimScope -> do
-               ecu    <- bcall $ EcuOfPrevNameAndPath fileSearchKey
+          ImportExportImpl modSearchKey@((modNm,_),_) optimScope -> do
+               ecu    <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts   <- bcall $ EHCOptsOf modNm
                crsi   <- bcall $ CRSI
-               impNmL <- bcall $ ImportNameInfo fileSearchKey optimScope
+               impNmL <- bcall $ ImportNameInfo modSearchKey optimScope
                let isWholeProg = optimScope > OptimizationScope_PerModule
                    expNmFldMp | ecuIsMainMod ecu = Map.empty
                               | otherwise        = crsiExpNmOffMp modNm crsi
@@ -470,11 +530,11 @@ bcall bfun = do
   
 %%]]
 
-          FoldHs fileSearchKey@((modNm,_),_) -> do
-               ecu      <- bcall $ EcuOfPrevNameAndPath fileSearchKey
-               hs       <- bcall $ ASTFromFile fileSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+          FoldHs modSearchKey@((modNm,_),_) -> do
+               ecu      <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               hs       <- bcall $ ASTFromFile modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
                opts     <- bcall $ EHCOptsOf modNm
-               crsi     <- bcall $ CRSI
+               crsi     <- bcall $ CRSIOfName modSearchKey
 %%[[50
                isTopMod <- bcall $ IsTopMod modNm
 %%]]
@@ -504,8 +564,9 @@ bcall bfun = do
 %%]]
                cpUpdCU modNm ( ecuStoreHSSem hsSem
 %%[[50
+                             -- TBD: should move elsewhere
                              . ecuStoreHIDeclImpS ( -- (\v -> tr "YY" (pp $ Set.toList v) v) $
-                                                   ecuHSDeclImpNmS ecu)
+                                                   ecuSrcDeclImpNmS ecu)
                              -- . ecuSetHasMain hasMain
 %%]]
                              )
@@ -513,17 +574,46 @@ bcall bfun = do
                when (ehcOptVerbosity opts >= VerboseDebug)
                     (liftIO $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
                -- when hasMain (crSetAndCheckMain modNm)
+%%]]
                return
                  ( hsSem
-                 , ecuHSDeclImpNmS ecu
+%%[[50
+                 -- , ecuSrcDeclImpNmS ecu
                  , hasMain
-                 )
 %%]]
+                 )
                
-         
+          FoldEH modSearchKey@((modNm,_),_) -> do
+               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               eh   <- bcall $ ASTFromFile modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_EH (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+               opts <- bcall $ EHCOptsOf modNm
+               crsi <- bcall $ CRSIOfName modSearchKey
+               -- cr <- get
+               -- let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
+%%[[(50 codegen)
+               --  mieimpl <- cpGenModuleImportExportImpl modNm
+               mieimpl <- bcall $ ImportExportImpl modSearchKey (ehcOptOptimizationScope opts)
+%%]]
+               let  mbEH   = _ecuMbEH ecu
+                    ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf eh)
+                                              ((crsi ^. crsiEHInh)
+                                                     { EHSem.moduleNm_Inh_AGItf                = ecuModNm ecu
+                                                     , EHSem.gUniq_Inh_AGItf                   = crsi ^. crsiHereUID
+                                                     , EHSem.opts_Inh_AGItf                    = opts
+%%[[(50 codegen)
+                                                     , EHSem.importUsedModules_Inh_AGItf       = ecuImportUsedModules ecu
+                                                     , EHSem.moduleImportExportImpl_Inh_AGItf  = mieimpl
+%%]]
+%%[[50
+                                                     , EHSem.isMainMod_Inh_AGItf               = ecuIsMainMod ecu
+%%]]
+                                                     })
+               cpUpdCU modNm $! ecuStoreEHSem $! ehSem
+               return ehSem
+
 
 %%[[99
-          FPathPreprocessedWithCPP pkgKeyDirL fileSearchKey@((modNm,_),_) -> do
+          FPathPreprocessedWithCPP pkgKeyDirL modSearchKey@((modNm,_),_) -> do
                -- Just <$> cpPreprocessWithCPP pkgKeyDirL modNm
                -- cr <- get
                opts <- bcall $ EHCOptsOf modNm
@@ -563,13 +653,78 @@ bcall bfun = do
                      breturn $ panic $ "BuildFunction.Run.bcall FPathPreprocessedWithCPP: " ++ fpathToStr fpCPP 
                  )
 %%]]
+
+%%[[(50 corein)
+          FoldCoreMod modSearchKey@((modNm,_),_) -> do
+               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               core <- bcall $ ASTFromFile modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_Core (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+               opts <- bcall $ EHCOptsOf modNm
+               let inh      = Core2ChkSem.Inh_CodeAGItf
+                                  { Core2ChkSem.opts_Inh_CodeAGItf = opts
+                                  , Core2ChkSem.moduleNm_Inh_CodeAGItf = modNm
+                                  -- , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh
+                                  }
+                   coreSem  = Core2ChkSem.cmodCheck' inh core
+                   hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
+                   modNm'   = Core2ChkSem.realModuleNm_Syn_CodeAGItf coreSem
+                   impNmS   = Set.fromList $ Core2ChkSem.impModNmL_Syn_CodeAGItf coreSem
+                   mod      = Core2ChkSem.mod_Syn_CodeAGItf coreSem
+               (modNmNew, newPrev) <- newModNm modNm modNm' $
+                 ( ecuStoreCoreSemMod coreSem
+                 . ecuSetHasMain hasMain
+                 . ecuStoreMod mod
+                 . ecuStoreSrcDeclImpS impNmS
+                 )
+               breturn
+                 ( coreSem
+                 , modNmNew
+                 , impNmS
+                 , mod
+                 , hasMain
+                 , newPrev
+                 )
+  
+%%]]
+
+%%[[(50 corerunin)
+          FoldCoreRunMod modSearchKey@((modNm,_),_) -> do
+               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               crr  <- bcall $ ASTFromFile modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_CoreRun (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+               opts <- bcall $ EHCOptsOf modNm
+               let inh      = CoreRun2ChkSem.Inh_AGItf
+                                  { CoreRun2ChkSem.opts_Inh_AGItf = opts
+                                  , CoreRun2ChkSem.moduleNm_Inh_AGItf = modNm
+                                  -- , CoreRun2ChkSem.dataGam_Inh_AGItf = EHSem.dataGam_Inh_AGItf $ _crsiEHInh crsi
+                                  }
+                   crrSem   = CoreRun2ChkSem.crmodCheck' inh crr
+                   hasMain  = CoreRun2ChkSem.hasMain_Syn_AGItf crrSem
+                   modNm'   = CoreRun2ChkSem.realModuleNm_Syn_AGItf crrSem
+                   impNmS   = Set.fromList $ CoreRun2ChkSem.impModNmL_Syn_AGItf crrSem
+                   mod      = CoreRun2ChkSem.mod_Syn_AGItf crrSem
+               (modNmNew, newPrev) <- newModNm modNm modNm' $
+                 ( ecuStoreCoreRunSemMod crrSem
+                 . ecuSetHasMain hasMain
+                 . ecuStoreMod mod
+                 . ecuStoreSrcDeclImpS impNmS
+                 )
+               breturn
+                 ( crrSem
+                 , modNmNew
+                 , impNmS
+                 , mod
+                 , hasMain
+                 , newPrev
+                 )
+  
+%%]]
+
           
           _ -> panic $ "BuildFunction.Run.bcall: not implemented: " ++ show bfun
 
         -- finalize
         end
 
-        -- debug
+        -- debug/trace
         getl cstk >>= \stk -> cpTr TraceOn_BuildFun $ ["<<<<< " ++ show bfun] ++ map show stk
 
         -- the result
@@ -614,6 +769,23 @@ bcall bfun = do
           _ -> case bcacheLookup bfun bcache of
             Just (ref :: BRef res) -> bderef ref
             _ -> return Nothing
+
+    -- factored out: new module name extracted from src file
+    newModNm :: HsName -> HsName -> (EHCompileUnit -> EHCompileUnit) -> EHCompilePhaseT m (HsName, Maybe PrevSearchInfo)
+    newModNm modNm modNm' upd = do
+        modNmNew <- ifM (bcall $ IsTopMod modNm)
+          (do
+            cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
+            return modNm'
+          )
+          (do
+            cpUpdCU modNm upd
+            return modNm
+          )
+        ecu <- bcall $ EcuOf modNmNew
+        let newPrev = Just (modNmNew, (ecuSrcFilePath ecu, ecuFileLocation ecu))
+        cpUpdCU modNmNew $ ecuMbPrevSearchInfo ^= newPrev
+        return (modNmNew, newPrev)
 %%]
 
 
@@ -626,7 +798,9 @@ bderef' bref = do
     let opts = cr ^. crStateInfo ^. crsiOpts
     case bref of
       BRef_CRSI -> return (Just $ cr ^. crStateInfo, Nothing) 
+%%[[99
       BRef_ExposedPackages -> return (Just $ pkgExposedPackages $ ehcOptPkgDb opts, Nothing)
+%%]]
       BRef_ECU modNm -> return (crMbCU modNm cr, Just $ \ecu -> cpUpdCU modNm (const ecu))
       BRef_EHCOpts modNm -> return (Just choose, Nothing)
         where 
@@ -635,11 +809,11 @@ bderef' bref = do
 %%][99
               choose = maybe opts id $ crMbCU modNm cr >>= ecuMbOpts
 %%]]
-      BRef_AST fileSearchKey@((modNm,_),_) asttype skey tkey -> case asthandlerLookup asttype of
+      BRef_AST modSearchKey@((modNm,_),_) asttype skey tkey -> case asthandlerLookup asttype of
           Just (hdlr :: ASTHandler' res) -> case astsuffixLookup skey $ _asthdlrSuffixRel hdlr of
             Just suffinfo -> case Map.lookup tkey $ _astsuffinfoASTLensMp suffinfo of
               Just l -> do
-                ecu <- bcall $ EcuOfPrevNameAndPath fileSearchKey
+                ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
                 return (ecu ^. l, Just $ \ast -> cpUpdCU modNm $ l ^= Just ast)
               _ -> dflt
             _ -> dflt

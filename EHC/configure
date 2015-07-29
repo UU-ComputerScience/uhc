@@ -733,6 +733,7 @@ cppCmd
 ENABLE_SANDBOX
 ENABLE_TAUPHI
 ENABLE_CORESYSF
+ENABLE_CORERUN_ASINPOUTP
 ENABLE_CORE_ASINPOUTP
 ENABLE_TYCORE
 ENABLE_CLR
@@ -820,6 +821,7 @@ enable_llvm
 enable_clr
 enable_tycore
 enable_core_asinpoutp
+enable_corerun_asinpoutp
 enable_coresysf
 enable_tauphi
 enable_sandbox
@@ -1480,6 +1482,9 @@ Optional Features:
   --enable-tycore         include TyCore typed intermediate language
   --enable-core-asinpoutp allow use of Core untyped intermediate language as a
                           backend and source language
+  --enable-corerun-asinpoutp
+                          allow use of CoreRun untyped intermediate language
+                          as a backend and source language
   --enable-coresysf       include System F type generation for Core
   --enable-tauphi         include TauPhi language extension and analyses
   --enable-sandbox        build EHC/UHC libs with cabal sandbox
@@ -3167,6 +3172,17 @@ else
 fi
 
 ENABLE_CORE_ASINPOUTP=$enableCoreAsInpOutp
+
+
+### enable options: corerun-asinpoutp (CoreRun variation of Core), default is no
+# Check whether --enable-corerun-asinpoutp was given.
+if test "${enable_corerun_asinpoutp+set}" = set; then :
+  enableval=$enable_corerun_asinpoutp; enableCoreRunAsInpOutp=yes
+else
+  enableCoreRunAsInpOutp=no
+fi
+
+ENABLE_CORERUN_ASINPOUTP=$enableCoreRunAsInpOutp
 
 
 ### enable options: core + system F (Core variation of Typed Core, picking from Typed Core), default is no

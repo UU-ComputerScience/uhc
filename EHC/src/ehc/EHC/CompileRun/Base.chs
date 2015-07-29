@@ -57,12 +57,21 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 
 
--- Language syntax: CoreRun
-%%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
+-- Core syntax and semantics
+%%[(8 core) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%]
+%%[(8 core corerun) import(qualified {%{EH}Core.ToCoreRun} as Core2CoreRunSem)
+%%]
+%%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
+%%]
+-- CoreRun syntax and semantics
+%%[(8 corerun) import(qualified {%{EH}CoreRun} as CoreRun)
+%%]
+%%[(50 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
 %%]
 
 -- Language semantics: HS, EH
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 
 -- Language semantics: Core
@@ -71,14 +80,6 @@ An EHC compile run maintains info for one compilation invocation
 
 -- HI syntax and semantics
 %%[50 import(qualified {%{EH}HI} as HI)
-%%]
-
--- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
-%%]
-
--- HS semantics
-%%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 
 -- other structures
@@ -107,6 +108,19 @@ data BFun' res where
   CRSI
     :: BFun' EHCompileRunStateInfo
 
+%%[[50
+  --- | Obtain global state specific for a imports
+  CRSIWithImps
+    :: !(Maybe PrevSearchInfo)
+    -> !(Set.Set HsName)				--- ^ imports
+    -> BFun' EHCompileRunStateInfo
+%%]]
+
+  --- | Obtain global state specific for a module, which depends on the (imported) module names
+  CRSIOfName
+    :: !PrevFileSearchKey				--- ^ module name etc
+    -> BFun' EHCompileRunStateInfo
+
   --- | Obtain FPath and module name of a file name
   FPathSearchForFile
     :: !String				--- ^ suffix, if absent in name
@@ -118,16 +132,37 @@ data BFun' res where
     :: !HsName				--- ^ module name
     -> BFun' FPath
 
+%%[[50
   --- | Extract imported modules from a module
-  ImportsOf
-    :: !HsName				--- ^ module name
-    -> BFun' [HsName]
+  ImportsOfName
+    :: !PrevFileSearchKey				--- ^ module name etc
+    -> BFun' (HsName, Set.Set HsName)
+
+  --- | Extract recursively all import relationships starting with imports
+  ImportsRecursiveWithImps
+    :: !(Maybe PrevSearchInfo)
+    -> !(Set.Set HsName)				--- ^ imports
+    -> BFun'
+         ( Map.Map HsName (Set.Set HsName)		-- recursive result
+         )
+
+  --- | Extract recursively all import relationships starting with module
+  ImportsRecursiveOfName
+    :: !PrevFileSearchKey				--- ^ module name etc
+    -> BFun'
+         ( HsName								-- the actual module name
+         , Set.Set HsName						-- imports
+         , Map.Map HsName (Set.Set HsName)		-- recursive result
+         )
+%%]]
 
   --- | Extract possibly compileunit from a module, as is, no checks on consistency
+  {-
   EcuMbOf
     :: !HsName				--- ^ module name
     -> BFun' (Maybe EHCompileUnit)
-
+  -}
+  
   --- | Extract compileunit from a module, as is, no checks on consistency
   EcuOf
     :: !HsName				--- ^ module name
@@ -203,7 +238,17 @@ data BFun' res where
 %%]]
          )
 
-  --- | The actual module name and imported modules
+  --- | The actual module name and imported modules, abstracted over the AST type
+  ModnameAndImports
+    :: !PrevFileSearchKey				--- ^ module name and possibly known path
+    -> !ASTType							--- ^ ast type
+    -> BFun'
+         ( HsName						-- module name
+         , Set.Set HsName				-- imported module names
+         , Maybe PrevSearchInfo			-- search info for modules to be imported from this one
+         )
+
+  --- | See 'ModnameAndImports', for HS
   HsModnameAndImports
     :: !PrevFileSearchKey				--- ^ module name and possibly known path
     -> BFun'
@@ -222,16 +267,7 @@ data BFun' res where
          , Bool							-- is main module?
          )
 
-  --- | HS semantics
-  FoldHs
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
-    -> BFun'
-         ( HSSem.Syn_AGItf				-- all semantics
-         , Set.Set HsName				-- declared imported module names
-         , Bool							-- is main module?
-         )
-
-  --- | Imported names info
+  --- | Imported names info for codegen
   ImportNameInfo
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
     -> OptimizationScope				--- ^ scope for which this holds
@@ -242,6 +278,52 @@ data BFun' res where
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
     -> OptimizationScope
     -> BFun' ModuleImportExportImpl
+%%]]
+
+  --- | HS semantics
+  FoldHs
+    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    -> BFun'
+         ( HSSem.Syn_AGItf				-- all semantics
+%%[[50
+         -- , Set.Set HsName				-- declared imported module names
+         , Bool							-- is main module?
+%%]]
+         )
+
+  --- | EH semantics
+  FoldEH
+    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    -> BFun'
+         ( EHSem.Syn_AGItf				-- all semantics
+         )
+
+%%[[(50 corein)
+  --- | Core as src semantics
+  FoldCoreMod
+    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    -> BFun'
+         ( Core2ChkSem.Syn_CodeAGItf			-- all semantics
+         , HsName								-- real mod name
+         , Set.Set HsName						-- declared imported module names
+         , Mod									-- module import/export etc info
+         , Bool									-- is main module?
+         , Maybe PrevSearchInfo
+         )
+%%]]
+
+%%[[(50 corerunin)
+  --- | CoreRun as src semantics
+  FoldCoreRunMod
+    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    -> BFun'
+         ( CoreRun2ChkSem.Syn_AGItf				-- all semantics
+         , HsName								-- real mod name
+         , Set.Set HsName						-- declared imported module names
+         , Mod									-- module import/export etc info
+         , Bool									-- is main module?
+         , Maybe PrevSearchInfo
+         )
 %%]]
 
 %%[[99
@@ -260,11 +342,19 @@ data BFun' res where
 bfunCompare :: BFun' res1 -> BFun' res2 -> Ordering
 bfunCompare f1 f2 = case (f1,f2) of
     (CRSI				 						, CRSI 										) -> EQ
+%%[[50
+    (CRSIWithImps			    a1 b1  			, CRSIWithImps		    	a2 b2  			) -> lexico [a1 `compare` a2, b1 `compare` b2]
+%%]]
+    (CRSIOfName			    	a1   			, CRSIOfName		    	a2   			) ->         a1 `compare` a2
     (FPathSearchForFile 		a1 b1			, FPathSearchForFile 		a2 b2			) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (FPathOfImported    		a1   			, FPathOfImported    		a2   			) ->         a1 `compare` a2
-    (ImportsOf          		a1   			, ImportsOf          		a2   			) ->         a1 `compare` a2
+%%[[50
+    (ImportsOfName          	a1   			, ImportsOfName          	a2   			) ->         a1 `compare` a2
+    (ImportsRecursiveWithImps	a1 b1  			, ImportsRecursiveWithImps	a2 b2  			) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (ImportsRecursiveOfName		a1   			, ImportsRecursiveOfName	a2   			) ->         a1 `compare` a2
+%%]]
     (EcuOf		              	a1   			, EcuOf	    				a2   			) ->         a1 `compare` a2
-    (EcuMbOf		           	a1   			, EcuMbOf	    			a2   			) ->         a1 `compare` a2
+    -- (EcuMbOf		           	a1   			, EcuMbOf	    			a2   			) ->         a1 `compare` a2
     (EcuOfName              	a1   			, EcuOfName    				a2   			) ->         a1 `compare` a2
     (EcuOfPrevNameAndPath		a1 				, EcuOfPrevNameAndPath		a2 				) ->         a1 `compare` a2
     (EcuOfNameAndPath			a1 				, EcuOfNameAndPath			a2 				) ->         a1 `compare` a2
@@ -278,12 +368,20 @@ bfunCompare f1 f2 = case (f1,f2) of
 %%]]
 %%[[50
     (FoldHsMod					a1 b1			, FoldHsMod					a2 b2			) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (ModnameAndImports			a1 b1			, ModnameAndImports			a2 b2			) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (HsModnameAndImports		a1 				, HsModnameAndImports		a2 				) ->         a1 `compare` a2
     (FoldHIInfo					a1 				, FoldHIInfo				a2 				) ->         a1 `compare` a2
     (ImportExportImpl			a1 b1			, ImportExportImpl			a2 b2			) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ImportNameInfo				a1 b1			, ImportNameInfo			a2 b2			) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
     (FoldHs						a1 				, FoldHs					a2 				) ->         a1 `compare` a2
+    (FoldEH						a1 				, FoldEH					a2 				) ->         a1 `compare` a2
+%%[[(50 corein)
+    (FoldCoreMod				a1 				, FoldCoreMod				a2 				) ->         a1 `compare` a2
+%%]]
+%%[[(50 corerunin)
+    (FoldCoreRunMod				a1 				, FoldCoreRunMod			a2 				) ->         a1 `compare` a2
+%%]]
 %%[[99
     (FPathPreprocessedWithCPP	a1 b1 			, FPathPreprocessedWithCPP	a2 b2 			) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ExposedPackages							, ExposedPackages							) -> EQ
@@ -303,32 +401,48 @@ deriving instance Typeable BFun'
 instance Hashable (BFun' res) where
   hashWithSalt salt x = case x of
 	CRSI 									-> salt `hashWithSalt` (maxBound-1::Int)
-	FPathSearchForFile 			a b			-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b
-	FPathOfImported	   			a			-> salt `hashWithSalt` (1::Int) `hashWithSalt` a
-	ImportsOf		   			a			-> salt `hashWithSalt` (2::Int) `hashWithSalt` a
-	EcuOf			   			a			-> salt `hashWithSalt` (3::Int) `hashWithSalt` a
-	EcuMbOf			   			a			-> salt `hashWithSalt` (4::Int) `hashWithSalt` a
-	EcuOfName		   			a			-> salt `hashWithSalt` (5::Int) `hashWithSalt` a
-	EHCOptsOf		   			a			-> salt `hashWithSalt` (6::Int) `hashWithSalt` a
-	EcuOfPrevNameAndPath		a 			-> salt `hashWithSalt` (7::Int) `hashWithSalt` a
-	EcuOfNameAndPath			a 			-> salt `hashWithSalt` (8::Int) `hashWithSalt` a
-	ASTFromFile					a b	c d	e 	-> salt `hashWithSalt` (9::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
 %%[[50
-	ModfTimeOfFile				a b	c d		-> salt `hashWithSalt` (10::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
-	DirOfModIsWriteable 		a 			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a
-	EcuCanCompile		 		a 			-> salt `hashWithSalt` (12::Int) `hashWithSalt` a
-	IsTopMod			 		a 			-> salt `hashWithSalt` (13::Int) `hashWithSalt` a
+	CRSIWithImps			   	a b			-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b
+%%]]
+	CRSIOfName			   		a			-> salt `hashWithSalt` (1::Int) `hashWithSalt` a
+	FPathSearchForFile 			a b			-> salt `hashWithSalt` (2::Int) `hashWithSalt` a `hashWithSalt` b
+	FPathOfImported	   			a			-> salt `hashWithSalt` (3::Int) `hashWithSalt` a
+%%[[50
+	ImportsOfName		   		a			-> salt `hashWithSalt` (4::Int) `hashWithSalt` a
+	ImportsRecursiveWithImps	a b			-> salt `hashWithSalt` (5::Int) `hashWithSalt` a `hashWithSalt` b
+	ImportsRecursiveOfName		a			-> salt `hashWithSalt` (6::Int) `hashWithSalt` a
+%%]]
+	EcuOf			   			a			-> salt `hashWithSalt` (7::Int) `hashWithSalt` a
+	-- EcuMbOf			   			a			-> salt `hashWithSalt` (7::Int) `hashWithSalt` a
+	EcuOfName		   			a			-> salt `hashWithSalt` (9::Int) `hashWithSalt` a
+	EHCOptsOf		   			a			-> salt `hashWithSalt` (10::Int) `hashWithSalt` a
+	EcuOfPrevNameAndPath		a 			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a
+	EcuOfNameAndPath			a 			-> salt `hashWithSalt` (12::Int) `hashWithSalt` a
+	ASTFromFile					a b	c d	e 	-> salt `hashWithSalt` (13::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
+%%[[50
+	ModfTimeOfFile				a b	c d		-> salt `hashWithSalt` (14::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
+	DirOfModIsWriteable 		a 			-> salt `hashWithSalt` (15::Int) `hashWithSalt` a
+	EcuCanCompile		 		a 			-> salt `hashWithSalt` (16::Int) `hashWithSalt` a
+	IsTopMod			 		a 			-> salt `hashWithSalt` (17::Int) `hashWithSalt` a
 %%]]
 %%[[50
-	FoldHsMod			 		a b			-> salt `hashWithSalt` (14::Int) `hashWithSalt` a `hashWithSalt` b
-	HsModnameAndImports			a 			-> salt `hashWithSalt` (15::Int) `hashWithSalt` a
-	FoldHIInfo					a 			-> salt `hashWithSalt` (16::Int) `hashWithSalt` a
-	ImportExportImpl			a b			-> salt `hashWithSalt` (17::Int) `hashWithSalt` a `hashWithSalt` b
-	ImportNameInfo				a b			-> salt `hashWithSalt` (18::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldHsMod			 		a b			-> salt `hashWithSalt` (18::Int) `hashWithSalt` a `hashWithSalt` b
+	ModnameAndImports			a b			-> salt `hashWithSalt` (19::Int) `hashWithSalt` a `hashWithSalt` b
+	HsModnameAndImports			a 			-> salt `hashWithSalt` (20::Int) `hashWithSalt` a
+	FoldHIInfo					a 			-> salt `hashWithSalt` (21::Int) `hashWithSalt` a
+	ImportExportImpl			a b			-> salt `hashWithSalt` (22::Int) `hashWithSalt` a `hashWithSalt` b
+	ImportNameInfo				a b			-> salt `hashWithSalt` (23::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
-	FoldHs						a 			-> salt `hashWithSalt` (19::Int) `hashWithSalt` a
+	FoldHs						a 			-> salt `hashWithSalt` (24::Int) `hashWithSalt` a
+	FoldEH						a 			-> salt `hashWithSalt` (25::Int) `hashWithSalt` a
+%%[[(50 corein)
+	FoldCoreMod					a 			-> salt `hashWithSalt` (26::Int) `hashWithSalt` a
+%%]]
+%%[[(50 corerunin)
+	FoldCoreRunMod				a 			-> salt `hashWithSalt` (27::Int) `hashWithSalt` a
+%%]]
 %%[[99
-	FPathPreprocessedWithCPP	a b			-> salt `hashWithSalt` (20::Int) `hashWithSalt` a `hashWithSalt` b
+	FPathPreprocessedWithCPP	a b			-> salt `hashWithSalt` (28::Int) `hashWithSalt` a `hashWithSalt` b
 	ExposedPackages							-> salt `hashWithSalt` (maxBound-2::Int)
 %%]]
 
@@ -390,9 +504,11 @@ data BRef val where
   BRef_CRSI
     :: BRef EHCompileRunStateInfo
 
+%%[[99
   --- | Global info: exposed packages
   BRef_ExposedPackages
     :: BRef [PkgModulePartition]
+%%]]
 
   --- | Compile unit
   BRef_ECU

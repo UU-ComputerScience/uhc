@@ -64,6 +64,7 @@ EHCRUN_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT
 EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
 													Config ConfigInternalVersions ConfigCabal Paths_uhc_light \
+													$(addprefix EH/,Main) \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \

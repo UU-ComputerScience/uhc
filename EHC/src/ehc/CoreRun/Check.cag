@@ -26,10 +26,15 @@
 WRAPPER AGItf
 %%]
 
-%%[(99 corerunin)
+%%[(8 corerunin) hs
+deriving instance Typeable Syn_AGItf
 %%]
--- PRAGMA strictcase
+
+%%[(99 corerunin)
+-- Enforce laziness as invocation assumes this...
 PRAGMA nocycle
+PRAGMA nostrictwrap
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell itf

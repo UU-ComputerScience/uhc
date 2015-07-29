@@ -36,7 +36,7 @@
 WRAPPER AGItf
 %%]
 
-%%[99 hs
+%%[50 hs
 deriving instance Typeable Syn_AGItf
 %%]
 

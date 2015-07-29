@@ -181,6 +181,10 @@ AC_SUBST(ENABLE_TYCORE,$enableTyCore)
 AC_ARG_ENABLE(core-asinpoutp, AS_HELP_STRING([--enable-core-asinpoutp],[allow use of Core untyped intermediate language as a backend and source language]), [enableCoreAsInpOutp=yes], [enableCoreAsInpOutp=no])
 AC_SUBST(ENABLE_CORE_ASINPOUTP,$enableCoreAsInpOutp)
 
+### enable options: corerun-asinpoutp (CoreRun variation of Core), default is no
+AC_ARG_ENABLE(corerun-asinpoutp, AS_HELP_STRING([--enable-corerun-asinpoutp],[allow use of CoreRun untyped intermediate language as a backend and source language]), [enableCoreRunAsInpOutp=yes], [enableCoreRunAsInpOutp=no])
+AC_SUBST(ENABLE_CORERUN_ASINPOUTP,$enableCoreRunAsInpOutp)
+
 ### enable options: core + system F (Core variation of Typed Core, picking from Typed Core), default is no
 AC_ARG_ENABLE(coresysf, AS_HELP_STRING([--enable-coresysf],[include System F type generation for Core]), [enableCoreSysF=yes], [enableCoreSysF=no])
 AC_SUBST(ENABLE_CORESYSF,$enableCoreSysF)

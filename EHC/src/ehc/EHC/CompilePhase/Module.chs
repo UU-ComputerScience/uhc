@@ -131,7 +131,7 @@ allGetMeta
 
 %%]
 
-%%[(50 corerunin) export(cpGetCoreRunModnameAndImports)
+%%[(5050 corerunin) export(cpGetCoreRunModnameAndImports)
 cpGetCoreRunModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT m HsName
 cpGetCoreRunModnameAndImports modNm
   =  do  {  cr <- get
@@ -143,14 +143,14 @@ cpGetCoreRunModnameAndImports modNm
          ;  case mbCrSemMod of
               Just _ -> cpUpdCUWithKey modNm $ \_ ecu ->
                           ( modNm'
-                          , ecuStoreHSDeclImpS (Set.fromList $ CoreRun2ChkSem.impModNmL_Syn_AGItf crSemMod )
+                          , ecuStoreSrcDeclImpS (Set.fromList $ CoreRun2ChkSem.impModNmL_Syn_AGItf crSemMod )
                             $ cuUpdKey modNm' ecu
                           )
               _      -> return modNm
          }
 %%]
 
-%%[(50 corein) export(cpGetCoreModnameAndImports)
+%%[(5050 corein) export(cpGetCoreModnameAndImports)
 cpGetCoreModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT m HsName
 cpGetCoreModnameAndImports modNm
   =  do  {  cr <- get
@@ -162,7 +162,7 @@ cpGetCoreModnameAndImports modNm
          ;  case mbCrSemMod of
               Just _ -> cpUpdCUWithKey modNm $ \_ ecu ->
                           ( modNm'
-                          , ecuStoreHSDeclImpS (Set.fromList $ Core2ChkSem.impModNmL_Syn_CodeAGItf crSemMod )
+                          , ecuStoreSrcDeclImpS (Set.fromList $ Core2ChkSem.impModNmL_Syn_CodeAGItf crSemMod )
                             $ cuUpdKey modNm' ecu
                           )
               _      -> return modNm
@@ -177,7 +177,7 @@ cpGetHsModnameAndImports modNm
                  mbHsSemMod = _ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsModnameAndImports" mbHsSemMod
                  modNm'     = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
-                 upd        = ecuStoreHSDeclImpS ( -- (\v -> tr "XX" (pp $ Set.toList v) v) $ 
+                 upd        = ecuStoreSrcDeclImpS ( -- (\v -> tr "XX" (pp $ Set.toList v) v) $ 
                                                   HSSemMod.modImpNmS_Syn_AGItf hsSemMod)
          ;  case mbHsSemMod of
               Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))

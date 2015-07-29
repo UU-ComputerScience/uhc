@@ -235,13 +235,11 @@ ecuStateToKind s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(ASTType(..))
--- | An 'Enum' of all types of ast we can deal with
+-- | An 'Enum' of all types of ast we can deal with.
+-- Order matters, ordering corresponds to 'can be generated from'
 data ASTType
   = ASTType_HS
   | ASTType_EH
-%%[[50
-  | ASTType_HI
-%%]]
 %%[[(8 core)
   | ASTType_Core
 %%]]
@@ -260,6 +258,9 @@ data ASTType
 %%[[(8 codegen)
   | ASTType_C
   | ASTType_O
+%%]]
+%%[[50
+  | ASTType_HI
 %%]]
   | ASTType_Unknown
   deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
@@ -424,7 +425,7 @@ prevSearchInfoAdaptedSearchPath (Just (prevNm,(prevFp,prevLoc))) searchPath
 prevSearchInfoAdaptedSearchPath _ searchPath = searchPath
 %%]
 
-%%[8 export(FileSearchKey, PrevFileSearchKey, mkNamePrevFileSearchKey)
+%%[8 export(FileSearchKey, PrevFileSearchKey, mkPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithNameMbPrev, mkPrevFileSearchKeyWithNamePrev)
 -- | Search key for a file to be compiled
 type FileSearchKey =
   ( HsName						-- module name
@@ -437,8 +438,14 @@ type PrevFileSearchKey =
   , Maybe PrevSearchInfo		-- possible context provided as a result of a previous compile yielding imports
   )
 
-mkNamePrevFileSearchKey :: HsName -> PrevFileSearchKey
-mkNamePrevFileSearchKey n = ((n,ASTFileNameOverride_AsIs),Nothing)
+mkPrevFileSearchKeyWithName :: HsName -> PrevFileSearchKey
+mkPrevFileSearchKeyWithName n = mkPrevFileSearchKeyWithNameMbPrev n Nothing
+
+mkPrevFileSearchKeyWithNameMbPrev :: HsName -> Maybe PrevSearchInfo -> PrevFileSearchKey
+mkPrevFileSearchKeyWithNameMbPrev n mp = ((n,ASTFileNameOverride_AsIs),mp)
+
+mkPrevFileSearchKeyWithNamePrev :: HsName -> PrevSearchInfo -> PrevFileSearchKey
+mkPrevFileSearchKeyWithNamePrev n p = mkPrevFileSearchKeyWithNameMbPrev n (Just p)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

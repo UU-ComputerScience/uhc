@@ -22,7 +22,7 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[8 import(Control.Monad.State hiding (get), qualified Control.Monad.State as MS)
 %%]
-%%[8 import(Control.Monad.Error)
+%%[8 import(Control.Monad.Error, Control.Monad.Fix)
 %%]
 %%[8 import(Control.Exception as CE)
 %%]
@@ -55,7 +55,7 @@ An EHC compile run maintains info for one compilation invocation
 %%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 -- Language semantics: HS, EH
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- Language semantics: Core
 %%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
@@ -145,6 +145,7 @@ instance CompileRunStateInfo EHCompileRunStateInfo HsName () where
 
 %%[8 export(EHCCompileRunner)
 class ( MonadIO m
+      , MonadFix m
       -- , MonadIO (EHCompilePhaseAddonT m)
       , CompileRunner FileSuffInitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)
       )
@@ -156,6 +157,7 @@ instance ( CompileRunStateInfo EHCompileRunStateInfo HsName ()
          -- , MonadError (CompileRunState Err) m
          -- , MonadState EHCompileRun (EHCompilePhaseAddonT m)
          , MonadIO m
+         , MonadFix m
          -- , MonadIO (EHCompilePhaseAddonT m)
          , Monad m
          ) => CompileRunner FileSuffInitState HsName () FileLoc EHCompileUnit EHCompileRunStateInfo Err (EHCompilePhaseAddonT m)
@@ -166,6 +168,7 @@ instance ( CompileRunStateInfo EHCompileRunStateInfo HsName ()
          -- , MonadError (CompileRunState Err) m
          -- , MonadState EHCompileRun (EHCompilePhaseAddonT m)
          , MonadIO m
+         , MonadFix m
          -- , MonadIO (EHCompilePhaseAddonT m)
          , Monad m
          ) => EHCCompileRunner m

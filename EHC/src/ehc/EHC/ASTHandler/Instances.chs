@@ -69,7 +69,7 @@
 %%[(8 codegen cmm) hs import(qualified {%{EH}Cmm} as Cmm)
 %%]
 -- Language semantics: HS, EH
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- Language semantics: Core
 -- TBD: this depends on grin gen, but should also be available for Core, so in a CoreXXXSem

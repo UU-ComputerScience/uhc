@@ -34,7 +34,7 @@
 %%[1.HSSem import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- EH semantics
-%%[1.EHSem import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[1.EHSem import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 
 -- parsing later put in {%{EH}EHC.CompilePhase.Parsers}

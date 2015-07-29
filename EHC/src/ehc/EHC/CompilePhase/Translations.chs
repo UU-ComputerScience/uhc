@@ -38,7 +38,7 @@ Translation to another AST
 %%]
 
 -- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 
 -- HS semantics
@@ -262,7 +262,7 @@ cpGenGrinGenInfo
 cpGenGrinGenInfo modNm
   = do opts <- bcall $ EHCOptsOf modNm
        -- mieimpl <- cpGenModuleImportExportImpl modNm
-       mieimpl <- bcall $ ImportExportImpl (mkNamePrevFileSearchKey modNm) (ehcOptOptimizationScope opts)
+       mieimpl <- bcall $ ImportExportImpl (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
        return (mieimplLamMp mieimpl, mieimplUsedModNmL mieimpl, mieimplHsName2FldMpMp mieimpl, mieimplHsName2FldMp mieimpl)
 %%]
 

@@ -174,16 +174,16 @@ mentrelFilterMpSingleton exclModNmL k n
 data ModExp
   = ModExpEnt !ModEntSpec
   | ModExpMod !HsName
-  deriving (Show)
+  deriving (Show,Typeable)
 
 data ModEntSpec
   = ModEntSpec !HsName !Range !(Maybe ModEntSubSpec)
-  deriving (Show)
+  deriving (Show,Typeable)
 
 data ModEntSubSpec
   = ModEntSubAll
   | ModEntSubs ![HsName]
-  deriving (Show)
+  deriving (Show,Typeable)
 
 data ModImp
   = ModImp
@@ -194,7 +194,7 @@ data ModImp
       , mimpImpL        :: ![ModEntSpec]
       , mimpRange		:: !Range
       }
-  deriving (Show)
+  deriving (Show,Typeable)
 
 emptyModImp :: ModImp
 emptyModImp = ModImp False hsnUnknown hsnUnknown True [] emptyRange
@@ -250,7 +250,7 @@ data Mod
       , modHiddenExps   :: !ModEntRel
       , modInstNmL      :: ![HsName]
       }
-  deriving (Show)
+  deriving (Show,Typeable)
 
 emptyMod' n = Mod n Nothing Nothing [] Rel.empty Rel.empty []
 emptyMod = emptyMod' hsnUnknown
@@ -472,6 +472,7 @@ data ModMpInfo
       , mmiNmOffMp  		:: !HsName2FldMp		-- cached mapping of names to offsets, for all that is exported, visible or hidden
 %%]]
       }
+  deriving (Typeable)
 
 instance Show ModMpInfo where
   show _ = "ModMpInfo"

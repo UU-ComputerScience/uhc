@@ -24,6 +24,7 @@ EHC_ASPECTS								:= $(strip $(sort $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_TYCORE),tycore,) \
 											 $(if $(ENABLE_CORESYSF),coresysf,) \
 											 $(if $(ENABLE_CORE_ASINPOUTP),corebackend corerun,) \
+											 $(if $(ENABLE_CORERUN_ASINPOUTP),corerunin,) \
 											 $(if $(ENABLE_TAUPHI),tauphi,) \
 											)))
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)

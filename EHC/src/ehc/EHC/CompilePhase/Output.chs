@@ -39,7 +39,7 @@ Output generation, on stdout or file
 %%]
 
 -- EH semantics
-%%[99 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[99 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 
 -- HI syntax and semantics

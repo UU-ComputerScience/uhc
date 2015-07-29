@@ -29,7 +29,7 @@ Folding over AST to compute semantics
 %%]
 
 -- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 -- HS semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
@@ -117,7 +117,7 @@ cpFoldCore2CoreRun modNm
          }
 %%]
 
-%%[(50 codegen corerunin) export(cpFoldCoreRunMod)
+%%[(5050 codegen corerunin) export(cpFoldCoreRunMod)
 cpFoldCoreRunMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCoreRunMod modNm
   =  do  {  cr <- get
@@ -141,7 +141,7 @@ cpFoldCoreRunMod modNm
          }
 %%]
 
-%%[(50 codegen corein) export(cpFoldCoreMod)
+%%[(5050 codegen corein) export(cpFoldCoreMod)
 cpFoldCoreMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCoreMod modNm
   =  do  {  cr <- get
@@ -165,14 +165,14 @@ cpFoldCoreMod modNm
          }
 %%]
 
-%%[8 export(cpFoldEH)
+%%[8888 export(cpFoldEH)
 cpFoldEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldEH modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
 %%[[(50 codegen)
          -- ;  mieimpl <- cpGenModuleImportExportImpl modNm
-         ;  mieimpl <- bcall $ ImportExportImpl (mkNamePrevFileSearchKey modNm) (ehcOptOptimizationScope opts)
+         ;  mieimpl <- bcall $ ImportExportImpl (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
 %%]]
          ;  let  mbEH   = _ecuMbEH ecu
                  ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf $ panicJust "cpFoldEH" mbEH)
@@ -230,7 +230,7 @@ cpFoldHs modNm
                  (do { cpUpdCU modNm ( ecuStoreHSSem hsSem
 %%[[50
                                      . ecuStoreHIDeclImpS ( -- (\v -> tr "YY" (pp $ Set.toList v) v) $
-                                                           ecuHSDeclImpNmS ecu)
+                                                           ecuSrcDeclImpNmS ecu)
                                      -- . ecuSetHasMain hasMain
 %%]]
                                      )

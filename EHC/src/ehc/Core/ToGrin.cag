@@ -45,7 +45,7 @@
 WRAPPER CodeAGItf
 %%]
 
-%%[(8 core) ag import({Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv},{Core/CommonDataGam})
+%%[(8 core) ag import({Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv},{Core/CommonDataGam1}, {Core/CommonDataGam2})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -42,7 +42,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[(8 codegen cmm) hs import(qualified {%{EH}Cmm} as Cmm)
 %%]
 -- Language semantics: HS, EH
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- Language semantics: Core
 %%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
@@ -279,8 +279,8 @@ ecuGrinTime = isoMb "ecuMbGrinTime" ecuMbGrinTime
 ecuCoreRunTime = isoMb "ecuMbCoreRunTime" ecuMbCoreRunTime
 %%]
 
-%%[50 export(ecuHSDeclImpNmS, ecuHIDeclImpNmS, ecuHIUsedImpNmS)
-ecuHSDeclImpNmS = iumHSDeclModules . ecuImportUsedModules
+%%[50 export(ecuSrcDeclImpNmS, ecuHIDeclImpNmS, ecuHIUsedImpNmS)
+ecuSrcDeclImpNmS = iumSrcDeclModules . ecuImportUsedModules
 ecuHIDeclImpNmS = iumHIDeclModules . ecuImportUsedModules
 ecuHIUsedImpNmS = iumHIUsedModules . ecuImportUsedModules
 %%]
@@ -407,7 +407,7 @@ emptyECU
 %%[50 export(ecuImpNmS,ecuImpNmL)
 ecuImpNmS :: EHCompileUnit -> Set.Set HsName
 ecuImpNmS ecu = -- (\v -> tr "XX" (pp $ Set.toList v) v) $
-  Set.delete (ecuModNm ecu) $ Set.unions [ ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu ] 
+  Set.delete (ecuModNm ecu) $ Set.unions [ ecuSrcDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu ] 
 
 ecuImpNmL :: EHCompileUnit -> [HsName]
 ecuImpNmL = Set.toList . ecuImpNmS -- ecu = (nub $ ecuHSDeclImpNmL ecu ++ ecuHIDeclImpNmL ecu ++ ecuHIUsedImpNmL ecu) \\ [ecuModNm ecu]
@@ -648,7 +648,7 @@ ecuStoreCmm :: EcuUpdater Cmm.Module
 ecuStoreCmm x ecu = ecu { _ecuMbCmm = Just x }
 %%]
 
-%%[50 export(ecuStoreHSDeclImpS,ecuSetNeedsCompile,ecuStoreHIUsedImpS,ecuStoreHIInfoTime,ecuStoreSrcTime,ecuStoreHSSemMod,ecuStoreIntrodModS,ecuStoreHIDeclImpS,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
+%%[50 export(ecuStoreSrcDeclImpS,ecuSetNeedsCompile,ecuStoreHIUsedImpS,ecuStoreHIInfoTime,ecuStoreSrcTime,ecuStoreHSSemMod,ecuStoreIntrodModS,ecuStoreHIDeclImpS,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStoreOptim,ecuStoreHIInfo,ecuStorePrevHIInfo)
 ecuStoreSrcTime :: EcuUpdater ClockTime
 ecuStoreSrcTime x ecu = ecu { _ecuMbSrcTime = Just x }
 
@@ -661,8 +661,8 @@ ecuStoreHIInfoTime x ecu = ecu { _ecuMbHIInfoTime = Just x }
 ecuStoreHSSemMod :: EcuUpdater HSSemMod.Syn_AGItf
 ecuStoreHSSemMod x ecu = ecu { _ecuMbHSSemMod = Just x }
 
-ecuStoreHSDeclImpS :: EcuUpdater (Set.Set HsName)
-ecuStoreHSDeclImpS x ecu = ecu { ecuImportUsedModules = ium {iumHSDeclModules = x} }
+ecuStoreSrcDeclImpS :: EcuUpdater (Set.Set HsName)
+ecuStoreSrcDeclImpS x ecu = ecu { ecuImportUsedModules = ium {iumSrcDeclModules = x} }
   where ium = ecuImportUsedModules ecu
 
 ecuStoreHIDeclImpS :: EcuUpdater (Set.Set HsName)

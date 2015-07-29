@@ -275,7 +275,7 @@ cpGetPrevHI modNm
               -- cpDecodeHIInfo modNm
               cpDecode' astHandler'_HI (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev modNm
 -}
-       ; bcall $ ASTFromFile (mkNamePrevFileSearchKey modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_HI (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+       ; bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_HI (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 
@@ -291,7 +291,7 @@ cpGetPrevCore modNm
            -- cpDecode' astHandler'_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev modNm
        ; fmap (fromJust . _ecuMbCore) $ gets (crCU modNm)
 -}
-       ; bcall $ ASTFromFile (mkNamePrevFileSearchKey modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+       ; bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 
@@ -306,7 +306,7 @@ cpGetPrevCoreRun modNm
               (cpDecodeCoreRun (Just Cfg.suffixDotlessBinaryCoreRun) modNm)
        ; fmap (fromJust . _ecuMbCoreRun) $ gets (crCU modNm)
 -}
-       ; bcall $ ASTFromFile (mkNamePrevFileSearchKey modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_CoreRun (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+       ; bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_CoreRun (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 
@@ -320,7 +320,7 @@ cpGetPrevGrin modNm
        ; when (isJust (_ecuMbGrinTime ecu) && isNothing (_ecuMbGrin ecu))
               (cpDecodeGrin modNm) -- (cpParseGrin modNm)
 -}
-       ; bcall $ ASTFromFile (mkNamePrevFileSearchKey modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_Grin (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+       ; bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_Grin (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 

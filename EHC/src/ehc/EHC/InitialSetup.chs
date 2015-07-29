@@ -18,7 +18,7 @@ Initial values
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 -- Core semantics
 %%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
