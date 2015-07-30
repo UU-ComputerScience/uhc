@@ -98,7 +98,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 
 -- Language syntax: Core
-%%[(50 codegen) import(qualified {%{EH}Core} as Core(cModMergeByConcat, CModule))
+%%[(50 codegen) import(qualified {%{EH}Core} as Core)
 %%]
 %%[(50 codegen) import(qualified {%{EH}Core.Merge} as CMerge (cModMerge))
 %%]
@@ -1222,7 +1222,8 @@ cpProcessHs modNm = do
 %%[[50
     cpFlowHsSem1 modNm
 %%]]
-    cpTranslateHs2EH modNm
+    -- cpTranslateHs2EH modNm
+    (_ :: EH.AGItf) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_EH
 %%[[99
     cpCleanupHS modNm
 %%]]
@@ -1247,26 +1248,25 @@ cpProcessEH modNm
        ; cpUpdCU modNm (ecuStoreOpts optsTr)
        -}
 %%]]
-       ; cpSeq [ -- cpFoldEH modNm
-                 void $ bcall $ FoldEH (mkPrevFileSearchKeyWithName modNm)
+       -- ; cpFoldEH modNm
+       ; void $ bcall $ FoldEH (mkPrevFileSearchKeyWithName modNm)
 %%[[99
-               , cpCleanupFoldEH modNm
+       ; cpCleanupFoldEH modNm
 %%]]
-               , cpFlowEHSem1 modNm
-               , cpTranslateEH2Output modNm
+       ; cpFlowEHSem1 modNm
+       -- ; cpTranslateEH2Output modNm
 %%[[(8 codegen)
-               ,
-%%[[(8 tycore)
-                 if ehcOptTyCore optsTr
-                 then cpTranslateEH2TyCore modNm
-                 else 
-%%]]
-                      cpTranslateEH2Core modNm
+{- -- %%[[(8 tycore)
+       ; if ehcOptTyCore optsTr
+         then cpTranslateEH2TyCore modNm
+         else 
+-} -- %%]]
+       ; cpTranslateEH2Core modNm
+       -- ; (_ :: Core.CModule) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_Core
 %%]]
 %%[[99
-               , cpCleanupEH modNm
+       ; cpCleanupEH modNm
 %%]]
-               ]
        }
 %%]
 
@@ -1320,18 +1320,20 @@ cpProcessCoreFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCoreFold modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; cpSeq $ [] ++
+       -- ; cpSeq $ [] ++
 %%[[50
-		  [ cpFlowCoreSemBeforeFold modNm ] ++
+       ; cpFlowCoreSemBeforeFold modNm
 %%]]
-		  (if targetIsViaGrin (ehcOptTarget opts) then [ cpFoldCore2Grin modNm ] else []) ++
+       ; when (targetIsViaGrin (ehcOptTarget opts)) $
+           -- cpFoldCore2Grin modNm
+           void $ bcall $ FoldCore2Grin (mkPrevFileSearchKeyWithName modNm)
 %%[[(50 corerun)
-		  (if targetIsCoreVariation (ehcOptTarget opts) then [ cpFoldCore2CoreRun modNm ] else []) ++
+       ; when (targetIsCoreVariation (ehcOptTarget opts)) $
+           cpFoldCore2CoreRun modNm
 %%]]
 %%[[50
-		  [ cpFlowCoreSemAfterFold modNm ] ++
+       ; cpFlowCoreSemAfterFold modNm
 %%]]
-          []
        }
 %%]
 

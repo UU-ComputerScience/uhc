@@ -53,7 +53,31 @@ Offsets start at 0.
 WRAPPER CodeAGItf
 %%]
 
-%%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRunWithModNr, cmod2CoreRun)
+%%[(8 corerun) hs
+deriving instance Typeable Syn_CodeAGItf
+%%]
+
+%%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRun'', cmod2CoreRunWithModNr, cmod2CoreRun)
+-- | Translate to CoreRun
+cmod2CoreRun''
+  :: EHCOpts
+     -> Bool			-- ^ has main?
+     -> Int             -- ^ sequence nr of module (offset), used to create global per module references
+     -> CR.Nm2RefMp     -- ^ outer bindings
+     -> CModule
+     -> ( Syn_CodeAGItf
+        )
+cmod2CoreRun'' opts hasMain modNr nm2ref cmod
+  =  ( t
+     )
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+              (Inh_CodeAGItf
+                 { modNr_Inh_CodeAGItf = modNr
+                 , opts_Inh_CodeAGItf = opts
+                 , hasMain_Inh_CodeAGItf = hasMain
+                 , nm2ref_Inh_CodeAGItf = nm2ref
+                 })
+
 -- | Translate to CoreRun
 cmod2CoreRun'
   :: EHCOpts
@@ -70,13 +94,7 @@ cmod2CoreRun' opts hasMain modNr nm2ref cmod
      , nm2refGath_Syn_CodeAGItf t
      , t
      )
-  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-              (Inh_CodeAGItf
-                 { modNr_Inh_CodeAGItf = modNr
-                 , opts_Inh_CodeAGItf = opts
-                 , hasMain_Inh_CodeAGItf = hasMain
-                 , nm2ref_Inh_CodeAGItf = nm2ref
-                 })
+  where t = cmod2CoreRun'' opts hasMain modNr nm2ref cmod
 
 cmod2CoreRunWithModNr :: Int -> CModule -> CR.Mod
 cmod2CoreRunWithModNr nr m = m'

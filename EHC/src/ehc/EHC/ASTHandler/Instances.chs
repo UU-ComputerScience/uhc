@@ -172,6 +172,7 @@ astHandler'_HS = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) =
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "Haskell"
+            , _asthdlrASTLens           = Just ecuMbHS
             {-
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Text	, ASTFileUse_Src), ("hs", ecuMbHS, tmlens) )
@@ -278,6 +279,7 @@ astHandler'_EH = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "EH"
+            , _asthdlrASTLens           = Just ecuMbEH
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Text	, ASTFileUse_Src), ("eh", ecuMbEH, Nothing) )
             								]
@@ -304,6 +306,7 @@ astHandler'_HI = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "HI"
+            , _asthdlrASTLens           = Just ecuMbHIInfo
             , _asthdlrSuffixRel			= mkASTSuffixRel'
             								[ ( (ASTFileContent_Binary	, ASTFileUse_Cache)
             								  , ("hi"
@@ -357,6 +360,7 @@ astHandler'_Core = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "Core"
+            , _asthdlrASTLens           = Just ecuMbCore
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Binary	, ASTFileUse_Target)	, (Cfg.suffixDotlessBinaryCore, ecuMbCore, Nothing) )
             								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, (Cfg.suffixDotlessOutputTextualCore, ecuMbCore, Nothing) )
@@ -413,6 +417,7 @@ astHandler'_CoreRun = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
             { _asthdlrName              = "CoreRun"
+            , _asthdlrASTLens           = Just ecuMbCoreRun
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Binary	, ASTFileUse_Target)	, (Cfg.suffixDotlessBinaryCoreRun, ecuMbCoreRun, Nothing) )
             								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, (Cfg.suffixDotlessOutputTextualCoreRun, ecuMbCoreRun, Nothing) )
@@ -468,6 +473,7 @@ astHandler'_Grin :: ASTHandler' Grin.GrModule
 astHandler'_Grin = 
   emptyASTHandler'
 			{ _asthdlrName              = "Grin"
+            , _asthdlrASTLens           = Just ecuMbGrin
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Text	, ASTFileUse_Dump), ( "grin", ecuMbGrin, Nothing ) )
             								]
@@ -506,6 +512,7 @@ astHandler'_Cmm :: ASTHandler' Cmm.Module
 astHandler'_Cmm = 
   emptyASTHandler'
 			{ _asthdlrName              = "Cmm"
+            , _asthdlrASTLens           = Just ecuMbCmm
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Text	, ASTFileUse_Dump)		, ("cmm", ecuMbCmm, Nothing) )
             								]
@@ -523,6 +530,7 @@ astHandler'_JavaScript :: ASTHandler' JS.JavaScriptModule
 astHandler'_JavaScript = 
   emptyASTHandler'
 			{ _asthdlrName              = "JavaScript"
+            , _asthdlrASTLens           = Just ecuMbJavaScript
             , _asthdlrSuffixRel			= mkASTSuffixRel
             								[ ( (ASTFileContent_Text	, ASTFileUse_Target)		, ("js", ecuMbJavaScript, Nothing) )
             								]

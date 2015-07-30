@@ -39,6 +39,10 @@
 WRAPPER CodeAGItf
 %%]
 
+%%[(8 jazy) hs
+deriving instance Typeable Syn_CodeAGItf
+%%]
+
 %%[(8 jazy) hs export(cmod2JazyJVMModule)
 cmod2JazyJVMModule :: EHCOpts -> CModule -> (HsName,[J.Class])
 cmod2JazyJVMModule opts cmod

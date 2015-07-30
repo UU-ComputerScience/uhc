@@ -48,6 +48,14 @@ data ASTParser ast
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST lens
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ASTLens)
+type ASTLens ast = Lens EHCompileUnit (Maybe ast)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AST Handler, type parameterized
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -64,6 +72,11 @@ data ASTHandler' ast
 		  --- | Meta info: name of ast
 			_asthdlrName				:: !String
 
+		  --- * AST
+		  
+		  --- | Lens into AST, if any
+		  , _asthdlrASTLens 			:: Maybe (ASTLens ast)
+	  
 		  --- * File
 	  
 		  --- | Construct output FPath from module name, path, suffix
@@ -131,6 +144,7 @@ emptyASTHandler' :: forall ast . ASTHandler' ast
 emptyASTHandler'
   = ASTHandler'
       { _asthdlrName 				= "Unknown AST"
+      , _asthdlrASTLens             = Nothing
       , _asthdlrSuffixRel 			= (emptyASTSuffixRel :: ASTSuffixRel ast)
       
       , _asthdlrMkInputFPath		= \_ _ _ fp s -> fpathSetSuff s fp
@@ -181,7 +195,7 @@ type ASTHandlerMp = Map.Map ASTType ASTHandler
 data ASTSuffixInfo ast
   = ASTSuffixInfo
       { _astsuffinfoSuff		:: String
-      , _astsuffinfoASTLensMp	:: Map.Map ASTFileTiming (Lens EHCompileUnit (Maybe ast))
+      , _astsuffinfoASTLensMp	:: Map.Map ASTFileTiming (ASTLens ast)
 %%[[50
       , _astsuffinfoModfTimeMp	:: Map.Map ASTFileTiming (Lens EHCompileUnit (Maybe ClockTime))
       , _astsuffinfoUpdParseOpts:: EHParseOpts -> EHParseOpts
@@ -206,7 +220,7 @@ mkASTSuffixRel'
   :: AssocL
        ASTSuffixKey
        ( String
-       , AssocL ASTFileTiming (Lens EHCompileUnit (Maybe ast))
+       , AssocL ASTFileTiming (ASTLens ast)
 %%[[8
        , AssocL ASTFileTiming (Maybe ())
 %%][50
@@ -232,7 +246,7 @@ mkASTSuffixRel
   :: AssocL
        ASTSuffixKey
        ( String
-       , Lens EHCompileUnit (Maybe ast)
+       , ASTLens ast
 %%[[8
        , Maybe ()
 %%][50
@@ -263,7 +277,7 @@ astsuffixLookupSuff :: ASTSuffixKey -> ASTSuffixRel ast -> Maybe String
 astsuffixLookupSuff k r = fmap _astsuffinfoSuff $ astsuffixLookup k r
 
 -- | Lookup lens
-astsuffixLookupLens :: ASTSuffixKey -> ASTFileTiming -> ASTSuffixRel ast -> Maybe (Lens EHCompileUnit (Maybe ast))
+astsuffixLookupLens :: ASTSuffixKey -> ASTFileTiming -> ASTSuffixRel ast -> Maybe (ASTLens ast)
 astsuffixLookupLens sk tk r = do
   i <- astsuffixLookup sk r
   Map.lookup tk $ _astsuffinfoASTLensMp i

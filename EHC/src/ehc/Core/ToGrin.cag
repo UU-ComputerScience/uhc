@@ -45,6 +45,10 @@
 WRAPPER CodeAGItf
 %%]
 
+%%[(8 core) hs
+deriving instance Typeable Syn_CodeAGItf
+%%]
+
 %%[(8 core) ag import({Core/CommonBindNm},{Core/CommonFFI},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/Trf/CommonFv},{Core/CommonDataGam1}, {Core/CommonDataGam2})
 %%]
 

@@ -490,6 +490,7 @@ data TraceOn
   | TraceOn_BuildFPaths				-- build fpaths constructed
   | TraceOn_BuildSearchPaths		-- build searchpath used
   | TraceOn_BuildSccImports			-- build compile order (scc = strongly connected components)
+  | TraceOn_BuildTypeables			-- build Typeable instances encountered
   deriving (Eq,Ord,Enum,Show,Typeable,Bounded)
 
 allTraceOnMp :: Map.Map String TraceOn

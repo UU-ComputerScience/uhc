@@ -41,6 +41,10 @@
 WRAPPER CodeAGItf
 %%]
 
+%%[(8 javascript) hs
+deriving instance Typeable Syn_CodeAGItf
+%%]
+
 %%[(8 javascript) hs export(cmod2JavaScriptModule)
 cmod2JavaScriptModule :: EHCOpts -> DataGam -> CModule -> J.JavaScriptModule
 cmod2JavaScriptModule opts dataGam cmod
