@@ -130,10 +130,20 @@ data BFun' res where
     -> !FilePath			--- ^ file name
     -> BFun' (HsName, FPath)
 
+{-
   --- | Obtain FPath of an (imported module)
   FPathOfImported
     :: !HsName				--- ^ module name
     -> BFun' FPath
+-}
+
+  --- | Obtain FPath of module taking into account ast type, overriding, suffix etc
+  FPathForAST
+    :: !PrevFileSearchKey				--- ^ module name and possibly known path
+    -> !ASTType							--- ^ content type
+    -> !ASTSuffixKey					--- ^ suffix and content variation
+    -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
+    -> BFun' (FPath, ASTFileSuffOverride, EHCompileUnit)
 
 %%[[50
   --- | Extract imported modules from a module
@@ -188,6 +198,17 @@ data BFun' res where
   EHCOptsOf
     :: !HsName				--- ^ module name
     -> BFun' EHCOpts
+  
+  --- | Get a reference to particular AST from file for a module
+  ASTRefFromFile
+    :: {- forall ast . 
+       Typeable ast
+    => -} !PrevFileSearchKey				--- ^ module name and possibly known path
+    -> !(AlwaysEq ASTFileTimeHandleHow)	--- ^ how to deal with timestamp
+    -> !ASTType							--- ^ content type
+    -> !ASTSuffixKey					--- ^ suffix and content variation
+    -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
+    -> BFun' res -- (BRef ast)
 
   --- | Get a particular AST from file for a module
   ASTFromFile
@@ -202,12 +223,18 @@ data BFun' res where
   AST
     :: !PrevFileSearchKey				--- ^ module name and possibly known path
     -> !ASTType							--- ^ content type
-    -> BFun' res -- (Maybe res)
+    -> BFun' res
+
+  --- | Get a particular AST for a module, possibly
+  ASTMb
+    :: !PrevFileSearchKey				--- ^ module name and possibly known path
+    -> !ASTType							--- ^ content type
+    -> BFun' (Maybe (res, BRef res))
 
 %%[[50
   --- | Get the modification ClockTime of a file for a module
   ModfTimeOfFile
-    :: !HsName							--- ^ module name and possibly known path
+    :: !PrevFileSearchKey				--- ^ module name and possibly known path
     -> !ASTType							--- ^ content type
     -> !ASTSuffixKey					--- ^ suffix and content variation
     -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
@@ -375,7 +402,8 @@ bfunCompare f1 f2 = case (f1,f2) of
 %%]]
     (CRSIOfName			    	a1   			, CRSIOfName		    	a2   			) ->         a1 `compare` a2
     (FPathSearchForFile 		a1 b1			, FPathSearchForFile 		a2 b2			) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (FPathOfImported    		a1   			, FPathOfImported    		a2   			) ->         a1 `compare` a2
+    -- (FPathOfImported    		a1   			, FPathOfImported    		a2   			) ->         a1 `compare` a2
+    (FPathForAST           		a1 b1 c1 d1	 	, FPathForAST				a2 b2 c2 d2		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
 %%[[50
     (ImportsOfName          	a1   			, ImportsOfName          	a2   			) ->         a1 `compare` a2
     (ImportsRecursiveWithImps	a1 b1  			, ImportsRecursiveWithImps	a2 b2  			) -> lexico [a1 `compare` a2, b1 `compare` b2]
@@ -387,6 +415,7 @@ bfunCompare f1 f2 = case (f1,f2) of
     (EcuOfPrevNameAndPath		a1 				, EcuOfPrevNameAndPath		a2 				) ->         a1 `compare` a2
     (EcuOfNameAndPath			a1 				, EcuOfNameAndPath			a2 				) ->         a1 `compare` a2
     (EHCOptsOf             		a1   			, EHCOptsOf					a2   			) ->         a1 `compare` a2
+    (ASTRefFromFile          a1 b1 c1 d1	e1 	, ASTRefFromFile			a2 b2 c2 d2	e2	) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2]
     (ASTFromFile            	a1 b1 c1 d1	e1 	, ASTFromFile				a2 b2 c2 d2	e2	) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2]
     (AST            			a1 b1		 	, AST						a2 b2			) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%[[50
@@ -442,49 +471,51 @@ instance Hashable (BFun' res) where
 %%]]
 	CRSIOfName			   		a			-> salt `hashWithSalt` (2::Int) `hashWithSalt` a
 	FPathSearchForFile 			a b			-> salt `hashWithSalt` (3::Int) `hashWithSalt` a `hashWithSalt` b
-	FPathOfImported	   			a			-> salt `hashWithSalt` (4::Int) `hashWithSalt` a
+	-- FPathOfImported	   			a			-> salt `hashWithSalt` (4::Int) `hashWithSalt` a
+	FPathForAST					a b	c d	 	-> salt `hashWithSalt` (5::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
 %%[[50
-	ImportsOfName		   		a			-> salt `hashWithSalt` (5::Int) `hashWithSalt` a
-	ImportsRecursiveWithImps	a b			-> salt `hashWithSalt` (6::Int) `hashWithSalt` a `hashWithSalt` b
-	ImportsRecursiveOfName		a			-> salt `hashWithSalt` (7::Int) `hashWithSalt` a
+	ImportsOfName		   		a			-> salt `hashWithSalt` (6::Int) `hashWithSalt` a
+	ImportsRecursiveWithImps	a b			-> salt `hashWithSalt` (7::Int) `hashWithSalt` a `hashWithSalt` b
+	ImportsRecursiveOfName		a			-> salt `hashWithSalt` (8::Int) `hashWithSalt` a
 %%]]
-	EcuOf			   			a			-> salt `hashWithSalt` (8::Int) `hashWithSalt` a
+	EcuOf			   			a			-> salt `hashWithSalt` (9::Int) `hashWithSalt` a
 	EcuOfName		   			a			-> salt `hashWithSalt` (10::Int) `hashWithSalt` a
 	EHCOptsOf		   			a			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a
 	EcuOfPrevNameAndPath		a 			-> salt `hashWithSalt` (12::Int) `hashWithSalt` a
 	EcuOfNameAndPath			a 			-> salt `hashWithSalt` (13::Int) `hashWithSalt` a
-	ASTFromFile					a b	c d	e 	-> salt `hashWithSalt` (14::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
-	AST 						a b			-> salt `hashWithSalt` (15::Int) `hashWithSalt` a `hashWithSalt` b
+	ASTRefFromFile			a b	c d	e 	-> salt `hashWithSalt` (14::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
+	ASTFromFile					a b	c d	e 	-> salt `hashWithSalt` (15::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
+	AST 						a b			-> salt `hashWithSalt` (16::Int) `hashWithSalt` a `hashWithSalt` b
 %%[[50
-	ModfTimeOfFile				a b	c d		-> salt `hashWithSalt` (16::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
-	DirOfModIsWriteable 		a 			-> salt `hashWithSalt` (17::Int) `hashWithSalt` a
-	EcuCanCompile		 		a 			-> salt `hashWithSalt` (18::Int) `hashWithSalt` a
-	IsTopMod			 		a 			-> salt `hashWithSalt` (19::Int) `hashWithSalt` a
+	ModfTimeOfFile				a b	c d		-> salt `hashWithSalt` (17::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
+	DirOfModIsWriteable 		a 			-> salt `hashWithSalt` (18::Int) `hashWithSalt` a
+	EcuCanCompile		 		a 			-> salt `hashWithSalt` (19::Int) `hashWithSalt` a
+	IsTopMod			 		a 			-> salt `hashWithSalt` (20::Int) `hashWithSalt` a
 %%]]
 %%[[50
-	FoldHsMod			 		a b			-> salt `hashWithSalt` (20::Int) `hashWithSalt` a `hashWithSalt` b
-	ModnameAndImports			a b			-> salt `hashWithSalt` (21::Int) `hashWithSalt` a `hashWithSalt` b
-	HsModnameAndImports			a 			-> salt `hashWithSalt` (22::Int) `hashWithSalt` a
-	FoldHIInfo					a 			-> salt `hashWithSalt` (23::Int) `hashWithSalt` a
-	ImportExportImpl			a b			-> salt `hashWithSalt` (24::Int) `hashWithSalt` a `hashWithSalt` b
-	ImportNameInfo				a b			-> salt `hashWithSalt` (25::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldHsMod			 		a b			-> salt `hashWithSalt` (21::Int) `hashWithSalt` a `hashWithSalt` b
+	ModnameAndImports			a b			-> salt `hashWithSalt` (22::Int) `hashWithSalt` a `hashWithSalt` b
+	HsModnameAndImports			a 			-> salt `hashWithSalt` (23::Int) `hashWithSalt` a
+	FoldHIInfo					a 			-> salt `hashWithSalt` (24::Int) `hashWithSalt` a
+	ImportExportImpl			a b			-> salt `hashWithSalt` (25::Int) `hashWithSalt` a `hashWithSalt` b
+	ImportNameInfo				a b			-> salt `hashWithSalt` (26::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
-	FoldHs						a 			-> salt `hashWithSalt` (26::Int) `hashWithSalt` a
-	FoldEH						a 			-> salt `hashWithSalt` (27::Int) `hashWithSalt` a
+	FoldHs						a 			-> salt `hashWithSalt` (27::Int) `hashWithSalt` a
+	FoldEH						a 			-> salt `hashWithSalt` (28::Int) `hashWithSalt` a
 %%[[(50 corein)
-	FoldCoreMod					a 			-> salt `hashWithSalt` (28::Int) `hashWithSalt` a
+	FoldCoreMod					a 			-> salt `hashWithSalt` (29::Int) `hashWithSalt` a
 %%]]
 %%[[(8 core)
-	FoldCore2Grin				a 			-> salt `hashWithSalt` (29::Int) `hashWithSalt` a
+	FoldCore2Grin				a 			-> salt `hashWithSalt` (30::Int) `hashWithSalt` a
 %%]]
 %%[[(8 core corerun)
-	FoldCore2CoreRun			a 			-> salt `hashWithSalt` (30::Int) `hashWithSalt` a
+	FoldCore2CoreRun			a 			-> salt `hashWithSalt` (31::Int) `hashWithSalt` a
 %%]]
 %%[[(50 corerunin)
-	FoldCoreRunMod				a 			-> salt `hashWithSalt` (31::Int) `hashWithSalt` a
+	FoldCoreRunMod				a 			-> salt `hashWithSalt` (32::Int) `hashWithSalt` a
 %%]]
 %%[[99
-	FPathPreprocessedWithCPP	a b			-> salt `hashWithSalt` (32::Int) `hashWithSalt` a `hashWithSalt` b
+	FPathPreprocessedWithCPP	a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
 	ExposedPackages							-> salt `hashWithSalt` (maxBound-2::Int)
 %%]]
 	-- EcuMbOf			   			a			-> salt `hashWithSalt` (7::Int) `hashWithSalt` a

@@ -206,7 +206,7 @@ cpGetMetaInfo gm modNm
          ;  let (ecu,_,opts,fp) = crBaseInfo modNm cr
          ;  when (GetMeta_Src `elem` gm) $
                  tm opts ecu ecuStoreSrcTime        (ecuSrcFilePath ecu)
-                 -- void $ bcall $ ModfTimeOfFile modNm ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+                 -- void $ bcall $ ModfTimeOfFile (mkPrevFileSearchKeyWithName modNm) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
                  
          ;  when (GetMeta_HI `elem` gm)
                  (tm opts ecu ecuStoreHIInfoTime
@@ -236,7 +236,7 @@ cpGetMetaInfo gm modNm
                  -- void $ bcall $ DirOfModIsWriteable modNm
 %%]]
          }
-  where dfltPrev astty modNm ecu = void $ bcall $ ModfTimeOfFile modNm astty (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+  where dfltPrev astty modNm ecu = void $ bcall $ ModfTimeOfFile (mkPrevFileSearchKeyWithName modNm) astty (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
 
         tm :: EHCCompileRunner m => EHCOpts -> EHCompileUnit -> (ClockTime -> EHCompileUnit -> EHCompileUnit) -> FPath -> EHCompilePhaseT m ()
         tm opts ecu store fp
