@@ -936,7 +936,7 @@ fmap2Tuple snd = fmap (\x -> (x,snd))
 %%% Monad abbreviations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(whenM, unlessM, ifM)
+%%[1 export(whenM, unlessM, ifM, ifM')
 -- | Variation of `when` where Boolean condition is computed in a monad
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM c m = do
@@ -958,6 +958,45 @@ ifM c mt me = do
   if c' then mt else me
 {-# INLINE ifM #-}
 
+-- | Variation of `if` where Boolean condition is computed in a monad, with then and else part flipped
+ifM' :: Monad m => m Bool -> m a -> m a -> m a
+ifM' c = flip (ifM c)
+{-# INLINE ifM' #-}
+
+%%]
+
+%%[1 export(maybeM, maybeM', maybeGuardM, guardMaybeM, whenJustM, whenJustGuardM, unlessJustM)
+-- | Variation of `maybe` where the maybe is computed in a monad. See also `maybeM'`
+maybeM :: Monad m => m (Maybe a) -> m b -> (a -> m b) -> m b
+maybeM mmaybe mnothing mjust = mmaybe >>= maybe mnothing mjust
+{-# INLINE maybeM #-}
+
+-- | Variation of `maybe` where the maybe is computed in a monad and a guard is involved. See also `maybeM'`
+maybeGuardM :: Monad m => m (Maybe a) -> (a -> m Bool) -> m b -> (a -> m b) -> m b
+maybeGuardM mmaybe mgrd mnothing mjust = mmaybe >>= maybe mnothing (\x -> ifM (mgrd x) (mjust x) mnothing)
+{-# INLINE maybeGuardM #-}
+
+-- | Variation of `maybe` where the maybe is computed in a guarded monad. See also `maybeGuardM'`
+guardMaybeM :: Monad m => (m Bool) -> m (Maybe a) -> m b -> (a -> m b) -> m b
+guardMaybeM mgrd mmaybe mnothing mjust = ifM' mgrd mnothing $ maybeM mmaybe mnothing mjust
+{-# INLINE guardMaybeM #-}
+
+-- | As 'maybeM' but with last 2 args flipped, allowing a continuation based style for case by case analysis based on Maybe
+maybeM' :: Monad m => m (Maybe a) -> (a -> m b) -> m b -> m b
+maybeM' mmaybe = flip (maybeM mmaybe)
+{-# INLINE maybeM' #-}
+
+-- | Variation of `maybe`, when, and ifJust where the maybe is computed in a monad
+whenJustM :: Monad m => m (Maybe a) -> (a -> m ()) -> m ()
+whenJustM mmaybe = maybeM mmaybe (return ())
+
+-- | Variation of `maybe`, when, and ifJust where the maybe is computed in a monad and a guard is involved
+whenJustGuardM :: Monad m => m (Maybe a) -> (a -> m Bool) -> (a -> m ()) -> m ()
+whenJustGuardM mmaybe mgrd mjust = maybeM mmaybe (return ()) $ \a -> whenM (mgrd a) $ mjust a
+
+-- | Variation of `maybe`, unless, and ifNothing where the maybe is computed in a monad
+unlessJustM :: Monad m => m (Maybe a) -> m () -> m ()
+unlessJustM mmaybe = maybeM' mmaybe (\_ -> return ())
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1221,12 +1221,14 @@ cpProcessHs modNm = do
     bcall $ FoldHs (mkPrevFileSearchKeyWithName modNm)
 %%[[50
     cpFlowHsSem1 modNm
+    -- bcall $ CRSIOfName (mkPrevFileSearchKeyWithName modNm) ASTType_HS
 %%]]
     -- cpTranslateHs2EH modNm
     (_ :: EH.AGItf) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_EH
 %%[[99
     cpCleanupHS modNm
 %%]]
+    return ()
 %%]
 
 %%[8
@@ -1325,8 +1327,8 @@ cpProcessCoreFold modNm
        ; cpFlowCoreSemBeforeFold modNm
 %%]]
        ; when (targetIsViaGrin (ehcOptTarget opts)) $
-           -- cpFoldCore2Grin modNm
-           void $ bcall $ FoldCore2Grin (mkPrevFileSearchKeyWithName modNm)
+           cpFoldCore2Grin modNm
+           -- void $ bcall $ FoldCore2Grin (mkPrevFileSearchKeyWithName modNm)
 %%[[(50 corerun)
        ; when (targetIsCoreVariation (ehcOptTarget opts)) $
            cpFoldCore2CoreRun modNm

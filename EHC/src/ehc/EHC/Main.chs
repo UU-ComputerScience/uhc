@@ -340,7 +340,7 @@ doCompilePrepare fnL@(fn:_) opts
                                 , _crsiHSInh      =   initialHSSem opts3
                                 , _crsiEHInh      =   initialEHSem opts3 fp
 %%[[(8 codegen)
-                                , crsiCoreInh    =   initialCore2GrSem opts3
+                                , _crsiCoreInh    =   initialCore2GrSem opts3
 %%]]
 %%[[50
                                 -- , crsiHIInh      =   initialHISem opts3

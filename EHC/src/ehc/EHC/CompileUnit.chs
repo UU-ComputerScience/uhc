@@ -183,6 +183,8 @@ data EHCompileUnit
       , _ecuASTType          :: !ASTType
       , _ecuASTFileContent   :: !ASTFileContent
       , _ecuASTFileUse       :: !ASTFileUse
+      , _ecuAlreadyFlowIntoCRSI
+      						 :: !(Map.Map ASTType (Set.Set ASTSemFlowStage))	-- the semantics already flown into global state
 %%[[50
       , ecuImportUsedModules :: !ImportUsedModules                  -- imported modules info
       , ecuIsTopMod          :: !Bool                               -- module has been specified for compilation on commandline
@@ -253,6 +255,9 @@ ecuEH = isoMb "ecuMbEH" ecuMbEH
 ecuEHSem = isoMb "ecuMbEHSem" ecuMbEHSem
 ecuHS = isoMb "ecuMbHS" ecuMbHS
 ecuHSSem = isoMb "ecuMbHSSem" ecuMbHSSem
+%%]
+
+%%[50 export(ecuAlreadyFlowIntoCRSI)
 %%]
 
 %%[50 export(ecuMbHIInfo, ecuHIInfo, ecuMbPrevHIInfo, ecuPrevHIInfo, ecuMbHSSemMod, ecuHSSemMod, ecuMbSrcTime, ecuSrcTime, ecuMbHIInfoTime, ecuHIInfoTime)
@@ -367,6 +372,8 @@ emptyECU
       , _ecuASTType          = ASTType_Unknown
       , _ecuASTFileContent   = ASTFileContent_Unknown
       , _ecuASTFileUse       = ASTFileUse_Unknown
+      , _ecuAlreadyFlowIntoCRSI
+      						 = Map.empty
 %%[[50
       , ecuImportUsedModules = emptyImportUsedModules
       , ecuIsTopMod          = False
@@ -431,6 +438,15 @@ ecuIsOrphan = isJust . HI.hiiMbOrphan . ecuAnHIInfo
 %%][50
 ecuIsOrphan = const False
 %%]]
+%%]
+
+%%[8 export(ecuHasAlreadyFlowed)
+-- | Semantics for an AST already has flowed into global state
+ecuHasAlreadyFlowed :: ASTType -> ASTSemFlowStage -> EHCompileUnit -> Bool
+ecuHasAlreadyFlowed asttype flowstage ecu
+  = case Map.lookup asttype (ecu ^. ecuAlreadyFlowIntoCRSI) of
+      Just s -> Set.member flowstage s
+      _      -> False
 %%]
 
 %%[5050 export(ecuIsFromCoreSrc)

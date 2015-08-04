@@ -70,14 +70,14 @@ Folding over AST to compute semantics
 %%% Compile actions: computing semantics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen) export(cpFoldCore2Grin)
+%%[(8 codegen) export(cpFoldCore2Grin)
 cpFoldCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCore2Grin modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbCore   = _ecuMbCore ecu
                  core     = panicJust "cpFoldCore2Grin" mbCore
-                 coreInh  = crsiCoreInh crsi
+                 coreInh  = crsi ^. crsiCoreInh
                  coreSem  = Core2GrSem.wrap_CodeAGItf
                               (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
                               (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID

@@ -14,7 +14,7 @@ Abstraction for dealing with AST formats
 %%]
 
 -- general imports
-%%[8 import ({%{EH}EHC.Common}, {%{EH}EHC.CompileUnit}, {%{EH}EHC.CompileRun})
+%%[8 import ({%{EH}EHC.Common}, {%{EH}EHC.CompileUnit}, {%{EH}EHC.CompileRun.Base})
 %%]
 
 %%[8 import (Data.Typeable, GHC.Generics)

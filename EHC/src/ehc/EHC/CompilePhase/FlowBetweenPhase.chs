@@ -134,6 +134,7 @@ cpFlowHsSem1 modNm
 %%]]
          ;  when (isJust (_ecuMbHSSem ecu))
                  (do { cpUpdSI (\crsi -> crsi {_crsiHSInh = hsInh', _crsiEHInh = ehInh', _crsiOpts = opts'})
+                     ; cpUpdAlreadyFlowIntoCRSI modNm ASTType_HS ASTSemFlowStage_BetweenModule
                      ; cpUpdCU modNm $! ecuStoreHIInfo hii'
                      -- ; liftIO $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
                      })
@@ -150,7 +151,7 @@ cpFlowEHSem1 modNm
                  ehSem    = panicJust "cpFlowEHSem1.ehSem" $ _ecuMbEHSem ecu
                  ehInh    = crsi ^. crsiEHInh
 %%[[(8 codegen)
-                 coreInh  = crsiCoreInh crsi
+                 coreInh  = _crsiCoreInh crsi
 %%]]
 %%[[(50 hmtyinfer)
                  dg       = prepFlow $! EHSem.gathDataGam_Syn_AGItf    ehSem
@@ -223,13 +224,14 @@ cpFlowEHSem1 modNm
                  (do { cpUpdSI
                                (\crsi -> crsi
 %%[[(8 codegen)
-                                   { crsiCoreInh = coreInh' }
+                                   { _crsiCoreInh = coreInh' }
 %%][(50 codegen)
-                                   { crsiCoreInh = coreInh', _crsiEHInh = ehInh' }
+                                   { _crsiCoreInh = coreInh', _crsiEHInh = ehInh' }
 %%][50
                                    { _crsiEHInh = ehInh' }
 %%]]
                                )
+                     ; cpUpdAlreadyFlowIntoCRSI modNm ASTType_EH ASTSemFlowStage_BetweenModule
 %%[[50
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
                                      . ecuStoreHIUsedImpS usedImpS
@@ -242,6 +244,7 @@ cpFlowEHSem1 modNm
                      -- put back additional hidden exports
                      ; cpUpdHiddenExports modNm $ Seq.toList $ EHSem.gathHiddenExports_Syn_AGItf ehSem
 %%]]
+                     ; cpUpdAlreadyFlowIntoCRSI modNm ASTType_EH ASTSemFlowStage_PerModule
                      })
          }
 %%]
@@ -274,7 +277,7 @@ cpFlowHISem modNm
                             , HSSem.idGam_Inh_AGItf      = (HI.hiiIdDefOccGam  hiInfo) `gamUnionFlow` HSSem.idGam_Inh_AGItf     hsInh
                             }
 %%[[(50 codegen)
-                 coreInh  = crsiCoreInh crsi
+                 coreInh  = crsi ^. crsiCoreInh
                  coreInh' = coreInh
                               { Core2GrSem.lamMp_Inh_CodeAGItf   = (HI.hiiLamMp hiInfo) `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh
                               }
@@ -289,7 +292,7 @@ cpFlowHISem modNm
                  (do { cpUpdSI (\crsi -> crsi { _crsiEHInh = ehInh'
                                               , _crsiHSInh = {- tr "cpFlowHISem.crsiHSInh" (pp $ HSSem.idGam_Inh_AGItf hsInh') $ -} hsInh'
 %%[[(50 codegen)
-                                              , crsiCoreInh = coreInh'
+                                              , _crsiCoreInh = coreInh'
 %%]]
                                               , crsiOptim = optim'
                                               })
@@ -303,14 +306,14 @@ cpFlowCoreModSem :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowCoreModSem modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 coreInh  = crsiCoreInh crsi
+                 coreInh  = crsi ^. crsiCoreInh
                  mbCoreModSem = _ecuMbCoreSemMod ecu
          ;  when (isJust mbCoreModSem) $ do
               { let coreModSem = fromJust mbCoreModSem
                     coreInh' = coreInh
                       { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnionFlow` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreModSem
                       }
-              ; cpUpdSI (\crsi -> crsi { crsiCoreInh = coreInh' })
+              ; cpUpdSI (\crsi -> crsi { _crsiCoreInh = coreInh' })
               }
          }
 %%]
@@ -324,7 +327,7 @@ cpFlowCoreSemAfterFold modNm
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  coreSem  = panicJust "cpFlowCoreSemAfterFold.coreSem" $ _ecuMbCoreSem ecu
                  
-                 coreInh  = crsiCoreInh crsi
+                 coreInh  = crsi ^. crsiCoreInh
                  hii      = ecu ^. ecuHIInfo
                  am       = prepFlow $! Core2GrSem.gathLamMp_Syn_CodeAGItf coreSem
                  coreInh' = coreInh
@@ -334,7 +337,7 @@ cpFlowCoreSemAfterFold modNm
                               { HI.hiiLamMp         = am
                               }
          ;  when (isJust (_ecuMbCoreSem ecu))
-                 (do { cpUpdSI (\crsi -> crsi {crsiCoreInh = coreInh'})
+                 (do { cpUpdSI (\crsi -> crsi {_crsiCoreInh = coreInh'})
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
                                      )
                      })
@@ -374,11 +377,11 @@ cpFlowHILamMp :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowHILamMp modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-              coreInh  = crsiCoreInh crsi
+              coreInh  = crsi ^. crsiCoreInh 
               hii      = ecu ^. ecuHIInfo
 
          -- put back result: call info map (lambda arity, ...), overwriting previous entries
-       ; cpUpdSI (\crsi -> crsi {crsiCoreInh = coreInh {Core2GrSem.lamMp_Inh_CodeAGItf = HI.hiiLamMp hii `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh}})
+       ; cpUpdSI (\crsi -> crsi {_crsiCoreInh = coreInh {Core2GrSem.lamMp_Inh_CodeAGItf = HI.hiiLamMp hii `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh}})
        }
 %%]
 

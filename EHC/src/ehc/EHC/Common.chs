@@ -368,7 +368,7 @@ instance Hashable ASTFileReadAmount
 %%% AST semantics type: ASTSemType
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ASTSemType(..))
+%%[8888 export(ASTSemType(..))
 -- | An 'Enum' of all semantics we may want to extract from an AST
 data ASTSemType
   = -- | plain AG sem fold over HS
@@ -386,6 +386,24 @@ data ASTSemType
   deriving (Eq, Ord, Typeable, Generic, Show)
 
 instance Hashable ASTSemType
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% When is flowed into global state after semantics type: ASTSemFlowStage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ASTSemFlowStage(..))
+-- | An 'Enum' of the stage semantic results are flown into global state
+data ASTSemFlowStage
+  = -- | per module
+    ASTSemFlowStage_PerModule
+%%[[50
+  | -- | between subsequent module compilations
+    ASTSemFlowStage_BetweenModule	
+%%]]
+  deriving (Eq, Ord, Typeable, Generic, Show)
+
+instance Hashable ASTSemFlowStage
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -460,6 +478,39 @@ mkPrevFileSearchKeyWithNamePrev n p = mkPrevFileSearchKeyWithNameMbPrev n (Just 
 data FinalCompileHow
   = FinalCompile_Module
   | FinalCompile_Exec
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Get info for module analysis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50 export(GetMeta(..),allGetMeta)
+data GetMeta
+  = GetMeta_Src
+  | GetMeta_HI
+  | GetMeta_Core
+%%[[(50 corerun)
+  | GetMeta_CoreRun
+%%]]
+%%[[(50 grin)
+  | GetMeta_Grin
+%%]]
+  | GetMeta_Dir
+  deriving (Eq,Ord)
+
+allGetMeta
+  = [ GetMeta_Src
+    , GetMeta_HI
+    , GetMeta_Core
+%%[[(50 corerun)
+    , GetMeta_CoreRun
+%%]]
+%%[[(50 grin)
+    , GetMeta_Grin
+%%]]
+    , GetMeta_Dir
+    ]
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -83,7 +83,7 @@ cpTransformCore optimScope modNm
        
          -- transform
        ; let  mbCore     = _ecuMbCore ecu
-              coreInh    = crsiCoreInh crsi
+              coreInh    = crsi ^. crsiCoreInh
               trfcoreIn  = emptyTrfCore
                              { trfstMod             	= panicJust "cpTransformCore" mbCore
                              , trfstUniq            	= crsi ^. crsiNextUID
@@ -100,11 +100,11 @@ cpTransformCore optimScope modNm
 %%]]
 %%[[50
                                  , trfcoreExpNmOffMp    = crsiExpNmOffMpDbg "cpTransformCore" modNm crsi
-								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsi ^. crsiCoreInh
 %%]]
                                  }
                              }
-              trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsiCoreInh crsi) modNm trfcoreIn
+              trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsi ^. crsiCoreInh) modNm trfcoreIn
        
 %%[[(50 corein)
        -- ; liftIO $ putStrLn $ "cpTransformCore trfcoreNotYetTransformed: " ++ show (trfcoreNotYetTransformed $ trfstExtra trfcoreIn)
@@ -155,7 +155,7 @@ cpTransformTyCore modNm
                               , trftycoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 %%]]
 %%[[99
-                              , trftycoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+                              , trftycoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsi ^. crsiCoreInh
 %%]]
                               }
               trftycoreOut = trfTyCore opts modNm trftycoreIn

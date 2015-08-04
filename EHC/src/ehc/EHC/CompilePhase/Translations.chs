@@ -241,7 +241,7 @@ cpTranslateCore2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCore    = _ecuMbCore ecu
-              coreInh  = crsiCoreInh crsi
+              coreInh  = crsi ^. crsiCoreInh
        ; when (isJust mbCore)
               (cpUpdCU modNm $ ecuStoreJavaScript $ cmod2JavaScriptModule opts (Core2GrSem.dataGam_Inh_CodeAGItf coreInh) $ fromJust mbCore)
        }
@@ -273,7 +273,7 @@ cpTranslateGrin2Cmm modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbGrin    = _ecuMbGrin ecu
-              coreInh   = crsiCoreInh crsi
+              coreInh   = crsi ^. crsiCoreInh
 %%[[50
        ; (lamMp, allImpNmL, impNmFldMpMp, expNmFldMp) <- cpGenGrinGenInfo modNm
 %%]]
@@ -297,7 +297,7 @@ cpTranslateCmm2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCmm    = _ecuMbCmm ecu
-              coreInh   = crsiCoreInh crsi
+              coreInh   = crsi ^. crsiCoreInh
        ; when (isJust mbCmm) $ do
            let (jsmod,errs) =
                  cmmMod2JavaScript opts
@@ -373,7 +373,7 @@ cpTranslateByteCode modNm
                grinbcCmm = Cmm.Module_Mod modNm cmmMod Nothing Const.emptyConstSt
 %%]]
 %%][50
-               coreInh  = crsiCoreInh crsi
+               coreInh  = crsi ^. crsiCoreInh
                ( grinbcPP
 %%[[(50 cmm cmmbc)
                  ,grinbcCmm
