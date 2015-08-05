@@ -204,7 +204,7 @@ cpOutputCmmModules
         ASTFileContent
      -> (Int -> String -> String)
      -> String -> HsName
-     -> [(String,Cmm.Module)]
+     -> [(String,AST_Cmm)]
      -> EHCompilePhaseT m [FPath]
 cpOutputCmmModules _ mknmsuff suff modNm mods
   = cpOutputSomeModules' write mkOutputFPath mknmsuff suff modNm mods

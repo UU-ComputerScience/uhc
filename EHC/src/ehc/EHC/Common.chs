@@ -21,6 +21,9 @@ Used by all compiler driver code
 %%[8 import(GHC.Generics)
 %%]
 
+%%[8 import({%{EH}EHC.ASTPipeline}) export(module {%{EH}EHC.ASTPipeline})
+%%]
+
 %%[8 import({%{EH}Gam.Full}) export(module {%{EH}Gam.Full})
 %%]
 
@@ -231,88 +234,8 @@ ecuStateToKind s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ASTType & file variation
+%%% Overriding of FPath
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(ASTType(..))
--- | An 'Enum' of all types of ast we can deal with.
--- Order matters, ordering corresponds to 'can be generated from'
-data ASTType
-  = ASTType_HS
-  | ASTType_EH
-%%[[(8 core)
-  | ASTType_Core
-%%]]
-%%[[(8 corerun)
-  | ASTType_CoreRun
-%%]]
-%%[[(8 grin)
-  | ASTType_Grin
-%%]]
-%%[[(8 cmm)
-  | ASTType_Cmm
-%%]]
-%%[[(8 javascript)
-  | ASTType_JavaScript
-%%]]
-%%[[(8 codegen)
-  | ASTType_C
-  | ASTType_O
-%%]]
-%%[[50
-  | ASTType_HI
-%%]]
-  | ASTType_Unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
-
-instance Hashable ASTType
-%%]
-
-%%[8 export(ASTFileContent(..))
--- | File content variations of ast we can deal with (in principle)
-data ASTFileContent
-  = ASTFileContent_Text
-  | ASTFileContent_LitText
-  | ASTFileContent_Binary
-  | ASTFileContent_Unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
-
-instance Hashable ASTFileContent
-%%]
-
-%%[8 export(ASTHandlerKey)
--- | Combination of 'ASTType' and 'ASTFileContent' as key into map of handlers
-type ASTHandlerKey = (ASTType, ASTFileContent)
-%%]
-
-%%[8 export(ASTFileUse(..))
--- | File usage variations of ast
-data ASTFileUse
-  = ASTFileUse_Cache		-- ^ internal use cache on file
-  | ASTFileUse_Dump			-- ^ output: dumped, possibly usable as src later on
-  | ASTFileUse_Target		-- ^ output: as target of compilation
-  | ASTFileUse_Src			-- ^ input: src file
-  | ASTFileUse_SrcImport	-- ^ input: import stuff only from src file
-  | ASTFileUse_Unknown		-- ^ unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
-
-instance Hashable ASTFileUse
-%%]
-
-%%[8 export(ASTSuffixKey)
--- | Key for allowed suffixes, multiples allowed to cater for different suffixes
-type ASTSuffixKey = (ASTFileContent, ASTFileUse)
-%%]
-
-%%[8 export(ASTFileTiming(..))
--- | File timing variations of ast
-data ASTFileTiming
-  = ASTFileTiming_Prev		-- ^ previously generated
-  | ASTFileTiming_Current	-- ^ current one
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
-
-instance Hashable ASTFileTiming
-%%]
 
 %%[8 export(ASTFileNameOverride(..))
 -- | Overriding an automatically chosen name (based on module name)
@@ -341,6 +264,10 @@ data ASTFileSuffOverride
 instance Hashable ASTFileSuffOverride
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dealing with timestamp of file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8 export(ASTFileTimeHandleHow(..))
 -- | How to handle possibly previously timing info of file
 data ASTFileTimeHandleHow
@@ -350,60 +277,6 @@ data ASTFileTimeHandleHow
   deriving (Eq, Ord, Typeable, Generic, Show)
 
 instance Hashable ASTFileTimeHandleHow
-%%]
-
-%%[8888 export(ASTFileReadAmount(..))
--- | Read amount of info
-data ASTFileReadAmount
-  = ASTFileReadAmount_Plain		-- ^ fully as is
-%%[[50
-  | ASTFileReadAmount_Import	-- ^ only import info
-%%]]
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
-
-instance Hashable ASTFileReadAmount
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% AST semantics type: ASTSemType
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8888 export(ASTSemType(..))
--- | An 'Enum' of all semantics we may want to extract from an AST
-data ASTSemType
-  = -- | plain AG sem fold over HS
-    ASTSemType_HSPlainFold
-%%[[50
-  | -- | fold over HS required to extract import info, deal with pragmas, etc
-    ASTSemType_HSImportFold
-%%]]
-  | -- | only a particular AST (isolated from other AG attrs)
-    ASTSemType_IsolatedAST		
-      { astsemtypeIsolatedASTType	:: !ASTType
-      }
-  | -- | only a particular PP (isolated from other AG attrs)
-    ASTSemType_IsolatedPP		
-  deriving (Eq, Ord, Typeable, Generic, Show)
-
-instance Hashable ASTSemType
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% When is flowed into global state after semantics type: ASTSemFlowStage
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(ASTSemFlowStage(..))
--- | An 'Enum' of the stage semantic results are flown into global state
-data ASTSemFlowStage
-  = -- | per module
-    ASTSemFlowStage_PerModule
-%%[[50
-  | -- | between subsequent module compilations
-    ASTSemFlowStage_BetweenModule	
-%%]]
-  deriving (Eq, Ord, Typeable, Generic, Show)
-
-instance Hashable ASTSemFlowStage
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

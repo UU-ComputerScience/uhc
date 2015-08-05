@@ -254,26 +254,168 @@ bcall bfun = do
                  
                brefto bfun BRef_CRSI
 
+          CRSIWithCompileOrderP modNmFrom compileOrder astpipe -> do
+               -- let forAstTypes = 
+               case compileOrder of
+                   _ | length mutRecL > 0 -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MutRecModules mutRecL]
+                     | otherwise          -> forM_ compileOrder $ \[modNm] -> flow1 modNm
+                     where mutRecL = filter ((> 1) . length) compileOrder
+                           
+                           -- Flow module info into global state
+                           flow1 modNm = do
+                               -- From: cpFlowHsSem1
+                               updHS <- maybe2M
+                                   -- (allowFlow $ \p -> astpType p == ASTType_HS)
+                                   (allowFlow $ astpMbFromHSToEH True)
+                                   (bGetHsSemPMb modNm) (return id) $ \(hsSem) -> do
+                                 return $ \crsi ->
+                                   let hsInh  = crsi ^. crsiHSInh
+                                       ig     = HSSem.gathIdGam_Syn_AGItf hsSem
+                                       fg     = HSSem.gathFixityGam_Syn_AGItf hsSem
+                                   in  crsi
+                                         { -- From: cpFlowHsSem1
+                                           _crsiHSInh = hsInh
+                                              { HSSem.idGam_Inh_AGItf      = ig `gamUnion` HSSem.idGam_Inh_AGItf     hsInh
+                                              , HSSem.fixityGam_Inh_AGItf  = fg `gamUnion` HSSem.fixityGam_Inh_AGItf hsInh
+                                              }
+                                         }
+
+                               -- From: cpFlowEHSem1
+                               updEH <- maybe2M
+                                   -- (allowFlow $ \p -> astpType p == ASTType_EH)
+                                   (allowFlow $ astpMbFromEH True)
+                                   (\p -> bcall $ FoldEHPMb (mkPrevFileSearchKeyWithName modNm) p) (return id) $ \ehSem -> do
+                                 return $ \crsi ->
+                                   let opts   = crsi ^. crsiOpts
+                                       ehInh  = crsi ^. crsiEHInh
+                                       ehInh' = ehInh
+%%[[(50 hmtyinfer)
+                                         { EHSem.dataGam_Inh_AGItf    = EHSem.gathDataGam_Syn_AGItf    ehSem `gamUnion`  EHSem.dataGam_Inh_AGItf    ehInh
+                                         , EHSem.valGam_Inh_AGItf     = EHSem.gathValGam_Syn_AGItf     ehSem `gamUnion`  EHSem.valGam_Inh_AGItf     ehInh
+                                         , EHSem.tyGam_Inh_AGItf      = EHSem.gathTyGam_Syn_AGItf      ehSem `gamUnion`  EHSem.tyGam_Inh_AGItf      ehInh
+                                         , EHSem.tyKiGam_Inh_AGItf    = EHSem.gathTyKiGam_Syn_AGItf    ehSem `gamUnion`  EHSem.tyKiGam_Inh_AGItf    ehInh
+                                         , EHSem.polGam_Inh_AGItf     = EHSem.gathPolGam_Syn_AGItf     ehSem `gamUnion`  EHSem.polGam_Inh_AGItf     ehInh
+                                         , EHSem.kiGam_Inh_AGItf      = EHSem.gathKiGam_Syn_AGItf      ehSem `gamUnion`  EHSem.kiGam_Inh_AGItf      ehInh
+                                         , EHSem.clGam_Inh_AGItf      = EHSem.gathClGam_Syn_AGItf      ehSem `gamUnion`  EHSem.clGam_Inh_AGItf      ehInh
+                                         , EHSem.clDfGam_Inh_AGItf    = EHSem.gathClDfGam_Syn_AGItf    ehSem `gamUnion`  EHSem.clDfGam_Inh_AGItf    ehInh
+                                         , EHSem.chrStore_Inh_AGItf   = EHSem.gathChrStore_Syn_AGItf   ehSem `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
+                                         }
+%%]]
+                                   in  crsi -- From: cpFlowEHSem1
+                                         { _crsiEHInh = ehInh' }
+
+%%[[(50 corein)
+                               -- From: cpFlowCoreModSem
+                               updCoreSrc <- maybe2M
+                                   (allowFlow $ astpMbFromCoreSrc True)
+                                   (\p -> bcall $ FoldCoreModPMb (mkPrevFileSearchKeyWithName modNm) p) (return id) $ \(coreChkSem, _, _, _, _, _) -> do
+                                 return $ \crsi ->
+                                   let coreInh  = crsi ^. crsiCoreInh
+                                       coreInh' = coreInh
+                                         { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem
+                                         }
+                                   in  crsi -- From: cpFlowCoreModSem
+                                         { _crsiCoreInh = coreInh' }
+%%][50
+                               let updCoreSrc = id
+%%]]
+
+%%[[(50 core)
+                               -- From: cpFlowCoreSemAfterFold
+                               updCoreGrin <- maybe2M
+                                   (allowFlow $ astpMbFromCoreToGrin True)
+                                   (\p -> bcall $ FoldCore2GrinPMb (mkPrevFileSearchKeyWithName modNm) p) (return id) $ \core2GrinSem -> do
+                                 return $ \crsi ->
+                                   let am       = Core2GrSem.gathLamMp_Syn_CodeAGItf core2GrinSem
+                                       coreInh  = crsi ^. crsiCoreInh
+                                       coreInh' = coreInh
+                                                    { Core2GrSem.lamMp_Inh_CodeAGItf   = am `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh  -- assumption: old info can be overridden, otherwise merge should be done here
+                                                    }
+                                   in  crsi -- From: cpFlowCoreSemAfterFold
+                                         { _crsiCoreInh = coreInh' }
+%%][50
+                               let updCoreGrin = id
+%%]]
+            
+                               cpUpdSI $ updCoreSrc . updCoreGrin . updEH . updHS
+                       
+                             where allowFlow = bAllowFlowP modNm astpipe ASTSemFlowStage_BetweenModule
+                 
+               brefto bfun BRef_CRSI
+
           CRSIWithImps ((modNm,_),mbPrev) imps forAstTypes -> do
                impsmp <- bcall $ ImportsRecursiveWithImps mbPrev imps
                let compileOrder = scc [ (n, Set.toList i) | (n,i) <- Map.toList impsmp ]
                cpTr TraceOn_BuildSccImports $ [show modNm ++ " " ++ show imps] ++ [show compileOrder]
                bcall $ CRSIWithCompileOrder modNm compileOrder forAstTypes
+
+          CRSIWithImpsP ((modNm,_),mbPrev) imps astpipe -> do
+               impsmp <- bcall $ ImportsRecursiveWithImps mbPrev imps
+               let compileOrder = scc [ (n, Set.toList i) | (n,i) <- Map.toList impsmp ]
+               cpTr TraceOn_BuildSccImports $ [show modNm ++ " " ++ show imps] ++ [show compileOrder]
+               bcall $ CRSIWithCompileOrderP modNm compileOrder astpipe
 %%]]
 
           CRSIOfName modSearchKey forAstType -> do
+               bcall $ CRSIOfNameP modSearchKey $ mkASTPipeForASTTypes [minBound .. forAstType]
+
+          CRSIOfNameP modSearchKey@((modNmAsked,_),_) astpipe -> do
+               let forAstType  = astpType astpipe
+                   forAstTypes = astpTypes astpipe
+%%[[8
+               let modNm = modNmAsked
+%%][50
+               (modNm, imps) <- bcall $ ImportsOfName modSearchKey
+%%]]
+               let allowFlow = bAllowFlowP modNm astpipe ASTSemFlowStage_PerModule
 %%[[50
                ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
-               (modNm, imps) <- bcall $ ImportsOfName modSearchKey
-               let allowFlow = bAllowFlow modNm forAstTypes ASTSemFlowStage_PerModule
+               cpTrPP TraceOn_BuildPipe $ [pp "CRSIOfNameP ASTPipe", pp astpipe]
                
                -- first recursively take care of all imports
-               bcall $ CRSIWithImps (mkPrevFileSearchKeyWithNameMbPrev modNm (_ecuMbPrevSearchInfo ecu)) imps forAstTypes
+               bcall $ CRSIWithImpsP (mkPrevFileSearchKeyWithNameMbPrev modNm (_ecuMbPrevSearchInfo ecu)) imps astpipe
 %%]]
 %%[[50
+               -- flow HS semantics forward into global state for current module, for a next stage in the pipeline
+               -- From: cpFlowHsSem1
+               maybe2M -- (allowFlow $ \p -> astpType p == ASTType_HS)
+                       (allowFlow $ astpMbFromHSToEH True)
+                       (bGetHsSemPMb modNm) (return ()) $ \hsSem -> do
+                   cpUpdSI $ \crsi -> 
+                       let ehInh  = crsi ^. crsiEHInh
+                           ig     = HSSem.gathIdGam_Syn_AGItf hsSem
+                           ehInh' = ehInh
+                             { EHSem.idQualGam_Inh_AGItf  = idGam2QualGam ig `gamUnion` EHSem.idQualGam_Inh_AGItf ehInh
+                             }
+                       in  crsi
+                             { _crsiEHInh = ehInh'
+                             }
+               -- flow HS semantics forward into global state for current module, for a next stage in the pipeline
+               -- From: cpFlowHsSem1
+               maybe2M -- (allowFlow $ \p -> astpType p == ASTType_HS)
+                       (allowFlow $ astpMbFromHS True)
+                       (bGetHsSemPMb modNm) (return ()) $ \hsSem -> do
+                   cpUpdSI $ \crsi -> 
+                       let ehInh  = crsi ^. crsiEHInh
+                           opts   = crsi ^. crsiOpts
+%%[[50
+                           mk = idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh)
+%%][99
+                           mk = if ehcOptUseAssumePrelude opts
+                                then \_ n -> n
+                                else \k n -> idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh) k (hsnQualified n)
+%%]]
+                       in  crsi
+                             { _crsiOpts = opts
+                                  { ehcOptBuiltinNames = mkEHBuiltinNames mk
+                                  }
+                             }
+
                -- flow EH semantics forward into global state for current module, for a next stage in the pipeline
                -- From: cpFlowEHSem1
-               guardMaybeM (allowFlow ASTType_EH) (bcall $ FoldEHMb $ mkPrevFileSearchKeyWithName modNm) (return ()) $ \ehSem -> do
+               maybe2M -- (allowFlow $ \p -> astpType p == ASTType_EH)
+                       (allowFlow $ astpMbFromEH True)
+                       (\p -> bcall $ FoldEHPMb (mkPrevFileSearchKeyWithName modNm) p) (return ()) $ \ehSem -> do
                    crsi <- bcall CRSI
                    let mmi      = panicJust "cpFlowEHSem1.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                        mentrelFilterMp
@@ -295,9 +437,33 @@ bcall bfun = do
                    cpUpdHiddenExports modNm $ Seq.toList $ EHSem.gathHiddenExports_Syn_AGItf ehSem
 %%]]
 %%]]
-               brefto bfun BRef_CRSI
 
-             where forAstTypes = Set.fromList [minBound .. forAstType]
+%%[[(8 core)
+               -- flow EH semantics specific for Core forward into global state for current module, for a next stage in the pipeline
+               -- From: cpFlowEHSem1
+               maybe2M -- (allowFlow $ \p -> astpType p == ASTType_EH)
+                       (allowFlow $ astpMbFromEHToCore True)
+                       (\p -> bcall $ FoldEHPMb (mkPrevFileSearchKeyWithName modNm) p) (return ()) $ \ehSem -> do
+                   cpUpdSI $ \crsi -> 
+                       let ehInh  = crsi ^. crsiEHInh
+                           coreInh= crsi ^. crsiCoreInh
+                           coreInh' = coreInh
+%%[[8
+                             { Core2GrSem.dataGam_Inh_CodeAGItf = EHSem.gathDataGam_Syn_AGItf ehSem
+                             , Core2GrSem.lamMp_Inh_CodeAGItf   = EHSem.gathLamMp_Syn_AGItf   ehSem
+%%][50
+                             { Core2GrSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf     ehInh
+                             , Core2GrSem.lamMp_Inh_CodeAGItf   = lm `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh      -- assumption: no duplicates, otherwise merging as done later has to be done
+%%]]
+                             }
+%%[[50
+                           lm       = EHSem.gathLamMp_Syn_AGItf      ehSem
+%%]]
+                       in  crsi -- From: cpFlowEHSem1
+                             { _crsiCoreInh = coreInh' }
+%%]]
+
+               brefto bfun BRef_CRSI
 
 %%[[99
           ExposedPackages -> brefto bfun BRef_ExposedPackages
@@ -387,13 +553,13 @@ bcall bfun = do
           FPathForAST modSearchKey@((modNmAsked,overr),_) asttype skey tkey -> do
                res@(fp, suffoverr, ecu) <- case overr of
                  ASTFileNameOverride_FPath fp -> (bcall $ EcuOf modNmAsked) >>= \ecu -> return (fp, ASTFileSuffOverride_AsIs, ecu)
-                 _	                          -> (bcall $ EcuOfPrevNameAndPath modSearchKey) >>= \ecu -> return (ecuSrcFilePath ecu, ASTFileSuffOverride_Suff skey, ecu)
+                 _                            -> (bcall $ EcuOfPrevNameAndPath modSearchKey) >>= \ecu -> return (ecuSrcFilePath ecu, ASTFileSuffOverride_Suff skey, ecu)
                breturn res
       
           ASTFromFile modSearchKey@((modNm,_),_) chkTimeStamp asttype skey tkey -> do
                maybeM (bASTFromFileMb modSearchKey chkTimeStamp asttype skey tkey) (undefFor modNm) $ \(res,_) -> breturn res
 
-          ASTRefFromFile modSearchKey@((modNmAsked,overr),_) (AlwaysEq chkTimeStamp) asttype skey@(astfcont,_) tkey -> do
+          ASTRefFromFileMb modSearchKey@((modNmAsked,overr),_) (AlwaysEq chkTimeStamp) asttype skey@(astfcont,_) tkey -> do
                (fp, suffoverr, ecu) <- bcall $ FPathForAST modSearchKey asttype skey tkey
                  
                let modNm = ecuModNm ecu
@@ -478,6 +644,9 @@ bcall bfun = do
           AST modSearchKey@((modNm,_),_) asttypeAsked -> do
                maybeM (bcall $ ASTMb modSearchKey asttypeAsked) (undefFor modNm) $ \(res,_) -> breturn res
 
+          ASTP modSearchKey@((modNm,_),_) astpipe -> do
+               maybeM (bcall $ ASTPMb modSearchKey astpipe) (undefFor modNm) $ \(res,_,_) -> breturn res
+
           ASTMb modSearchKey@((modNmAsked,_),_) asttypeAsked -> do
                -- the source file available to produce the asked AST, not necessarily used
                ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
@@ -508,14 +677,14 @@ bcall bfun = do
                    let hii0 = HI.emptyHIInfo
                    hii1 <- maybeM (bGetHsSemMb modNm) (return hii0) $ \hsSem -> return $ hii0
                          {
-						   -- cpFlowHsSem1
-						   HI.hiiFixityGam            = HSSem.gathFixityGam_Syn_AGItf hsSem
-                         , HI.hiiHIDeclImpModS        = ecuHIDeclImpNmS ecu						-- TBD: sort out, should not be from hi
+                           -- cpFlowHsSem1
+                           HI.hiiFixityGam            = HSSem.gathFixityGam_Syn_AGItf hsSem
+                         , HI.hiiHIDeclImpModS        = ecuHIDeclImpNmS ecu                     -- TBD: sort out, should not be from hi
                          }
                    hii2 <- maybeM (bcall $ FoldEHMb (mkPrevFileSearchKeyWithName modNm)) (return hii1) $ \ehSem -> return $ hii1
 %%[[(50 hmtyinfer)
                          {
-						   -- cpFlowEHSem1
+                           -- cpFlowEHSem1
                            HI.hiiDataGam       = EHSem.gathDataGam_Syn_AGItf    ehSem
                          , HI.hiiValGam        = EHSem.gathValGam_Syn_AGItf     ehSem
                          , HI.hiiTyGam         = EHSem.gathTyGam_Syn_AGItf      ehSem
@@ -528,7 +697,7 @@ bcall bfun = do
 %%[[(50 codegen hmtyinfer)
                          , HI.hiiMbOrphan      = EHSem.mbOrphan_Syn_AGItf ehSem
 %%]]
-                         -- , HI.hiiHIUsedImpModS = usedImpS		-- TBD: sort out
+                         -- , HI.hiiHIUsedImpModS = usedImpS        -- TBD: sort out
                          }
 %%]]
                    retast hii2
@@ -559,6 +728,98 @@ bcall bfun = do
 %%]]
 
                          _ -> dflt
+
+             where       
+               dflt = return Nothing
+
+          ASTPMb modSearchKey@((modNmAsked,_),_) astpipe -> do
+               let asttypeAsked = astpType astpipe
+               -- the source file available to produce the asked AST, not necessarily used
+               ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
+
+%%[[8
+               let modNm = modNmAsked
+%%][50
+               (modNm, _, _) <- bcall $ ModnameAndImports modSearchKey (_ecuASTType ecu)
+%%]]
+               -- (mbRes, mbset) <- bderef'' refAsked
+
+               let -- set and return ast
+                   retast :: Typeable xxx => ASTPipe -> xxx -> EHCompilePhaseT m res
+                   retast astpipe ast = case cast ast of
+                     Just ast -> do
+                        (_, mbset) <- bderef'' ref
+                        case mbset of
+                          Just set -> set ast >> breturn (Just (ast, ref, astpipe))
+                          _        -> breturn Nothing
+                       where ref = BRef_AST modSearchKey asttypeAsked
+                     _ -> breturn Nothing
+
+               opts <- bcall $ EHCOptsOf modNm
+               
+               case astpipe of
+%%[[50
+                 ASTPipe_Derived ASTType_HI _ -> do
+                     let hii0 = HI.emptyHIInfo
+                     hii1 <- maybeM (bGetHsSemMb modNm) (return hii0) $ \hsSem -> return $ hii0
+                           {
+                           -- cpFlowHsSem1
+                           HI.hiiFixityGam            = HSSem.gathFixityGam_Syn_AGItf hsSem
+                           , HI.hiiHIDeclImpModS        = ecuHIDeclImpNmS ecu                       -- TBD: sort out, should not be from hi
+                           }
+                     hii2 <- maybeM (bcall $ FoldEHMb (mkPrevFileSearchKeyWithName modNm)) (return hii1) $ \ehSem -> return $ hii1
+%%[[(50 hmtyinfer)  
+                           {
+                           -- cpFlowEHSem1
+                             HI.hiiDataGam       = EHSem.gathDataGam_Syn_AGItf    ehSem
+                           , HI.hiiValGam        = EHSem.gathValGam_Syn_AGItf     ehSem
+                           , HI.hiiTyGam         = EHSem.gathTyGam_Syn_AGItf      ehSem
+                           , HI.hiiTyKiGam       = EHSem.gathTyKiGam_Syn_AGItf    ehSem
+                           , HI.hiiPolGam        = EHSem.gathPolGam_Syn_AGItf     ehSem
+                           , HI.hiiClGam         = EHSem.gathClGam_Syn_AGItf      ehSem
+                           , HI.hiiClDfGam       = EHSem.gathClDfGam_Syn_AGItf    ehSem
+                           , HI.hiiCHRStore      = EHSem.gathChrStore_Syn_AGItf   ehSem
+                           -- , HI.hiiLamMp         = lm
+%%[[(50 codegen hmtyinfer)
+                           , HI.hiiMbOrphan      = EHSem.mbOrphan_Syn_AGItf ehSem
+%%]]  
+                           -- , HI.hiiHIUsedImpModS = usedImpS      -- TBD: sort out
+                           }
+%%]]
+%%[[(50 core grin)
+                     hii3 <- maybeM (bcall $ FoldCore2GrinMb (mkPrevFileSearchKeyWithName modNm)) (return hii2) $ \coreSem -> return $ hii2
+                           { -- cpFlowCoreSemAfterFold
+                             HI.hiiLamMp         = Core2GrSem.gathLamMp_Syn_CodeAGItf coreSem
+                           }
+%%][50  
+                     let hii3 = hii2
+%%]]  
+                     retast astpipe hii2
+%%]]
+                 ASTPipe_Src asttypeAsked
+                   | asttypeAsked == _ecuASTType ecu -> do
+                     fmap (fmap $ \(a,r) -> (a,r,astpipe)) $
+                       bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
+
+                 ASTPipe_Derived ASTType_EH _ -> do
+                     -- From: cpTranslateHs2EH
+                     maybeM' (bGetHsSemPMb modNm astpipe)
+                             (retast astpipe . HSSem.eh_Syn_AGItf) dflt
+
+%%[[(8 core)
+                 ASTPipe_Derived ASTType_Core _ -> do
+                     -- From: cpTranslateEH2Core
+                     maybeM' (bcall $ FoldEHPMb (mkPrevFileSearchKeyWithName modNm) astpipe)
+                             (retast astpipe . cmodTrfElimNonCodegenConstructs opts . EHSem.cmodule_Syn_AGItf) dflt
+%%]]
+%%[[(8 core grin)
+                 ASTPipe_Derived ASTType_Grin _ -> do
+                     -- From: cpTranslateCore2Grin
+                     maybeM' (bcall $ FoldCore2GrinPMb (mkPrevFileSearchKeyWithName modNm) astpipe)
+                             (retast astpipe . Core2GrSem.grMod_Syn_CodeAGItf) dflt
+%%]]
+
+                 _ -> dflt
 
              where       
                dflt = return Nothing
@@ -683,9 +944,9 @@ bcall bfun = do
 %%][99
                opts <- bcall $ EHCOptsOf modNm
                pkgKeyDirL <- bcall ExposedPackages
-               let doCPP        		= ehcOptCPP opts
+               let doCPP                = ehcOptCPP opts
                    mkMbPkgKeyDirL doCPP = if doCPP then Just pkgKeyDirL else Nothing
-                   mbPkgKeyDirL 		= mkMbPkgKeyDirL doCPP
+                   mbPkgKeyDirL         = mkMbPkgKeyDirL doCPP
 %%]]
                cpStepUID
                
@@ -700,8 +961,8 @@ bcall bfun = do
 %%][99
                let opts2 = maybe opts id mbOpts
                resFold2@( hsSemMod, _, _, _ ) <-
-                 if (  not (ehcOptCPP opts2)				-- reinvoke if CPP has not been invoked before
-                    || ehcOptCmdLineOptsDoneViaPragma opts2	-- or options have been set via pragma
+                 if (  not (ehcOptCPP opts2)                -- reinvoke if CPP has not been invoked before
+                    || ehcOptCmdLineOptsDoneViaPragma opts2 -- or options have been set via pragma
                     )
                     -- check whether the pragma has a cmdline option like effect
                     && (not $ null $ filter pragmaInvolvesCmdLine $ Set.toList pragmas)
@@ -728,7 +989,7 @@ bcall bfun = do
                                          HI.hiiExps hiInfo)
                                         (HI.hiiHiddenExps hiInfo)
                -- when hasMain (crSetAndCheckMain modNm)
-               cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})		-- this should be made explicit
+               cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})       -- this should be made explicit
                cpUpdCU modNm ( ecuStoreHIDeclImpS (HI.hiiHIDeclImpModS hiInfo)
                              . ecuStoreHIUsedImpS (HI.hiiHIUsedImpModS hiInfo)
                              . ecuSetHasMain hasMain
@@ -778,7 +1039,8 @@ bcall bfun = do
   
 %%]]
 
-          FoldHs modSearchKey@((modNm,_),_) -> do
+          FoldHs modSearchKey@((modNm,_),_) astpipe -> do
+               -- maybeM (bcall $ FoldHsPMb modSearchKey astpipe) (undefFor modNm) breturn
                maybeM (bcall $ FoldHsMb modSearchKey) (undefFor modNm) breturn
                
           FoldHsMb modSearchKey@((modNm,_),_) -> do
@@ -787,6 +1049,69 @@ bcall bfun = do
                ecu      <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts     <- bcall $ EHCOptsOf modNm
                crsi     <- bcall $ CRSIOfName modSearchKey ASTType_HS
+%%[[50
+               isTopMod <- bcall $ IsTopMod modNm
+%%]]
+               let  inh    = crsi ^. crsiHSInh
+                    hsSem  = HSSem.wrap_AGItf (HSSem.sem_AGItf hs)
+                                              (inh { HSSem.opts_Inh_AGItf             = opts
+                                                   , HSSem.gUniq_Inh_AGItf            = crsi ^. crsiHereUID
+%%[[50
+                                                   , HSSem.moduleNm_Inh_AGItf         = modNm
+                                                   , HSSem.isTopMod_Inh_AGItf         = isTopMod -- ecuIsTopMod ecu
+                                                   , HSSem.modInScope_Inh_AGItf       = inscps
+                                                   , HSSem.modEntToOrig_Inh_AGItf     = exps
+                                                   , HSSem.topInstanceNmL_Inh_AGItf   = modInstNmL (ecuMod ecu)
+%%]]
+                                                   })
+%%[[50
+                           where mmi    = panicJust "FoldHs.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
+                                 inscps = Rel.toDomMap --- $ (\v -> tr "XX mmiInscps mmi" (pp v ) v)
+                                                       $ mmiInscps 
+                                                       --- $ (\v -> tr "XX mmi" (pp v ) v)
+                                                       $ mmi
+                                 exps   = Rel.toRngMap $ Rel.restrictRng (\o -> let mq = hsnQualifier (ioccNm o) in isJust mq && fromJust mq /= modNm)
+                                                       $ Rel.mapRng mentIdOcc $ mmiExps mmi
+%%]]
+%%[[50
+                    hasMain= HSSem.mainValExists_Syn_AGItf hsSem
+%%]]
+               cpSetLimitErrsWhen 5 "Dependency/name analysis" $ Seq.toList $ HSSem.errSq_Syn_AGItf hsSem
+               cpUpdCU modNm ( ecuStoreHSSem hsSem
+%%[[50
+                             -- TBD: should move elsewhere
+                             . ecuStoreHIDeclImpS ( -- (\v -> tr "YY" (pp $ Set.toList v) v) $
+                                                   ecuSrcDeclImpNmS ecu)
+                             -- . ecuSetHasMain hasMain
+%%]]
+                             )
+               when (ehcOptEmitHS opts)
+                    (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "hs2") (HSSem.pp_Syn_AGItf hsSem) 1000)
+               when (ehcOptShowHS opts)
+                    (liftIO $ putWidthPPLn 120 (HSSem.pp_Syn_AGItf hsSem))
+%%[[50
+               when (ehcOptVerbosity opts >= VerboseDebug)
+                    (liftIO $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
+               -- when hasMain (crSetAndCheckMain modNm)
+%%]]
+
+               breturn $ Just
+                 ( hsSem
+%%[[50
+                 -- , ecuSrcDeclImpNmS ecu
+                 , hasMain
+%%]]
+                 )
+               
+          FoldHsPMb modSearchKey@((modNm,_),_) astpipe -> do
+               cpTrPP TraceOn_BuildFold $ ["FoldHsPMb" >#< modNm, pp astpipe]
+               -- maybeM (bcall $ ASTPMb modSearchKey astpipe) (return Nothing) $ \(hs, _, astpipe) -> do
+               maybe2M (return $ astpMbFromHSToEH False astpipe)
+                       (\(p,_) -> bcall $ ASTPMb modSearchKey p) (return Nothing) $ \(hs, _, _) -> do
+               cpTr TraceOn_BuildFold $ ["FoldHsPMb ok"]
+               ecu      <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               opts     <- bcall $ EHCOptsOf modNm
+               crsi     <- bcall $ CRSIOfNameP modSearchKey astpipe
 %%[[50
                isTopMod <- bcall $ IsTopMod modNm
 %%]]
@@ -850,6 +1175,61 @@ bcall bfun = do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts <- bcall $ EHCOptsOf modNm
                crsi <- bcall $ CRSIOfName modSearchKey ASTType_EH
+%%[[(50 codegen)
+               mieimpl <- bcall $ ImportExportImpl modSearchKey (ehcOptOptimizationScope opts)
+%%]]
+               let  mbEH   = _ecuMbEH ecu
+                    ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf eh)
+                                              ((crsi ^. crsiEHInh)
+                                                     { EHSem.moduleNm_Inh_AGItf                = ecuModNm ecu
+                                                     , EHSem.gUniq_Inh_AGItf                   = crsi ^. crsiHereUID
+                                                     , EHSem.opts_Inh_AGItf                    = opts
+%%[[(50 codegen)
+                                                     , EHSem.importUsedModules_Inh_AGItf       = ecuImportUsedModules ecu
+                                                     , EHSem.moduleImportExportImpl_Inh_AGItf  = mieimpl
+%%]]
+%%[[50
+                                                     , EHSem.isMainMod_Inh_AGItf               = ecuIsMainMod ecu
+%%]]
+                                                     })
+%%[[(8 hmtyinfer)
+                    about  = "EH analyses: Type checking"
+%%][8
+                    about  = "EH analyses"
+%%]]
+                    errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
+                    
+               cpSetLimitErrsWhen 5 about errs
+               cpUpdCU modNm $! ecuStoreEHSem $! ehSem
+               when (ehcOptEmitEH opts)
+                    (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
+               when (ehcOptShowEH opts)
+                    (liftIO $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
+%%[[99
+               isTopMod <- bcall $ IsTopMod modNm
+%%]]
+%%[[8
+               when (ehcOptShowAst opts)
+                    (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+%%][99
+               when (isTopMod && ehcOptShowAst opts)
+                    (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+%%][100
+%%]]
+%%[[(99 hmtyinfer tyderivtree)
+               when (isTopMod && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
+                    (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)
+%%][100
+%%]]
+               breturn $ Just ehSem
+
+          FoldEHPMb modSearchKey@((modNm,_),_) astpipe -> do
+               -- maybeM (bcall $ ASTPMb modSearchKey astpipe) (return Nothing) $ \(eh, _, astpipe) -> do
+               maybe2M (return $ astpMbFromEH False astpipe)
+                       (\(p,_) -> bcall $ ASTPMb modSearchKey p) (return Nothing) $ \(eh, _, _) -> do
+               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               opts <- bcall $ EHCOptsOf modNm
+               crsi <- bcall $ CRSIOfNameP modSearchKey astpipe
 %%[[(50 codegen)
                mieimpl <- bcall $ ImportExportImpl modSearchKey (ehcOptOptimizationScope opts)
 %%]]
@@ -970,6 +1350,37 @@ bcall bfun = do
                  , newPrev
                  )
   
+          FoldCoreModPMb modSearchKey@((modNm,_),_) astpipe -> do
+               maybe2M (return $ astpMbFromCoreSrc False astpipe)
+                       (\(p,_) -> bcall $ ASTPMb modSearchKey p) (return Nothing) $ \(core, _, _) -> do
+               -- ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               -- core <- bcall $ ASTFromFile modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_Core (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+               opts <- bcall $ EHCOptsOf modNm
+               let inh      = Core2ChkSem.Inh_CodeAGItf
+                                  { Core2ChkSem.opts_Inh_CodeAGItf = opts
+                                  , Core2ChkSem.moduleNm_Inh_CodeAGItf = modNm
+                                  -- , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh
+                                  }
+                   coreSem  = Core2ChkSem.cmodCheck' inh core
+                   hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
+                   modNm'   = Core2ChkSem.realModuleNm_Syn_CodeAGItf coreSem
+                   impNmS   = Set.fromList $ Core2ChkSem.impModNmL_Syn_CodeAGItf coreSem
+                   mod      = Core2ChkSem.mod_Syn_CodeAGItf coreSem
+               (modNmNew, newPrev) <- newModNm modNm modNm' $
+                 ( ecuStoreCoreSemMod coreSem
+                 . ecuSetHasMain hasMain
+                 . ecuStoreMod mod
+                 . ecuStoreSrcDeclImpS impNmS
+                 )
+               breturn $ Just
+                 ( coreSem
+                 , modNmNew
+                 , impNmS
+                 , mod
+                 , hasMain
+                 , newPrev
+                 )
+  
 %%]]
 
 %%[[(8 core)
@@ -993,6 +1404,24 @@ bcall bfun = do
                                           })
                cpUpdCU modNm $ ecuStoreCoreSem coreSem
                breturn $ Just coreSem
+
+          FoldCore2GrinPMb modSearchKey@((modNm,_),_) astpipe -> do
+               maybe2M (return $ astpMbFromCoreToGrin False astpipe)
+                       (\(p,_) -> bcall $ ASTPMb modSearchKey p) (return Nothing) $ \(core, _, _) -> do
+               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               opts <- bcall $ EHCOptsOf modNm
+               crsi <- bcall $ CRSIOfNameP modSearchKey astpipe
+               let  coreInh  = _crsiCoreInh crsi
+                    coreSem  = Core2GrSem.wrap_CodeAGItf
+                                 (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
+                                 (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID
+                                          , Core2GrSem.opts_Inh_CodeAGItf                          = opts
+%%[[50
+                                          , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
+%%]]
+                                          })
+               cpUpdCU modNm $ ecuStoreCoreSem coreSem
+               breturn $ Just coreSem
 %%]]
 
 %%[[(8 core corerun)
@@ -1005,6 +1434,30 @@ bcall bfun = do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts <- bcall $ EHCOptsOf modNm
                crsi <- bcall $ CRSIOfName modSearchKey ASTType_Core
+               let  
+%%[[8
+                    hasMain                = True
+%%][50
+                    hasMain                = ecuHasMain ecu
+%%]]
+                    core2RunInh            = crsiCore2RunInh crsi
+                    sem                    = Core2CoreRunSem.cmod2CoreRun'' opts hasMain 0 core2RunInh core
+                    -- core2RunInh'           = nm2ref `CoreRun.nm2refUnion` core2RunInh
+               -- between module flow part, TBD: corerun, nmref part
+               -- cpUpdSI (\crsi -> crsi {crsiCore2RunInh = core2RunInh'})
+               -- per module part
+               cpUpdCU modNm ( ecuStoreCore2CoreRunSem sem
+                             -- . ecuStoreCoreRun corerun
+                             )
+               breturn $ Just sem
+               
+          FoldCore2CoreRunPMb modSearchKey@((modNm,_),_) astpipe -> do
+               -- maybeM (bcall $ ASTPMb modSearchKey astpipe) (return Nothing) $ \(core, _, astpipe) -> do
+               maybe2M (return $ astpMbFromCoreToCoreRun False astpipe)
+                       (\(p,_) -> bcall $ ASTPMb modSearchKey p) (return Nothing) $ \(core, _, _) -> do
+               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               opts <- bcall $ EHCOptsOf modNm
+               crsi <- bcall $ CRSIOfNameP modSearchKey astpipe
                let  
 %%[[8
                     hasMain                = True
@@ -1149,11 +1602,11 @@ bcall bfun = do
 bASTFromFileMb
   :: forall res m .
      (Typeable res, EHCCompileRunner m)
-  => PrevFileSearchKey				--- ^ module name and possibly known path
-     -> (AlwaysEq ASTFileTimeHandleHow)	--- ^ how to deal with timestamp
-     -> ASTType							--- ^ content type
-     -> ASTSuffixKey						--- ^ suffix and content variation
-     -> ASTFileTiming					--- ^ timing (i.e. previous or current)
+  => PrevFileSearchKey              --- ^ module name and possibly known path
+     -> (AlwaysEq ASTFileTimeHandleHow) --- ^ how to deal with timestamp
+     -> ASTType                         --- ^ content type
+     -> ASTSuffixKey                        --- ^ suffix and content variation
+     -> ASTFileTiming                   --- ^ timing (i.e. previous or current)
      -> EHCompilePhaseT m (Maybe (res, BRef res))
 bASTFromFileMb modSearchKey chkTimeStamp asttype skey tkey = do
 %%[[50
@@ -1162,8 +1615,8 @@ bASTFromFileMb modSearchKey chkTimeStamp asttype skey tkey = do
       then do
 %%]]
         -- TBD: faulty...
-        -- (ref :: BRef res) <- bcall $ ASTRefFromFile modSearchKey chkTimeStamp asttype skey tkey
-        mbref <- bcall $ ASTRefFromFile modSearchKey chkTimeStamp asttype skey tkey
+        -- (ref :: BRef res) <- bcall $ ASTRefFromFileMb modSearchKey chkTimeStamp asttype skey tkey
+        mbref <- bcall $ ASTRefFromFileMb modSearchKey chkTimeStamp asttype skey tkey
         case mbref of
           Just ref -> fmap (fmap $ \ast -> (ast, ref)) $ bderef' ref
           _ -> return Nothing
@@ -1179,9 +1632,28 @@ bGetHsSemMb
   => HsName
   -> EHCompilePhaseT m
        ( Maybe
-         ( HSSem.Syn_AGItf				-- all semantics
+         ( AST_HS_Sem_Check             -- all semantics
        ) )
 bGetHsSemMb modNm = fmap (fmap extr) $ bcall $ FoldHsMb (mkPrevFileSearchKeyWithName modNm)
+     where
+%%[[8
+       extr hsSem = hsSem
+%%][50
+       extr (hsSem, _) = hsSem
+%%]]
+%%]
+
+%%[8
+-- | Get possible Hs semantics
+bGetHsSemPMb
+  :: EHCCompileRunner m
+  => HsName
+  -> ASTPipe
+  -> EHCompilePhaseT m
+       ( Maybe
+         ( AST_HS_Sem_Check             -- all semantics
+       ) )
+bGetHsSemPMb modNm astpipe = fmap (fmap extr) $ bcall $ FoldHsPMb (mkPrevFileSearchKeyWithName modNm) astpipe
      where
 %%[[8
        extr hsSem = hsSem
@@ -1195,10 +1667,25 @@ bGetHsSemMb modNm = fmap (fmap extr) $ bcall $ FoldHsMb (mkPrevFileSearchKeyWith
 bAllowFlow :: EHCCompileRunner m => HsName -> Set.Set ASTType -> ASTSemFlowStage -> ASTType -> EHCompilePhaseT m Bool
 bAllowFlow modNm forAstTypes flowstage asttype = do
    ecu <- bcall (EcuOf modNm)
-   let nyf = ecuHasAlreadyFlowed asttype flowstage ecu
+   let nyf = not $ ecuHasAlreadyFlowed asttype flowstage ecu
        res = nyf && asttype `Set.member` forAstTypes
    when res $ cpUpdAlreadyFlowIntoCRSI modNm asttype flowstage
    return res
+
+-- | Check whether a particular flow of semantics is allowed, and mark it to have occurred
+bAllowFlowP :: EHCCompileRunner m => HsName -> ASTPipe -> ASTSemFlowStage -> (ASTPipe -> Maybe (ASTPipe,ASTAlreadyFlowIntoCRSIFromToInfo)) -> EHCompilePhaseT m (Maybe ASTPipe)
+bAllowFlowP modNm astpipe flowstage astpred = do
+   ecu <- bcall (EcuOf modNm)
+   let fnd@(~(Just (astpipeFnd,flowFnd)))
+               = {- astpFind -} astpred astpipe
+       asttype = astpType astpipeFnd
+       key     = (flowstage, Just flowFnd)
+       nyf     = not $ ecuHasAlreadyFlowedWith asttype key ecu
+   if isJust fnd && nyf
+     then do
+       cpUpdAlreadyFlowIntoCRSIWith modNm asttype key
+       return $ Just astpipeFnd
+     else return Nothing
 %%]
 
 %%[8
@@ -1257,5 +1744,26 @@ bderef bref = do
     fmap (panicJust $ "BuildFunction.Run.deref " ++ show bref) $ bderef' bref
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ASTPipe predicates/guards
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8
+astpMbFromHSToEH top p = case p of {ASTPipe_Derived ASTType_EH p' | astpType p' == ASTType_HS -> Just (if' top p p', (Just ASTType_EH, ASTType_HS)); _ -> Nothing}
+astpMbFromEHToCore top p = case p of {ASTPipe_Derived ASTType_Core p' | astpType p' == ASTType_EH -> Just (if' top p p', (Just ASTType_Core, ASTType_EH)); _ -> Nothing}
+astpMbFromHS top p = case p of {ASTPipe_Derived _ p' | astpType p' == ASTType_HS -> Just (if' top p p', (Nothing, ASTType_HS)); _ -> Nothing}
+astpMbFromEH top p = case p of {ASTPipe_Derived _ p' | astpType p' == ASTType_EH -> Just (if' top p p', (Nothing, ASTType_EH)); _ -> Nothing}
+%%]
+
+%%[(8 core grin)
+astpMbFromCoreToGrin top p = case p of {ASTPipe_Derived ASTType_Grin p' | astpType p' == ASTType_Core -> Just (if' top p p', (Just ASTType_Grin, ASTType_Core)); _ -> Nothing}
+%%]
+
+%%[(8 core corein grin)
+astpMbFromCoreSrc top p = case p of {ASTPipe_Derived _ p'@(ASTPipe_Src ASTType_Core) -> Just (if' top p p', (Nothing, ASTType_Core)); _ -> Nothing}
+%%]
+
+%%[(8 core corerun)
+astpMbFromCoreToCoreRun top p = case p of {ASTPipe_Derived ASTType_CoreRun p' | astpType p' == ASTType_Core -> Just (if' top p p', (Just ASTType_CoreRun, ASTType_Core)); _ -> Nothing}
+%%]
 

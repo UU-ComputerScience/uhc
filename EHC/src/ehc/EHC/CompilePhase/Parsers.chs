@@ -263,7 +263,7 @@ cpDecodeCoreRun suff = cpDecode suff ecuStoreCore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 export(cpGetPrevHI)
-cpGetPrevHI :: EHCCompileRunner m => HsName -> EHCompilePhaseT m HI.HIInfo
+cpGetPrevHI :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_HI
 cpGetPrevHI modNm
   = do { cpMsg modNm VerboseDebug "cpGetPrevHI"
 {-
@@ -280,7 +280,7 @@ cpGetPrevHI modNm
 %%]
 
 %%[(50 codegen) export(cpGetPrevCore)
-cpGetPrevCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m Core.CModule
+cpGetPrevCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_Core
 cpGetPrevCore modNm
   = do { cpMsg modNm VerboseDebug "cpGetPrevCore"
 {-
@@ -296,7 +296,7 @@ cpGetPrevCore modNm
 %%]
 
 %%[(50 corerun) export(cpGetPrevCoreRun)
-cpGetPrevCoreRun :: EHCCompileRunner m => HsName -> EHCompilePhaseT m CoreRun.Mod
+cpGetPrevCoreRun :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_CoreRun
 cpGetPrevCoreRun modNm
   = do { cpMsg modNm VerboseDebug "cpGetPrevCoreRun"
 {-
@@ -311,7 +311,7 @@ cpGetPrevCoreRun modNm
 %%]
 
 %%[(50 codegen grin) export(cpGetPrevGrin)
-cpGetPrevGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m Grin.GrModule
+cpGetPrevGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_Grin
 cpGetPrevGrin modNm
   = do { cpMsg modNm VerboseDebug "cpGetPrevGrin"
 {-

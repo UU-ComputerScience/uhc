@@ -24,41 +24,12 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- Language syntax: HS, EH
-%%[8 import(qualified {%{EH}HS} as HS, qualified {%{EH}EH} as EH)
+%%[8 import ({%{EH}EHC.ASTTypes})
 %%]
--- Language syntax: Core, TyCore, Grin, ...
-%%[(8 codegen) import( qualified {%{EH}Core} as Core)
+%%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin)
 %%]
-%%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
-%%]
-%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
-%%]
-%%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
-%%]
-%%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)
-%%]
-%%[(8 javascript) hs import(qualified {%{EH}JavaScript} as JS)
-%%]
-%%[(8 codegen cmm) hs import(qualified {%{EH}Cmm} as Cmm)
-%%]
--- Language semantics: HS, EH
-%%[8 import(qualified {%{EH}EH.Main} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
-%%]
--- Language semantics: Core
-%%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
-%%]
-%%[(8 corerun core) import(qualified {%{EH}Core.ToCoreRun} as Core2CoreRunSem)
-%%]
-%%[(8 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
-%%]
--- Language semantics: CoreRun
-%%[(8 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
-%%]
-
 -- HI Syntax and semantics, HS module semantics
 %%[50 import(qualified {%{EH}HI} as HI)
-%%]
-%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 -- module admin
 %%[50 import({%{EH}Module.ImportExport}, {%{EH}CodeGen.ImportUsedModules})
@@ -140,51 +111,52 @@ data EHCompileUnit
       , ecuFileLocation      :: !FileLoc
       , ecuGrpNm             :: !HsName
       , ecuModNm             :: !HsName
-      , _ecuMbHS             :: !(Maybe HS.AGItf)
-      , _ecuMbHSSem          :: !(Maybe HSSem.Syn_AGItf)
-      , _ecuMbEH             :: !(Maybe EH.AGItf)
-      , _ecuMbEHSem          :: !(Maybe EHSem.Syn_AGItf)
+      , _ecuMbHS             :: !(Maybe AST_HS)
+      , _ecuMbHSSem          :: !(Maybe AST_HS_Sem_Check)
+      , _ecuMbEH             :: !(Maybe AST_EH)
+      , _ecuMbEHSem          :: !(Maybe AST_EH_Sem_Check)
 %%[[(8 codegen)
-      , _ecuMbCore           :: !(Maybe Core.CModule)
+      , _ecuMbCore           :: !(Maybe AST_Core)
 %%]]
 %%[[(8 codegen core)
-      , _ecuMbCoreSem        :: !(Maybe Core2GrSem.Syn_CodeAGItf)
+      , _ecuMbCoreSem        :: !(Maybe AST_Core_Sem_ToGrin)
 %%]]
 %%[[(8 codegen corerun)
-      , _ecuMbCore2CoreRunSem:: !(Maybe Core2CoreRunSem.Syn_CodeAGItf)
+      , _ecuMbCore2CoreRunSem:: !(Maybe AST_Core_Sem_ToCoreRun)
 %%]]
 %%[[(8 codegen corein)
-      , _ecuMbCoreSemMod     :: !(Maybe Core2ChkSem.Syn_CodeAGItf)
+      , _ecuMbCoreSemMod     :: !(Maybe AST_Core_Sem_Check)
 %%]]
 %%[[(8 corerun)
-      , _ecuMbCoreRun        :: !(Maybe CoreRun.Mod)
+      , _ecuMbCoreRun        :: !(Maybe AST_CoreRun)
 %%]]
 %%[[(8 codegen corerunin)
-      , _ecuMbCoreRunSemMod  :: !(Maybe CoreRun2ChkSem.Syn_AGItf)
+      , _ecuMbCoreRunSemMod  :: !(Maybe AST_CoreRun_Sem_Check)
 %%]]
 %%[[(8 codegen tycore)
       , ecuMbTyCore          :: !(Maybe C.Module)
 %%]]
 %%[[(8 grin)
-      , _ecuMbGrin           :: !(Maybe Grin.GrModule)
-      , ecuMbBytecode        :: !(Maybe Bytecode.Module)
+      , _ecuMbGrin           :: !(Maybe AST_Grin)
+      , ecuMbBytecode        :: !(Maybe AST_GrinBytecode)
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
 %%[[(8 cmm)
-      , _ecuMbCmm            :: !(Maybe Cmm.Module)
+      , _ecuMbCmm            :: !(Maybe AST_Cmm)
 %%]]
 %%[[(8 jazy)
-      , ecuMbJVMClassL       :: !(Maybe (HsName,[Jvm.Class]))
+      , ecuMbJVMClassL       :: !(Maybe (HsName,AST_Java))
 %%]]
 %%[[(8 javascript)
-      , _ecuMbJavaScript     :: !(Maybe JS.JavaScriptModule)
+      , _ecuMbJavaScript     :: !(Maybe AST_JavaScript)
 %%]]
       , ecuState             :: !EHCompileUnitState
       , _ecuASTType          :: !ASTType
       , _ecuASTFileContent   :: !ASTFileContent
       , _ecuASTFileUse       :: !ASTFileUse
       , _ecuAlreadyFlowIntoCRSI
-      						 :: !(Map.Map ASTType (Set.Set ASTSemFlowStage))	-- the semantics already flown into global state
+      						 :: !(Map.Map ASTType (Set.Set ASTAlreadyFlowIntoCRSIInfo))
+      						 										-- the semantics already flown into global state
 %%[[50
       , ecuImportUsedModules :: !ImportUsedModules                  -- imported modules info
       , ecuIsTopMod          :: !Bool                               -- module has been specified for compilation on commandline
@@ -201,11 +173,11 @@ data EHCompileUnit
 %%[[(50 codegen grin)
       , _ecuMbGrinTime       :: !(Maybe ClockTime)                  -- timestamp of possibly previously generated grin file
 %%]]
-      , _ecuMbHSSemMod       :: !(Maybe HSSemMod.Syn_AGItf)
+      , _ecuMbHSSemMod       :: !(Maybe AST_HS_Sem_Mod)
       , ecuMod               :: !Mod                                -- import/export info of module
-      , _ecuMbPrevHIInfo     :: !(Maybe HI.HIInfo)                  -- possible HI info of previous run
+      , _ecuMbPrevHIInfo     :: !(Maybe AST_HI)                  -- possible HI info of previous run
       , ecuMbOptim           :: !(Maybe Optim)
-      , _ecuMbHIInfo         :: !(Maybe HI.HIInfo)                  -- HI info of module
+      , _ecuMbHIInfo         :: !(Maybe AST_HI)                  -- HI info of module
       , _ecuDirIsWritable    :: !Bool                               -- can be written in dir of module?
       , _ecuMbPrevSearchInfo :: !(Maybe PrevSearchInfo)             -- file search info required for imported module search
 %%]]
@@ -257,7 +229,7 @@ ecuHS = isoMb "ecuMbHS" ecuMbHS
 ecuHSSem = isoMb "ecuMbHSSem" ecuMbHSSem
 %%]
 
-%%[50 export(ecuAlreadyFlowIntoCRSI)
+%%[8 export(ecuAlreadyFlowIntoCRSI)
 %%]
 
 %%[50 export(ecuMbHIInfo, ecuHIInfo, ecuMbPrevHIInfo, ecuPrevHIInfo, ecuMbHSSemMod, ecuHSSemMod, ecuMbSrcTime, ecuSrcTime, ecuMbHIInfoTime, ecuHIInfoTime)
@@ -307,7 +279,7 @@ ecuIsMainMod e = ecuIsTopMod e && ecuHasMain e
 
 %%[99 export(ecuAnHIInfo)
 -- | give the current value HIInfo, or the previous one
-ecuAnHIInfo :: EHCompileUnit -> HI.HIInfo
+ecuAnHIInfo :: EHCompileUnit -> AST_HI
 ecuAnHIInfo e
   = case _ecuMbPrevHIInfo e of
       Just pi | HI.hiiIsEmpty hii
@@ -440,13 +412,17 @@ ecuIsOrphan = const False
 %%]]
 %%]
 
-%%[8 export(ecuHasAlreadyFlowed)
+%%[8 export(ecuHasAlreadyFlowedWith, ecuHasAlreadyFlowed)
 -- | Semantics for an AST already has flowed into global state
-ecuHasAlreadyFlowed :: ASTType -> ASTSemFlowStage -> EHCompileUnit -> Bool
-ecuHasAlreadyFlowed asttype flowstage ecu
+ecuHasAlreadyFlowedWith :: ASTType -> ASTAlreadyFlowIntoCRSIInfo -> EHCompileUnit -> Bool
+ecuHasAlreadyFlowedWith asttype flowstage ecu
   = case Map.lookup asttype (ecu ^. ecuAlreadyFlowIntoCRSI) of
       Just s -> Set.member flowstage s
       _      -> False
+
+-- | Semantics for an AST already has flowed into global state
+ecuHasAlreadyFlowed :: ASTType -> ASTSemFlowStage -> EHCompileUnit -> Bool
+ecuHasAlreadyFlowed asttype flowstage ecu = ecuHasAlreadyFlowedWith asttype (flowstage,Nothing) ecu
 %%]
 
 %%[5050 export(ecuIsFromCoreSrc)
@@ -569,31 +545,31 @@ ecuStoreFileLocation x ecu = ecu { ecuFileLocation = x }
 ecuStoreState :: EcuUpdater EHCompileUnitState
 ecuStoreState x ecu = ecu { ecuState = x }
 
-ecuStoreHS :: EcuUpdater HS.AGItf
+ecuStoreHS :: EcuUpdater AST_HS
 ecuStoreHS x ecu = ecu { _ecuMbHS = Just x }
 
-ecuStoreEH :: EcuUpdater EH.AGItf
+ecuStoreEH :: EcuUpdater AST_EH
 ecuStoreEH x ecu = ecu { _ecuMbEH = Just x }
 
-ecuStoreHSSem :: EcuUpdater HSSem.Syn_AGItf
+ecuStoreHSSem :: EcuUpdater AST_HS_Sem_Check
 ecuStoreHSSem x ecu = ecu { _ecuMbHSSem = Just x }
 
-ecuStoreEHSem :: EcuUpdater EHSem.Syn_AGItf
+ecuStoreEHSem :: EcuUpdater AST_EH_Sem_Check
 ecuStoreEHSem x ecu = ecu { _ecuMbEHSem = Just x }
 %%]
 
 %%[(8 codegen corein) export(ecuStoreCoreSemMod)
-ecuStoreCoreSemMod :: EcuUpdater Core2ChkSem.Syn_CodeAGItf
+ecuStoreCoreSemMod :: EcuUpdater AST_Core_Sem_Check
 ecuStoreCoreSemMod x ecu = ecu { _ecuMbCoreSemMod = Just x }
 %%]
 
 %%[(8 codegen core) export(ecuStoreCoreSem)
-ecuStoreCoreSem :: EcuUpdater Core2GrSem.Syn_CodeAGItf
+ecuStoreCoreSem :: EcuUpdater AST_Core_Sem_ToGrin
 ecuStoreCoreSem x ecu = ecu { _ecuMbCoreSem = Just x }
 %%]
 
 %%[(8 codegen) export(ecuStoreCore)
-ecuStoreCore :: EcuUpdater Core.CModule
+ecuStoreCore :: EcuUpdater AST_Core
 %%[[8
 ecuStoreCore x ecu = ecu { _ecuMbCore = Just x }
 %%][99
@@ -604,17 +580,17 @@ ecuStoreCore x ecu | forceEval x `seq` True = ecu { _ecuMbCore = Just x }
 %%]
 
 %%[(8 corerun) export(ecuStoreCoreRun)
-ecuStoreCoreRun :: EcuUpdater CoreRun.Mod
+ecuStoreCoreRun :: EcuUpdater AST_CoreRun
 ecuStoreCoreRun x ecu | x `seq` True = ecu { _ecuMbCoreRun = Just x }
 %%]
 
 %%[(8 codegen corerunin) export(ecuStoreCoreRunSemMod)
-ecuStoreCoreRunSemMod :: EcuUpdater CoreRun2ChkSem.Syn_AGItf
+ecuStoreCoreRunSemMod :: EcuUpdater AST_CoreRun_Sem_Check
 ecuStoreCoreRunSemMod x ecu = ecu { _ecuMbCoreRunSemMod = Just x }
 %%]
 
 %%[(8 codegen corerun) export(ecuStoreCore2CoreRunSem)
-ecuStoreCore2CoreRunSem :: EcuUpdater Core2CoreRunSem.Syn_CodeAGItf
+ecuStoreCore2CoreRunSem :: EcuUpdater AST_Core_Sem_ToCoreRun
 ecuStoreCore2CoreRunSem x ecu = ecu { _ecuMbCore2CoreRunSem = Just x }
 %%]
 
@@ -624,12 +600,12 @@ ecuStoreTyCore x ecu = ecu { ecuMbTyCore = Just x }
 %%]
 
 %%[(8 jazy) export(ecuStoreJVMClassL)
-ecuStoreJVMClassL :: EcuUpdater (HsName,[Jvm.Class])
+ecuStoreJVMClassL :: EcuUpdater (HsName,AST_Java)
 ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
 %%]
 
 %%[(8 javascript) export(ecuStoreJavaScript)
-ecuStoreJavaScript :: EcuUpdater (JS.JavaScriptModule)
+ecuStoreJavaScript :: EcuUpdater (AST_JavaScript)
 ecuStoreJavaScript x ecu = ecu { _ecuMbJavaScript = Just x }
 %%]
 
@@ -637,7 +613,7 @@ ecuStoreJVMClassFPathL :: EcuUpdater [FPath]
 ecuStoreJVMClassFPathL x ecu = ecu { ecuMbJVMClassL = Just (Right x) }
 
 %%[(8 grin) export(ecuStoreGrin,ecuStoreBytecode,ecuStoreBytecodeSem)
-ecuStoreGrin :: EcuUpdater Grin.GrModule
+ecuStoreGrin :: EcuUpdater AST_Grin
 %%[[8
 ecuStoreGrin x ecu = ecu { _ecuMbGrin = Just x }
 %%][99
@@ -646,7 +622,7 @@ ecuStoreGrin x ecu | x `seq` True = ecu { _ecuMbGrin = Just x }
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { _ecuMbGrin = Just x }
 %%]]
 
-ecuStoreBytecode :: EcuUpdater Bytecode.Module
+ecuStoreBytecode :: EcuUpdater AST_GrinBytecode
 %%[[8
 ecuStoreBytecode x ecu = ecu { ecuMbBytecode = Just x }
 %%][99
@@ -660,7 +636,7 @@ ecuStoreBytecodeSem x ecu = ecu { ecuMbBytecodeSem = Just x }
 %%]
 
 %%[(8 codegen cmm) export(ecuStoreCmm)
-ecuStoreCmm :: EcuUpdater Cmm.Module
+ecuStoreCmm :: EcuUpdater AST_Cmm
 ecuStoreCmm x ecu = ecu { _ecuMbCmm = Just x }
 %%]
 
@@ -674,7 +650,7 @@ ecuStoreSrcTime x ecu = ecu { _ecuMbSrcTime = Just x }
 ecuStoreHIInfoTime :: EcuUpdater ClockTime
 ecuStoreHIInfoTime x ecu = ecu { _ecuMbHIInfoTime = Just x }
 
-ecuStoreHSSemMod :: EcuUpdater HSSemMod.Syn_AGItf
+ecuStoreHSSemMod :: EcuUpdater AST_HS_Sem_Mod
 ecuStoreHSSemMod x ecu = ecu { _ecuMbHSSemMod = Just x }
 
 ecuStoreSrcDeclImpS :: EcuUpdater (Set.Set HsName)
@@ -711,13 +687,13 @@ ecuSetNeedsCompile x ecu = ecu { ecuNeedsCompile = x }
 -- ecuStorePrevHISem :: EcuUpdater HISem.Syn_AGItf
 -- ecuStorePrevHISem x ecu = ecu { ecuMbPrevHISem = Just x }
 
-ecuStorePrevHIInfo :: EcuUpdater HI.HIInfo
+ecuStorePrevHIInfo :: EcuUpdater AST_HI
 ecuStorePrevHIInfo x ecu = ecu { _ecuMbPrevHIInfo = Just x }
 
 ecuStoreOptim :: EcuUpdater Optim
 ecuStoreOptim x ecu = ecu { ecuMbOptim = Just x }
 
-ecuStoreHIInfo :: EcuUpdater HI.HIInfo
+ecuStoreHIInfo :: EcuUpdater AST_HI
 %%[[50
 ecuStoreHIInfo x ecu = ecu { _ecuMbHIInfo = Just x }
 %%][99

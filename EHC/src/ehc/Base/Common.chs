@@ -491,6 +491,8 @@ data TraceOn
   | TraceOn_BuildSearchPaths		-- build searchpath used
   | TraceOn_BuildSccImports			-- build compile order (scc = strongly connected components)
   | TraceOn_BuildTypeables			-- build Typeable instances encountered
+  | TraceOn_BuildPipe				-- build Pipe related
+  | TraceOn_BuildFold				-- build folds related
   deriving (Eq,Ord,Enum,Show,Typeable,Bounded)
 
 allTraceOnMp :: Map.Map String TraceOn
@@ -831,7 +833,7 @@ emptyPkgName = ""
 %%% Linking style
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 export(LinkingStyle(..))
+%%[8 export(LinkingStyle(..))
 -- | How to do linking/packaging
 data LinkingStyle
   = LinkingStyle_None			-- ^ no linking (e.g. indicated by --compile-only flag)
@@ -933,6 +935,17 @@ fmap2Tuple snd = fmap (\x -> (x,snd))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Shorthands
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(if')
+-- | Shorthand for if
+if' :: Bool -> a -> a -> a
+if' c t e = if c then t else e
+{-# INLINE if' #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Monad abbreviations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -965,11 +978,19 @@ ifM' c = flip (ifM c)
 
 %%]
 
-%%[1 export(maybeM, maybeM', maybeGuardM, guardMaybeM, whenJustM, whenJustGuardM, unlessJustM)
+%%[1 export(maybeM, maybeM', maybe2M, maybeGuardM, guardMaybeM, whenJustM, whenJustGuardM, unlessJustM)
 -- | Variation of `maybe` where the maybe is computed in a monad. See also `maybeM'`
 maybeM :: Monad m => m (Maybe a) -> m b -> (a -> m b) -> m b
 maybeM mmaybe mnothing mjust = mmaybe >>= maybe mnothing mjust
 {-# INLINE maybeM #-}
+
+-- | Variation of `maybe` where the maybe is computed in a monad. See also `maybeM'`
+maybe2M :: Monad m => m (Maybe a1) -> (a1 -> m (Maybe a2)) -> m b -> (a2 -> m b) -> m b
+maybe2M mmaybe1 mmaybe2 mnothing mjust = do
+  mb1 <- mmaybe1
+  if (isJust mb1)
+    then maybeM (mmaybe2 $ fromJust mb1) mnothing mjust
+    else mnothing
 
 -- | Variation of `maybe` where the maybe is computed in a monad and a guard is involved. See also `maybeM'`
 maybeGuardM :: Monad m => m (Maybe a) -> (a -> m Bool) -> m b -> (a -> m b) -> m b

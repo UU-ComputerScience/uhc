@@ -206,7 +206,7 @@ defaultEHCEnvironment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(102 codegen)
-showSizeCore :: Core.CModule -> String
+showSizeCore :: AST_Core -> String
 showSizeCore x = fevShow "Core" x
 
 %%]

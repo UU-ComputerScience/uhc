@@ -50,45 +50,10 @@
 %%]
 
 -- Language syntax: HS, EH, Core, TyCore, Grin, ...
-%%[8 import(qualified {%{EH}EH} as EH)
-%%]
-%%[8 import(qualified {%{EH}HS} as HS)
-%%]
-%%[(8 codegen) import( qualified {%{EH}Core} as Core)
-%%]
-%%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
-%%]
-%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
-%%]
-%%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
-%%]
-%%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)
-%%]
-%%[(8 javascript) hs import(qualified {%{EH}JavaScript} as JS)
-%%]
-%%[(8 codegen cmm) hs import(qualified {%{EH}Cmm} as Cmm)
-%%]
--- Language semantics: HS, EH
-%%[8 import(qualified {%{EH}EH.Main} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
+%%[8 import({%{EH}EHC.ASTTypes})
 %%]
 -- Language semantics: Core
--- TBD: this depends on grin gen, but should also be available for Core, so in a CoreXXXSem
-%%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
-%%]
-%%[(8 corerun core) import(qualified {%{EH}Core.ToCoreRun} as Core2CoreRunSem)
-%%]
-%%[(8 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
-%%]
 %%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
-%%]
--- Language semantics: CoreRun
-%%[(8 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
-%%]
-
--- HI Syntax and semantics, HS module semantics
-%%[50 import(qualified {%{EH}HI} as HI)
-%%]
-%%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
 
@@ -167,7 +132,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(astHandler'_HS)
-astHandler'_HS :: ASTHandler' HS.AGItf
+astHandler'_HS :: ASTHandler' AST_HS
 astHandler'_HS = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) =
           emptyASTHandler' -- ASTHandler'
@@ -274,7 +239,7 @@ astHandler'_HS = mk emptyASTHandler'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(astHandler'_EH)
-astHandler'_EH :: ASTHandler' EH.AGItf
+astHandler'_EH :: ASTHandler' AST_EH
 astHandler'_EH = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
@@ -301,7 +266,7 @@ astHandler'_EH = mk emptyASTHandler'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 export(astHandler'_HI)
-astHandler'_HI :: ASTHandler' HI.HIInfo
+astHandler'_HI :: ASTHandler' AST_HI
 astHandler'_HI = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
@@ -355,7 +320,7 @@ astHandler'_HI = mk emptyASTHandler'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 core) export(astHandler'_Core)
-astHandler'_Core :: ASTHandler' Core.CModule
+astHandler'_Core :: ASTHandler' AST_Core
 astHandler'_Core = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
@@ -387,7 +352,7 @@ astHandler'_Core = mk emptyASTHandler'
             , _asthdlrEcuStore          = ecuStoreCore
 %%[[(8 corein)
             , _asthdlrParseScanOpts     = \opts _ -> coreScanOpts opts
-            , _asthdlrParser            = \opts _ -> Just $ ASTParser (CorePrs.pCModule opts :: EHPrsAna Core.CModule)
+            , _asthdlrParser            = \opts _ -> Just $ ASTParser (CorePrs.pCModule opts :: EHPrsAna AST_Core)
 %%]]
             , _asthdlrPretty			= \opts _ ast -> Just $ ppCModule (opts {- ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts -}) $ cmodTrfEraseTyCore opts ast
 %%[[50
@@ -412,7 +377,7 @@ astHandler'_Core = mk emptyASTHandler'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun) export(astHandler'_CoreRun)
-astHandler'_CoreRun :: ASTHandler' CoreRun.Mod
+astHandler'_CoreRun :: ASTHandler' AST_CoreRun
 astHandler'_CoreRun = mk emptyASTHandler'
   where mk (hdlr@(ASTHandler' {..})) = 
           emptyASTHandler' -- ASTHandler'
@@ -444,7 +409,7 @@ astHandler'_CoreRun = mk emptyASTHandler'
             , _asthdlrEcuStore          = ecuStoreCoreRun
 %%[[(8 corein)
             , _asthdlrParseScanOpts     = \opts _ -> corerunScanOpts
-            , _asthdlrParser            = \opts _ -> Just $ ASTParser (CoreRunPrs.pMod opts :: EHPrsAna CoreRun.Mod)
+            , _asthdlrParser            = \opts _ -> Just $ ASTParser (CoreRunPrs.pMod opts :: EHPrsAna AST_CoreRun)
 %%]]
             , _asthdlrPretty			= \opts _ ast -> Just $ ppMod' opts ast
 %%[[50
@@ -469,7 +434,7 @@ astHandler'_CoreRun = mk emptyASTHandler'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 grin) export(astHandler'_Grin)
-astHandler'_Grin :: ASTHandler' Grin.GrModule
+astHandler'_Grin :: ASTHandler' AST_Grin
 astHandler'_Grin = 
   emptyASTHandler'
 			{ _asthdlrName              = "Grin"
@@ -508,7 +473,7 @@ astHandler'_Grin =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 cmm) export(astHandler'_Cmm)
-astHandler'_Cmm :: ASTHandler' Cmm.Module
+astHandler'_Cmm :: ASTHandler' AST_Cmm
 astHandler'_Cmm = 
   emptyASTHandler'
 			{ _asthdlrName              = "Cmm"
@@ -526,7 +491,7 @@ astHandler'_Cmm =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 javascript) export(astHandler'_JavaScript)
-astHandler'_JavaScript :: ASTHandler' JS.JavaScriptModule
+astHandler'_JavaScript :: ASTHandler' AST_JavaScript
 astHandler'_JavaScript = 
   emptyASTHandler'
 			{ _asthdlrName              = "JavaScript"

@@ -33,9 +33,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 
 -- Language syntax: HS, EH, Core, TyCore, Grin, ...
-%%[8 import(qualified {%{EH}EH} as EH)
-%%]
-%%[8 import(qualified {%{EH}HS} as HS)
+%%[8 import({%{EH}EHC.ASTTypes})
 %%]
 
 -- build call
@@ -98,8 +96,6 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 
 -- Language syntax: Core
-%%[(50 codegen) import(qualified {%{EH}Core} as Core)
-%%]
 %%[(50 codegen) import(qualified {%{EH}Core.Merge} as CMerge (cModMerge))
 %%]
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
@@ -107,12 +103,7 @@ level 2..6 : with prefix 'cpEhc'
 -- CoreRun
 %%[(8 corerun) import({%{EH}EHC.CompilePhase.Run})
 %%]
-%%[(50 corerun) import(qualified {%{EH}CoreRun} as CoreRun)
-%%]
 %%[(50 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
-%%]
--- Language syntax: TyCore
-%%[(8 codegen tycore) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 -- Language syntax: Grin
 %%[(50 codegen grin) import(qualified {%{EH}GrinCode} as Grin(grModMerge))
@@ -584,7 +575,7 @@ cpEhcModuleCompile1 targHSState modNm
            (ECUS_Eh EHStart,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling EH"
                    ; cpUpdOpts (\o -> o {ehcOptHsChecksInEH = True})
-                   ; (_ :: EH.AGItf) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_EH (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+                   ; (_ :: AST_EH) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_EH (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
                    ; cpStopAt CompilePoint_Parse
                    -- ; cpEhcEhParse modNm
 %%[[50   
@@ -924,7 +915,7 @@ cpEhcHaskellParse
            cpPreprocessWithCPP pkgKeyDirL modNm
            cpParseHs litmode modNm
          else do
-           -- (_ :: HS.AGItf) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+           -- (_ :: AST_HS) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
            cpParseHs litmode modNm
            return ()
 %%]]
@@ -933,16 +924,16 @@ cpEhcHaskellParse
 %%]
 
 %%[8888
-cpEhcEhParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m EH.AGItf
+cpEhcEhParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_EH
 cpEhcEhParse modNm = do
   -- cpParseEH modNm
-  (res :: EH.AGItf) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_EH (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+  (res :: AST_EH) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_EH (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
   cpStopAt CompilePoint_Parse
   return res
 %%]
 
 %%[(8888 corein)
-cpEhcCoreParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m CoreRun.Mod
+cpEhcCoreParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_CoreRun
 cpEhcCoreParse modNm = do
   -- cpParseCoreWithFPath Nothing modNm
   res <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_Core (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
@@ -1073,7 +1064,7 @@ cpEhcCoreImport
 -}
 {-     
 -}
-       (_ :: Core.CModule) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_Core (if isBinary then ASTFileContent_Binary else ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+       (_ :: AST_Core) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_Core (if isBinary then ASTFileContent_Binary else ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
 
        cpFoldCoreMod modNm
        cpGetCoreModnameAndImports modNm
@@ -1094,7 +1085,7 @@ cpEhcCoreRunImport
        then -} cpDecodeCoreRun Nothing modNm
        {- else cpParseCoreWithFPath Nothing modNm -}
 -}
-       (_ :: CoreRun.Mod) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_CoreRun (if isBinary then ASTFileContent_Binary else ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+       (_ :: AST_CoreRun) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_CoreRun (if isBinary then ASTFileContent_Binary else ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
 
        cpFoldCoreRunMod modNm
        cpGetCoreRunModnameAndImports modNm
@@ -1218,13 +1209,15 @@ cpEhcExecutablePerModule how impModNmL modNm
 cpProcessHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessHs modNm = do
     -- cpFoldHs modNm
-    bcall $ FoldHs (mkPrevFileSearchKeyWithName modNm)
+    bcall $ FoldHs (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%[[50
     cpFlowHsSem1 modNm
     -- bcall $ CRSIOfName (mkPrevFileSearchKeyWithName modNm) ASTType_HS
+    -- bcall $ CRSIOfNameP (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%]]
     -- cpTranslateHs2EH modNm
-    (_ :: EH.AGItf) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_EH
+    -- (_ :: AST_EH) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_EH
+    (_ :: AST_EH) <- bcall $ ASTP (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%[[99
     cpCleanupHS modNm
 %%]]
@@ -1264,7 +1257,7 @@ cpProcessEH modNm
          else 
 -} -- %%]]
        ; cpTranslateEH2Core modNm
-       -- ; (_ :: Core.CModule) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_Core
+       -- ; (_ :: AST_Core) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_Core
 %%]]
 %%[[99
        ; cpCleanupEH modNm

@@ -231,7 +231,9 @@ cpFlowEHSem1 modNm
                                    { _crsiEHInh = ehInh' }
 %%]]
                                )
+%%[[50
                      ; cpUpdAlreadyFlowIntoCRSI modNm ASTType_EH ASTSemFlowStage_BetweenModule
+%%]]
 %%[[50
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
                                      . ecuStoreHIUsedImpS usedImpS
