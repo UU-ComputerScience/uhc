@@ -57,6 +57,10 @@
 %%[99 import({%{EH}Base.PackageDatabase},{%{EH}Base.Parser2})
 %%]
 
+-- CoreRun running
+%%[(8 corerun) import({%{EH}EHC.CompilePhase.Run})
+%%]
+
 -- Misc
 %%[8 import({%{EH}Base.Target}, {%{EH}Base.Optimize}(allOptimizeMp))
 %%]
@@ -85,13 +89,21 @@ compile1 opts fileSuffMpHs searchPath mbFp nm
 %%]
 
 %%[8 export(compileN_Alternate)
+-- | Alternate compiler driver using (20150806 under construction) new build system
 compileN_Alternate :: EHCCompileRunner m => [FPath] -> [HsName] -> EHCompilePhaseT m ()
 compileN_Alternate fpL topModNmL@(modNm:_) = do
     cpMsg modNm VerboseDebug $ "compileN_Alternate topModNmL: " ++ show topModNmL
-    zipWithM (\fp topModNm -> bcall $ EcuOfPrevNameAndPath ((topModNm, ASTFileNameOverride_FPathAsTop fp), Nothing)) fpL topModNmL
-    return ()
+    crsi <- bcall $ CRSI
+    let opts    = crsi ^. crsiOpts
+        astpipe = astpipeForEHCOpts opts
+    case (ehcOptTarget opts, fpL, topModNmL) of
+      (Target_None_Core_AsIs, (fp:_), (modNm:_)) | CoreOpt_Run `elem` ehcOptCoreOpts opts -> do
+          (_ :: AST_Core) <- bcall $ ASTP ((modNm, ASTFileNameOverride_FPathAsTop fp), Nothing) astpipe
+          cpRunCoreRun modNm
+      (_, fpL, topModNmL) -> do
+          zipWithM (\fp topModNm -> bcall $ EcuOfPrevNameAndPath ((topModNm, ASTFileNameOverride_FPathAsTop fp), Nothing)) fpL topModNmL
+          return ()
 %%]
-
 
 %%[50 -8.compile1 export(compileN)
 compileN :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhaseT m ()

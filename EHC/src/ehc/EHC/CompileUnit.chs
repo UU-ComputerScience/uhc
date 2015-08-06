@@ -771,14 +771,6 @@ ecuIsHSNewerThanHI ecu
       _                   -> True
 %%]
 
-%%[5020 export(ecuIsValidHI)
-ecuIsValidHI :: EHCompileUnit -> Bool
-ecuIsValidHI ecu
-  = case ecuMbPrevHISem ecu of
-      Just s -> HISem.isValidVersion_Syn_AGItf s
-      _      -> False
-%%]
-
 %%[50 export(ecuIsValidHIInfo)
 ecuIsValidHIInfo :: EHCompileUnit -> Bool
 ecuIsValidHIInfo ecu

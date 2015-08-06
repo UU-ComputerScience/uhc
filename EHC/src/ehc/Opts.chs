@@ -396,10 +396,6 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
 %%[[50
      ,  Option "c"  ["compile-only"]        (NoArg oCompileOnly)                    "compile only, do not link"
 %%]]
-%%[[8
-     ,  Option ""   ["debug-traceon"]
-                                            (ReqArg oTraceOn "aspects")             ("debug: trace on specific aspects: " ++ showStr2stMp allTraceOnMp)
-%%]]
 %%[[50
      ,  Option ""   ["debug-stopat-hi-error"]
                                             (boolArg oStopAtHIError)                "debug: stop at .hi parse error (default=off)"
@@ -630,9 +626,6 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
          oRTSInfo    s   o =  o { ehcOptGenRTSInfo     = read s       }
 %%]]
 %%[[(8 codegen)
-         oTraceOn      s o = o {ehcOptTraceOn = optOpts allTraceOnMp s ++ ehcOptTraceOn o}
-%%]]
-%%[[(8 codegen)
          oOptimization ms o
                            = o' {ehcOptOptimizations = optimizeRequiresClosure os}
                            where (o',doSetOpts)
@@ -795,6 +788,8 @@ sharedCmdLineOpts
 %%]]
 %%[[8
      ,  Option ""   ["driver-alt"]          (NoArg oAltDriver)                      "driver: use alternate compiler driver (under development)"
+     ,  Option ""   ["debug-traceon"]
+                                            (ReqArg oTraceOn "aspects")             ("debug: trace on specific aspects: " ++ showStr2stMp allTraceOnMp)
      ,  Option "v"  ["verbose"]             (OptArg oVerbose "0|1|2|3|4")           (   "be verbose, 0=quiet, 4=debug, "
 %%[[8
                                                                                     ++ "default=2"
@@ -835,6 +830,7 @@ oVersionAsNumber       o   = o { ehcOptImmQuit                     = Just Immedi
 
 %%[8
 oAltDriver             o   = o { ehcOptAltDriver                   = True }
+oTraceOn               s o = o {ehcOptTraceOn = optOpts allTraceOnMp s ++ ehcOptTraceOn o}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

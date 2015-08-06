@@ -317,9 +317,17 @@ data ASTPipeBldCfg =
     { apbcfgTarget			:: Target
     , apbcfgOptimScope 		:: OptimizationScope
     , apbcfgLinkingStyle	:: LinkingStyle
+%%[[(8 corerun)
+    , apbcfgRunOnly			:: Bool
+%%]]
     }
 
-emptyASTPipeBldCfg = ASTPipeBldCfg defaultTarget OptimizationScope_PerModule LinkingStyle_Exec
+emptyASTPipeBldCfg =
+  ASTPipeBldCfg
+    defaultTarget OptimizationScope_PerModule LinkingStyle_Exec
+%%[[(8 corerun)
+    False
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -501,9 +509,11 @@ astpipe_ExecO apbcfg =
 %%[8 export(astpipeForCfg)
 astpipeForCfg :: ASTPipeBldCfg -> ASTPipe
 astpipeForCfg apbcfg =
-    cmb $  base
+    if onlyrun
+    then cmb base
+    else cmb $  base
 %%[[50
-        ++ [astpipe_HI $ apbcfg {apbcfgOptimScope = OptimizationScope_PerModule}]
+             ++ [astpipe_HI $ apbcfg {apbcfgOptimScope = OptimizationScope_PerModule}]
 %%]]
   where (base, topty) = case apbcfgTarget apbcfg of
           Target_Interpreter_Grin_C
@@ -520,7 +530,10 @@ astpipeForCfg apbcfg =
 %%]]
 %%[[(8 core)
           Target_None_Core_AsIs
-                                                             -> ([astpipe_Core apbcfg], ASTType_Core)
+%%[[(8 corerun)
+            | onlyrun 										 -> ([astpipe_Core_src], ASTType_Core)
+%%]]
+            | otherwise                                      -> ([astpipe_Core apbcfg], ASTType_Core)
 %%]]
 %%[[(8 corerun)
           Target_None_Core_CoreRun
@@ -529,6 +542,13 @@ astpipeForCfg apbcfg =
 
         cmb [p] = p
         cmb ps  = ASTPipe_Compound topty ps
+        
+%%[[(8 corerun)
+        -- 20150806: hackish solution for running core, done to be able to try out new build framework
+        onlyrun = apbcfgRunOnly apbcfg
+%%][8
+        onlyrun = False
+%%]]
 %%]
 
 %%[8 export(astpipeForEHCOpts)
@@ -540,6 +560,9 @@ astpipeForEHCOpts opts = astpipeForCfg $ emptyASTPipeBldCfg
   , apbcfgLinkingStyle	= LinkingStyle_Exec
 %%][50
   , apbcfgLinkingStyle	= ehcOptLinkingStyle opts
+%%]]
+%%[[(8 corerun)
+  , apbcfgRunOnly		= CoreOpt_Run `elem` ehcOptCoreOpts opts
 %%]]
   }
 %%]

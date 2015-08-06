@@ -66,7 +66,8 @@ Running of BuildFunction
 
 %%[50 import(qualified UHC.Util.Rel as Rel)
 %%]
-%%[50 import (System.Directory)
+-- timestamps
+%%[50 import(UHC.Util.Time, System.Directory)
 %%]
 
 -- HS Module
@@ -559,7 +560,13 @@ bcall bfun = do
           ASTFromFile modSearchKey@((modNm,_),_) chkTimeStamp asttype skey tkey -> do
                maybeM (bASTFromFileMb modSearchKey chkTimeStamp asttype skey tkey) (undefFor modNm) $ \(res,_) -> breturn res
 
-          ASTRefFromFileMb modSearchKey@((modNmAsked,overr),_) (AlwaysEq chkTimeStamp) asttype skey@(astfcont,_) tkey -> do
+          ASTRefFromFileMb modSearchKey chkTimeStamp asttype skey tkey -> do
+               eithAST <- bcall $ ASTRefFromFileEither modSearchKey False chkTimeStamp asttype skey tkey
+               case eithAST of
+                 Left  _   -> return Nothing
+                 Right res -> breturn $ Just res
+
+          ASTRefFromFileEither modSearchKey@((modNmAsked,overr),_) yieldErr (AlwaysEq chkTimeStamp) asttype skey@(astfcont,_) tkey -> do
                (fp, suffoverr, ecu) <- bcall $ FPathForAST modSearchKey asttype skey tkey
                  
                let modNm = ecuModNm ecu
@@ -590,12 +597,15 @@ bcall bfun = do
                             mbx@(~(Just x)) <- liftIO $ _asthdlrGetSerializeFileIO astHdlr opts fpC
                             if isJust mbx
                               then do
+                                cpTr TraceOn_BuildResult ["ASTFromFile Deserialize ok: " ++ show modNm]
                                 let errs = _asthdlrPostInputCheck astHdlr opts ecu modNm fpC x
                                 if null errs
-                                  then setret ref x
+                                  then do
+                                    cpTr TraceOn_BuildRef ["ASTFromFile ASTFileContent_Binary: " ++ show modNm ++ ", ref=" ++ show ref]
+                                    setret ref x
                                   else do
-                                    cpSetLimitErrsWhen 1 ("Decode AST check " ++ _asthdlrName astHdlr) errs
-                                    dflt'
+                                    cpTr TraceOn_BuildResult ["ASTFromFile ASTFileContent_Binary postcheck errors: " ++ show modNm]
+                                    err'' ("Decode AST check " ++ _asthdlrName astHdlr) errs
                               else err "decoder"
 %%]]
                           fc | fc `elem` [ASTFileContent_Text, ASTFileContent_LitText] -> do
@@ -607,7 +617,7 @@ bcall bfun = do
 %%]]
                                 sopts       = _asthdlrParseScanOpts astHdlr opts popts
                                 description = "Parse (" ++ (if ScanUtils.scoLitmode sopts then "Literate " else "") ++ _asthdlrName astHdlr ++ " syntax) of module `" ++ show modNm ++ "`"
-                                seterrs es  = cpSetLimitErrsWhen 5 description es >> dflt'
+                                seterrs es  = err'' description es
                             cpTr TraceOn_BuildFPaths ["ASTFromFile " ++ show fc ++ ": " ++ show modNm ++ ", fp=" ++ fpathToStr fp ++ " -> fpC=" ++ fpathToStr fpC ++ "(fp == fpC: " ++ show (fp == fpC) ++ ") ehpoptsOkToStopAtErr=" ++ show (ehpoptsOkToStopAtErr popts) ]
                             case _asthdlrParser astHdlr opts popts of
                               Just (ASTParser p) -> do
@@ -634,12 +644,13 @@ bcall bfun = do
                        where err1               = err' fp (show asttype)
                              err2 (Just h)      = err' (mkfp h) (_asthdlrName h)
 
-            where dflt' :: EHCompilePhaseT m res
-                  dflt' = undefFor modNmAsked
-                  err' fp k m = do
-                    cpSetLimitErrsWhen 1 ("Decode " ++ k ++ " for file " ++ fpathToStr fp) [strMsg $ "No " ++ m ++ " for " ++ k ++ " (" ++ show skey ++ "/" ++ show tkey ++ ")"]
-                    dflt'
-                  ret ref ast = bmemo' (Just ref) >> return (Just ref)
+            where -- dflt' :: EHCompilePhaseT m res
+                  -- dflt' = undefFor modNmAsked
+                  dflt' = return $ Left ("",[])
+                  err' fp k m = err'' ("Decode " ++ k ++ " for file " ++ fpathToStr fp) [strMsg $ "No " ++ m ++ " for " ++ k ++ " (" ++ show skey ++ "/" ++ show tkey ++ ")"]
+                  err'' | yieldErr  = \desc es -> return $ Left (desc,es)
+                        | otherwise = \desc es -> cpSetLimitErrsWhen 5 desc es >> dflt'
+                  ret ref ast = let r = Right ref in bmemo' r >> return r
 
           AST modSearchKey@((modNm,_),_) asttypeAsked -> do
                maybeM (bcall $ ASTMb modSearchKey asttypeAsked) (undefFor modNm) $ \(res,_) -> breturn res
@@ -757,7 +768,7 @@ bcall bfun = do
 
                opts <- bcall $ EHCOptsOf modNm
                
-               case astpipe of
+               res <- case astpipe of
 %%[[50
                  ASTPipe_Derived ASTType_HI _ -> do
                      let hii0 = HI.emptyHIInfo
@@ -801,25 +812,57 @@ bcall bfun = do
                      fmap (fmap $ \(a,r) -> (a,r,astpipe)) $
                        bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
 
-                 ASTPipe_Derived ASTType_EH _ -> do
+%%[[50
+                 ASTPipe_Cached asttypeAsked -> do
+                     fmap (either (const Nothing) $ \(a,r) -> Just (a,r,astpipe)) $
+                       bASTFromFileEither modSearchKey True (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) asttypeAsked (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+
+                 ASTPipe_Cache asttypeAsked astpipe' -> do
+                     -- Cache/write AST
+                     maybeM (bcall $ ASTPMb modSearchKey astpipe') dflt $ \(ast, ref, _) -> do
+                       -- TBD: write/output side effect
+                       breturn $ Just (ast, ref, astpipe')
+
+                 ASTPipe_ChooseNewestAvailable asttypeAsked astpipe1 astpipe2 -> do
+                     tmChoose dflt (tmOf astpipe1) (tmOf astpipe2)
+                       (\_ -> bcall $ ASTPMb modSearchKey astpipe1)
+                       (\_ -> bcall $ ASTPMb modSearchKey astpipe2)
+                   where
+                     tmOf (ASTPipe_Src {astpType=t}) = bcall $ ModfTimeOfFile modSearchKey t (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
+                     tmOf (ASTPipe_Cached {astpType=t}) = bcall $ ModfTimeOfFile modSearchKey t (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+                     tmOf (ASTPipe_ChooseNewestAvailable {astpPipe1=p1, astpPipe2=p2}) = tmChoose dflt (tmOf p1) (tmOf p2) (return . Just) (return . Just)
+                     tmChoose adflt tm1 tm2 a1 a2 = tm1 >>= \mbtm1 -> tm2 >>= \mbtm2 -> case (mbtm1, mbtm2) of
+                       (Just t1, Nothing) -> a1 t1
+                       (Nothing, Just t2) -> a2 t2
+                       (Just t1, Just t2) -> if t1 `diffClockTimes` t2 > noTimeDiff then a1 t1 else a2 t2
+                       _                  -> adflt
+%%]]
+
+                 -- ASTPipe_Derived ASTType_EH _ -> do
+                 p | isJust $ astpMbFromHSToEH True p -> do
                      -- From: cpTranslateHs2EH
-                     maybeM' (bGetHsSemPMb modNm astpipe)
-                             (retast astpipe . HSSem.eh_Syn_AGItf) dflt
+                     maybeM (bGetHsSemPMb modNm astpipe) dflt
+                            (retast astpipe . HSSem.eh_Syn_AGItf)
 
 %%[[(8 core)
-                 ASTPipe_Derived ASTType_Core _ -> do
+                 -- ASTPipe_Derived ASTType_Core _ -> do
+                 p | isJust $ astpMbFromEHToCore True p -> do
                      -- From: cpTranslateEH2Core
-                     maybeM' (bcall $ FoldEHPMb (mkPrevFileSearchKeyWithName modNm) astpipe)
-                             (retast astpipe . cmodTrfElimNonCodegenConstructs opts . EHSem.cmodule_Syn_AGItf) dflt
+                     maybeM (bcall $ FoldEHPMb (mkPrevFileSearchKeyWithName modNm) astpipe) dflt
+                            (retast astpipe . cmodTrfElimNonCodegenConstructs opts . EHSem.cmodule_Syn_AGItf)
 %%]]
 %%[[(8 core grin)
-                 ASTPipe_Derived ASTType_Grin _ -> do
+                 -- ASTPipe_Derived ASTType_Grin _ -> do
+                 p | isJust $ astpMbFromCoreToGrin True p -> do
                      -- From: cpTranslateCore2Grin
-                     maybeM' (bcall $ FoldCore2GrinPMb (mkPrevFileSearchKeyWithName modNm) astpipe)
-                             (retast astpipe . Core2GrSem.grMod_Syn_CodeAGItf) dflt
+                     maybeM (bcall $ FoldCore2GrinPMb (mkPrevFileSearchKeyWithName modNm) astpipe) dflt
+                            (retast astpipe . Core2GrSem.grMod_Syn_CodeAGItf)
 %%]]
 
                  _ -> dflt
+
+               cpTr TraceOn_BuildResult ["ASTPMb ok?=" ++ show (isJust res)]
+               return res
 
              where       
                dflt = return Nothing
@@ -833,8 +876,12 @@ bcall bfun = do
                          let mblens = Map.lookup tkey $ _astsuffinfoModfTimeMp suffinfo
                          return (mblens, asthdlrMkInputFPath hdlr opts ecu suffoverr modNm fp)
                     ) of
-                         Just (mblens, fp) -> tm opts ecu (maybe (const id) (\lens -> (lens ^=) . Just) mblens) fp
-                         _                 -> breturn Nothing
+                         Just (mblens, fp) -> do
+                           r <- tm opts ecu (maybe (const id) (\lens -> (lens ^=) . Just) mblens) fp
+                           cpTr TraceOn_BuildTimes ["ModfTimeOfFile " ++ show modSearchKey, "asttype: " ++ show asttype ++ ", skey: " ++ show skey ++ ", tkey: " ++ show tkey, "fp: " ++ fpathToStr fp, "mb time: " ++ show r]
+                           return r
+                         _                 ->
+                           return Nothing
             where
               tm opts ecu store fp = do
                   let n = fpathToStr fp
@@ -847,7 +894,7 @@ bcall bfun = do
                       cpUpdCU modNm $ store t
                       breturn $ Just t
                     else
-                      breturn Nothing
+                      return Nothing
 
           DirOfModIsWriteable modNm -> do
                ecu <- bcall $ EcuOfName modNm
@@ -1383,7 +1430,7 @@ bcall bfun = do
   
 %%]]
 
-%%[[(8 core)
+%%[[(8 core grin)
           FoldCore2Grin modSearchKey@((modNm,_),_) -> do
                maybeM (bcall $ FoldCore2GrinMb modSearchKey) (undefFor modNm) breturn
                
@@ -1477,7 +1524,7 @@ bcall bfun = do
                
 %%]]
 
-%%[[(50 corerunin)
+%%[[(8 corerun corerunin)
           FoldCoreRunMod modSearchKey@((modNm,_),_) -> do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                crr  <- bcall $ ASTFromFile modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_CoreRun (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
@@ -1499,6 +1546,35 @@ bcall bfun = do
                  . ecuStoreSrcDeclImpS impNmS
                  )
                breturn
+                 ( crrSem
+                 , modNmNew
+                 , impNmS
+                 , mod
+                 , hasMain
+                 , newPrev
+                 )
+  
+          FoldCoreRunModPMb modSearchKey@((modNm,_),_) astpipe -> do
+               maybe2M (return $ astpMbFromCoreRunSrc False astpipe)
+                       (\(p,_) -> bcall $ ASTPMb modSearchKey p) (return Nothing) $ \(crr, _, _) -> do
+               opts <- bcall $ EHCOptsOf modNm
+               let inh      = CoreRun2ChkSem.Inh_AGItf
+                                  { CoreRun2ChkSem.opts_Inh_AGItf = opts
+                                  , CoreRun2ChkSem.moduleNm_Inh_AGItf = modNm
+                                  -- , CoreRun2ChkSem.dataGam_Inh_AGItf = EHSem.dataGam_Inh_AGItf $ _crsiEHInh crsi
+                                  }
+                   crrSem   = CoreRun2ChkSem.crmodCheck' inh crr
+                   hasMain  = CoreRun2ChkSem.hasMain_Syn_AGItf crrSem
+                   modNm'   = CoreRun2ChkSem.realModuleNm_Syn_AGItf crrSem
+                   impNmS   = Set.fromList $ CoreRun2ChkSem.impModNmL_Syn_AGItf crrSem
+                   mod      = CoreRun2ChkSem.mod_Syn_AGItf crrSem
+               (modNmNew, newPrev) <- newModNm modNm modNm' $
+                 ( ecuStoreCoreRunSemMod crrSem
+                 . ecuSetHasMain hasMain
+                 . ecuStoreMod mod
+                 . ecuStoreSrcDeclImpS impNmS
+                 )
+               breturn $ Just
                  ( crrSem
                  , modNmNew
                  , impNmS
@@ -1578,6 +1654,8 @@ bcall bfun = do
         modNmNew <- ifM (bcall $ IsTopMod modNm)
           (do
             cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
+            when (modNm /= modNm') $
+              crStateInfo ^* crsiBState ^* bstateCache ^* bcacheModNmForward =$: Map.insert modNm modNm'
             return modNm'
           )
           (do
@@ -1599,6 +1677,35 @@ bcall bfun = do
 %%[8
 -- | Get AST from file, maybe...
 -- Wrapper around bcalls.
+bASTFromFileEither
+  :: forall res m .
+     (Typeable res, EHCCompileRunner m)
+  => PrevFileSearchKey              		--- ^ module name and possibly known path
+     -> Bool								--- ^ errors are returned instead of reported directly
+     -> (AlwaysEq ASTFileTimeHandleHow) 	--- ^ how to deal with timestamp
+     -> ASTType                         	--- ^ content type
+     -> ASTSuffixKey                        --- ^ suffix and content variation
+     -> ASTFileTiming                   	--- ^ timing (i.e. previous or current)
+     -> EHCompilePhaseT m (Either (String,[Err]) (res, BRef res))
+bASTFromFileEither modSearchKey yieldErr chkTimeStamp asttype skey tkey = do
+%%[[50
+    mbtm <- bcall $ ModfTimeOfFile modSearchKey asttype skey tkey
+    let dflt = Left ("",[])
+    if isJust mbtm
+      then do
+%%]]
+        -- TBD: faulty...
+        -- (ref :: BRef res) <- bcall $ ASTRefFromFileMb modSearchKey chkTimeStamp asttype skey tkey
+        eithref <- bcall $ ASTRefFromFileEither modSearchKey yieldErr chkTimeStamp asttype skey tkey
+        case eithref of
+          Right ref -> fmap (maybe dflt (\ast -> Right (ast, ref))) $ bderef' ref
+          Left  e   -> return $ Left e
+%%[[50
+      else return dflt
+%%]]
+
+-- | Get AST from file, maybe...
+-- Wrapper around bcalls.
 bASTFromFileMb
   :: forall res m .
      (Typeable res, EHCCompileRunner m)
@@ -1608,21 +1715,8 @@ bASTFromFileMb
      -> ASTSuffixKey                        --- ^ suffix and content variation
      -> ASTFileTiming                   --- ^ timing (i.e. previous or current)
      -> EHCompilePhaseT m (Maybe (res, BRef res))
-bASTFromFileMb modSearchKey chkTimeStamp asttype skey tkey = do
-%%[[50
-    mbtm <- bcall $ ModfTimeOfFile modSearchKey asttype skey tkey
-    if isJust mbtm
-      then do
-%%]]
-        -- TBD: faulty...
-        -- (ref :: BRef res) <- bcall $ ASTRefFromFileMb modSearchKey chkTimeStamp asttype skey tkey
-        mbref <- bcall $ ASTRefFromFileMb modSearchKey chkTimeStamp asttype skey tkey
-        case mbref of
-          Just ref -> fmap (fmap $ \ast -> (ast, ref)) $ bderef' ref
-          _ -> return Nothing
-%%[[50
-      else return Nothing
-%%]]
+bASTFromFileMb modSearchKey chkTimeStamp asttype skey tkey = 
+  fmap (either (const Nothing) Just) $ bASTFromFileEither modSearchKey False chkTimeStamp asttype skey tkey
 %%]
 
 %%[8
@@ -1693,22 +1787,29 @@ bAllowFlowP modNm astpipe flowstage astpred = do
 bderef'' :: forall res m . (Typeable res, EHCCompileRunner m) => BRef res -> EHCompilePhaseT m (Maybe res, Maybe (res -> EHCompilePhaseT m ()))
 bderef'' bref = do
     cr <- get
-    let opts = cr ^. crStateInfo ^. crsiOpts
-    case bref of
+    let st   = cr ^. crStateInfo
+        opts = st ^. crsiOpts
+        resolve n = return n
+{-
+        resolve n = do
+          c <- getl $ crStateInfo ^* crsiBState ^* bstateCache
+          return $ bcacheResolveModNm c n
+-}
+    res@(r1,r2) <- case bref of
       BRef_CRSI -> return (Just $ cr ^. crStateInfo, Nothing)
 
 %%[[99
       BRef_ExposedPackages -> return (Just $ pkgExposedPackages $ ehcOptPkgDb opts, Nothing)
 %%]]
 
-      BRef_ECU modNm -> return (crMbCU modNm cr, Just $ \ecu -> cpUpdCU modNm (const ecu))
+      BRef_ECU modNm -> resolve modNm >>= \n -> return (crMbCU n cr, Just $ \ecu -> cpUpdCU n (const ecu))
 
-      BRef_EHCOpts modNm -> return (Just choose, Nothing)
+      BRef_EHCOpts modNm -> resolve modNm >>= \n -> return (Just $ choose n, Nothing)
         where 
 %%[[8
-              choose = opts
+              choose n = opts
 %%][99
-              choose = maybe opts id $ crMbCU modNm cr >>= ecuMbOpts
+              choose n = maybe opts id $ crMbCU n cr >>= ecuMbOpts
 %%]]
 
       BRef_AST modSearchKey@((modNm,_),_) asttype -> case asthandlerLookup asttype of
@@ -1716,7 +1817,8 @@ bderef'' bref = do
             case _asthdlrASTLens hdlr of
               Just l -> do
                 ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
-                return (ecu ^. l, Just $ \ast -> cpUpdCU modNm $ l ^= Just ast)
+                n <- resolve modNm
+                return (ecu ^. l, Just $ \ast -> cpUpdCU n $ l ^= Just ast)
               _ -> dflt
           _ -> dflt
         where dflt = return (Nothing, Nothing)
@@ -1726,22 +1828,25 @@ bderef'' bref = do
             Just suffinfo -> case Map.lookup tkey $ _astsuffinfoASTLensMp suffinfo of
               Just l -> do
                 ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
-                return (ecu ^. l, Just $ \ast -> cpUpdCU modNm $ l ^= Just ast)
+                n <- resolve modNm
+                return (ecu ^. l, Just $ \ast -> cpUpdCU n $ l ^= Just ast)
               _ -> dflt
             _ -> dflt
           _ -> dflt
         where dflt = return (Nothing, Nothing)
+    cpTr TraceOn_BuildRef ["bderef'': ok?=" ++ show (isJust r1) ++ "," ++ show (isJust r2) ++ ", ref=" ++ show bref]
+    return res
 
 -- | Dereference an indirection into compilation state
 bderef' :: forall res m . (Typeable res, EHCCompileRunner m) => BRef res -> EHCompilePhaseT m (Maybe res)
 bderef' bref = do
-    cpTr TraceOn_BuildFun $ ["deref' " ++ show bref]
+    cpTr TraceOn_BuildRef $ ["bderef' " ++ show bref]
     fmap fst $ bderef'' bref
 
 -- | Dereference an indirection into compilation state
 bderef :: forall res m . (Typeable res, EHCCompileRunner m) => BRef res -> EHCompilePhaseT m res
 bderef bref = do
-    fmap (panicJust $ "BuildFunction.Run.deref " ++ show bref) $ bderef' bref
+    fmap (panicJust $ "BuildFunction.Run.bderef " ++ show bref) $ bderef' bref
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1759,8 +1864,12 @@ astpMbFromEH top p = case p of {ASTPipe_Derived _ p' | astpType p' == ASTType_EH
 astpMbFromCoreToGrin top p = case p of {ASTPipe_Derived ASTType_Grin p' | astpType p' == ASTType_Core -> Just (if' top p p', (Just ASTType_Grin, ASTType_Core)); _ -> Nothing}
 %%]
 
-%%[(8 core corein grin)
+%%[(8 core corein)
 astpMbFromCoreSrc top p = case p of {ASTPipe_Derived _ p'@(ASTPipe_Src ASTType_Core) -> Just (if' top p p', (Nothing, ASTType_Core)); _ -> Nothing}
+%%]
+
+%%[(8 corerun corerunin)
+astpMbFromCoreRunSrc top p = case p of {ASTPipe_Derived _ p'@(ASTPipe_Src ASTType_CoreRun) -> Just (if' top p p', (Nothing, ASTType_CoreRun)); _ -> Nothing}
 %%]
 
 %%[(8 core corerun)

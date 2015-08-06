@@ -493,6 +493,9 @@ data TraceOn
   | TraceOn_BuildTypeables			-- build Typeable instances encountered
   | TraceOn_BuildPipe				-- build Pipe related
   | TraceOn_BuildFold				-- build folds related
+  | TraceOn_BuildTimes				-- build file times related
+  | TraceOn_BuildResult				-- build results related
+  | TraceOn_BuildRef				-- build reference related
   deriving (Eq,Ord,Enum,Show,Typeable,Bounded)
 
 allTraceOnMp :: Map.Map String TraceOn
