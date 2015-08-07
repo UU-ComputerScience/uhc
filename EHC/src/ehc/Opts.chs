@@ -787,7 +787,7 @@ sharedCmdLineOpts
      ,  Option ""   ["numeric-version"]     (NoArg oNumVersion)                     "see --version-dotted (to become obsolete)"
 %%]]
 %%[[8
-     ,  Option ""   ["driver-alt"]          (NoArg oAltDriver)                      "driver: use alternate compiler driver (under development)"
+     ,  Option ""   ["driver-alt"]          (NoArg oAltDriver)                      "driver: toggle alternate compiler driver (under development, default off, for uhcr default on)"
      ,  Option ""   ["debug-traceon"]
                                             (ReqArg oTraceOn "aspects")             ("debug: trace on specific aspects: " ++ showStr2stMp allTraceOnMp)
      ,  Option "v"  ["verbose"]             (OptArg oVerbose "0|1|2|3|4")           (   "be verbose, 0=quiet, 4=debug, "
@@ -829,7 +829,7 @@ oVersionAsNumber       o   = o { ehcOptImmQuit                     = Just Immedi
 %%]
 
 %%[8
-oAltDriver             o   = o { ehcOptAltDriver                   = True }
+oAltDriver             o   = o { ehcOptAltDriver                   = not $ ehcOptAltDriver o }
 oTraceOn               s o = o {ehcOptTraceOn = optOpts allTraceOnMp s ++ ehcOptTraceOn o}
 %%]
 

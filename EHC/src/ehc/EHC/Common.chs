@@ -316,7 +316,7 @@ prevSearchInfoAdaptedSearchPath (Just (prevNm,(prevFp,prevLoc))) searchPath
 prevSearchInfoAdaptedSearchPath _ searchPath = searchPath
 %%]
 
-%%[8 export(FileSearchKey, PrevFileSearchKey, mkPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithNameMbPrev, mkPrevFileSearchKeyWithNamePrev)
+%%[8 export(FileSearchKey, PrevFileSearchKey, updPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithNameMbPrev, mkPrevFileSearchKeyWithNamePrev)
 -- | Search key for a file to be compiled
 type FileSearchKey =
   ( HsName						-- module name
@@ -328,6 +328,9 @@ type PrevFileSearchKey =
   ( FileSearchKey
   , Maybe PrevSearchInfo		-- possible context provided as a result of a previous compile yielding imports
   )
+
+updPrevFileSearchKeyWithName :: HsName -> PrevFileSearchKey -> PrevFileSearchKey
+updPrevFileSearchKeyWithName n ((_,f),p) = ((n,f),p)
 
 mkPrevFileSearchKeyWithName :: HsName -> PrevFileSearchKey
 mkPrevFileSearchKeyWithName n = mkPrevFileSearchKeyWithNameMbPrev n Nothing

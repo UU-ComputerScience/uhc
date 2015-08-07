@@ -367,10 +367,11 @@ bcall bfun = do
                let modNm = modNmAsked
 %%][50
                (modNm, imps) <- bcall $ ImportsOfName modSearchKey
+               let modSearchKey' = updPrevFileSearchKeyWithName modNm modSearchKey
 %%]]
                let allowFlow = bAllowFlowP modNm astpipe ASTSemFlowStage_PerModule
 %%[[50
-               ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey'
                cpTrPP TraceOn_BuildPipe $ [pp "CRSIOfNameP ASTPipe", pp astpipe]
                
                -- first recursively take care of all imports
@@ -427,7 +428,7 @@ bcall bfun = do
 %%]]
                        usedImpS = mentrelFilterMpModuleNames mentrelFilterMp
 %%[[50
-                   cpUpdCU modNm ( ecuStoreHIUsedImpS usedImpS
+                   bUpdECU modNm ( ecuStoreHIUsedImpS usedImpS
 %%[[99
                                  . ecuStoreUsedNames mentrelFilterMp
 %%]]
@@ -492,6 +493,8 @@ bcall bfun = do
                breturn (nm, imps, recimps)
 %%]]
 
+          ActualModNm modNm -> (fmap ecuModNm $ bcall $ EcuOfName modNm) >>= breturn
+
           EcuOf modNm -> brefto bfun $ BRef_ECU modNm
 
           -- does not typecheck...
@@ -540,10 +543,10 @@ bcall bfun = do
 %%]]
 %%[[50
                when isTopModule
-                    (cpUpdCU modNm (ecuSetIsTopMod True))
+                    (bUpdECU modNm (ecuSetIsTopMod True))
 %%]]
                bmemo $ BRef_ECU modNm
-               fmap (panicJust "EcuOfPrevNameAndPath") $ cpMbCU modNm
+               fmap (panicJust "EcuOfPrevNameAndPath") $ bLookupECU modNm
            
           FPathSearchForFile suff fn -> do
                let fp    = mkTopLevelFPath suff fn
@@ -664,8 +667,10 @@ bcall bfun = do
 
 %%[[8
                let modNm = modNmAsked
+                   modSearchKey' = modSearchKey
 %%][50
                (modNm, _, _) <- bcall $ ModnameAndImports modSearchKey (_ecuASTType ecu)
+               let modSearchKey' = updPrevFileSearchKeyWithName modNm modSearchKey
 %%]]
                -- (mbRes, mbset) <- bderef'' refAsked
 
@@ -677,7 +682,7 @@ bcall bfun = do
                         case mbset of
                           Just set -> set ast >> breturn (Just (ast, ref))
                           _        -> breturn Nothing
-                       where ref = BRef_AST modSearchKey asttypeAsked
+                       where ref = BRef_AST modSearchKey' asttypeAsked
                      _ -> breturn Nothing
 
                opts <- bcall $ EHCOptsOf modNm
@@ -717,7 +722,7 @@ bcall bfun = do
                    if asttypeAsked == _ecuASTType ecu
                      then do
                        -- if the available and asked for AST are of the same type, get the file contents
-                       bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
+                       bASTFromFileMb modSearchKey' (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
                      else
                        -- case analysis on what is asked for and what is given
                        case asttypeAsked of
@@ -750,8 +755,10 @@ bcall bfun = do
 
 %%[[8
                let modNm = modNmAsked
+                   modSearchKey' = modSearchKey
 %%][50
                (modNm, _, _) <- bcall $ ModnameAndImports modSearchKey (_ecuASTType ecu)
+               let modSearchKey' = updPrevFileSearchKeyWithName modNm modSearchKey
 %%]]
                -- (mbRes, mbset) <- bderef'' refAsked
 
@@ -763,7 +770,7 @@ bcall bfun = do
                         case mbset of
                           Just set -> set ast >> breturn (Just (ast, ref, astpipe))
                           _        -> breturn Nothing
-                       where ref = BRef_AST modSearchKey asttypeAsked
+                       where ref = BRef_AST modSearchKey' asttypeAsked
                      _ -> breturn Nothing
 
                opts <- bcall $ EHCOptsOf modNm
@@ -810,26 +817,26 @@ bcall bfun = do
                  ASTPipe_Src asttypeAsked
                    | asttypeAsked == _ecuASTType ecu -> do
                      fmap (fmap $ \(a,r) -> (a,r,astpipe)) $
-                       bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
+                       bASTFromFileMb modSearchKey' (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
 
 %%[[50
                  ASTPipe_Cached asttypeAsked -> do
                      fmap (either (const Nothing) $ \(a,r) -> Just (a,r,astpipe)) $
-                       bASTFromFileEither modSearchKey True (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) asttypeAsked (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+                       bASTFromFileEither modSearchKey' True (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) asttypeAsked (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
 
                  ASTPipe_Cache asttypeAsked astpipe' -> do
                      -- Cache/write AST
-                     maybeM (bcall $ ASTPMb modSearchKey astpipe') dflt $ \(ast, ref, _) -> do
+                     maybeM (bcall $ ASTPMb modSearchKey' astpipe') dflt $ \(ast, ref, _) -> do
                        -- TBD: write/output side effect
                        breturn $ Just (ast, ref, astpipe')
 
                  ASTPipe_ChooseNewestAvailable asttypeAsked astpipe1 astpipe2 -> do
                      tmChoose dflt (tmOf astpipe1) (tmOf astpipe2)
-                       (\_ -> bcall $ ASTPMb modSearchKey astpipe1)
-                       (\_ -> bcall $ ASTPMb modSearchKey astpipe2)
+                       (\_ -> bcall $ ASTPMb modSearchKey' astpipe1)
+                       (\_ -> bcall $ ASTPMb modSearchKey' astpipe2)
                    where
-                     tmOf (ASTPipe_Src {astpType=t}) = bcall $ ModfTimeOfFile modSearchKey t (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
-                     tmOf (ASTPipe_Cached {astpType=t}) = bcall $ ModfTimeOfFile modSearchKey t (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+                     tmOf (ASTPipe_Src {astpType=t}) = bcall $ ModfTimeOfFile modSearchKey' t (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
+                     tmOf (ASTPipe_Cached {astpType=t}) = bcall $ ModfTimeOfFile modSearchKey' t (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
                      tmOf (ASTPipe_ChooseNewestAvailable {astpPipe1=p1, astpPipe2=p2}) = tmChoose dflt (tmOf p1) (tmOf p2) (return . Just) (return . Just)
                      tmChoose adflt tm1 tm2 a1 a2 = tm1 >>= \mbtm1 -> tm2 >>= \mbtm2 -> case (mbtm1, mbtm2) of
                        (Just t1, Nothing) -> a1 t1
@@ -891,7 +898,7 @@ bcall bfun = do
                     then do
                       t <- liftIO $ fpathGetModificationTime fp
                       when (ehcOptVerbosity opts >= VerboseDebug) $ liftIO $ putStrLn ("time stamp of: " ++ show (ecuModNm ecu) ++ ", time: " ++ show t)
-                      cpUpdCU modNm $ store t
+                      bUpdECU modNm $ store t
                       breturn $ Just t
                     else
                       return Nothing
@@ -902,7 +909,7 @@ bcall bfun = do
                pm <- liftIO $ getPermissions (maybe "." id $ fpathMbDir fp)
                let res = writable pm
                -- liftIO $ putStrLn (fpathToStr fp ++ " writ " ++ show res)
-               cpUpdCU modNm $ ecuDirIsWritable ^= res
+               bUpdECU modNm $ ecuDirIsWritable ^= res
                breturn res
 
           EcuCanCompile modNm -> do
@@ -931,14 +938,15 @@ bcall bfun = do
                         return ASTFileNameOverride_AsIs
                let modSearchKey' = ((modNm,overr'),mbPrev)
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey'
-               hs   <- bcall $ ASTFromFile modSearchKey' (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_SrcImport) ASTFileTiming_Current
+               let modNm'         = ecuModNm ecu
+                   modSearchKey'' = ((modNm',overr'),mbPrev)
+               hs   <- bcall $ ASTFromFile modSearchKey'' (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_SrcImport) ASTFileTiming_Current
                crsi <- bcall $ CRSI
-               opts <- bcall $ EHCOptsOf modNm
-               let  -- (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                    inh        = crsiHSModInh crsi
+               opts <- bcall $ EHCOptsOf modNm'
+               let  inh        = crsiHSModInh crsi
                     hsSemMod   = HSSemMod.wrap_AGItf (HSSemMod.sem_AGItf hs)
                                                      (inh { HSSemMod.gUniq_Inh_AGItf        = crsi ^. crsiHereUID
-                                                          , HSSemMod.moduleNm_Inh_AGItf     = modNm
+                                                          , HSSemMod.moduleNm_Inh_AGItf     = modNm'
                                                           })
                     hasMain= HSSemMod.mainValExists_Syn_AGItf hsSemMod
 %%[[99
@@ -946,13 +954,13 @@ bcall bfun = do
                     (ecuOpts,modifiedOpts)
                             = ehcOptUpdateWithPragmas pragmas opts
 %%]]
-               cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
-                             . ecuSetHasMain hasMain
+               bUpdECU modNm' ( ecuStoreHSSemMod hsSemMod
+                              . ecuSetHasMain hasMain
 %%[[99
-                             . ecuStorePragmas pragmas
-                             . (if modifiedOpts then ecuStoreOpts ecuOpts else id)
+                              . ecuStorePragmas pragmas
+                              . (if modifiedOpts then ecuStoreOpts ecuOpts else id)
 %%]]
-                             )
+                              )
                breturn
                  ( hsSemMod
                  , hasMain
@@ -1037,7 +1045,7 @@ bcall bfun = do
                                         (HI.hiiHiddenExps hiInfo)
                -- when hasMain (crSetAndCheckMain modNm)
                cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})       -- this should be made explicit
-               cpUpdCU modNm ( ecuStoreHIDeclImpS (HI.hiiHIDeclImpModS hiInfo)
+               bUpdECU modNm ( ecuStoreHIDeclImpS (HI.hiiHIDeclImpModS hiInfo)
                              . ecuStoreHIUsedImpS (HI.hiiHIUsedImpModS hiInfo)
                              . ecuSetHasMain hasMain
                              )
@@ -1124,7 +1132,7 @@ bcall bfun = do
                     hasMain= HSSem.mainValExists_Syn_AGItf hsSem
 %%]]
                cpSetLimitErrsWhen 5 "Dependency/name analysis" $ Seq.toList $ HSSem.errSq_Syn_AGItf hsSem
-               cpUpdCU modNm ( ecuStoreHSSem hsSem
+               bUpdECU modNm ( ecuStoreHSSem hsSem
 %%[[50
                              -- TBD: should move elsewhere
                              . ecuStoreHIDeclImpS ( -- (\v -> tr "YY" (pp $ Set.toList v) v) $
@@ -1187,7 +1195,7 @@ bcall bfun = do
                     hasMain= HSSem.mainValExists_Syn_AGItf hsSem
 %%]]
                cpSetLimitErrsWhen 5 "Dependency/name analysis" $ Seq.toList $ HSSem.errSq_Syn_AGItf hsSem
-               cpUpdCU modNm ( ecuStoreHSSem hsSem
+               bUpdECU modNm ( ecuStoreHSSem hsSem
 %%[[50
                              -- TBD: should move elsewhere
                              . ecuStoreHIDeclImpS ( -- (\v -> tr "YY" (pp $ Set.toList v) v) $
@@ -1247,7 +1255,7 @@ bcall bfun = do
                     errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
                     
                cpSetLimitErrsWhen 5 about errs
-               cpUpdCU modNm $! ecuStoreEHSem $! ehSem
+               bUpdECU modNm $! ecuStoreEHSem $! ehSem
                when (ehcOptEmitEH opts)
                     (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
                when (ehcOptShowEH opts)
@@ -1302,7 +1310,7 @@ bcall bfun = do
                     errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
                     
                cpSetLimitErrsWhen 5 about errs
-               cpUpdCU modNm $! ecuStoreEHSem $! ehSem
+               bUpdECU modNm $! ecuStoreEHSem $! ehSem
                when (ehcOptEmitEH opts)
                     (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
                when (ehcOptShowEH opts)
@@ -1358,7 +1366,7 @@ bcall bfun = do
                  (do liftIO $ fpathEnsureExists fpCPP
                      cpSystem' (Just $ fpathToStr fpCPP) preCPP
                      cpRegisterFilesToRm [fpCPP]
-                     cpUpdCU modNm (ecuStoreCppFilePath fpCPP)
+                     bUpdECU modNm (ecuStoreCppFilePath fpCPP)
                      breturn fpCPP
                  )
                  (do cpSetLimitErrsWhen 1 "CPP" [rngLift emptyRange Err_CannotCreateFile (show modNm) (fpathToStr fpCPP) ]
@@ -1449,7 +1457,7 @@ bcall bfun = do
                                           , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
 %%]]
                                           })
-               cpUpdCU modNm $ ecuStoreCoreSem coreSem
+               bUpdECU modNm $ ecuStoreCoreSem coreSem
                breturn $ Just coreSem
 
           FoldCore2GrinPMb modSearchKey@((modNm,_),_) astpipe -> do
@@ -1467,7 +1475,7 @@ bcall bfun = do
                                           , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
 %%]]
                                           })
-               cpUpdCU modNm $ ecuStoreCoreSem coreSem
+               bUpdECU modNm $ ecuStoreCoreSem coreSem
                breturn $ Just coreSem
 %%]]
 
@@ -1493,7 +1501,7 @@ bcall bfun = do
                -- between module flow part, TBD: corerun, nmref part
                -- cpUpdSI (\crsi -> crsi {crsiCore2RunInh = core2RunInh'})
                -- per module part
-               cpUpdCU modNm ( ecuStoreCore2CoreRunSem sem
+               bUpdECU modNm ( ecuStoreCore2CoreRunSem sem
                              -- . ecuStoreCoreRun corerun
                              )
                breturn $ Just sem
@@ -1517,14 +1525,14 @@ bcall bfun = do
                -- between module flow part, TBD: corerun, nmref part
                -- cpUpdSI (\crsi -> crsi {crsiCore2RunInh = core2RunInh'})
                -- per module part
-               cpUpdCU modNm ( ecuStoreCore2CoreRunSem sem
+               bUpdECU modNm ( ecuStoreCore2CoreRunSem sem
                              -- . ecuStoreCoreRun corerun
                              )
                breturn $ Just sem
                
 %%]]
 
-%%[[(8 corerun corerunin)
+%%[[(50 corerun corerunin)
           FoldCoreRunMod modSearchKey@((modNm,_),_) -> do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                crr  <- bcall $ ASTFromFile modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_CoreRun (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
@@ -1654,19 +1662,20 @@ bcall bfun = do
         modNmNew <- ifM (bcall $ IsTopMod modNm)
           (do
             cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
-            when (modNm /= modNm') $
+            when (modNm /= modNm') $ do
               crStateInfo ^* crsiBState ^* bstateCache ^* bcacheModNmForward =$: Map.insert modNm modNm'
+              cpTr TraceOn_BuildRef ["newModNm rename: " ++ show modNm ++ " -> " ++ show modNm']
             return modNm'
           )
           (do
-            cpUpdCU modNm upd
+            bUpdECU modNm upd
             return modNm
           )
 %%]]
         ecu <- bcall $ EcuOf modNmNew
         let newPrev = Just (modNmNew, (ecuSrcFilePath ecu, ecuFileLocation ecu))
 %%[[50
-        cpUpdCU modNmNew $ ecuMbPrevSearchInfo ^= newPrev
+        bUpdECU modNmNew $ ecuMbPrevSearchInfo ^= newPrev
 %%]]
         return (modNmNew, newPrev)
 
@@ -1688,9 +1697,11 @@ bASTFromFileEither
      -> ASTFileTiming                   	--- ^ timing (i.e. previous or current)
      -> EHCompilePhaseT m (Either (String,[Err]) (res, BRef res))
 bASTFromFileEither modSearchKey yieldErr chkTimeStamp asttype skey tkey = do
-%%[[50
-    mbtm <- bcall $ ModfTimeOfFile modSearchKey asttype skey tkey
     let dflt = Left ("",[])
+%%[[8
+    do
+%%][50
+    mbtm <- bcall $ ModfTimeOfFile modSearchKey asttype skey tkey
     if isJust mbtm
       then do
 %%]]
@@ -1789,12 +1800,7 @@ bderef'' bref = do
     cr <- get
     let st   = cr ^. crStateInfo
         opts = st ^. crsiOpts
-        resolve n = return n
-{-
-        resolve n = do
-          c <- getl $ crStateInfo ^* crsiBState ^* bstateCache
-          return $ bcacheResolveModNm c n
--}
+
     res@(r1,r2) <- case bref of
       BRef_CRSI -> return (Just $ cr ^. crStateInfo, Nothing)
 
@@ -1802,23 +1808,25 @@ bderef'' bref = do
       BRef_ExposedPackages -> return (Just $ pkgExposedPackages $ ehcOptPkgDb opts, Nothing)
 %%]]
 
-      BRef_ECU modNm -> resolve modNm >>= \n -> return (crMbCU n cr, Just $ \ecu -> cpUpdCU n (const ecu))
+      BRef_ECU modNm -> do
+          mbecu <- bLookupECU modNm
+          return (mbecu, Just $ \ecu -> bUpdECU modNm (const ecu))
 
-      BRef_EHCOpts modNm -> resolve modNm >>= \n -> return (Just $ choose n, Nothing)
-        where 
+      BRef_EHCOpts modNm -> do
 %%[[8
-              choose n = opts
+          let o = opts
 %%][99
-              choose n = maybe opts id $ crMbCU n cr >>= ecuMbOpts
+          mbecu <- bLookupECU modNm
+          let o = maybe opts id $ mbecu >>= ecuMbOpts
 %%]]
+          return (Just o, Nothing)
 
       BRef_AST modSearchKey@((modNm,_),_) asttype -> case asthandlerLookup asttype of
           Just (hdlr :: ASTHandler' res) -> 
             case _asthdlrASTLens hdlr of
               Just l -> do
                 ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
-                n <- resolve modNm
-                return (ecu ^. l, Just $ \ast -> cpUpdCU n $ l ^= Just ast)
+                return (ecu ^. l, Just $ \ast -> bUpdECU modNm $ l ^= Just ast)
               _ -> dflt
           _ -> dflt
         where dflt = return (Nothing, Nothing)
@@ -1828,8 +1836,7 @@ bderef'' bref = do
             Just suffinfo -> case Map.lookup tkey $ _astsuffinfoASTLensMp suffinfo of
               Just l -> do
                 ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
-                n <- resolve modNm
-                return (ecu ^. l, Just $ \ast -> cpUpdCU n $ l ^= Just ast)
+                return (ecu ^. l, Just $ \ast -> bUpdECU modNm $ l ^= Just ast)
               _ -> dflt
             _ -> dflt
           _ -> dflt

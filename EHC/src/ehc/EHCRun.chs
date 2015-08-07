@@ -2,7 +2,7 @@
 %%% Just run an intermediate format, very simplistical wrapper around library running, to be beefed up later
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) module Main
+%%[1 module Main
 %%]
 
 %%[(8 corerun) import({%{EH}EHC.Main}, {%{EH}EHC.Main.Utils})
@@ -21,10 +21,11 @@
 %%% Main, compiling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun).main
+%%[1
 -- | Top level main. TBD: hooks & customization
 main :: IO ()
 main = do
+%%[[(8 corerun)
     args <- getArgs
 %%[[99
     progName <- getProgName
@@ -52,7 +53,7 @@ main = do
                         , ehcOptOptimizationScope = OptimizationScope_WholeCore
 %%]]
                         , ehcOptVerbosity = VerboseQuiet
-                        , ehcOptAltDriver = True
+                        , ehcOptAltDriver = not $ ehcOptAltDriver opts
                         }
             _      -> return ()
         (_      , es) -> do
@@ -68,5 +69,8 @@ main = do
                 case res of
                   Left  e   -> putStrLn $ show $ pp e
                   Right val -> putStrLn $ show $ pp val
+%%][1
+    putStrLn "Not installed, CoreRun must be enabled"
+%%]]
 %%]
 

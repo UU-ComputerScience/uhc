@@ -217,6 +217,11 @@ data BFun' res where
     :: !HsName				--- ^ module name
     -> BFun' EHCOpts
 
+  --- | Actual module name, as it occurs in module itself
+  ActualModNm
+    :: !HsName				--- ^ module name
+    -> BFun' HsName
+
   ASTRefFromFileEither
     :: Typeable ast
     => !PrevFileSearchKey				--- ^ module name and possibly known path
@@ -510,7 +515,7 @@ data BFun' res where
          ) )
 %%]]
 
-%%[[(8 corerun corerunin)
+%%[[(50 corerun corerunin)
   --- | CoreRun as src semantics
   FoldCoreRunMod
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
@@ -569,6 +574,7 @@ bfunCompare f1 f2 = case (f1,f2) of
     (ImportsRecursiveWithImps	a1 b1  				, ImportsRecursiveWithImps	a2 b2  				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ImportsRecursiveOfName		a1   				, ImportsRecursiveOfName	a2   				) ->         a1 `compare` a2
 %%]]
+    (ActualModNm		        a1   				, ActualModNm	    		a2   				) ->         a1 `compare` a2
     (EcuOf		              	a1   				, EcuOf	    				a2   				) ->         a1 `compare` a2
     (EcuOfName              	a1   				, EcuOfName    				a2   				) ->         a1 `compare` a2
     (EcuOfPrevNameAndPath		a1 					, EcuOfPrevNameAndPath		a2 					) ->         a1 `compare` a2
@@ -615,7 +621,7 @@ bfunCompare f1 f2 = case (f1,f2) of
     (FoldCore2CoreRunMb			a1 					, FoldCore2CoreRunMb		a2 					) ->         a1 `compare` a2
     (FoldCore2CoreRunPMb		a1 b1				, FoldCore2CoreRunPMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
-%%[[(8 corerun corerunin)
+%%[[(50 corerun corerunin)
     (FoldCoreRunMod				a1 					, FoldCoreRunMod			a2 					) ->         a1 `compare` a2
     (FoldCoreRunModPMb			a1 b1 				, FoldCoreRunModPMb			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
@@ -653,6 +659,7 @@ instance Hashable (BFun' res) where
 	ImportsRecursiveWithImps	a b			-> salt `hashWithSalt` (7::Int) `hashWithSalt` a `hashWithSalt` b
 	ImportsRecursiveOfName		a			-> salt `hashWithSalt` (8::Int) `hashWithSalt` a
 %%]]
+	ActualModNm					a			-> salt `hashWithSalt` (9::Int) `hashWithSalt` a
 	EcuOf			   			a			-> salt `hashWithSalt` (9::Int) `hashWithSalt` a
 	EcuOfName		   			a			-> salt `hashWithSalt` (10::Int) `hashWithSalt` a
 	EHCOptsOf		   			a			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a
@@ -699,7 +706,7 @@ instance Hashable (BFun' res) where
 	FoldCore2CoreRunMb			a 			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a
 	FoldCore2CoreRunPMb			a b			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
-%%[[(8 corerun corerunin)
+%%[[(50 corerun corerunin)
 	FoldCoreRunMod				a 			-> salt `hashWithSalt` (35::Int) `hashWithSalt` a
 	FoldCoreRunModPMb			a b 		-> salt `hashWithSalt` (35::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
@@ -761,7 +768,6 @@ emptyBCache = BCache IMap.empty Map.empty Rel.empty
 bcacheResolveModNm :: BCache -> HsName -> HsName
 bcacheResolveModNm c n = maybe n (bcacheResolveModNm c) $ Map.lookup n (_bcacheModNmForward c)
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Build value reference (to global state)
@@ -1045,10 +1051,10 @@ crMbBaseInfo modNm cr
 
 crBaseInfo :: HsName -> EHCompileRun -> (EHCompileUnit,EHCompileRunStateInfo,EHCOpts,FPath)
 crBaseInfo modNm cr
-  = ( maybe (panic "crBaseInfo.mbEcu") id mbEcu 
+  = ( maybe (panic $ "crBaseInfo.mbEcu " ++ show modNm) id mbEcu 
     , crsi
     , opts
-    , maybe (panic "crBaseInfo.mbFp") id mbFp
+    , maybe (panic $ "crBaseInfo.mbFp " ++ show modNm) id mbFp
     )
   where (mbEcu, crsi, opts, mbFp) = crMbBaseInfo modNm cr
 %%]
@@ -1301,3 +1307,27 @@ cpUpdAlreadyFlowIntoCRSI :: EHCCompileRunner m => HsName -> ASTType -> ASTSemFlo
 cpUpdAlreadyFlowIntoCRSI modNm asttype flowstage = cpUpdAlreadyFlowIntoCRSIWith modNm asttype (flowstage,Nothing)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement lookup/update for compile units using the forwarding name mechanism
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(bLookupECUInCR, bLookupECU', bLookupECU, bUpdECU)
+-- | Lookup compile unit, also giving the actual module name forwarded to
+bLookupECUInCR :: HsName -> EHCompileRun -> Maybe (HsName, EHCompileUnit)
+bLookupECUInCR n cr = lkn n <|> lkn (bcacheResolveModNm (cr ^. crStateInfo ^. crsiBState ^. bstateCache) n)
+  where lkn n = fmap ((,) n) $ crMbCU n cr
+
+-- | Lookup compile unit, also giving the actual module name forwarded to
+bLookupECU' :: EHCCompileRunner m => HsName -> EHCompilePhaseT m (Maybe (HsName, EHCompileUnit))
+bLookupECU' n = MS.gets (bLookupECUInCR n)
+
+-- | Lookup compile unit
+bLookupECU :: EHCCompileRunner m => HsName -> EHCompilePhaseT m (Maybe EHCompileUnit)
+bLookupECU n = fmap (fmap snd) $ bLookupECU' n
+
+-- | Update compile unit
+bUpdECU :: EHCCompileRunner m => HsName -> (EHCompileUnit -> EHCompileUnit) -> EHCompilePhaseT m ()
+bUpdECU n f = do
+    cr <- MS.get
+    cpUpdCU (maybe n fst $ bLookupECUInCR n cr) f
+%%]
