@@ -37,6 +37,6 @@ internalVersionHI = mkInternalVersion 1
 internalVersionCore = mkInternalVersion 20
 
 -- | For binary/serialized CoreRun .crr/.bcrr./tcrr etc files
-internalVersionCoreRun = mkInternalVersion 6
+internalVersionCoreRun = mkInternalVersion 7
 %%]
 

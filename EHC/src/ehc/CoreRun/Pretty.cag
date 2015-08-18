@@ -194,11 +194,12 @@ ppBinds'' inhpp mkr off bs = ppBinds''' inhpp (ppRRef inhpp . mkr) off [ (i, ppE
 %%]
 
 %%[(8 corerun)
-ATTR AllNT AllMetaNT AllImport [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR AllNT AllMetaNT AllImport AllExport [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
   | Mod         lhs         .   pp          =   (ppSemi $ "module" >#< ppCoreNm @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >|< maybe empty (" ->" >#<) @mbbody.ppMb)
                                                 >-< ppBindItems @imports.ppL
+                                                >-< ppBindItems @exports.ppL
                                                 >-< ppBindItems @metas.ppL
                                                 >-< ppBinds'' @inhpp (RRef_Glb @moduleNr) 0 @binds
 
@@ -236,12 +237,15 @@ SEM DataCon
 
 SEM Import
   | Import		lhs			.	pp			=	"import" >#< ppCoreNm @nm
+
+SEM Export
+  | Export		lhs			.	pp			=	"export" >#< ppDifficultNm @nm >#< "=" >#< @offset
 %%]
 
 %%[(8 corerun)
-ATTR ImportL MetaL DataConL [ | | ppL: {[PP_Doc]} ]
+ATTR ImportL MetaL DataConL ExportL [ | | ppL: {[PP_Doc]} ]
 
-SEM MetaL DataConL ImportL
+SEM MetaL DataConL ImportL ExportL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 

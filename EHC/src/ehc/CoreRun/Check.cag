@@ -16,7 +16,7 @@
 %%[(8 corerunin) hs import({%{EH}CoreRun})
 %%]
 
-%%[(8 corerunin) hs import(qualified UHC.Util.Rel as Rel)
+%%[(8 corerunin) hs import(qualified UHC.Util.Rel as Rel, qualified UHC.Util.RelMap as RelMap)
 %%]
 
 %%[(50 corerunin) hs import(qualified {%{EH}Module.ImportExport} as ModImpExp)
@@ -65,9 +65,13 @@ ATTR
     | | ]
 
 ATTR
-  AGItf Mod
+  AGItf Mod AllExport
     [ moduleNm: HsName
+      moduleNr: Int
     | | ]
+
+SEM Mod
+  | Mod         exports     .   moduleNm        	=   @realModuleNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,6 +147,17 @@ SEM Mod
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Export info: name to ref map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AGItf Mod AllExport [ | | nm2ref USE {`nm2refUnion`} {emptyNm2RefMp} : Nm2RefMp ]
+
+SEM Export
+  | Export		lhs			.   nm2ref				=   RelMap.singleton @nm (RRef_Imp @lhs.moduleNr @offset) -- (RRef_Exp @lhs.moduleNm @offset)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module has 'main'?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -163,4 +178,16 @@ ATTR MbExp [ | | isJust: Bool ]
 SEM MbExp
   | Nothing		lhs			.	isJust				=	False
   | Just		lhs			.	isJust				=	True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replica
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AllNT [ | | crr: SELF ]
+ATTR AGItf [ | | crr: Mod ]
+
+SEM Mod
+  | Mod			lhs			.	crr					=	@crr {moduleNr_Mod_Mod = @lhs.moduleNr}
 %%]

@@ -62,9 +62,10 @@ pAST opts = ASTParser $ pMod opts
 -- | Parse module 'Mod'
 pMod :: EHCOpts -> CRParser Mod
 pMod _
-  = (\nm nr sz main is ms bs -> mkModWithImportsMetas nm nr sz is ms (crarrayFromList bs) main)
+  = (\nm nr sz main is es ms bs -> mkModWithImportsExportsMetas nm nr sz is es ms (crarrayFromList bs) main)
     <$  pMODULE <*> pMaybe (mkHNm "Main") id pDollNm <*> pInt <* pCOMMA <*> pInt <*> pMb (pRARROW *> pExp) <* pSEMI
     <*> pList (pImport <* pSEMI)
+    <*> pList (pExport <* pSEMI)
     <*> pList (pMeta <* pSEMI)
     <*> pList (pExp <* pSEMI)
 
@@ -72,6 +73,11 @@ pMod _
 pImport :: CRParser Import
 pImport
   = Import_Import <$ pIMPORT <*> pDollNm
+
+-- | Parse 'Export'
+pExport :: CRParser Export
+pExport
+  = Export_Export <$ pEXPORT <*> pDifficultNm <* pEQUAL <*> pInt
 
 -- | Parse 'Meta'
 pMeta :: CRParser Meta

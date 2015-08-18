@@ -312,6 +312,7 @@ astHandler'_HI = mk emptyASTHandler'
                                                     ]
 %%]]
                                                _ -> []
+            , _asthdlrASTIsValid      	= \hiinfo -> HI.hiiValidity hiinfo == HI.HIValidity_Ok
             }
 %%]
 
@@ -553,10 +554,18 @@ asthandlerLookup t = case Map.lookup t allASThandlerMp of
 
 %%[8 export(asthandlerLookup')
 -- | Lookup ast handler, allowing arbitrary type by hiding the type
-asthandlerLookup' :: ASTType -> (forall ast . ASTHandler' ast -> Maybe x) -> Maybe x
+asthandlerLookup' :: ASTType -> (forall ast . Typeable ast => ASTHandler' ast -> Maybe x) -> Maybe x
 asthandlerLookup' t f = case Map.lookup t allASThandlerMp of
     Just (ASTHandler h) -> f h
     _                   -> Nothing
+%%]
+
+%%[8 export(asthandlerLookupM')
+-- | Lookup ast handler, allowing arbitrary type by hiding the type, monadically
+asthandlerLookupM' :: Monad m => ASTType -> (forall ast . Typeable ast => ASTHandler' ast -> m (Maybe x)) -> m (Maybe x)
+asthandlerLookupM' t f = case Map.lookup t allASThandlerMp of
+    Just (ASTHandler h) -> f h
+    _                   -> return Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

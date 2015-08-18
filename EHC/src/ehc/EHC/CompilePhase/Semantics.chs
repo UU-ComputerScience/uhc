@@ -104,12 +104,14 @@ cpFoldCore2CoreRun modNm
                  hasMain  				= ecuHasMain ecu
 %%]]
                  core     				= panicJust "cpFoldCore2CoreRun" mbCore
-                 core2RunInh			= crsiCore2RunInh crsi
+                 inhLbl                 = crsiCoreRunState ^* crcrsiNm2RefMp
+                 core2RunInh			= crsi ^. inhLbl
                  (corerun,nm2ref,sem)	= Core2CoreRunSem.cmod2CoreRun' opts hasMain 0 core2RunInh core
                  core2RunInh'			= nm2ref `CoreRun.nm2refUnion` core2RunInh
          ;  when (isJust mbCore) $ do
                  -- between module flow part
-                 cpUpdSI (\crsi -> crsi {crsiCore2RunInh = core2RunInh'})
+                 cpUpdSI $ inhLbl ^= core2RunInh'
+                 -- cpUpdSI (\crsi -> crsi {_crsiCore2RunInh = core2RunInh'})
                  -- per module part
                  cpUpdCU modNm ( ecuStoreCoreRun corerun
                                . ecuStoreCore2CoreRunSem sem

@@ -49,6 +49,7 @@ mkFileSuffMpHs opts
 %%]]
 %%[[(50 corerunin)
     , ( Just Cfg.suffixDotlessBinaryCoreRun , (ECUS_CoreRun CRRStartBinary, ASTType_CoreRun, ASTFileContent_Binary, ASTFileUse_Src), True )
+    , ( Just Cfg.suffixDotlessOutputTextualCoreRun, (ECUS_CoreRun CRRStartText, ASTType_CoreRun, ASTFileContent_Text, ASTFileUse_Src), True )
 %%]]
 %%[[(50 corein)
     , ( Just Cfg.suffixDotlessInputOutputTextualCore, (ECUS_Core CRStartText, ASTType_Core, ASTFileContent_Text, ASTFileUse_Src), True   )

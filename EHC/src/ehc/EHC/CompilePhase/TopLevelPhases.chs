@@ -322,7 +322,7 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              needsCompile = crModNeedsCompile modNm cr
              -- canCompile   = ecuCanCompile ecu
-       ; canCompile <- bcall $ EcuCanCompile modNm
+       ; canCompile <- bcall $ CanCompile modNm
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (liftIO $ putStrLn
                 (  show modNm
@@ -1397,7 +1397,7 @@ cpProcessCoreRunRest modNm
        ; cpSeq (   []
                 ++ (if CoreOpt_RunDump `elem` ehcOptCoreOpts opts
                     then -- [void $ cpOutputCore CPOutputCoreHow_CoreRun_Text {-[]-} "" Cfg.suffixDotlessInputOutputCoreRun modNm]
-                         [void $ cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Text "" Cfg.suffixDotlessInputOutputCoreRun modNm]
+                         [void $ cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Text "" Cfg.suffixDotlessOutputTextualCoreRun modNm]
                     else [])
                 ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
                     then [cpRunCoreRun  modNm]

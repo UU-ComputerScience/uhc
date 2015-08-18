@@ -135,6 +135,12 @@ data ASTHandler' ast
 		  --- | Module name and imports
 		  , _asthdlrModnameImports 		:: forall m . EHCCompileRunner m => PrevFileSearchKey -> EHCompilePhaseT m (Maybe (HsName,[HsName]))
 %%]]
+
+		  --- * AST predicates
+
+		  --- | Is valid?
+		  , _asthdlrASTIsValid 		:: ast -> Bool
+
 		  }
 		  deriving Typeable
 %%]
@@ -168,6 +174,7 @@ emptyASTHandler'
 %%[[50
       , _asthdlrModnameImports		= \_ -> return Nothing
 %%]]
+      , _asthdlrASTIsValid          = const True
       }
 %%]
 

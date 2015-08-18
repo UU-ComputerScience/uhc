@@ -14,6 +14,9 @@ Initial values
 %%[8 import({%{EH}EHC.Common})
 %%]
 
+%%[8 import({%{EH}EHC.CompileRun.Base})
+%%]
+
 -- HS semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
@@ -114,9 +117,14 @@ initialCore2GrSem opts
       }
 %%]
 
-%%[(8 corerun) export(initialCore2CoreRunSem)
+%%[(8888 corerun) export(initialCore2CoreRunSem)
 initialCore2CoreRunSem :: CoreRun.Nm2RefMp
 initialCore2CoreRunSem = CoreRun.emptyNm2RefMp
+%%]
+
+%%[(8 corerun) export(initialCoreRunState)
+initialCoreRunState :: EHCompileRunCoreRunStateInfo
+initialCoreRunState = emptyEHCompileRunCoreRunStateInfo
 %%]
 
 %%[50 export(initialHSSemMod)

@@ -46,7 +46,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%]
 %%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), MbExp, Alt(..), Pat(..))
 %%]
-%%[(8 corerun) hs export(Meta(..), MetaL, DataCon(..), DataConL, Import(..), ImportL)
+%%[(8 corerun) hs export(Meta(..), MetaL, DataCon(..), DataConL, Import(..), ImportL, Export(..), ExportL)
 %%]
 
 %%[(50 corerun) hs import (Control.Monad)
@@ -302,8 +302,8 @@ ref2nmUnion = Rel.union -- m1 m2 = \r -> m1 r <|> m2 r
 
 %%[(50 corerun) hs
 instance Binary Mod where
-  put (Mod_Mod a b c d e f g h) = put a >> put b >> put c >> put d >> put e >> put f >> put g >> put h
-  get = liftM8 Mod_Mod get get get get get get get get
+  put (Mod_Mod a b c d e f g h i) = put a >> put b >> put c >> put d >> put e >> put f >> put g >> put h >> put i
+  get = liftM9 Mod_Mod get get get get get get get get get
 
 instance Serialize Mod where
   sput = sputPlain
@@ -320,6 +320,12 @@ instance Binary Import where
   get = {- do t <- getWord8
            case t of
              0 -> -} liftM  Import_Import get
+
+instance Binary Export where
+  put (Export_Export a b) = {- putWord8 0 >> -} put a >> put b
+  get = {- do t <- getWord8
+           case t of
+             0 -> -} liftM2 Export_Export get get
 
 instance Binary DataCon where
   put (DataCon_Con a b) = {- putWord8 0 >> -} put a >> put b
@@ -623,10 +629,23 @@ mkMetaDataType = Meta_Data
 %%]
 
 
-%%[(8 corerun) hs export(mkMod, mkMod', mkModWithMetas, mkModWithImportsMetas)
+%%[(8 corerun) hs export(mkMod, mkMod', mkModWithMetas, mkModWithImportsMetas, mkModWithImportsExportsMetas)
 -- **************************************
 -- Construction: Top level module
 -- **************************************
+
+-- | Module, with imports, with meta info
+mkModWithImportsExportsMetas
+  :: HsName				-- ^ module name
+     -> Int				-- ^ module number
+     -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
+     -> [Import]		-- ^ imports
+     -> [Export]		-- ^ exports
+     -> [Meta]			-- ^ meta info
+     -> CRArray Bind	-- ^ bound expressions
+     -> Maybe Exp		-- ^ body of main, absence of main indicated by Nothing
+     -> Mod
+mkModWithImportsExportsMetas modNm modNr stkDepth imports exports metas binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth imports exports metas binds body
 
 -- | Module, with imports, with meta info
 mkModWithImportsMetas
@@ -638,7 +657,7 @@ mkModWithImportsMetas
      -> CRArray Bind	-- ^ bound expressions
      -> Maybe Exp		-- ^ body of main, absence of main indicated by Nothing
      -> Mod
-mkModWithImportsMetas modNm modNr stkDepth imports metas binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth imports metas binds body
+mkModWithImportsMetas modNm modNr stkDepth imports metas binds body = mkModWithImportsExportsMetas modNm modNr stkDepth imports [] metas binds body
 
 -- | Module, with meta info
 mkModWithMetas

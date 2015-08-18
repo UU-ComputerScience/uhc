@@ -304,7 +304,7 @@ corerunScanOpts -- opts
         {   scoKeywordsTxt      =   Set.fromList $
                                         [ "alloc", "module", "tail", "eval", "case", "of", "let", "in", "app", "ffi", "dbg", "tag"
                                         , "g", "d", "l", "i", "m"
-                                        , "data", "import"
+                                        , "data", "import", "export"
                                         ]
         -- ,	scoKeywExtraChars	=	Set.fromList "."
         ,   scoKeywordsOps      =   Set.fromList [ "->", "." ]

@@ -140,7 +140,7 @@ data CRState
 %%[(8 corerunin) export(CRRState(..))
 data CRRState
   = CRRStartBinary
-  -- | CRRStartText
+  | CRRStartText
   | CRROnlyImports
   | CRRAllSem
   deriving (Show,Eq)

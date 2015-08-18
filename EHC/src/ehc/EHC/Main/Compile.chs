@@ -98,8 +98,15 @@ compileN_Alternate fpL topModNmL@(modNm:_) = do
         astpipe = astpipeForEHCOpts opts
     case (ehcOptTarget opts, fpL, topModNmL) of
 %%[[(8 corerun)
+{-
       (Target_None_Core_AsIs, (fp:_), (modNm:_)) | CoreOpt_Run `elem` ehcOptCoreOpts opts -> do
           (_ :: AST_Core) <- bcall $ ASTP ((modNm, ASTFileNameOverride_FPathAsTop fp), Nothing) astpipe
+          -- cr <- get
+          -- cpTr TraceOn_BuildResult ["compileN_Alternate", show $ Map.keys $ cr ^. crCUCache, show $ cr ^. crNmForward]
+          (bcall $ ActualModNm modNm) >>= cpRunCoreRun
+-}
+      (Target_None_Core_AsIs, (fp:_), (modNm:_)) | CoreOpt_Run `elem` ehcOptCoreOpts opts -> do
+          (_ :: AST_CoreRun) <- bcall $ ASTP ((modNm, ASTFileNameOverride_FPathAsTop fp), Nothing) astpipe
           -- cr <- get
           -- cpTr TraceOn_BuildResult ["compileN_Alternate", show $ Map.keys $ cr ^. crCUCache, show $ cr ^. crNmForward]
           (bcall $ ActualModNm modNm) >>= cpRunCoreRun

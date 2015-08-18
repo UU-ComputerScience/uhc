@@ -349,6 +349,7 @@ doCompilePrepare fnL@(fn:_) opts
                                 }
 -}
              crsi           =   (EHCompileRunStateInfo opts3
+                                                       (astpipeForEHCOpts opts3)
                                                        uidStart uidStart
                                                        (initialHSSem opts3)
                                                        (initialEHSem opts3 fp)
@@ -357,7 +358,8 @@ doCompilePrepare fnL@(fn:_) opts
                                                        (initialCore2GrSem opts3)
 %%]]
 %%[[(8 corerun)
-                                                       initialCore2CoreRunSem
+                                                       initialCoreRunState
+                                                       -- initialCore2CoreRunSem
 %%]]
 %%[[50
                                                        Nothing

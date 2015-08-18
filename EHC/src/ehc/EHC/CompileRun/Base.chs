@@ -102,12 +102,14 @@ data BFun' res where
     :: BFun' EHCompileRunStateInfo
 
 %%[[50
+{-
   --- | Obtain global state specific for compile order
   CRSIWithCompileOrder
     :: !HsName
     -> ![[HsName]]				--- ^ compile order
     -> !(Set.Set ASTType)		--- ^ flow for these ASTTypes
     -> BFun' EHCompileRunStateInfo
+-}
 
   --- | Obtain global state specific for compile order
   CRSIWithCompileOrderP
@@ -116,12 +118,14 @@ data BFun' res where
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' EHCompileRunStateInfo
 
+{-
   --- | Obtain global state specific for imports
   CRSIWithImps
     :: !PrevFileSearchKey
     -> !(Set.Set HsName)				--- ^ imports
     -> !(Set.Set ASTType)		--- ^ flow for these ASTTypes
     -> BFun' EHCompileRunStateInfo
+-}
 
   --- | Obtain global state specific for imports
   CRSIWithImpsP
@@ -273,12 +277,7 @@ data BFun' res where
     :: Typeable ast
     => !PrevFileSearchKey				--- ^ module name and possibly known path
     -> !ASTPipe							--- ^ pipeline leading to content
-    -> BFun'
-         (Maybe
-           ( ast						-- the ast
-           , BRef ast					-- a reference to it
-           , ASTPipe					-- the compile pipeline chosen
-         ) )
+    -> BFun' (Maybe (ASTResult ast))
 
 {-
   --- | Get a particular AST for a module using a pipeline to compute it, possibly
@@ -297,13 +296,40 @@ data BFun' res where
     -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
     -> BFun' (Maybe ClockTime)
 
+  --- | Valid AST from file?
+  ASTFileIsValid
+    :: !PrevFileSearchKey				--- ^ module name and possibly known path
+    -> !ASTType							--- ^ content type
+    -> !ASTSuffixKey					--- ^ suffix and content variation
+    -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
+    -> BFun' Bool
+
+  --- | Compare timestamps, if possible, yield True if first is new than second
+  ASTFileIsNewerThan
+    :: !(PrevFileSearchKey				--- ^ 1st module name and possibly known path
+        ,ASTType						--- ^ 1st content type
+        ,ASTSuffixKey					--- ^ 1st suffix and content variation
+        ,ASTFileTiming 					--- ^ 1st timing (i.e. previous or current)
+        )
+    -> !(PrevFileSearchKey				--- ^ 2nd module name and possibly known path
+        ,ASTType						--- ^ 2nd content type
+        ,ASTSuffixKey					--- ^ 2nd suffix and content variation
+        ,ASTFileTiming 					--- ^ 2nd timing (i.e. previous or current)
+        )
+    -> BFun' (Maybe Bool)
+
   --- | Get writeability of the dir a module resides in
   DirOfModIsWriteable
     :: !HsName							--- ^ module name and possibly known path
     -> BFun' Bool
 
   --- | Can compile a src module
-  EcuCanCompile
+  CanCompile
+    :: !HsName							--- ^ module name and possibly known path
+    -> BFun' Bool
+
+  --- | Src module needs (re)compilation
+  NeedsCompile
     :: !HsName							--- ^ module name and possibly known path
     -> BFun' Bool
 
@@ -490,6 +516,7 @@ data BFun' res where
 %%]]
 
 %%[[(8 core corerun)
+{-
   --- | Core -> CoreRun semantics
   FoldCore2CoreRun
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
@@ -504,6 +531,7 @@ data BFun' res where
          ( Maybe
            ( AST_Core_Sem_ToCoreRun				-- all semantics
          ) )
+-}
 
   --- | Core -> CoreRun semantics
   FoldCore2CoreRunPMb
@@ -560,9 +588,9 @@ bfunCompare :: BFun' res1 -> BFun' res2 -> Ordering
 bfunCompare f1 f2 = case (f1,f2) of
     (CRSI				 							, CRSI 											) -> EQ
 %%[[50
-    (CRSIWithCompileOrder		a1 b1 c1 			, CRSIWithCompileOrder		a2 b2 c2 			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    -- (CRSIWithCompileOrder		a1 b1 c1 			, CRSIWithCompileOrder		a2 b2 c2 			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
     (CRSIWithCompileOrderP		a1 b1 c1 			, CRSIWithCompileOrderP		a2 b2 c2 			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
-    (CRSIWithImps			    a1 b1 c1 			, CRSIWithImps		    	a2 b2 c2 			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    -- (CRSIWithImps			    a1 b1 c1 			, CRSIWithImps		    	a2 b2 c2 			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
     (CRSIWithImpsP			    a1 b1 c1 			, CRSIWithImpsP		    	a2 b2 c2 			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
 %%]]
     (CRSIOfName			    	a1 b1  				, CRSIOfName		    	a2 b2  				) -> lexico [a1 `compare` a2, b1 `compare` b2]
@@ -589,8 +617,11 @@ bfunCompare f1 f2 = case (f1,f2) of
     (ASTPMb            			a1 b1		 		, ASTPMb					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%[[50
     (ModfTimeOfFile         	a1 b1 c1 d1			, ModfTimeOfFile			a2 b2 c2 d2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
+    (ASTFileIsValid         	a1 b1 c1 d1			, ASTFileIsValid			a2 b2 c2 d2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
+    (ASTFileIsNewerThan        	a1 b1   			, ASTFileIsNewerThan		a2 b2 	 			) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (DirOfModIsWriteable		a1   				, DirOfModIsWriteable		a2   				) ->         a1 `compare` a2
-    (EcuCanCompile				a1 					, EcuCanCompile				a2 					) ->         a1 `compare` a2
+    (CanCompile					a1 					, CanCompile				a2 					) ->         a1 `compare` a2
+    (NeedsCompile				a1 					, NeedsCompile				a2 					) ->         a1 `compare` a2
     (IsTopMod					a1 					, IsTopMod					a2 					) ->         a1 `compare` a2
 %%]]
 %%[[50
@@ -617,8 +648,8 @@ bfunCompare f1 f2 = case (f1,f2) of
     (FoldCore2GrinPMb			a1 b1				, FoldCore2GrinPMb			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
 %%[[(8 core corerun)
-    (FoldCore2CoreRun			a1 					, FoldCore2CoreRun			a2 					) ->         a1 `compare` a2
-    (FoldCore2CoreRunMb			a1 					, FoldCore2CoreRunMb		a2 					) ->         a1 `compare` a2
+    -- (FoldCore2CoreRun			a1 					, FoldCore2CoreRun			a2 					) ->         a1 `compare` a2
+    -- (FoldCore2CoreRunMb			a1 					, FoldCore2CoreRunMb		a2 					) ->         a1 `compare` a2
     (FoldCore2CoreRunPMb		a1 b1				, FoldCore2CoreRunPMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
 %%[[(50 corerun corerunin)
@@ -629,10 +660,13 @@ bfunCompare f1 f2 = case (f1,f2) of
     (FPathPreprocessedWithCPP	a1 b1 				, FPathPreprocessedWithCPP	a2 b2 				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ExposedPackages								, ExposedPackages								) -> EQ
 %%]]
-  where lexico (x:xs)
+  where lexico = orderingLexic
+        {-
+        lexico (x:xs)
           | x == EQ   = lexico xs
           | otherwise = x
         lexico []     = EQ
+        -}
   
 instance Ord (BFun' res) where
   compare = bfunCompare
@@ -645,9 +679,9 @@ instance Hashable (BFun' res) where
   hashWithSalt salt x = case x of
 	CRSI 									-> salt `hashWithSalt` (maxBound-1::Int)
 %%[[50
-	CRSIWithCompileOrder		a b	c		-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	-- CRSIWithCompileOrder		a b	c		-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 	CRSIWithCompileOrderP		a b	c		-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
-	CRSIWithImps			   	a b	c		-> salt `hashWithSalt` (1::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	-- CRSIWithImps			   	a b	c		-> salt `hashWithSalt` (1::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 	CRSIWithImpsP			   	a b	c		-> salt `hashWithSalt` (1::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 %%]]
 	CRSIOfName			   		a b			-> salt `hashWithSalt` (2::Int) `hashWithSalt` a `hashWithSalt` b
@@ -674,8 +708,11 @@ instance Hashable (BFun' res) where
 	ASTPMb 						a b			-> salt `hashWithSalt` (16::Int) `hashWithSalt` a `hashWithSalt` b
 %%[[50
 	ModfTimeOfFile				a b	c d		-> salt `hashWithSalt` (17::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
+	ASTFileIsValid				a b	c d		-> salt `hashWithSalt` (17::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
+	ASTFileIsNewerThan			a b			-> salt `hashWithSalt` (17::Int) `hashWithSalt` a `hashWithSalt` b
 	DirOfModIsWriteable 		a 			-> salt `hashWithSalt` (18::Int) `hashWithSalt` a
-	EcuCanCompile		 		a 			-> salt `hashWithSalt` (19::Int) `hashWithSalt` a
+	CanCompile		 			a 			-> salt `hashWithSalt` (19::Int) `hashWithSalt` a
+	NeedsCompile		 		a 			-> salt `hashWithSalt` (19::Int) `hashWithSalt` a
 	IsTopMod			 		a 			-> salt `hashWithSalt` (20::Int) `hashWithSalt` a
 %%]]
 %%[[50
@@ -702,8 +739,8 @@ instance Hashable (BFun' res) where
 	FoldCore2GrinPMb			a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
 %%[[(8 core corerun)
-	FoldCore2CoreRun			a 			-> salt `hashWithSalt` (34::Int) `hashWithSalt` a
-	FoldCore2CoreRunMb			a 			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a
+	-- FoldCore2CoreRun			a 			-> salt `hashWithSalt` (34::Int) `hashWithSalt` a
+	-- FoldCore2CoreRunMb			a 			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a
 	FoldCore2CoreRunPMb			a b			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
 %%[[(50 corerun corerunin)
@@ -832,6 +869,53 @@ brefWithNewModNm oldNm newNm bref
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Build AST result
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ASTResult(..))
+-- | Result coming out of a build call for constructing/loading an AST
+data ASTResult ast =
+  ASTResult
+    { _astresAST		:: ast
+    , _astresRef		:: BRef ast
+    , _astresPipe		:: ASTPipe
+%%[[50
+    , _astresTimeStamp	:: ClockTime
+%%]]
+    }
+  deriving (Typeable, Show)
+%%]
+
+%%[8 export(mkASTResult')
+mkASTResult'
+  :: (Monad m, MonadIO m)
+  => ast
+  -> BRef ast
+  -> ASTPipe
+%%[[8
+  -> Maybe ()
+%%][50
+  -> Maybe ClockTime
+%%]]
+  -> m (ASTResult ast)
+mkASTResult' ast ref astpipe mbTm
+    = do
+%%[[50
+    tm <- maybe (liftIO getClockTime) return mbTm
+%%]]
+    return $
+      ASTResult ast ref astpipe
+%%[[50
+        tm
+%%]]
+%%]
+
+%%[8 export(mkASTResult)
+mkASTResult :: (Monad m, MonadIO m) => ast -> BRef ast -> ASTPipe -> m (ASTResult ast)
+mkASTResult ast ref astpipe = mkASTResult' ast ref astpipe Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Build state for Build functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -868,13 +952,33 @@ type EHCTime = Integer
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile run combinators
+%%% Compile run state: corerun specific
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) export(EHCompileRunCoreRunStateInfo(..), emptyEHCompileRunCoreRunStateInfo)
+data EHCompileRunCoreRunStateInfo
+  = EHCompileRunCoreRunStateInfo
+      { _crcrsiNrOfModules  	:: !Int                             	-- current nr of modules, the number is used to identify modules
+      , _crcrsiNm2RefMp			:: !CoreRun.Nm2RefMp       				-- current inh attrs for CoreRun semantics
+      }
+
+emptyEHCompileRunCoreRunStateInfo :: EHCompileRunCoreRunStateInfo
+emptyEHCompileRunCoreRunStateInfo
+  = EHCompileRunCoreRunStateInfo
+      { _crcrsiNrOfModules    	=   0
+      , _crcrsiNm2RefMp			=	CoreRun.emptyNm2RefMp
+      }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile run state: overall
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(EHCompileRunStateInfo(..))
 data EHCompileRunStateInfo
   = EHCompileRunStateInfo
       { _crsiOpts       :: !EHCOpts                             -- options
+      , _crsiASTPipe    :: !ASTPipe                             -- the compiler pipeline (based on options)
       , _crsiNextUID    :: !UID                                 -- unique id, the next one
       , _crsiHereUID    :: !UID                                 -- unique id, the current one
       , _crsiHSInh      :: !AST_HS_Inh_Check                    -- current inh attrs for HS sem
@@ -884,7 +988,8 @@ data EHCompileRunStateInfo
       , _crsiCoreInh    :: !AST_Core_Inh_ToGrin	                -- current inh attrs for Core2Grin sem
 %%]]
 %%[[(8 corerun)
-      , crsiCore2RunInh	:: !CoreRun.Nm2RefMp       				-- current inh attrs for Core2CoreRun sem
+      , _crsiCoreRunState	:: !EHCompileRunCoreRunStateInfo	-- corerun compilation specific state
+      -- , _crsiCore2RunInh:: !CoreRun.Nm2RefMp       				-- current inh attrs for Core2CoreRun sem
 %%]]
 %%[[50
       , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
@@ -910,6 +1015,7 @@ emptyEHCompileRunStateInfo :: EHCompileRunStateInfo
 emptyEHCompileRunStateInfo
   = EHCompileRunStateInfo
       { _crsiOpts       =   defaultEHCOpts
+      , _crsiASTPipe    =   emptyASTPipe
       , _crsiNextUID    =   uidStart
       , _crsiHereUID    =   uidStart
       , _crsiHSInh      =   panic "emptyEHCompileRunStateInfo.crsiHSInh"
@@ -919,7 +1025,8 @@ emptyEHCompileRunStateInfo
       , _crsiCoreInh    =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
 %%]]
 %%[[(8 corerun)
-      , crsiCore2RunInh	=   panic "emptyEHCompileRunStateInfo.crsiCoreRunInh"
+      , _crsiCoreRunState	=   emptyEHCompileRunCoreRunStateInfo
+      -- , _crsiCore2RunInh=   panic "emptyEHCompileRunStateInfo.crsiCoreRunInh"
 %%]]
 %%[[50
       , crsiMbMainNm    =   Nothing
@@ -951,11 +1058,28 @@ mkLabel ''BCache
 mkLabel ''BState
 %%]
 
-%%[8 export(crsiOpts, crsiNextUID, crsiHereUID, crsiHSInh, crsiEHInh, crsiBState, crsiFileSuffMp)
+%%[(8 corerun) export(crcrsiNrOfModules,crcrsiNm2RefMp)
+mkLabel ''EHCompileRunCoreRunStateInfo
+%%]
+
+%%[8 export(crsiOpts, crsiASTPipe, crsiNextUID, crsiHereUID, crsiHSInh, crsiEHInh, crsiBState, crsiFileSuffMp)
 mkLabel ''EHCompileRunStateInfo
 %%]
 
 %%[(8 codegen) export(crsiCoreInh)
+%%]
+
+%%[(8888 corerun) export(crsiCore2RunInh)
+%%]
+
+%%[(8 corerun) export(crsiCoreRunState)
+%%]
+
+%%[8 export(astresAST, astresRef, astresPipe)
+mkLabel ''ASTResult
+%%]
+
+%%[50 export(astresTimeStamp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
