@@ -28,6 +28,9 @@ In principle such files reside in directories or packages.
 %%[99 import({%{EH}Base.Target}, qualified {%{EH}ConfigInstall} as Cfg)
 %%]
 
+%%[8 import(UHC.Util.Pretty)
+%%]
+
 %%[99 import(UHC.Util.Hashable)
 %%]
 
@@ -54,6 +57,9 @@ instance Show FileLocKind where
   show  FileLocKind_Dir		    = "directory"
   show (FileLocKind_Pkg p d)	= "package: " ++ showPkgKey p ++ "(in: " ++ d ++ ")"
   show  FileLocKind_PkgDb    	= "package database"
+
+instance PP FileLocKind where
+  pp = pp . show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,6 +88,9 @@ instance Hashable FileLoc
 
 instance Show FileLoc where
   show (FileLoc k d) = d ++ " (" ++ show k ++ ")"
+
+instance PP FileLoc where
+  pp = pp . show
 
 emptyFileLoc :: FileLoc
 emptyFileLoc = FileLoc FileLocKind_Dir ""

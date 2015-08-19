@@ -167,7 +167,7 @@ cpFoldCoreMod modNm
          }
 %%]
 
-%%[8888 export(cpFoldEH)
+%%[8 export(cpFoldEH)
 cpFoldEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldEH modNm
   =  do  {  cr <- get
@@ -195,7 +195,7 @@ cpFoldEH modNm
          }
 %%]
 
-%%[8888 export(cpFoldHs)
+%%[8 export(cpFoldHs)
 cpFoldHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHs modNm
   =  do  {  cr <- get

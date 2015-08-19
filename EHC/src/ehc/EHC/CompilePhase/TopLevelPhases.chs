@@ -531,7 +531,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HMOnlyMinimal))
                    ; return defaultResult
                    }
-%%[[(50 corerunin)
+%%[[(5050 corerunin)
            (ECUS_CoreRun cst, Just (ECUS_Haskell HSOnlyImports))
              | {- cst == CRRStartText || -} isBinary
              -> do { cpMsg modNm VerboseNormal $ "Reading CoreRun (" ++ (if isBinary then "binary" else "textual") ++ ")"
@@ -1208,16 +1208,16 @@ cpEhcExecutablePerModule how impModNmL modNm
 %%[8
 cpProcessHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessHs modNm = do
-    -- cpFoldHs modNm
-    bcall $ FoldHs (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
+    cpFoldHs modNm
+    -- bcall $ FoldHs (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%[[50
     cpFlowHsSem1 modNm
     -- bcall $ CRSIOfName (mkPrevFileSearchKeyWithName modNm) ASTType_HS
     -- bcall $ CRSIOfNameP (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%]]
-    -- cpTranslateHs2EH modNm
+    cpTranslateHs2EH modNm
     -- (_ :: AST_EH) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_EH
-    (_ :: AST_EH) <- bcall $ ASTP (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
+    -- (_ :: AST_EH) <- bcall $ ASTP (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%[[99
     cpCleanupHS modNm
 %%]]
@@ -1243,8 +1243,8 @@ cpProcessEH modNm
        ; cpUpdCU modNm (ecuStoreOpts optsTr)
        -}
 %%]]
-       -- ; cpFoldEH modNm
-       ; void $ bcall $ FoldEH (mkPrevFileSearchKeyWithName modNm)
+       ; cpFoldEH modNm
+       -- ; void $ bcall $ FoldEH (mkPrevFileSearchKeyWithName modNm)
 %%[[99
        ; cpCleanupFoldEH modNm
 %%]]

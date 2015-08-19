@@ -70,9 +70,9 @@ CompilePhase building blocks: parsers
 %%[50 import(qualified UHC.Util.Binary as Bin, UHC.Util.Serialize)
 %%]
 -- config
-%%[50 import(qualified {%{EH}Config} as Cfg)
+%%[5050 import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%[5050 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

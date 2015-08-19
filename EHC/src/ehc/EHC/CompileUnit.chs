@@ -131,7 +131,8 @@ data EHCompileUnit
       , _ecuMbCoreRun        :: !(Maybe AST_CoreRun)
 %%]]
 %%[[(8 codegen corerunin)
-      , _ecuMbCoreRunSemMod  :: !(Maybe AST_CoreRun_Sem_Check)
+      , _ecuMbCoreRunSemMod  :: !(Maybe AST_CoreRun_Sem_Mod)
+      , _ecuMbCoreRunSemChk  :: !(Maybe AST_CoreRun_Sem_Check)
 %%]]
 %%[[(8 codegen tycore)
       , ecuMbTyCore          :: !(Maybe C.Module)
@@ -218,8 +219,9 @@ ecuCoreRun = isoMb "ecuMbCoreRun" ecuMbCoreRun
 %%[(8 corein) export(ecuMbCoreSemMod, ecuCoreSemMod)
 ecuCoreSemMod = isoMb "ecuMbCoreSemMod" ecuMbCoreSemMod
 %%]
-%%[(8 corerunin) export(ecuMbCoreRunSemMod, ecuCoreRunSemMod)
+%%[(8 corerunin) export(ecuMbCoreRunSemMod, ecuCoreRunSemMod, ecuMbCoreRunSemChk, ecuCoreRunSemChk)
 ecuCoreRunSemMod = isoMb "ecuMbCoreRunSemMod" ecuMbCoreRunSemMod
+ecuCoreRunSemChk = isoMb "ecuMbCoreRunSemChk" ecuMbCoreRunSemChk
 %%]
 
 %%[8 export(ecuMbHS, ecuHS, ecuMbHSSem, ecuHSSem, ecuMbEH, ecuEH, ecuMbEHSem, ecuEHSem)
@@ -322,6 +324,7 @@ emptyECU
 %%]]
 %%[[(8 codegen corerunin)
       , _ecuMbCoreRunSemMod  = Nothing
+      , _ecuMbCoreRunSemChk  = Nothing
 %%]]
 %%[[(8 codegen tycore)
       , ecuMbTyCore          = Nothing
@@ -585,7 +588,7 @@ ecuStoreCoreRun x ecu | x `seq` True = ecu { _ecuMbCoreRun = Just x }
 %%]
 
 %%[(8 codegen corerunin) export(ecuStoreCoreRunSemMod)
-ecuStoreCoreRunSemMod :: EcuUpdater AST_CoreRun_Sem_Check
+ecuStoreCoreRunSemMod :: EcuUpdater AST_CoreRun_Sem_Mod
 ecuStoreCoreRunSemMod x ecu = ecu { _ecuMbCoreRunSemMod = Just x }
 %%]
 

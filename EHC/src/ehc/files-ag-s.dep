@@ -67,6 +67,7 @@ Core/Trf/FixAfterParse.cag
 Core/SysF/Check.cag
 CoreRun/Pretty.cag
 CoreRun/Check.cag
+CoreRun/ModImpExp.cag
 GrinCode/Pretty.cag
 GrinCode/FreeVars.cag
 GrinCode/PointsToAnalysis.cag

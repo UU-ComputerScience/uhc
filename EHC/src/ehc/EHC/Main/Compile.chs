@@ -16,9 +16,9 @@
 %%]
 %%[99 import(System.Directory)
 %%]
-%%[8 import(qualified {%{EH}Config} as Cfg)
+%%[8888 import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%[5050 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -68,7 +68,7 @@
 %%]
 
 -- Config
-%%[103 import(qualified {%{EH}ConfigCabal} as Cfg (getDataDir))
+%%[103103 import(qualified {%{EH}ConfigCabal} as Cfg (getDataDir))
 %%]
 
 -- Utils

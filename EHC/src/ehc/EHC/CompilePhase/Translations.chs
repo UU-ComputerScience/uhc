@@ -99,7 +99,7 @@ Translation to another AST
 %%% Compile actions: translations to another AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8888 export(cpTranslateHs2EH)
+%%[8 export(cpTranslateHs2EH)
 cpTranslateHs2EH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateHs2EH modNm
   =  do  {  cr <- get

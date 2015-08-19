@@ -251,6 +251,11 @@ astFileNameOverrideToMaybe (ASTFileNameOverride_FPathAsTop fp) 	= Just fp
 astFileNameOverrideToMaybe _                              		= Nothing
 -}
 
+instance PP ASTFileNameOverride where
+  pp (ASTFileNameOverride_AsIs         ) = pp "AsIs"
+  pp (ASTFileNameOverride_FPath      fp) = pp fp
+  pp (ASTFileNameOverride_FPathAsTop fp) = fp >|< ppParens "top"
+
 instance Hashable ASTFileNameOverride
 %%]
 

@@ -61,6 +61,8 @@
 %%]
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
+%%[(50 corerunin) import(qualified {%{EH}CoreRun.ModImpExp} as CoreRunSemMod)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type synonyms
@@ -109,6 +111,10 @@ type AST_CoreRun			= CoreRun.Mod
 
 %%[(8 corerunin) export(AST_CoreRun_Sem_Check)
 type AST_CoreRun_Sem_Check	= CoreRun2ChkSem.Syn_AGItf
+%%]
+
+%%[(50 corerunin) export(AST_CoreRun_Sem_Mod)
+type AST_CoreRun_Sem_Mod	= CoreRunSemMod.Syn_AGItf
 %%]
 
 %%[(8 grin) export(AST_Grin)

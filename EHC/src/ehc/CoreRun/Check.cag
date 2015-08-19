@@ -32,8 +32,8 @@ deriving instance Typeable Syn_AGItf
 
 %%[(99 corerunin)
 -- Enforce laziness as invocation assumes this...
-PRAGMA nocycle
-PRAGMA nostrictwrap
+-- PRAGMA nocycle
+-- PRAGMA nostrictwrap
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,91 +59,9 @@ crmodCheck' inh crmod
 
 %%[(8 corerunin)
 ATTR
-  AllCodeNT AGItf
-    [ opts: EHCOpts
-      -- env : CheckEnv
-    | | ]
-
-ATTR
   AGItf Mod AllExport
-    [ moduleNm: HsName
-      moduleNr: Int
+    [ moduleNr: Int
     | | ]
-
-SEM Mod
-  | Mod         exports     .   moduleNm        	=   @realModuleNm
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Module name
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 corerunin)
-ATTR AGItf Mod [ | | realModuleNm: HsName ]
-
-SEM Mod
-  | Mod         loc         .   realModuleNm        =   @moduleNm
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Imported modules
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 corerunin)
-ATTR AGItf Mod AllImport [ | | impModNmL USE {++} {[]} : {[HsName]} ]
-
-SEM Import
-  | Import		lhs         .   impModNmL        	=   [@nm]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Export info, similar to the extracted info from .hs source modules
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(5050 corerunin)
-ATTR AllExport [ | | modExpL USE {++} {[]} : {[ModImpExp.ModExp]} ]
-
-SEM CExport
-  | Export      lhs         .   modExpL             =   [ModImpExp.ModExpEnt (ModImpExp.ModEntSpec (hsnQualified @nm) emptyRange Nothing)]
-  | ExportData  lhs         .   modExpL             =   [ModImpExp.ModExpEnt (ModImpExp.ModEntSpec (hsnQualified @nm) emptyRange (fmap (ModImpExp.ModEntSubs . map hsnQualified) @mbConNmL))]
-%%]
-
-%%[(50 corerunin)
-ATTR AllImport [ | | modImpL USE {++} {[]} : {[ModImpExp.ModImp]} ]
-
-SEM Import
-  | Import		lhs			.   modImpL				=   [ModImpExp.ModImp True @nm @nm False [] emptyRange]
-%%]
-
-%%[(5050 corerunin)
-ATTR CExpr AllBindOnly AllDeclMeta [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModImpExp.ModEntRel ]
-
-SEM CBind
-  | Bind        lhs         .   modDefsRel          =   let o = IdOcc @nm IdOcc_Val
-                                                        in  Rel.fromList [ (hsnQualified (ioccNm o), ModImpExp.ModEnt (ioccKind o) o Set.empty emptyRange) ]
-
-SEM CDeclMeta
-  | Data        lhs         .   modDefsRel          =   let to = IdOcc ( @tyNm) IdOcc_Data
-                                                            subs = [ ModImpExp.ModEnt (ioccKind o) o Set.empty emptyRange | cn <- @dataCons.dataConNmL, let o = IdOcc ( cn) IdOcc_Val ]
-                                                        in  Rel.singleton (hsnQualified (ioccNm to)) (ModImpExp.ModEnt (ioccKind to) to (Set.fromList subs) emptyRange)
-%%]
-
-%%[(5050 corerunin)
-ATTR AllDataCon [ | | dataConNmL USE {++} {[]} : {[HsName]} ]
-
-SEM CDataCon
-  | Con			lhs			.	dataConNmL			=	[@conNm]
-%%]
-
-%%[(50 corerunin)
-ATTR AGItf Mod [ | | mod: {ModImpExp.Mod} ]
-
-SEM Mod
-  | Mod         lhs         .   mod                 =   ModImpExp.Mod
-                                                            @realModuleNm (Just @realModuleNm) Nothing @imports.modImpL
-                                                            Rel.empty
-                                                            Rel.empty
-                                                            []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,29 +73,6 @@ ATTR AGItf Mod AllExport [ | | nm2ref USE {`nm2refUnion`} {emptyNm2RefMp} : Nm2R
 
 SEM Export
   | Export		lhs			.   nm2ref				=   RelMap.singleton @nm (RRef_Imp @lhs.moduleNr @offset) -- (RRef_Exp @lhs.moduleNm @offset)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Module has 'main'?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 corerunin)
-ATTR AGItf Mod [ | | hasMain USE {||} {False} : Bool ]
-
-SEM Mod
-  | Mod			lhs			.	hasMain				=	@mbbody.isJust
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Maybe?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 corerunin)
-ATTR MbExp [ | | isJust: Bool ]
-
-SEM MbExp
-  | Nothing		lhs			.	isJust				=	False
-  | Just		lhs			.	isJust				=	True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
