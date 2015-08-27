@@ -125,6 +125,7 @@ instance Show CoreOpt where
 %%]]
 %%[[(8 corerun)
   show CoreOpt_Run            	    = "run"
+  show CoreOpt_LoadOnly            	= "loadonly"
   show CoreOpt_RunDump            	= "dump-run"
   show CoreOpt_RunTrace            	= "run-trace"
   show CoreOpt_RunTraceExtensive	= "run-trace-extensive"

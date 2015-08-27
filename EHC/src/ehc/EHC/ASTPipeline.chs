@@ -257,6 +257,9 @@ data ASTPipe where
     -- | Side effect inverse of ASTPipe_Cached, i.e. write/cache on file
     ASTPipe_Cache :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
 
+    -- | Choose between first available (in terms of existence), left biased, left one is src/cached, right one may be more complex/derived
+    ASTPipe_FirstAvailable :: { astpType :: ASTType, astpPipe1 :: ASTPipe, astpPipe2 :: ASTPipe } -> ASTPipe
+
     -- | Choose between newest (in terms of timestamp), left biased, left one is src/cached, right one may be more complex/derived
     ASTPipe_FirstNewestAvailable :: { astpType :: ASTType, astpPipe1 :: ASTPipe, astpPipe2 :: ASTPipe } -> ASTPipe
 
@@ -281,8 +284,10 @@ instance Show ASTPipe where
 %%[[50
     ASTPipe_Cached 		t		-> "Cd(" ++ show t ++ ")."
     ASTPipe_Cache 		t p'	-> "Ch-" ++ show p'
+    ASTPipe_FirstAvailable
+    					t p1 p2 -> "{A1:" ++ show p1 ++ ",A2:" ++ show p2 ++ "}"
     ASTPipe_FirstNewestAvailable
-    					t p1 p2 -> "{1:" ++ show p1 ++ ",2:" ++ show p2 ++ "}"
+    					t p1 p2 -> "{N1:" ++ show p1 ++ ",N2:" ++ show p2 ++ "}"
     ASTPipe_Whole 		t p'	-> "Wh-" ++ show p'
 %%]]
 
@@ -297,6 +302,8 @@ instance PP ASTPipe where
 %%[[50
     ASTPipe_Cached 		t		-> "Cached" >#< t
     ASTPipe_Cache 		t p'	-> "Cache" >#< t >-< indent 2 p'
+    ASTPipe_FirstAvailable
+    					t p1 p2 -> "Avail" >#< t >-< indent 2 (p1 >-< p2)
     ASTPipe_FirstNewestAvailable
     					t p1 p2 -> "Newest" >#< t >-< indent 2 (p1 >-< p2)
     ASTPipe_Whole 		t p'	-> "Whole" >#< t >-< indent 2 p'
@@ -312,8 +319,8 @@ instance PP ASTPipe where
 data TmChoice
   = Choice_End					-- ^ base case
   | Choice_No 	TmChoice		-- ^ no choice made
-  | Choice_L 	TmChoice		-- ^ fst (of ASTPipe_FirstNewestAvailable)
-  | Choice_R 	TmChoice		-- ^ snd (of ASTPipe_FirstNewestAvailable)
+  | Choice_L 	TmChoice		-- ^ fst (of ASTPipe_FirstNewestAvailable or ASTPipe_FirstAvailable)
+  | Choice_R 	TmChoice		-- ^ snd (of ASTPipe_FirstNewestAvailable or ASTPipe_FirstAvailable)
   | Choices 	[TmChoice]		-- ^ compound
   deriving (Eq, Ord, Typeable, Generic)
 
@@ -377,6 +384,9 @@ astpFold getx cmbx dfltx p = extr p
 %%[[50
     subs (ASTPipe_Cache   {astpPipe =p }) = [p]
     subs (ASTPipe_Whole   {astpPipe =p }) = [p]
+    subs (ASTPipe_FirstAvailable
+                          {astpPipe1=p1, astpPipe2=p2})
+                                          = [p1, p2]
     subs (ASTPipe_FirstNewestAvailable
                           {astpPipe1=p1, astpPipe2=p2})
                                           = [p1, p2]
@@ -412,6 +422,7 @@ data ASTPipeBldCfg =
     , apbcfgLinkingStyle	:: LinkingStyle
 %%[[(8 corerun)
     , apbcfgRunOnly			:: Bool
+    , apbcfgLoadOnly		:: Bool
 %%]]
     }
 
@@ -419,6 +430,7 @@ emptyASTPipeBldCfg =
   ASTPipeBldCfg
     defaultTarget OptimizationScope_PerModule LinkingStyle_Exec
 %%[[(8 corerun)
+    False
     False
 %%]]
 %%]
@@ -465,22 +477,36 @@ astpipe_Core_cached = ASTPipe_Cached ASTType_Core
 astpipe_Core :: ASTPipeBldCfg -> ASTPipe
 astpipe_Core apbcfg =
 %%[[(50 corein)
-  ASTPipe_FirstNewestAvailable ASTType_Core
+  apbcfgAvailOrNewest apbcfg ASTType_Core
     astpipe_Core_src $
 %%]]
-      whole $
-%%[[50
-      ASTPipe_FirstNewestAvailable ASTType_Core
-        (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached]) $
+      (
+%%[[(8 corerun)
+       if apbcfgLoadOnly apbcfg
+       then
+         astpipe_Core_cached
+       else
 %%]]
-          astpipe_Core_from_EH apbcfg
+         whole $
+%%[[50
+         ASTPipe_FirstNewestAvailable ASTType_Core (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached]) $
+%%]]
+             astpipe_Core_from_EH apbcfg
+      )
   where
     whole
 %%[[50
-      | apbcfgOptimScope apbcfg == OptimizationScope_WholeCore = (ASTPipe_Trf ASTType_Core $ ASTTrf_Optim [ASTScope_Whole]) . ASTPipe_Whole ASTType_Core
+      | apbcfgOptimScope apbcfg == OptimizationScope_WholeCore
+        && not (apbcfgLoadOnly apbcfg)                         = (ASTPipe_Trf ASTType_Core $ ASTTrf_Optim [ASTScope_Whole]) . ASTPipe_Whole ASTType_Core
 %%]]
       | otherwise                                              = id
-             
+    cached
+%%[[8
+      | otherwise                                              = id
+%%][50
+      | apbcfgLoadOnly apbcfg                                  = ASTPipe_FirstNewestAvailable ASTType_Core astpipe_Core_cached
+      | otherwise                                              = ASTPipe_FirstNewestAvailable ASTType_Core (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached])
+%%]]
 %%]
 
 %%[(8 corerunin)
@@ -495,18 +521,19 @@ astpipe_CoreRun_cached = ASTPipe_Cached ASTType_CoreRun
 
 %%[(8 core corerun)
 astpipe_CoreRun_from_Core :: ASTPipeBldCfg -> ASTPipe
-astpipe_CoreRun_from_Core apbcfg = ASTPipe_Derived ASTType_CoreRun $ astpipe_Core apbcfg
+astpipe_CoreRun_from_Core apbcfg =
+  ASTPipe_Derived ASTType_CoreRun $ astpipe_Core apbcfg
 %%]
 
 %%[(8 core corerun)
 astpipe_CoreRun :: ASTPipeBldCfg -> ASTPipe
 astpipe_CoreRun apbcfg =
 %%[[(50 corerunin)
-  ASTPipe_FirstNewestAvailable ASTType_CoreRun
+  apbcfgAvailOrNewest apbcfg ASTType_CoreRun
     astpipe_CoreRun_src $
 %%]]
 %%[[50
-      ASTPipe_FirstNewestAvailable ASTType_CoreRun
+      apbcfgAvailOrNewest apbcfg ASTType_CoreRun
         astpipe_CoreRun_cached $
 %%]]
           astpipe_CoreRun_from_Core apbcfg
@@ -605,6 +632,19 @@ astpipe_ExecO apbcfg =
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pipeline utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+apbcfgAvailOrNewest :: ASTPipeBldCfg -> ASTType -> ASTPipe -> ASTPipe -> ASTPipe
+apbcfgAvailOrNewest apbcfg -- t p1 p2
+%%[[(8 corerun)
+    | apbcfgLoadOnly apbcfg = ASTPipe_FirstAvailable
+%%]]
+    | otherwise             = ASTPipe_FirstNewestAvailable
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pipeline for a configuration (i.e. target and optimization scope)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -668,6 +708,7 @@ astpipeForEHCOpts opts = astpipeForCfg $ emptyASTPipeBldCfg
 %%]]
 %%[[(8 corerun)
   , apbcfgRunOnly		= CoreOpt_Run `elem` ehcOptCoreOpts opts
+  , apbcfgLoadOnly		= CoreOpt_LoadOnly `elem` ehcOptCoreOpts opts
 %%]]
   }
 %%]

@@ -128,6 +128,7 @@ data CoreOpt
 %%]]
 %%[[(8 corerun)
   | CoreOpt_Run					-- run after compilation
+  | CoreOpt_LoadOnly			-- only load what is available, to be used only (for now) by alternate compiler driver
   | CoreOpt_RunDump				-- dump CoreRun
   | CoreOpt_RunDumpVerbose		-- dump CoreRun, more verbose
   | CoreOpt_RunTrace			-- trace during running CoreRun

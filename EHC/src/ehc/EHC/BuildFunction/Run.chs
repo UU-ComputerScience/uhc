@@ -135,7 +135,8 @@ type TmOfRes   m = (EHCompilePhaseT m (Maybe (Map.Map HsName ClockTime)), TmChoi
 type TmOfResMb m = Maybe (TmOfRes m)
 type TmOfResM  m = EHCompilePhaseT m (TmOfResMb m)
 
-updTmChoice upd = fmap (fmap (\(imps,ch,tm) -> (imps,upd ch,tm)))
+updTmChoice upd = \(imps,ch,tm) -> (imps,upd ch,tm)
+updTmChoiceM upd = fmap (fmap (updTmChoice upd))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1947,6 +1948,12 @@ bMkASTPMbChoice modSearchKey astpipe = do
 
 %%[[50
     --
+{-
+-}
+    tmOf modSearchKey p@(ASTPipe_FirstAvailable {astpPipe1=p1, astpPipe2=p2}) =
+        maybeM' (tmOf modSearchKey p1) (return . Just . updTmChoice Choice_L) $ 
+          updTmChoiceM Choice_R $ tmOf modSearchKey p2
+
     tmOf modSearchKey p@(ASTPipe_FirstNewestAvailable {astpPipe1=p1, astpPipe2=p2}) =
         tmChoose modSearchKey (return Nothing) (tmOf modSearchKey p1) (tmOf modSearchKey p2) (ret "1" p1 Choice_L) (ret "2" p2 Choice_R)
       where ret msg _ ch (imps,choice,tm) = do
@@ -1966,7 +1973,7 @@ bMkASTPMbChoice modSearchKey astpipe = do
     -- cache: time recursively computed, if file can be cached
     tmOf modSearchKey (ASTPipe_Cache {astpPipe=p}) = do
         (modNm, _) <- bNmEtcFromAST modSearchKey p
-        ifM' (bcall $ DirOfModIsWriteable modNm) (return Nothing) $ updTmChoice Choice_No $ tmOf modSearchKey p
+        ifM' (bcall $ DirOfModIsWriteable modNm) (return Nothing) $ updTmChoiceM Choice_No $ tmOf modSearchKey p
 
     -- whole: time recursively computed, merged into 1 time for all
     tmOf modSearchKey (ASTPipe_Whole {astpPipe=p}) = do
@@ -1978,10 +1985,10 @@ bMkASTPMbChoice modSearchKey astpipe = do
 %%]]
 
     -- derived: time recursively computed
-    tmOf modSearchKey (ASTPipe_Derived {astpPipe=p}) = updTmChoice Choice_No $ tmOf modSearchKey p
+    tmOf modSearchKey (ASTPipe_Derived {astpPipe=p}) = updTmChoiceM Choice_No $ tmOf modSearchKey p
 
     -- transformation (also derived): time recursively computed
-    tmOf modSearchKey (ASTPipe_Trf {astpPipe=p}) = updTmChoice Choice_No $ tmOf modSearchKey p
+    tmOf modSearchKey (ASTPipe_Trf {astpPipe=p}) = updTmChoiceM Choice_No $ tmOf modSearchKey p
 
     -- compound: maximum of all, ignoring possible absence of imports
     tmOf modSearchKey (ASTPipe_Compound {astpPipes=ps}) = do 
@@ -2109,6 +2116,12 @@ bExecASTPMbChoice modSearchKey astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astb
 			 maybeM (bcall $ ASTPlMb modSearchKey $ mkBuildPlan astpipe' c) dflt $ \res -> do
 			   -- TBD: write/output side effect
 			   return $ Just $ astresPipe ^= astpipe' $ res -- (ast, ref, astpipe')
+
+		 ASTBuildPlan {_astbplPipe= ASTPipe_FirstAvailable asttypeAsked astpipe1 astpipe2, _astbplChoice= Choice_L c} -> do
+			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan astpipe1 c
+
+		 ASTBuildPlan {_astbplPipe= ASTPipe_FirstAvailable asttypeAsked astpipe1 astpipe2, _astbplChoice= Choice_R c} -> do
+			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan astpipe2 c
 
 		 ASTBuildPlan {_astbplPipe= ASTPipe_FirstNewestAvailable asttypeAsked astpipe1 astpipe2, _astbplChoice= Choice_L c} -> do
 			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan astpipe1 c

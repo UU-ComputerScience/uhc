@@ -48,7 +48,7 @@ main = do
             e | e `elem` [".cr", ".bcr", ".tcr", ".tcrr"]
                    -> mainEHC $ opts
                         { ehcOptMbTarget = JustOk Target_None_Core_AsIs
-                        , ehcOptCoreOpts = CoreOpt_Run : ehcOptCoreOpts opts
+                        , ehcOptCoreOpts = CoreOpt_Run : CoreOpt_LoadOnly : ehcOptCoreOpts opts
 %%[[50
                         , ehcOptOptimizationScope = OptimizationScope_WholeCore
 %%]]
