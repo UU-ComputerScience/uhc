@@ -68,12 +68,16 @@ data ASTType
   | ASTType_HI
 %%]]
   | ASTType_Unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded)
 
 instance Hashable ASTType
+instance DataAndConName ASTType
+
+instance Show ASTType where
+  show = showUnprefixed 1
 
 instance PP ASTType where
-  pp = text . showUnprefixedWithTypeable 1
+  pp = pp . show
 %%]
 
 %%[8 export(ASTScope(..))
@@ -82,12 +86,16 @@ data ASTScope
   = ASTScope_Single			-- ^ single module
   | ASTScope_Whole			-- ^ whole program
   -- | ASTScope_Any			-- ^ any/arbitrary of above
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded)
 
 instance Hashable ASTScope
+instance DataAndConName ASTScope
+
+instance Show ASTScope where
+  show = showUnprefixed 1
 
 instance PP ASTScope where
-  pp = text . showUnprefixedWithTypeable 1
+  pp = pp . show
 %%]
 
 %%[8 export(ASTFileContent(..))
@@ -97,12 +105,16 @@ data ASTFileContent
   | ASTFileContent_LitText
   | ASTFileContent_Binary
   | ASTFileContent_Unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded)
 
 instance Hashable ASTFileContent
+instance DataAndConName ASTFileContent
+
+instance Show ASTFileContent where
+  show = showUnprefixed 1
 
 instance PP ASTFileContent where
-  pp = text . showUnprefixedWithTypeable 1
+  pp = pp . show
 %%]
 
 %%[8 export(ASTHandlerKey)
@@ -119,12 +131,16 @@ data ASTFileUse
   | ASTFileUse_Src			-- ^ input: src file
   | ASTFileUse_SrcImport	-- ^ input: import stuff only from src file
   | ASTFileUse_Unknown		-- ^ unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded)
 
 instance Hashable ASTFileUse
+instance DataAndConName ASTFileUse
+
+instance Show ASTFileUse where
+  show = showUnprefixed 1
 
 instance PP ASTFileUse where
-  pp = text . showUnprefixedWithTypeable 1
+  pp = pp . show
 %%]
 
 %%[8 export(ASTSuffixKey)
@@ -137,12 +153,16 @@ type ASTSuffixKey = (ASTFileContent, ASTFileUse)
 data ASTFileTiming
   = ASTFileTiming_Prev		-- ^ previously generated
   | ASTFileTiming_Current	-- ^ current one
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded)
 
 instance Hashable ASTFileTiming
+instance DataAndConName ASTFileTiming
+
+instance Show ASTFileTiming where
+  show = showUnprefixed 1
 
 instance PP ASTFileTiming where
-  pp = text . showUnprefixedWithTypeable 1
+  pp = pp . show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -158,12 +178,16 @@ data ASTSemFlowStage
   | -- | between subsequent module compilations
     ASTSemFlowStage_BetweenModule	
 %%]]
-  deriving (Eq, Ord, Typeable, Generic, Show)
+  deriving (Eq, Ord, Typeable, Generic)
 
 instance Hashable ASTSemFlowStage
+instance DataAndConName ASTSemFlowStage
+
+instance Show ASTSemFlowStage where
+  show = showUnprefixed 1
 
 instance PP ASTSemFlowStage where
-  pp = text . showUnprefixedWithTypeable 1
+  pp = pp . show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,9 +218,12 @@ data ASTTrf where
     -- | Optimize, valid for some scopes only
     ASTTrf_Optim :: [ASTScope] -> ASTTrf
 
-  deriving (Eq, Ord, Typeable, Generic, Show)
+  deriving (Eq, Ord, Typeable, Generic)
 
 instance Hashable ASTTrf
+
+instance Show ASTTrf where
+  show (ASTTrf_Optim scs) = "Optim" ++ show scs
 
 instance PP ASTTrf where
   pp (ASTTrf_Optim scs) = "Optim" >#< ppBracketsCommas scs
@@ -236,12 +263,28 @@ data ASTPipe where
     -- | Whole program linked
     ASTPipe_Whole :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
 %%]]
-  deriving (Eq, Ord, Typeable, Generic, Show)
+  deriving (Eq, Ord, Typeable, Generic)
 
 emptyASTPipe :: ASTPipe
 emptyASTPipe = ASTPipe_Empty
 
 instance Hashable ASTPipe
+
+instance Show ASTPipe where
+  show p = case p of
+    ASTPipe_Src 		t		-> "Sr(" ++ show t ++ ")."
+    ASTPipe_Derived 	t p'	-> "Dr-" ++ show p'
+    ASTPipe_Library 	t p'	-> "Lb-"  ++ show p'
+    ASTPipe_Trf 		t tr p' -> "Tr(" ++ show tr ++ ")-" ++ show p'
+    ASTPipe_Compound 	t ps	-> "Cm(" ++ show t ++ ")" ++ show ps
+    ASTPipe_Empty 				-> ""
+%%[[50
+    ASTPipe_Cached 		t		-> "Cd(" ++ show t ++ ")."
+    ASTPipe_Cache 		t p'	-> "Ch-" ++ show p'
+    ASTPipe_FirstNewestAvailable
+    					t p1 p2 -> "{1:" ++ show p1 ++ ",2:" ++ show p2 ++ "}"
+    ASTPipe_Whole 		t p'	-> "Wh-" ++ show p'
+%%]]
 
 instance PP ASTPipe where
   pp p = case p of
@@ -258,6 +301,56 @@ instance PP ASTPipe where
     					t p1 p2 -> "Newest" >#< t >-< indent 2 (p1 >-< p2)
     ASTPipe_Whole 		t p'	-> "Whole" >#< t >-< indent 2 p'
 %%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST build choice
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(TmChoice(..))
+-- | Fix of possible choices in an ASTPipe (based on time info)
+data TmChoice
+  = Choice_End					-- ^ base case
+  | Choice_No 	TmChoice		-- ^ no choice made
+  | Choice_L 	TmChoice		-- ^ fst (of ASTPipe_FirstNewestAvailable)
+  | Choice_R 	TmChoice		-- ^ snd (of ASTPipe_FirstNewestAvailable)
+  | Choices 	[TmChoice]		-- ^ compound
+  deriving (Eq, Ord, Typeable, Generic)
+
+instance Hashable TmChoice
+
+instance Show TmChoice where
+  show (Choice_End ) = "."
+  show (Choice_No c) = "-" ++ show c
+  show (Choice_L  c) = "L" ++ show c
+  show (Choice_R  c) = "R" ++ show c
+  show (Choices  cs) = show cs
+
+instance PP TmChoice where
+  pp = pp . show
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST build plan
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ASTBuildPlan(..))
+data ASTBuildPlan
+  = ASTBuildPlan
+      { _astbplPipe		:: ASTPipe		-- ^ the pipe and its choices
+      , _astbplChoice	:: TmChoice		-- ^ the choices made based on time info
+      }
+  deriving (Eq, Ord, Typeable, Generic, Show)
+
+instance Hashable ASTBuildPlan
+
+instance PP ASTBuildPlan where
+  pp (ASTBuildPlan p c) = "Plan" >#< (c >-< p)
+%%]
+
+%%[8 export(mkBuildPlan)
+mkBuildPlan :: ASTPipe -> TmChoice -> ASTBuildPlan
+mkBuildPlan = ASTBuildPlan
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

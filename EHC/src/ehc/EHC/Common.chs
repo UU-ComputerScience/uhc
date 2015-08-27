@@ -237,26 +237,29 @@ ecuStateToKind s
 %%% Overriding of FPath
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ASTFileNameOverride(..))
+%%[8 export(ASTFileNameOverride(..), astFileNameOverrideMbFPath)
 -- | Overriding an automatically chosen name (based on module name)
 data ASTFileNameOverride
   = ASTFileNameOverride_AsIs					-- ^ fully as is
   | ASTFileNameOverride_FPath	 		FPath	-- ^ with FPath as replacement
   | ASTFileNameOverride_FPathAsTop	 	FPath	-- ^ with FPath as top level module path
-  deriving (Eq, Ord, Typeable, Generic, Show)
+  deriving (Eq, Ord, Typeable, Generic)
 
-{-
-astFileNameOverrideToMaybe :: ASTFileNameOverride -> Maybe FPath
-astFileNameOverrideToMaybe (ASTFileNameOverride_FPathAsTop fp) 	= Just fp
-astFileNameOverrideToMaybe _                              		= Nothing
--}
+instance Show ASTFileNameOverride where
+  show (ASTFileNameOverride_AsIs         ) = "AsIs"
+  show (ASTFileNameOverride_FPath      fp) = fpathToStr fp ++ "(Overr)"
+  show (ASTFileNameOverride_FPathAsTop fp) = fpathToStr fp ++ "(^Overr)"
 
 instance PP ASTFileNameOverride where
-  pp (ASTFileNameOverride_AsIs         ) = pp "AsIs"
-  pp (ASTFileNameOverride_FPath      fp) = pp fp
-  pp (ASTFileNameOverride_FPathAsTop fp) = fp >|< ppParens "top"
+  pp = pp . show
 
 instance Hashable ASTFileNameOverride
+
+-- | Possibly extract FPath
+astFileNameOverrideMbFPath :: ASTFileNameOverride -> Maybe FPath
+astFileNameOverrideMbFPath (ASTFileNameOverride_FPath 		fp) = Just fp
+astFileNameOverrideMbFPath (ASTFileNameOverride_FPathAsTop 	fp) = Just fp
+astFileNameOverrideMbFPath  _									= Nothing
 %%]
 
 %%[8 export(ASTFileSuffOverride(..))
@@ -321,27 +324,58 @@ prevSearchInfoAdaptedSearchPath (Just (prevNm,(prevFp,prevLoc))) searchPath
 prevSearchInfoAdaptedSearchPath _ searchPath = searchPath
 %%]
 
-%%[8 export(FileSearchKey, PrevFileSearchKey, updPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithNameMbPrev, mkPrevFileSearchKeyWithNamePrev)
+%%[8 export(FileSearchKey(..))
 -- | Search key for a file to be compiled
-type FileSearchKey =
-  ( HsName						-- module name
-  , ASTFileNameOverride			-- possibly an alternate/overriding file path
-  )
+data FileSearchKey =
+  FileSearchKey
+    { _fsrchNm			:: HsName						-- ^ module name
+    , _fsrchOverr		:: ASTFileNameOverride			-- ^ possibly an alternate/overriding file path
+    }
+  deriving (Eq, Ord, Typeable, Generic)
 
--- | Full search key for a file to be compiled
-type PrevFileSearchKey =
-  ( FileSearchKey
-  , Maybe PrevSearchInfo		-- possible context provided as a result of a previous compile yielding imports
-  )
+instance Hashable FileSearchKey
+
+{-
+instance Eq FileSearchKey where
+  k1 == k2
+    | 
+    where mbfp1@(~(Just fp)) = astFileNameOverrideMbFPath $ _fsrchOverr k1
+-}
+
+instance Show FileSearchKey where
+  show (FileSearchKey n ov) = case ov of
+    ASTFileNameOverride_AsIs -> show n
+    _                        -> show ov
+
+instance PP FileSearchKey where
+  pp = pp . show
+%%]
+
+%%[8 export(PrevFileSearchKey(..), updPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithNameMbPrev, mkPrevFileSearchKeyWithNamePrev)
+-- | Full search key for a file to be compiled, possibly including (previous search) context in which search is done
+data PrevFileSearchKey =
+  PrevFileSearchKey
+    { _pfsrchKey			:: FileSearchKey			-- ^ module and possible file name info
+    , _pfsrchMbCxtInfo		:: Maybe PrevSearchInfo		-- ^ previous search context
+    }
+  deriving (Eq, Ord, Typeable, Generic)
+
+instance Hashable PrevFileSearchKey
+
+instance Show PrevFileSearchKey where
+  show (PrevFileSearchKey k mc) = show k ++ maybe "" (\c -> "(" ++ show c ++ ")") mc
+
+instance PP PrevFileSearchKey where
+  pp = pp . show
 
 updPrevFileSearchKeyWithName :: HsName -> PrevFileSearchKey -> PrevFileSearchKey
-updPrevFileSearchKeyWithName n ((_,f),p) = ((n,f),p)
+updPrevFileSearchKeyWithName n (PrevFileSearchKey (FileSearchKey _ f) p) = PrevFileSearchKey (FileSearchKey n f) p
 
 mkPrevFileSearchKeyWithName :: HsName -> PrevFileSearchKey
 mkPrevFileSearchKeyWithName n = mkPrevFileSearchKeyWithNameMbPrev n Nothing
 
 mkPrevFileSearchKeyWithNameMbPrev :: HsName -> Maybe PrevSearchInfo -> PrevFileSearchKey
-mkPrevFileSearchKeyWithNameMbPrev n mp = ((n,ASTFileNameOverride_AsIs),mp)
+mkPrevFileSearchKeyWithNameMbPrev n mp = PrevFileSearchKey (FileSearchKey n ASTFileNameOverride_AsIs) mp
 
 mkPrevFileSearchKeyWithNamePrev :: HsName -> PrevSearchInfo -> PrevFileSearchKey
 mkPrevFileSearchKeyWithNamePrev n p = mkPrevFileSearchKeyWithNameMbPrev n (Just p)

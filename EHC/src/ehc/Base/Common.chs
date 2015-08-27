@@ -496,10 +496,12 @@ data TraceOn
   | TraceOn_BuildTimes				-- build file times related
   | TraceOn_BuildResult				-- build results related
   | TraceOn_BuildRef				-- build reference related
-  deriving (Eq,Ord,Enum,Show,Typeable,Bounded)
+  deriving (Eq,Ord,Enum,Show,Typeable,Bounded,Generic)
+
+instance DataAndConName TraceOn
 
 allTraceOnMp :: Map.Map String TraceOn
-allTraceOnMp = str2stMpWithShow (strToLower . showUnprefixedWithTypeable 1) 
+allTraceOnMp = str2stMpWithShow (strToLower . showUnprefixed 1) 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
