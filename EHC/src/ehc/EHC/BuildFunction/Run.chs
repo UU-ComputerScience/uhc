@@ -131,16 +131,21 @@ Running of BuildFunction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-data TmOfRes m = 
+data TmOfRes (m :: * -> *) = 
   TmOfRes
-    { _tmofresSubs			:: EHCompilePhaseT m (Maybe (Map.Map HsName ClockTime))
-    , _tmofresChoice		:: TmChoice
-    , _tmofresTm			:: ClockTime
+    { _tmofresChoice		:: TmChoice
     , _tmofresIsOverr		:: Bool
+%%[[50
+    , _tmofresSubs			:: EHCompilePhaseT m (Maybe (Map.Map HsName ClockTime))
+    , _tmofresTm			:: ClockTime
+%%]]
     }
 
 emptyTmOfRes :: {- EHCCompileRunner m => -} TmOfRes m
-emptyTmOfRes = TmOfRes (panic "emptyTmOfRes.tmofresSubs") Choice_End (panic "emptyTmOfRes.tmofresTm") False
+emptyTmOfRes = TmOfRes Choice_End False
+%%[[50
+                       (panic "emptyTmOfRes.tmofresSubs") (panic "emptyTmOfRes.tmofresTm")
+%%]]
 
 mkLabel ''TmOfRes
 
@@ -1906,22 +1911,30 @@ bMkASTPMbChoice modSearchKey astpipe = do
     -- source: time of src itself + imports
     tmOf modSearchKey p@(ASTPipe_Src {astpType=t}) = do
         ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
+%%[[8
+        do
+%%][50
         mbTm <- bcall $ ModfTimeOfFile modSearchKey t (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
         case mbTm of
           Just (tm,fp) -> do
             cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Src:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p, "asked type:" >#< t, "cmdln type:" >#< _ecuASTType ecu]
+%%]]
             return $ Just $ emptyTmOfRes
-              { _tmofresSubs =
+              { _tmofresChoice = Choice_End
+              , _tmofresIsOverr = t == _ecuASTType ecu && (maybe False snd $ astFileNameOverrideMbFPath $ _fsrchOverr $ _pfsrchKey modSearchKey)
+%%[[50
+              , _tmofresSubs =
                   maybeM (bcall $ ModnameAndImportsPMb modSearchKey p) (return Nothing) $ \(_, imps, _) -> do
                     imptms <- forM (Set.toList imps) $ \n -> tmOf (mkPrevFileSearchKeyWithName n) p >>= \mbt -> return (n, fmap _tmofresTm mbt)
                     if all (isJust . snd) imptms
                       then return $ Just (Map.fromList [(n,t) | (n, Just t) <- imptms])
                       else return Nothing
-              , _tmofresChoice = Choice_End
               , _tmofresTm = tm
-              , _tmofresIsOverr = t == _ecuASTType ecu && (maybe False snd $ astFileNameOverrideMbFPath $ _fsrchOverr $ _pfsrchKey modSearchKey)
+%%]]
               }
+%%[[50
           _ -> return Nothing
+%%]]
 
 %%[[50
     -- choose first available
@@ -1985,14 +1998,20 @@ bMkASTPMbChoice modSearchKey astpipe = do
           then return Nothing
           else do
             let subs = map (panicJust $ "bMkASTPMbChoice: " ++ show modSearchKey) tms
+%%[[8
+                (cs, os) = unzip [ (c,o) | TmOfRes {_tmofresChoice=c, _tmofresIsOverr=o} <- subs ]
+%%][50
                 (mtsimps, cs, ts, os) = unzip4 [ (s,c,t,o) | TmOfRes {_tmofresSubs=s, _tmofresChoice=c, _tmofresTm=t, _tmofresIsOverr=o} <- subs ]
+%%]]
             return $ Just $ emptyTmOfRes
-              { _tmofresSubs = do
+              { _tmofresChoice = Choices cs
+              , _tmofresIsOverr = or os
+%%[[50
+              , _tmofresSubs = do
                    tsimps <- fmap catMaybes $ sequence mtsimps
                    return $ if null tsimps then Nothing else Just (Map.unions tsimps)
-              , _tmofresChoice = Choices cs
               , _tmofresTm = maximum ts
-              , _tmofresIsOverr = or os
+%%]]
               }
 
     -- others, for now...
@@ -2312,16 +2331,6 @@ bAllowFlowP modNm astpipe flowstage astpred = do
        cpUpdAlreadyFlowIntoCRSIWith modNm asttype key
        return $ Just astpipeFnd
      else return Nothing
-%%]
-
-%%[8
--- | Is the HI file newer?
-bHIIsNewerThan :: EHCCompileRunner m => HsName -> HsName -> EHCompilePhaseT m Bool
-bHIIsNewerThan modNm1 modNm2 = do
-    mbNewer <- bcall $ ASTFileIsNewerThan
-      (mkPrevFileSearchKeyWithName modNm1, ASTType_HI, (ASTFileContent_Binary, ASTFileUse_Cache), ASTFileTiming_Prev)
-      (mkPrevFileSearchKeyWithName modNm2, ASTType_HI, (ASTFileContent_Binary, ASTFileUse_Cache), ASTFileTiming_Prev)
-    return $ maybe False id mbNewer
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

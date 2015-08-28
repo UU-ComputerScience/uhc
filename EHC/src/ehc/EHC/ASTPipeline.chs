@@ -230,7 +230,7 @@ instance PP ASTTrf where
   pp (ASTTrf_Optim scs) = "Optim" >#< ppBracketsCommas scs
 %%]
 
-%%[8 export(ASTPipeHowChoice(..))
+%%[50 export(ASTPipeHowChoice(..))
 -- | Description of transformation
 data ASTPipeHowChoice
   = ASTPipeHowChoice_Avail     		-- ^ First available
@@ -329,9 +329,11 @@ instance PP ASTPipe where
 data TmChoice
   = Choice_End					-- ^ base case
   | Choice_No 	TmChoice		-- ^ no choice made
+  | Choices 	[TmChoice]		-- ^ compound
+%%[[50
   | Choice_L 	TmChoice		-- ^ fst (of ASTPipe_Choose)
   | Choice_R 	TmChoice		-- ^ snd (of ASTPipe_Choose)
-  | Choices 	[TmChoice]		-- ^ compound
+%%]]
   deriving (Eq, Ord, Typeable, Generic)
 
 instance Hashable TmChoice
@@ -339,9 +341,11 @@ instance Hashable TmChoice
 instance Show TmChoice where
   show (Choice_End ) = "."
   show (Choice_No c) = "-" ++ show c
+  show (Choices  cs) = show cs
+%%[[50
   show (Choice_L  c) = "L" ++ show c
   show (Choice_R  c) = "R" ++ show c
-  show (Choices  cs) = show cs
+%%]]
 
 instance PP TmChoice where
   pp = pp . show
@@ -490,7 +494,7 @@ astpipe_Core apbcfg =
     astpipe_Core_src $
 %%]]
       (
-%%[[(8 corerun)
+%%[[(50 corerun)
        if apbcfgLoadOnly apbcfg
        then
          astpipe_Core_cached
@@ -506,14 +510,19 @@ astpipe_Core apbcfg =
     whole
 %%[[50
       | apbcfgOptimScope apbcfg == OptimizationScope_WholeCore
-        && not (apbcfgLoadOnly apbcfg)                         = (ASTPipe_Trf ASTType_Core $ ASTTrf_Optim [ASTScope_Whole]) . ASTPipe_Whole ASTType_Core
+%%[[(50 corerun)
+        && not (apbcfgLoadOnly apbcfg)
+%%]]
+                                                               = (ASTPipe_Trf ASTType_Core $ ASTTrf_Optim [ASTScope_Whole]) . ASTPipe_Whole ASTType_Core
 %%]]
       | otherwise                                              = id
     cached
 %%[[8
       | otherwise                                              = id
-%%][50
+%%][(50 corerun)
       | apbcfgLoadOnly apbcfg                                  = ASTPipe_Choose ASTPipeHowChoice_Newer ASTType_Core astpipe_Core_cached
+      | otherwise                                              = ASTPipe_Choose ASTPipeHowChoice_Newer ASTType_Core (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached])
+%%][50
       | otherwise                                              = ASTPipe_Choose ASTPipeHowChoice_Newer ASTType_Core (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached])
 %%]]
 %%]
@@ -644,10 +653,10 @@ astpipe_ExecO apbcfg =
 %%% Pipeline utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[50
 apbcfgLoadChoice :: ASTPipeBldCfg -> ASTType -> ASTPipe -> ASTPipe -> ASTPipe
 apbcfgLoadChoice apbcfg -- t p1 p2
-%%[[(8 corerun)
+%%[[(50 corerun)
     | apbcfgLoadOnly apbcfg = ASTPipe_Choose ASTPipeHowChoice_Overr
 %%]]
     | otherwise             = ASTPipe_Choose ASTPipeHowChoice_Newer
