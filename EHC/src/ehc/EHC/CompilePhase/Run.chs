@@ -37,6 +37,10 @@
 %%[(8 corerun) import({%{EH}CoreRun.Run.Val.RunExplStk} as RE)
 %%]
 
+-- Build fun
+%%[(8 corerun) import({%{EH}EHC.BuildFunction.Run})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Run Core
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,6 +137,30 @@ cpRunCoreRun3 modNm = do
            (\_ -> return ())
 %%]]
            res
+%%]
+
+%%[(8 corerun) export(cpRunCoreRun4)
+-- | Run CoreRun. Variant for new build plan/driver
+-- TBD: fix dependence on whole program linked
+cpRunCoreRun4 :: EHCCompileRunner m => HsName -> ASTBuildPlan -> EHCompilePhaseT m ()
+cpRunCoreRun4 modNm astplan = do
+    maybeM (bcall $ ASTPlMb (mkPrevFileSearchKeyWithName modNm) astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
+      opts <- bcall $ EHCOptsOf modNm
+%%[[8
+      let (mainMod,impModL) = (modNm,[])
+%%][50
+%%]]
+      cpMsg modNm VerboseNormal "Run Core (4)"
+      res <- liftIO $ catch
+        (runCoreRun opts [] mod $ cmodRun opts mod)
+        (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "cpRunCoreRun4: " ++ show e))
+      either (\e -> cpSetLimitErrsWhen 1 "Run Core(Run) errors" [e])
+%%[[8
+             (liftIO . putStrLn . show . pp)
+%%][100  
+             (\_ -> return ())
+%%]]  
+             res
 %%]
 
 
