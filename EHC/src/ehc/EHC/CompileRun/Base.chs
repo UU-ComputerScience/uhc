@@ -234,6 +234,12 @@ data BFun' res where
     :: !HsName				--- ^ module name
     -> BFun' HsName
 
+  --- | The build plan for a pipe
+  BuildPlanPMb
+    :: !PrevFileSearchKey				--- ^ module name and possibly known path
+    -> !ASTPipe							--- ^ pipeline leading to content
+    -> BFun' (Maybe ASTBuildPlan)
+
   ASTRefFromFileEither
     :: Typeable ast
     => !PrevFileSearchKey				--- ^ module name and possibly known path
@@ -676,6 +682,7 @@ bfunCompare f1 f2 = case (f1,f2) of
     (ImportsRecursiveOfNamePl	a1 b1  				, ImportsRecursiveOfNamePl	a2 b2  				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
     (ActualModNm		        a1   				, ActualModNm	    		a2   				) ->         a1 `compare` a2
+    (BuildPlanPMb            	a1 b1		 		, BuildPlanPMb				a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (EcuOf		              	a1   				, EcuOf	    				a2   				) ->         a1 `compare` a2
     (EcuOfName              	a1   				, EcuOfName    				a2   				) ->         a1 `compare` a2
     (EcuOfPrevNameAndPath		a1 					, EcuOfPrevNameAndPath		a2 					) ->         a1 `compare` a2
@@ -774,6 +781,7 @@ instance Hashable (BFun' res) where
 	ImportsRecursiveOfNamePl	a b			-> salt `hashWithSalt` (8::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
 	ActualModNm					a			-> salt `hashWithSalt` (9::Int) `hashWithSalt` a
+	BuildPlanPMb 				a b			-> salt `hashWithSalt` (16::Int) `hashWithSalt` a `hashWithSalt` b
 	EcuOf			   			a			-> salt `hashWithSalt` (9::Int) `hashWithSalt` a
 	EcuOfName		   			a			-> salt `hashWithSalt` (10::Int) `hashWithSalt` a
 	EHCOptsOf		   			a			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a

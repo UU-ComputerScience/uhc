@@ -45,6 +45,7 @@ data ASTType
 %%]]
 %%[[(8 corerun)
   | ASTType_CoreRun
+  | ASTType_ExecCoreRun
 %%]]
 %%[[(8 grin)
   | ASTType_Grin
@@ -229,6 +230,24 @@ instance PP ASTTrf where
   pp (ASTTrf_Optim scs) = "Optim" >#< ppBracketsCommas scs
 %%]
 
+%%[8 export(ASTPipeHowChoice(..))
+-- | Description of transformation
+data ASTPipeHowChoice
+  = ASTPipeHowChoice_Avail     		-- ^ First available
+  | ASTPipeHowChoice_Overr     		-- ^ First available, but with priority to commandline specified (i.e. overridden)
+  | ASTPipeHowChoice_Newer     		-- ^ First newest available, based on timestamps and imports; this triggers recompilation based on module import dependencies
+  deriving (Eq, Ord, Typeable, Generic, Enum, Bounded)
+
+instance Hashable ASTPipeHowChoice
+instance DataAndConName ASTPipeHowChoice
+
+instance Show ASTPipeHowChoice where
+  show = showUnprefixed 1
+
+instance PP ASTPipeHowChoice where
+  pp = pp . show
+%%]
+
 %%[8 export(ASTPipe(..), emptyASTPipe)
 -- | Description of build pipelines
 data ASTPipe where
@@ -257,11 +276,8 @@ data ASTPipe where
     -- | Side effect inverse of ASTPipe_Cached, i.e. write/cache on file
     ASTPipe_Cache :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
 
-    -- | Choose between first available (in terms of existence), left biased, left one is src/cached, right one may be more complex/derived
-    ASTPipe_FirstAvailable :: { astpType :: ASTType, astpPipe1 :: ASTPipe, astpPipe2 :: ASTPipe } -> ASTPipe
-
-    -- | Choose between newest (in terms of timestamp), left biased, left one is src/cached, right one may be more complex/derived
-    ASTPipe_FirstNewestAvailable :: { astpType :: ASTType, astpPipe1 :: ASTPipe, astpPipe2 :: ASTPipe } -> ASTPipe
+    -- | Choose between first available, left biased, left one is src/cached, right one may be more complex/derived
+    ASTPipe_Choose :: { astpHow :: ASTPipeHowChoice, astpType :: ASTType, astpPipe1 :: ASTPipe, astpPipe2 :: ASTPipe } -> ASTPipe
 
     -- | Whole program linked
     ASTPipe_Whole :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
@@ -275,38 +291,32 @@ instance Hashable ASTPipe
 
 instance Show ASTPipe where
   show p = case p of
-    ASTPipe_Src 		t		-> "Sr(" ++ show t ++ ")."
-    ASTPipe_Derived 	t p'	-> "Dr-" ++ show p'
-    ASTPipe_Library 	t p'	-> "Lb-"  ++ show p'
-    ASTPipe_Trf 		t tr p' -> "Tr(" ++ show tr ++ ")-" ++ show p'
-    ASTPipe_Compound 	t ps	-> "Cm(" ++ show t ++ ")" ++ show ps
-    ASTPipe_Empty 				-> ""
-%%[[50
-    ASTPipe_Cached 		t		-> "Cd(" ++ show t ++ ")."
-    ASTPipe_Cache 		t p'	-> "Ch-" ++ show p'
-    ASTPipe_FirstAvailable
-    					t p1 p2 -> "{A1:" ++ show p1 ++ ",A2:" ++ show p2 ++ "}"
-    ASTPipe_FirstNewestAvailable
-    					t p1 p2 -> "{N1:" ++ show p1 ++ ",N2:" ++ show p2 ++ "}"
-    ASTPipe_Whole 		t p'	-> "Wh-" ++ show p'
+    ASTPipe_Src 		t		    -> "Sr(" ++ show t ++ ")."
+    ASTPipe_Derived 	t p'	    -> "Dr-" ++ show p'
+    ASTPipe_Library 	t p'	    -> "Lb-"  ++ show p'
+    ASTPipe_Trf 		t tr p'     -> "Tr(" ++ show tr ++ ")-" ++ show p'
+    ASTPipe_Compound 	t ps	    -> "Cm(" ++ show t ++ ")" ++ show ps
+    ASTPipe_Empty 				    -> ""
+%%[[50    
+    ASTPipe_Cached 		t		    -> "Cd(" ++ show t ++ ")."
+    ASTPipe_Cache 		t p'	    -> "Ch-" ++ show p'
+    ASTPipe_Choose		h t p1 p2   -> "{(" ++ show h ++ ")1:" ++ show p1 ++ ",2:" ++ show p2 ++ "}"
+    ASTPipe_Whole 		t p'	    -> "Wh-" ++ show p'
 %%]]
 
 instance PP ASTPipe where
   pp p = case p of
-    ASTPipe_Src 		t		-> "Src" >#< t
-    ASTPipe_Derived 	t p'	-> "Deriv" >#< t >-< indent 2 p'
-    ASTPipe_Library 	t p'	-> "Lib" >#< t >-< indent 2 p'
-    ASTPipe_Trf 		t tr p' -> "Trf" >#< t >#< tr >-< indent 2 p'
-    ASTPipe_Compound 	t ps	-> "All" >#< t >-< indent 2 (ppCurlysCommasBlock ps)
-    ASTPipe_Empty 				-> pp "Emp"
-%%[[50
-    ASTPipe_Cached 		t		-> "Cached" >#< t
-    ASTPipe_Cache 		t p'	-> "Cache" >#< t >-< indent 2 p'
-    ASTPipe_FirstAvailable
-    					t p1 p2 -> "Avail" >#< t >-< indent 2 (p1 >-< p2)
-    ASTPipe_FirstNewestAvailable
-    					t p1 p2 -> "Newest" >#< t >-< indent 2 (p1 >-< p2)
-    ASTPipe_Whole 		t p'	-> "Whole" >#< t >-< indent 2 p'
+    ASTPipe_Src 		t		    -> "Src" >#< t
+    ASTPipe_Derived 	t p'	    -> "Deriv" >#< t >-< indent 2 p'
+    ASTPipe_Library 	t p'	    -> "Lib" >#< t >-< indent 2 p'
+    ASTPipe_Trf 		t tr p'     -> "Trf" >#< t >#< tr >-< indent 2 p'
+    ASTPipe_Compound 	t ps	    -> "All" >#< t >-< indent 2 (ppCurlysCommasBlock ps)
+    ASTPipe_Empty 				    -> pp "Emp"
+%%[[50    
+    ASTPipe_Cached 		t		    -> "Cached" >#< t
+    ASTPipe_Cache 		t p'	    -> "Cache" >#< t >-< indent 2 p'
+    ASTPipe_Choose		h t p1 p2   -> "Choose" >#< h >#< t >-< indent 2 (p1 >-< p2)
+    ASTPipe_Whole 		t p'	    -> "Whole" >#< t >-< indent 2 p'
 %%]]
 %%]
 
@@ -319,8 +329,8 @@ instance PP ASTPipe where
 data TmChoice
   = Choice_End					-- ^ base case
   | Choice_No 	TmChoice		-- ^ no choice made
-  | Choice_L 	TmChoice		-- ^ fst (of ASTPipe_FirstNewestAvailable or ASTPipe_FirstAvailable)
-  | Choice_R 	TmChoice		-- ^ snd (of ASTPipe_FirstNewestAvailable or ASTPipe_FirstAvailable)
+  | Choice_L 	TmChoice		-- ^ fst (of ASTPipe_Choose)
+  | Choice_R 	TmChoice		-- ^ snd (of ASTPipe_Choose)
   | Choices 	[TmChoice]		-- ^ compound
   deriving (Eq, Ord, Typeable, Generic)
 
@@ -347,9 +357,12 @@ data ASTBuildPlan
       { _astbplPipe		:: ASTPipe		-- ^ the pipe and its choices
       , _astbplChoice	:: TmChoice		-- ^ the choices made based on time info
       }
-  deriving (Eq, Ord, Typeable, Generic, Show)
+  deriving (Eq, Ord, Typeable, Generic)
 
 instance Hashable ASTBuildPlan
+
+instance Show ASTBuildPlan where
+  show (ASTBuildPlan p c) = "Plan [" ++ show c ++ ", " ++ show p ++ "]"
 
 instance PP ASTBuildPlan where
   pp (ASTBuildPlan p c) = "Plan" >#< (c >-< p)
@@ -384,11 +397,7 @@ astpFold getx cmbx dfltx p = extr p
 %%[[50
     subs (ASTPipe_Cache   {astpPipe =p }) = [p]
     subs (ASTPipe_Whole   {astpPipe =p }) = [p]
-    subs (ASTPipe_FirstAvailable
-                          {astpPipe1=p1, astpPipe2=p2})
-                                          = [p1, p2]
-    subs (ASTPipe_FirstNewestAvailable
-                          {astpPipe1=p1, astpPipe2=p2})
+    subs (ASTPipe_Choose  {astpPipe1=p1, astpPipe2=p2})
                                           = [p1, p2]
 %%]]
     subs _                                = []
@@ -477,7 +486,7 @@ astpipe_Core_cached = ASTPipe_Cached ASTType_Core
 astpipe_Core :: ASTPipeBldCfg -> ASTPipe
 astpipe_Core apbcfg =
 %%[[(50 corein)
-  apbcfgAvailOrNewest apbcfg ASTType_Core
+  apbcfgLoadChoice apbcfg ASTType_Core
     astpipe_Core_src $
 %%]]
       (
@@ -489,7 +498,7 @@ astpipe_Core apbcfg =
 %%]]
          whole $
 %%[[50
-         ASTPipe_FirstNewestAvailable ASTType_Core (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached]) $
+         ASTPipe_Choose ASTPipeHowChoice_Newer ASTType_Core (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached]) $
 %%]]
              astpipe_Core_from_EH apbcfg
       )
@@ -504,8 +513,8 @@ astpipe_Core apbcfg =
 %%[[8
       | otherwise                                              = id
 %%][50
-      | apbcfgLoadOnly apbcfg                                  = ASTPipe_FirstNewestAvailable ASTType_Core astpipe_Core_cached
-      | otherwise                                              = ASTPipe_FirstNewestAvailable ASTType_Core (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached])
+      | apbcfgLoadOnly apbcfg                                  = ASTPipe_Choose ASTPipeHowChoice_Newer ASTType_Core astpipe_Core_cached
+      | otherwise                                              = ASTPipe_Choose ASTPipeHowChoice_Newer ASTType_Core (ASTPipe_Compound ASTType_Core [astpipe_HI_cached, astpipe_Core_cached])
 %%]]
 %%]
 
@@ -529,11 +538,11 @@ astpipe_CoreRun_from_Core apbcfg =
 astpipe_CoreRun :: ASTPipeBldCfg -> ASTPipe
 astpipe_CoreRun apbcfg =
 %%[[(50 corerunin)
-  apbcfgAvailOrNewest apbcfg ASTType_CoreRun
+  apbcfgLoadChoice apbcfg ASTType_CoreRun
     astpipe_CoreRun_src $
 %%]]
 %%[[50
-      apbcfgAvailOrNewest apbcfg ASTType_CoreRun
+      apbcfgLoadChoice apbcfg ASTType_CoreRun
         astpipe_CoreRun_cached $
 %%]]
           astpipe_CoreRun_from_Core apbcfg
@@ -556,7 +565,7 @@ astpipe_HI_cached = ASTPipe_Cached ASTType_HI
 
 astpipe_HI :: ASTPipeBldCfg -> ASTPipe
 astpipe_HI apbcfg =
-  ASTPipe_FirstNewestAvailable ASTType_HI
+  ASTPipe_Choose ASTPipeHowChoice_Newer ASTType_HI
     astpipe_HI_cached $
       ASTPipe_Cache ASTType_HI $
       ASTPipe_Derived ASTType_HI $
@@ -606,7 +615,7 @@ astpipe_C_from_GrinBytecode apbcfg = ASTPipe_Derived ASTType_C $ astpipe_GrinByt
 astpipe_C :: ASTPipeBldCfg -> ASTPipe
 astpipe_C apbcfg =
 %%[[50
-  ASTPipe_FirstNewestAvailable ASTType_C
+  ASTPipe_Choose ASTPipeHowChoice_Newer ASTType_C
     astpipe_C_src $
 %%]]
       astpipe_C_from_GrinBytecode apbcfg
@@ -636,12 +645,12 @@ astpipe_ExecO apbcfg =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-apbcfgAvailOrNewest :: ASTPipeBldCfg -> ASTType -> ASTPipe -> ASTPipe -> ASTPipe
-apbcfgAvailOrNewest apbcfg -- t p1 p2
+apbcfgLoadChoice :: ASTPipeBldCfg -> ASTType -> ASTPipe -> ASTPipe -> ASTPipe
+apbcfgLoadChoice apbcfg -- t p1 p2
 %%[[(8 corerun)
-    | apbcfgLoadOnly apbcfg = ASTPipe_FirstAvailable
+    | apbcfgLoadOnly apbcfg = ASTPipe_Choose ASTPipeHowChoice_Overr
 %%]]
-    | otherwise             = ASTPipe_FirstNewestAvailable
+    | otherwise             = ASTPipe_Choose ASTPipeHowChoice_Newer
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

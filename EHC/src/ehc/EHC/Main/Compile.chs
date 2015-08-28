@@ -106,13 +106,15 @@ compileN_Alternate fpL topModNmL@(modNm:_) = do
           (bcall $ ActualModNm modNm) >>= cpRunCoreRun
 -}
       (Target_None_Core_AsIs, (fp:_), (modNm:_)) | CoreOpt_Run `elem` ehcOptCoreOpts opts -> do
-          (_ :: AST_CoreRun) <- bcall $ ASTP (PrevFileSearchKey (FileSearchKey modNm (ASTFileNameOverride_FPathAsTop fp)) Nothing) astpipe
+          let modSearchKey = PrevFileSearchKey (FileSearchKey modNm $ ASTFileNameOverride_FPathAsTop fp) Nothing
+          -- (_ :: AST_CoreRun) <- bcall $ ASTP modSearchKey astpipe
           -- cr <- get
           -- cpTr TraceOn_BuildResult ["compileN_Alternate", show $ Map.keys $ cr ^. crCUCache, show $ cr ^. crNmForward]
+          crsi <- bcall $ CRSIOfNameP modSearchKey astpipe
           (bcall $ ActualModNm modNm) >>= cpRunCoreRun
 %%]]
       (_, fpL, topModNmL) -> do
-          zipWithM (\fp topModNm -> bcall $ EcuOfPrevNameAndPath (PrevFileSearchKey (FileSearchKey topModNm (ASTFileNameOverride_FPathAsTop fp)) Nothing)) fpL topModNmL
+          zipWithM (\fp topModNm -> bcall $ EcuOfPrevNameAndPath (PrevFileSearchKey (FileSearchKey topModNm $ ASTFileNameOverride_FPathAsTop fp) Nothing)) fpL topModNmL
           return ()
 %%]
 

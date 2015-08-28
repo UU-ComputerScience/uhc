@@ -256,9 +256,9 @@ instance PP ASTFileNameOverride where
 instance Hashable ASTFileNameOverride
 
 -- | Possibly extract FPath
-astFileNameOverrideMbFPath :: ASTFileNameOverride -> Maybe FPath
-astFileNameOverrideMbFPath (ASTFileNameOverride_FPath 		fp) = Just fp
-astFileNameOverrideMbFPath (ASTFileNameOverride_FPathAsTop 	fp) = Just fp
+astFileNameOverrideMbFPath :: ASTFileNameOverride -> Maybe (FPath,Bool)
+astFileNameOverrideMbFPath (ASTFileNameOverride_FPath 		fp) = Just (fp,False)
+astFileNameOverrideMbFPath (ASTFileNameOverride_FPathAsTop 	fp) = Just (fp,True)
 astFileNameOverrideMbFPath  _									= Nothing
 %%]
 

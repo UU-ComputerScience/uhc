@@ -1,5 +1,5 @@
 %%[0 hs
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, TemplateHaskell, KindSignatures, ImpredicativeTypes #-}
 -- {-# LANGUAGE RecursiveDo #-}
 %%]
 
@@ -131,11 +131,25 @@ Running of BuildFunction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-type TmOfRes   m = (EHCompilePhaseT m (Maybe (Map.Map HsName ClockTime)), TmChoice, ClockTime)
+data TmOfRes m = 
+  TmOfRes
+    { _tmofresSubs			:: EHCompilePhaseT m (Maybe (Map.Map HsName ClockTime))
+    , _tmofresChoice		:: TmChoice
+    , _tmofresTm			:: ClockTime
+    , _tmofresIsOverr		:: Bool
+    }
+
+emptyTmOfRes :: {- EHCCompileRunner m => -} TmOfRes m
+emptyTmOfRes = TmOfRes (panic "emptyTmOfRes.tmofresSubs") Choice_End (panic "emptyTmOfRes.tmofresTm") False
+
+mkLabel ''TmOfRes
+
+-- type TmOfRes   m = TmRes m -- (EHCompilePhaseT m (Maybe (Map.Map HsName ClockTime)), TmChoice, ClockTime)
 type TmOfResMb m = Maybe (TmOfRes m)
 type TmOfResM  m = EHCompilePhaseT m (TmOfResMb m)
 
-updTmChoice upd = \(imps,ch,tm) -> (imps,upd ch,tm)
+-- updTmChoice upd = \(imps,ch,tm) -> (imps,upd ch,tm)
+updTmChoice upd = tmofresChoice ^$= upd
 updTmChoiceM upd = fmap (fmap (updTmChoice upd))
 %%]
 
@@ -373,14 +387,6 @@ bcall bfun = do
                  
                brefto bfun BRef_CRSI
 
-{-
-          CRSIWithImps (PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}, _pfsrchMbCxtInfo=mbPrev}) imps forAstTypes -> do
-               impsmp <- bcall $ ImportsRecursiveWithImps mbPrev imps
-               let compileOrder = scc [ (n, Set.toList i) | (n,i) <- Map.toList impsmp ]
-               cpTr TraceOn_BuildSccImports $ [show modNm ++ " " ++ show imps] ++ [show compileOrder]
-               bcall $ CRSIWithCompileOrder modNm compileOrder forAstTypes
--}
-
           CRSIWithImpsPl (PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}, _pfsrchMbCxtInfo=mbPrev}) imps astplan -> do
                impsmp <- bcall $ ImportsRecursiveWithImpsPl mbPrev imps astplan
                let compileOrder = scc [ (n, Set.toList i) | (n,i) <- Map.toList impsmp ]
@@ -406,7 +412,7 @@ bcall bfun = do
                let allowFlow = bAllowFlowP modNm astpipe ASTSemFlowStage_PerModule
 %%[[50
                ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey'
-               cpTrPP TraceOn_BuildPipe [pp "CRSIOfNameP ASTPipe", pp astplan]
+               cpTrPP TraceOn_BuildPipe [pp "CRSIOfNamePl ASTPipe", pp astplan]
                
                -- first recursively take care of all imports
                bcall $ CRSIWithImpsPl (mkPrevFileSearchKeyWithNameMbPrev modNm (_ecuMbPrevSearchInfo ecu)) imps astplan
@@ -513,9 +519,12 @@ bcall bfun = do
                (nm, imps, _) <- bcall $ ModnameAndImportsP modSearchKey astpipe
                breturn (nm, imps)
 
-          ImportsRecursiveWithImpsPl mbPrev imps astplan -> do
+          ImportsRecursiveWithImpsPl mbPrev imps astplan@(ASTBuildPlan {_astbplPipe=astpipe}) -> do
                recimps <- fmap Map.unions $ forM (Set.toList imps) $ \imp -> do
-                 (nm', imps', recimps') <- bcall $ ImportsRecursiveOfNamePl (mkPrevFileSearchKeyWithNameMbPrev imp mbPrev) astplan
+                 let modSearchKey = mkPrevFileSearchKeyWithNameMbPrev imp mbPrev
+                 (nm', imps', recimps') <- bLiftASTPipeToASTBuildPlan (return (imp, Set.empty, Map.empty))
+                   (\k p -> bcall $ ImportsRecursiveOfNamePl k p)
+                   modSearchKey astpipe
                  return $ Map.insert nm' imps' recimps'
                breturn (recimps)
 
@@ -527,6 +536,10 @@ bcall bfun = do
 %%]]
 
           ActualModNm modNm -> (fmap ecuModNm $ bcall $ EcuOfName modNm) >>= breturn
+
+          BuildPlanPMb modSearchKey astpipe ->
+               maybeM (bMkASTPMbChoice modSearchKey astpipe) (return Nothing) $ \choice ->
+                 breturn $ Just $ mkBuildPlan astpipe choice
 
           EcuOf modNm -> brefto bfun $ BRef_ECU modNm
 
@@ -1624,7 +1637,7 @@ ecuIsHSNewerThanHI ecu
                        (\(p,_) -> bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c) (return Nothing) $ \(ASTResult {_astresAST=core}) -> do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts <- bcall $ EHCOptsOf modNm
-               crsi <- bcall $ CRSIOfNameP modSearchKey astpipe
+               crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
                let  coreInh  = _crsiCoreInh crsi
                     coreSem  = Core2GrSem.wrap_CodeAGItf
                                  (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
@@ -1672,7 +1685,7 @@ ecuIsHSNewerThanHI ecu
                        (\(p,_) -> bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c) (return Nothing) $ \(ASTResult {_astresAST=core}) -> do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts <- bcall $ EHCOptsOf modNm
-               crsi <- bcall $ CRSIOfNameP modSearchKey astpipe
+               crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
                let  
 %%[[8
                     hasMain                = True
@@ -1791,50 +1804,12 @@ ecuIsHSNewerThanHI ecu
         -- the result
         return res
   where
-    {-
-    -- lens access
-    st    = crStateInfo ^* crsiBState
-    cstk  = st ^* bstateCallStack
-
-    -- call init/finalization
-    start = cstk =$: (BFun bfun :)
-    end   = cstk =$: tail
-    -}
-    
-    {-
-    -- memoize
-    bmemo :: Typeable f => f res -> EHCompilePhaseT m ()
-    bmemo res = do
-        (BFun bfun : _) <- getl $ st ^* bstateCallStack
-        case cast bfun of
-          Just bfun -> do
-               cpTr TraceOn_BuildFun $ ["memo  " ++ show bfun]
-               st ^* bstateCache =$: bcacheInsert bfun res
-          _ -> panic $ "BuildFunction.Run.bcall.bmemo: " ++ show bfun
-    bmemo' :: Typeable xxx => xxx -> EHCompilePhaseT m ()
-    bmemo' res = do
-        (BFun bfun : _) <- getl $ st ^* bstateCallStack
-        case cast bfun of
-          Just bfun -> do
-               cpTr TraceOn_BuildFun $ ["memo  " ++ show bfun]
-               st ^* bstateCache =$: bcacheInsert bfun (Identity res)
-          _ -> panic $ "BuildFunction.Run.bcall.bmemo': " ++ show bfun ++ ", " ++ show (typeOf bfun) ++ ", " ++ show (typeOf res)
-    -}
-
     -- construct a reference to something and also yield corresponding result
     brefto' :: BFun' res -> BRef res -> EHCompilePhaseT m (Maybe res)
     brefto' bfun ref = bmemo ref >> bderef' ref
     
     brefto :: BFun' res -> BRef res -> EHCompilePhaseT m res
     brefto bfun ref = fmap (panicJust $ "BuildFunction.Run.bcall.brefto " ++ show bfun) $ brefto' bfun ref
-
-    {-
-    -- memoize & return
-    breturn :: res -> EHCompilePhaseT m res
-    breturn res = do
-        bmemo (Identity res)
-        return res
-    -}
 
     -- lookup in cache
     lkup :: BFun' res -> BCache -> EHCompilePhaseT m (Maybe res)
@@ -1925,7 +1900,7 @@ breturn res = do
 -- | Make a Choice what to build, resolve newer/older choice
 bMkASTPMbChoice :: EHCCompileRunner m => PrevFileSearchKey -> ASTPipe -> EHCompilePhaseT m (Maybe TmChoice)
 bMkASTPMbChoice modSearchKey astpipe = do
-    fmap (fmap snd3) $ tmOf modSearchKey astpipe
+    fmap (fmap _tmofresChoice) $ tmOf modSearchKey astpipe
   where
     tmOf :: EHCCompileRunner m => PrevFileSearchKey -> ASTPipe -> TmOfResM m
     -- source: time of src itself + imports
@@ -1934,32 +1909,45 @@ bMkASTPMbChoice modSearchKey astpipe = do
         mbTm <- bcall $ ModfTimeOfFile modSearchKey t (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
         case mbTm of
           Just (tm,fp) -> do
-            cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Src:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p]
-            return $ Just
-              ( maybeM (bcall $ ModnameAndImportsPMb modSearchKey p) (return Nothing) $ \(_, imps, _) -> do
-                   imptms <- forM (Set.toList imps) $ \n -> tmOf (mkPrevFileSearchKeyWithName n) p >>= \mbt -> return (n, fmap thd mbt)
-                   if all (isJust . snd) imptms
-                     then return $ Just (Map.fromList [(n,t) | (n, Just t) <- imptms])
-                     else return Nothing
-              , Choice_End
-              , tm
-              )
+            cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Src:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p, "asked type:" >#< t, "cmdln type:" >#< _ecuASTType ecu]
+            return $ Just $ emptyTmOfRes
+              { _tmofresSubs =
+                  maybeM (bcall $ ModnameAndImportsPMb modSearchKey p) (return Nothing) $ \(_, imps, _) -> do
+                    imptms <- forM (Set.toList imps) $ \n -> tmOf (mkPrevFileSearchKeyWithName n) p >>= \mbt -> return (n, fmap _tmofresTm mbt)
+                    if all (isJust . snd) imptms
+                      then return $ Just (Map.fromList [(n,t) | (n, Just t) <- imptms])
+                      else return Nothing
+              , _tmofresChoice = Choice_End
+              , _tmofresTm = tm
+              , _tmofresIsOverr = t == _ecuASTType ecu && (maybe False snd $ astFileNameOverrideMbFPath $ _fsrchOverr $ _pfsrchKey modSearchKey)
+              }
           _ -> return Nothing
 
 %%[[50
-    --
-{-
--}
-    tmOf modSearchKey p@(ASTPipe_FirstAvailable {astpPipe1=p1, astpPipe2=p2}) =
+    -- choose first available
+    tmOf modSearchKey p@(ASTPipe_Choose {astpHow=ASTPipeHowChoice_Avail, astpPipe1=p1, astpPipe2=p2}) =
         maybeM' (tmOf modSearchKey p1) (return . Just . updTmChoice Choice_L) $ 
           updTmChoiceM Choice_R $ tmOf modSearchKey p2
 
-    tmOf modSearchKey p@(ASTPipe_FirstNewestAvailable {astpPipe1=p1, astpPipe2=p2}) =
+    -- choose first available, only to be overridden with second if indicated
+    tmOf modSearchKey p@(ASTPipe_Choose {astpHow=ASTPipeHowChoice_Overr, astpPipe1=p1, astpPipe2=p2}) = do
+        mbTm1 <- tmOf modSearchKey p1
+        case mbTm1 of
+          Just tm1@(TmOfRes {_tmofresIsOverr=True}) -> return $ Just $ updTmChoice Choice_L tm1
+          _ -> do
+              mbTm2 <- tmOf modSearchKey p2
+              case (mbTm1, mbTm2) of
+                (_      , Just tm2@(TmOfRes {_tmofresIsOverr=True})) -> return $ Just $ updTmChoice Choice_R tm2
+                (Nothing, _                                        ) -> return $ fmap (updTmChoice Choice_R) mbTm2
+                (_      , _                                        ) -> return $ fmap (updTmChoice Choice_L) mbTm1
+
+    -- choose based on newest in combi with imports also indicating being newer
+    tmOf modSearchKey p@(ASTPipe_Choose {astpHow=ASTPipeHowChoice_Newer, astpPipe1=p1, astpPipe2=p2}) =
         tmChoose modSearchKey (return Nothing) (tmOf modSearchKey p1) (tmOf modSearchKey p2) (ret "1" p1 Choice_L) (ret "2" p2 Choice_R)
-      where ret msg _ ch (imps,choice,tm) = do
+      where ret msg _ ch res@(TmOfRes {_tmofresChoice=choice,_tmofresTm=tm}) = do
               let choice' = ch choice
               cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_FirstNewestAvailable:" >#< msg >#< tm, "choice:" >#< show choice', "pipe:" >#< p]
-              return $ Just (imps, choice', tm)
+              return $ Just $ res {_tmofresChoice=choice'}
 
     -- cached: just time of cached file itself, if file is valid
     tmOf modSearchKey p@(ASTPipe_Cached {astpType=t}) = ifM' (bcall $ ASTFileIsValid modSearchKey t (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev) (return Nothing) $ do
@@ -1967,7 +1955,7 @@ bMkASTPMbChoice modSearchKey astpipe = do
         case mbTm of
           Just (tm,fp) -> do
             cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Cached:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p]
-            return $ Just (return $ Just Map.empty, Choice_End, tm)
+            return $ Just $ emptyTmOfRes {_tmofresSubs= return $ Just Map.empty, _tmofresTm= tm} -- (return $ Just Map.empty, Choice_End, tm)
           _ -> return Nothing
 
     -- cache: time recursively computed, if file can be cached
@@ -1977,9 +1965,9 @@ bMkASTPMbChoice modSearchKey astpipe = do
 
     -- whole: time recursively computed, merged into 1 time for all
     tmOf modSearchKey (ASTPipe_Whole {astpPipe=p}) = do
-        maybeM (tmOf modSearchKey p) (return Nothing) $ \(mimps,choice,tm) -> do
+        maybeM (tmOf modSearchKey p) (return Nothing) $ \(TmOfRes {_tmofresSubs=mimps,_tmofresChoice=choice,_tmofresTm=tm}) -> do
           maybeM mimps (return Nothing) $ \imps -> do
-            return $ Just (return $ Just Map.empty, Choice_No choice, maximum $ tm : Map.elems imps)
+            return $ Just $ emptyTmOfRes {_tmofresSubs= return $ Just Map.empty, _tmofresChoice= Choice_No choice, _tmofresTm= maximum $ tm : Map.elems imps} -- (return $ Just Map.empty, Choice_No choice, maximum $ tm : Map.elems imps)
     -- fmap (fmap (\(imps,tm) -> (return $ Just Map.empty, maximum $ tm : Map.elems imps))) $ tmOf modSearchKey p
 
 %%]]
@@ -1996,13 +1984,16 @@ bMkASTPMbChoice modSearchKey astpipe = do
         if null tms || not (all isJust tms)
           then return Nothing
           else do
-            let (mtsimps, cs, ts) = unzip3 $ map (panicJust $ "bMkASTPMbChoice: " ++ show modSearchKey) tms
-            return $ Just
-              ( do tsimps <- fmap catMaybes $ sequence mtsimps
+            let subs = map (panicJust $ "bMkASTPMbChoice: " ++ show modSearchKey) tms
+                (mtsimps, cs, ts, os) = unzip4 [ (s,c,t,o) | TmOfRes {_tmofresSubs=s, _tmofresChoice=c, _tmofresTm=t, _tmofresIsOverr=o} <- subs ]
+            return $ Just $ emptyTmOfRes
+              { _tmofresSubs = do
+                   tsimps <- fmap catMaybes $ sequence mtsimps
                    return $ if null tsimps then Nothing else Just (Map.unions tsimps)
-              , Choices cs
-              , maximum ts
-              )
+              , _tmofresChoice = Choices cs
+              , _tmofresTm = maximum ts
+              , _tmofresIsOverr = or os
+              }
 
     -- others, for now...
     tmOf _ _ = return Nothing
@@ -2012,7 +2003,9 @@ bMkASTPMbChoice modSearchKey astpipe = do
     tmChoose modSearchKey adflt tm1 tm2 a1 a2 = tm1 >>= \mbtm1 -> tm2 >>= \mbtm2 -> case (mbtm1, mbtm2) of
       (Just t1             , Nothing               ) -> a1 t1
       (Nothing             , Just t2               ) -> a2 t2
-      (Just t1@(_,_,tm1)   , Just t2@(mti2,_,tm2)  ) -> do 
+      (Just t1@(TmOfRes {_tmofresTm=tm1})
+                           , Just t2@(TmOfRes {_tmofresSubs=mti2, _tmofresTm=tm2})
+                                                   ) -> do 
           (mxtm2, ti2) <- mti2 >>= (return . maybe (tm2, Map.empty) (\ti2 -> (maximum $ tm2 : Map.elems ti2, ti2)))
           cpTrPP TraceOn_BuildPipe ["tmChoose stamps" >#< modSearchKey, "tm1" >#< tm1, "mxtm2" >#< mxtm2, "tm2" >#< (tm2 >-< indent 2 (vlist $ Map.toList ti2))]
           if tm1 `diffClockTimes` mxtm2 > noTimeDiff then a1 t1 else a2 t2
@@ -2117,17 +2110,12 @@ bExecASTPMbChoice modSearchKey astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astb
 			   -- TBD: write/output side effect
 			   return $ Just $ astresPipe ^= astpipe' $ res -- (ast, ref, astpipe')
 
-		 ASTBuildPlan {_astbplPipe= ASTPipe_FirstAvailable asttypeAsked astpipe1 astpipe2, _astbplChoice= Choice_L c} -> do
-			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan astpipe1 c
+		 ASTBuildPlan {_astbplPipe= ASTPipe_Choose {astpPipe1=p}, _astbplChoice= Choice_L c} -> do
+			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c
 
-		 ASTBuildPlan {_astbplPipe= ASTPipe_FirstAvailable asttypeAsked astpipe1 astpipe2, _astbplChoice= Choice_R c} -> do
-			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan astpipe2 c
+		 ASTBuildPlan {_astbplPipe= ASTPipe_Choose {astpPipe2=p}, _astbplChoice= Choice_R c} -> do
+			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c
 
-		 ASTBuildPlan {_astbplPipe= ASTPipe_FirstNewestAvailable asttypeAsked astpipe1 astpipe2, _astbplChoice= Choice_L c} -> do
-			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan astpipe1 c
-
-		 ASTBuildPlan {_astbplPipe= ASTPipe_FirstNewestAvailable asttypeAsked astpipe1 astpipe2, _astbplChoice= Choice_R c} -> do
-			 bcall $ ASTPlMb modSearchKey $ mkBuildPlan astpipe2 c
 %%]]
 
 		 -- ASTPipe_Derived ASTType_EH _ -> do
@@ -2187,8 +2175,8 @@ bLiftASTPipeToASTBuildPlan
   -> (PrevFileSearchKey -> ASTBuildPlan -> EHCompilePhaseT m res)
   -> (PrevFileSearchKey -> ASTPipe      -> EHCompilePhaseT m res)
 bLiftASTPipeToASTBuildPlan dflt f modSearchKey astpipe = do
-    maybeM (bMkASTPMbChoice modSearchKey astpipe) dflt $ \choice ->
-      f modSearchKey $ mkBuildPlan astpipe choice
+    maybeM (bcall $ BuildPlanPMb modSearchKey astpipe) dflt $ \astplan ->
+      f modSearchKey astplan
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
