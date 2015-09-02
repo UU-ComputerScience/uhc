@@ -134,7 +134,7 @@ cpFlowHsSem1 modNm
 %%]]
          ;  when (isJust (_ecuMbHSSem ecu))
                  (do { cpUpdSI (\crsi -> crsi {_crsiHSInh = hsInh', _crsiEHInh = ehInh', _crsiOpts = opts'})
-                     ; cpUpdAlreadyFlowIntoCRSI modNm ASTType_HS ASTSemFlowStage_BetweenModule
+                     ; bUpdAlreadyFlowIntoCRSI modNm ASTType_HS ASTSemFlowStage_BetweenModule
                      ; cpUpdCU modNm $! ecuStoreHIInfo hii'
                      -- ; liftIO $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
                      })
@@ -232,7 +232,7 @@ cpFlowEHSem1 modNm
 %%]]
                                )
 %%[[50
-                     ; cpUpdAlreadyFlowIntoCRSI modNm ASTType_EH ASTSemFlowStage_BetweenModule
+                     ; bUpdAlreadyFlowIntoCRSI modNm ASTType_EH ASTSemFlowStage_BetweenModule
 %%]]
 %%[[50
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
@@ -246,7 +246,7 @@ cpFlowEHSem1 modNm
                      -- put back additional hidden exports
                      ; cpUpdHiddenExports modNm $ Seq.toList $ EHSem.gathHiddenExports_Syn_AGItf ehSem
 %%]]
-                     ; cpUpdAlreadyFlowIntoCRSI modNm ASTType_EH ASTSemFlowStage_PerModule
+                     ; bUpdAlreadyFlowIntoCRSI modNm ASTType_EH ASTSemFlowStage_PerModule
                      })
          }
 %%]

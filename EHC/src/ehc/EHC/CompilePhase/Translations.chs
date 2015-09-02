@@ -124,7 +124,7 @@ cpTranslateEH2Output :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2Output modNm
   =  do  {  cr <- get
 %%[[50
-         ;  isTopMod <- bcall $ IsTopMod modNm
+         ;  isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
 %%]]
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbEHSem= _ecuMbEHSem ecu
@@ -260,9 +260,10 @@ cpGenGrinGenInfo
        , HsName2FldMp
        )
 cpGenGrinGenInfo modNm
-  = do opts <- bcall $ EHCOptsOf modNm
+  = do let modSearchKey = mkPrevFileSearchKeyWithName modNm
+       opts <- bcall $ EHCOptsOf modSearchKey
        -- mieimpl <- cpGenModuleImportExportImpl modNm
-       mieimpl <- bcall $ ImportExportImpl (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
+       mieimpl <- bcall $ ImportExportImpl modSearchKey (ehcOptOptimizationScope opts)
        return (mieimplLamMp mieimpl, mieimplUsedModNmL mieimpl, mieimplHsName2FldMpMp mieimpl, mieimplHsName2FldMp mieimpl)
 %%]
 

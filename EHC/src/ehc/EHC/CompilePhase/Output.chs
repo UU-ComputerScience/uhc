@@ -25,7 +25,7 @@ Output generation, on stdout or file
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
-%%[8 import({%{EH}EHC.CompileRun})
+%%[8 import({%{EH}EHC.CompileRun.Base})
 %%]
 
 %%[8 import(qualified {%{EH}Config} as Cfg)

@@ -222,6 +222,7 @@ rvalExplStkExp e = do
 %%[[8
   rsemTr $ ">E:" >#< e
 %%][100
+  rsemTr $ ">E:" >#< e
 %%][103
   rsemTr $ ">E:" >#< e
 %%]]
@@ -284,6 +285,7 @@ rvalExplStkExp e = do
 %%[[8
   rsemTr $ "<E:" >#< (e) -- >-< e')
 %%][100
+  rsemTr $ "<E:" >#< (e) -- >-< e')
 %%][103
   rsemTr $ "<E:" >#< (e) -- >-< e')
 %%]]
@@ -335,6 +337,7 @@ instance
     rsemSetup opts modImpL mod@(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) = do
 {-
 -}
+        rsemSetupTracing opts
         let modAllL = modImpL ++ [mod]
         modFrames <- forM modAllL $ \mod -> do
           rvalExplAddModule mod

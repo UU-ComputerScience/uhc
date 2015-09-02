@@ -322,7 +322,7 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              needsCompile = crModNeedsCompile modNm cr
              -- canCompile   = ecuCanCompile ecu
-       ; canCompile <- bcall $ CanCompile modNm
+       ; canCompile <- bcall $ CanCompile $ mkPrevFileSearchKeyWithName modNm
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (liftIO $ putStrLn
                 (  show modNm
@@ -437,7 +437,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
                                                   modNm
 {-
-                   ; (modNm2, _, _) <- bcall $ HsModnameAndImports modNm
+                   ; (modNm2, _, _, _) <- bcall $ HsModnameAndImports modNm
 -}
                    ; cpEhcHaskellModulePrepareHS2 modNm2
                    ; cpMsg modNm2 VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
@@ -475,7 +475,7 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSOnlyImports
 %%]]
              -> do { cpMsg modNm VerboseMinimal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
-                   ; isTopMod <- bcall $ IsTopMod modNm
+                   ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
                    ; cpEhcHaskellModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts st
 %%[[99
                                                    (pkgExposedPackages $ ehcOptPkgDb opts)
@@ -537,14 +537,14 @@ cpEhcModuleCompile1 targHSState modNm
              -> do { cpMsg modNm VerboseNormal $ "Reading CoreRun (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    ; cpEhcHaskellModulePrepareSrc modNm
                    -- ; modNm2 <- cpEhcCoreRunImport isBinary modNm
-                   ; (modNm2, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_CoreRun
+                   ; (modNm2, _, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_CoreRun
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_CoreRun CRROnlyImports))
                    ; return modNm2
                    }
              where isBinary = cst == CRRStartBinary
            (ECUS_CoreRun CRROnlyImports,Just (ECUS_CoreRun CRRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling CoreRun"
-                   ; isTopMod <- bcall $ IsTopMod modNm
+                   ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
                    ; cpEhcCoreRunModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_CoreRun CRRAllSem))
                    ; return defaultResult
@@ -556,14 +556,14 @@ cpEhcModuleCompile1 targHSState modNm
              -> do { cpMsg modNm VerboseNormal $ "Reading Core (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    ; cpEhcHaskellModulePrepareSrc modNm
                    -- ; modNm2 <- cpEhcCoreImport isBinary modNm
-                   ; (modNm2, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_Core
+                   ; (modNm2, _, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_Core
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_Core CROnlyImports))
                    ; return modNm2
                    }
              where isBinary = cst == CRStartBinary
            (ECUS_Core CROnlyImports,Just (ECUS_Core CRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
-                   ; isTopMod <- bcall $ IsTopMod modNm
+                   ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
                    ; cpEhcCoreModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult

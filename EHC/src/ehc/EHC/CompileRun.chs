@@ -32,6 +32,8 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[99 import({%{EH}Base.PackageDatabase})
 %%]
+%%[50 import(qualified {%{EH}Config} as Cfg)
+%%]
 
 %%[(8 codegen) hs import({%{EH}CodeGen.ValAccess} as VA)
 %%]
@@ -139,7 +141,7 @@ cpStopAt atPhase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
-crPartitionNewerOlderImports :: HsName -> EHCompileRun -> ([EHCompileUnit],[EHCompileUnit])
+crPartitionNewerOlderImports :: HsName -> EHCompileRun m -> ([EHCompileUnit],[EHCompileUnit])
 crPartitionNewerOlderImports modNm cr
   = partition isNewer $ map (flip crCU cr) $ ecuImpNmL ecu
   where ecu = crCU modNm cr
@@ -157,7 +159,7 @@ crPartitionNewerOlderImports modNm cr
 
 %%[50 export(crPartitionMainAndImported)
 -- | Partition modules into main and non main (i.e. imported) module names
-crPartitionMainAndImported :: EHCompileRun -> [HsName] -> ([HsName], [HsName])
+crPartitionMainAndImported :: EHCompileRun m -> [HsName] -> ([HsName], [HsName])
 crPartitionMainAndImported cr modNmL = partition (\n -> ecuHasMain $ crCU n cr) modNmL
 %%]
 
@@ -166,7 +168,7 @@ crPartitionMainAndImported cr modNmL = partition (\n -> ecuHasMain $ crCU n cr) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 export(crModNeedsCompile)
-crModNeedsCompile :: HsName -> EHCompileRun -> Bool
+crModNeedsCompile :: HsName -> EHCompileRun m -> Bool
 crModNeedsCompile modNm cr
   = ecuIsMainMod ecu -- ecuIsTopMod ecu
     || not (  ehcOptCheckRecompile opts
@@ -187,7 +189,7 @@ crModNeedsCompile modNm cr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5050 export(crEcuCanCompile)
-crEcuCanCompile :: HsName -> EHCompileRun -> Bool
+crEcuCanCompile :: HsName -> EHCompileRun m -> Bool
 crEcuCanCompile modNm cr
   = isJust (_ecuMbSrcTime ecu) && _ecuDirIsWritable ecu
   where ecu = crCU modNm cr
@@ -239,13 +241,13 @@ cpGetMetaInfo gm modNm
 %%]]
 %%[[(50 codegen)
          ;  when (GetMeta_Core `elem` gm) $
-                 -- tm opts ecu ecuStoreCoreTime      (fpathSetSuff Cfg.suffixDotlessBinaryCore fp)
-                 dfltPrev ASTType_Core modNm ecu
+                 tm opts ecu ecuStoreCoreTime      (fpathSetSuff Cfg.suffixDotlessBinaryCore fp)
+                 -- dfltPrev ASTType_Core modNm ecu
 %%]]
 %%[[(50 corerun)
          ;  when (GetMeta_CoreRun `elem` gm) $
-                 -- tm opts ecu ecuStoreCoreRunTime   (fpathSetSuff Cfg.suffixDotlessBinaryCoreRun fp)
-                 dfltPrev ASTType_CoreRun modNm ecu
+                 tm opts ecu ecuStoreCoreRunTime   (fpathSetSuff Cfg.suffixDotlessBinaryCoreRun fp)
+                 -- dfltPrev ASTType_CoreRun modNm ecu
 %%]]
 %%[[50
          ;  when (GetMeta_Dir `elem` gm) $
@@ -253,7 +255,7 @@ cpGetMetaInfo gm modNm
                  -- void $ bcall $ DirOfModIsWriteable modNm
 %%]]
          }
-  where dfltPrev astty modNm ecu = void $ bcall $ ModfTimeOfFile (mkPrevFileSearchKeyWithName modNm) astty (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+  where -- dfltPrev astty modNm ecu = void $ bcall $ ModfTimeOfFile (mkPrevFileSearchKeyWithName modNm) astty (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
 
         tm :: EHCCompileRunner m => EHCOpts -> EHCompileUnit -> (ClockTime -> EHCompileUnit -> EHCompileUnit) -> FPath -> EHCompilePhaseT m ()
         tm opts ecu store fp

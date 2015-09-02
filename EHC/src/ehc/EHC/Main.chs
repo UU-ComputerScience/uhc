@@ -274,7 +274,7 @@ doCompileRun filename opts
 %%]
 
 %%[8.doCompile -1.doCompile
-doCompilePrepare :: [String] -> EHCOpts -> IO (Maybe (EHCOpts,[FPath],[HsName],EHCompileRun))
+doCompilePrepare :: [String] -> EHCOpts -> IO (Maybe (EHCOpts,[FPath],[HsName],EHCompileRun m))
 doCompilePrepare fnL@(fn:_) opts
   = do { let fpL@(fp:_)             = map (mkTopLevelFPath "hs") fnL
              topModNmL@(topModNm:_) = map (mkHNm . fpathBase) fpL

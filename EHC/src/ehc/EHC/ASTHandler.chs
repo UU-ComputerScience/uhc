@@ -118,9 +118,6 @@ data ASTHandler' ast
 	  
 		  --- * Input, parsing
 
-		  --- | Input an ast
-		  -- , _asthdlrInput				:: forall m . EHCCompileRunner m => ASTFileContent -> HsName -> EHCompilePhaseT m (Maybe ast)
-
 %%[[50
 		  --- | Read/decode from serialized binary version on file
 		  , _asthdlrGetSerializeFileIO 	:: EHCOpts -> FPath -> IO (Maybe ast)
@@ -164,7 +161,6 @@ emptyASTHandler'
 %%]]
       , _asthdlrOutputIO 			= \_ _ _ _ _ _ _ -> return False
 
-      -- , _asthdlrInput 				= \_ _ -> return Nothing
       , _asthdlrParseScanOpts		= \_ _ -> ScanUtils.defaultScanOpts
       , _asthdlrParser				= \_ _ -> (Nothing :: Maybe (ASTParser ast))
 %%[[50

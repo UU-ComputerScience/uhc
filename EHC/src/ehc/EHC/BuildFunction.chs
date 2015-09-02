@@ -69,7 +69,7 @@ deriving instance Typeable Identity
 
 %%[8 export(bcacheLookup, bcacheInsert, bcacheInsertDpd)
 -- | Lookup BCachedVal in 'BCache', preserving type info
-bcacheLookup :: (Typeable res, Typeable f) => BFun' res -> BCache -> Maybe (f res)
+bcacheLookup :: (Typeable res, Typeable f, Typeable m) => BFun' m res -> BCache m -> Maybe (f res)
 bcacheLookup key (BCache {_bcacheCache=cache}) = do
     vals <- IMap.lookup (hash key) cache
     lookup key $ catMaybes $ map cvt vals
@@ -79,16 +79,16 @@ bcacheLookup key (BCache {_bcacheCache=cache}) = do
       _                  -> Nothing
 
 -- | Add to 'BCache'
-bcacheInsert :: (Typeable res, Typeable f) => BFun' res -> f res -> BCache -> BCache
+bcacheInsert :: (Typeable res, Typeable f) => BFun' m res -> f res -> BCache m -> BCache m
 bcacheInsert k v bc@(BCache {_bcacheCache=c}) = bc { _bcacheCache = IMap.insertWith (++) (hash k) [BFunCacheEntry k v] c }
 
 -- | Add dependency to 'BCache'
 bcacheInsertDpd
   :: (Typeable res1, Typeable res2)
      => 
-        BFun' res1			-- ^ dependee
-     -> BFun' res2			-- ^ depends on
-     -> BCache -> BCache
+        BFun' m res1			-- ^ dependee
+     -> BFun' m res2			-- ^ depends on
+     -> BCache m -> BCache m
 bcacheInsertDpd f1 f2 bc@(BCache {_bcacheDpdRel=dpd}) = bc { _bcacheDpdRel = Rel.insert (BFun f1) (BFun f2) dpd }
 %%]
 

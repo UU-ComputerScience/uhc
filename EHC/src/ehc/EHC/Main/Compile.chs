@@ -111,9 +111,9 @@ compileN_Alternate fpL topModNmL@(modNm:_) = do
           -- cr <- get
           -- cpTr TraceOn_BuildResult ["compileN_Alternate", show $ Map.keys $ cr ^. crCUCache, show $ cr ^. crNmForward]
           maybeM (bcall $ BuildPlanPMb modSearchKey astpipe) (return ()) $ \astplan -> do
-            crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
-            modNm' <- bcall $ ActualModNm modNm
-            cpRunCoreRun4 modNm' astplan
+            -- modNm' <- bcall $ ActualModNm modNm
+            -- cpRunCoreRun4 modSearchKey astplan
+            cpRunCoreRun5 modSearchKey astplan
 %%]]
       (_, fpL, topModNmL) -> do
           zipWithM (\fp topModNm -> bcall $ EcuOfPrevNameAndPath (PrevFileSearchKey (FileSearchKey topModNm $ ASTFileNameOverride_FPathAsTop fp) Nothing)) fpL topModNmL

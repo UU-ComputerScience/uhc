@@ -19,6 +19,9 @@
 %%[(8 corerun) import(Control.Exception)
 %%]
 
+%%[8 import (UHC.Util.Lens)
+%%]
+
 -- Acccess to Core
 %%[(8 corerun) import({%{EH}EHC.CompilePhase.Parsers})
 %%]
@@ -141,15 +144,21 @@ cpRunCoreRun3 modNm = do
 
 %%[(8 corerun) export(cpRunCoreRun4)
 -- | Run CoreRun. Variant for new build plan/driver
--- TBD: fix dependence on whole program linked
-cpRunCoreRun4 :: EHCCompileRunner m => HsName -> ASTBuildPlan -> EHCompilePhaseT m ()
-cpRunCoreRun4 modNm astplan = do
-    maybeM (bcall $ ASTPlMb (mkPrevFileSearchKeyWithName modNm) astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
-      opts <- bcall $ EHCOptsOf modNm
-%%[[8
-      let (mainMod,impModL) = (modNm,[])
-%%][50
-%%]]
+-- TBD: fix dependence on whole program linked, in progress as cpRunCoreRun5
+cpRunCoreRun4 :: EHCCompileRunner m => PrevFileSearchKey -> ASTBuildPlan -> EHCompilePhaseT m ()
+cpRunCoreRun4 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) = do
+    maybeM (bcall $ ASTPlMb modSearchKey astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
+      {-
+      crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
+      let impModNmL = crsi ^. crsiCoreRunState ^. crcrsiReqdModules
+      impModL <- forM impModNmL $ \nm ->
+        maybeM (bcall $ ASTPMb (mkPrevFileSearchKeyWithName nm) astpipe)
+          (do cpSetLimitErrsWhen 1 "Run Core(Run) errors" [rngLift emptyRange Err_Str $ "Cannot load CoreRun module: " ++ show nm]
+              return $ panic "cpRunCoreRun4: not allowed to use AST result!!"
+          ) $
+          \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> return mod
+      -}
+      opts <- bcall $ EHCOptsOf modSearchKey
       cpMsg modNm VerboseNormal "Run Core (4)"
       res <- liftIO $ catch
         (runCoreRun opts [] mod $ cmodRun opts mod)
@@ -157,10 +166,39 @@ cpRunCoreRun4 modNm astplan = do
       either (\e -> cpSetLimitErrsWhen 1 "Run Core(Run) errors" [e])
 %%[[8
              (liftIO . putStrLn . show . pp)
-%%][100  
+%%][100    
              (\_ -> return ())
-%%]]  
+%%]]    
              res
 %%]
 
+
+
+%%[(8 corerun) export(cpRunCoreRun5)
+-- | Run CoreRun. Variant for new build plan/driver
+-- TBD: fix dependence on whole program linked
+cpRunCoreRun5 :: EHCCompileRunner m => PrevFileSearchKey -> ASTBuildPlan -> EHCompilePhaseT m ()
+cpRunCoreRun5 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) = do
+    maybeM (bcall $ ASTPlMb modSearchKey astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
+      crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
+      let impModNmL = (crsi ^. crsiCoreRunState ^. crcrsiReqdModules) \\ [modNm]
+      impModL <- forM impModNmL $ \nm ->
+        maybeM (bcall $ ASTPMb (mkPrevFileSearchKeyWithName nm) astpipe)
+          (do cpSetLimitErrsWhen 1 "Run Core(Run) errors" [rngLift emptyRange Err_Str $ "Cannot load CoreRun module: " ++ show nm]
+              return $ panic "cpRunCoreRun5: not allowed to use AST result!!"
+          ) $
+          \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> return mod
+      opts <- bcall $ EHCOptsOf modSearchKey
+      cpMsg modNm VerboseNormal "Run Core (5)"
+      res <- liftIO $ catch
+        (runCoreRun opts impModL mod $ cmodRun opts mod)
+        (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "cpRunCoreRun5: " ++ show e))
+      either (\e -> cpSetLimitErrsWhen 1 "Run Core(Run) errors" [e])
+%%[[8
+             (liftIO . putStrLn . show . pp)
+%%][100    
+             (\_ -> return ())
+%%]]    
+             res
+%%]
 

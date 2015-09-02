@@ -1,5 +1,5 @@
 %%[0 hs
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, TemplateHaskell, KindSignatures #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
