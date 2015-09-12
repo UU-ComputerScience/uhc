@@ -157,9 +157,9 @@ cpRunCoreRun3 modNm = do
 %%[(8 corerun) export(cpRunCoreRun4)
 -- | Run CoreRun. Variant for new build plan/driver
 -- TBD: fix dependence on whole program linked, in progress as cpRunCoreRun5
-cpRunCoreRun4 :: EHCCompileRunner m => PrevFileSearchKey -> ASTBuildPlan -> EHCompilePhaseT m ()
-cpRunCoreRun4 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) = do
-    maybeM (bcall $ ASTPlMb modSearchKey astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
+cpRunCoreRun4 :: EHCCompileRunner m => BuildGlobal -> PrevFileSearchKey -> ASTBuildPlan -> EHCompilePhaseT m ()
+cpRunCoreRun4 bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) = do
+    maybeM (bcall $ ASTPlMb bglob modSearchKey astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
       {-
       crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
       let impModNmL = crsi ^. crsiCoreRunState ^. crcrsiReqdModules
@@ -189,15 +189,15 @@ cpRunCoreRun4 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchN
 %%[(8 corerun) export(cpRunCoreRun5)
 -- | Run CoreRun. Variant for new build plan/driver
 -- TBD: fix dependence on whole program linked
-cpRunCoreRun5 :: EHCCompileRunner m => PrevFileSearchKey -> ASTBuildPlan -> EHCompilePhaseT m ()
-cpRunCoreRun5 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) = do
-    maybeM (bcall $ ASTPlMb modSearchKey astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
+cpRunCoreRun5 :: EHCCompileRunner m => BuildGlobal -> PrevFileSearchKey -> ASTBuildPlan -> EHCompilePhaseT m ()
+cpRunCoreRun5 bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) = do
+    maybeM (bcall $ ASTPlMb bglob modSearchKey astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
 %%[[99
       -- debug
       ecu <- bcall $ EcuOf modNm
       cpOutputSomeModule (const mod) astHandler'_CoreRun ASTFileContent_Text "-cpRunCoreRun5" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
 %%]]
-      crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
+      crsi <- bcall $ CRSIOfNamePl bglob modSearchKey astplan
       let impModNmL = (crsi ^. crsiCoreRunState ^. crcrsiReqdModules) \\ [modNm]
       cpTrPP TraceOn_BuildMod $
         [ "cpRunCoreRun5 mod=" >|< modNm >#< "imps=" >|< ppParensCommas impModNmL
@@ -206,7 +206,7 @@ cpRunCoreRun5 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchN
         ] ++
         [ n >#< ppCommas rs | (n,rs) <- Rel.toDomList $ crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp ]
       impModL <- forM impModNmL $ \nm ->
-        maybeM (bcall $ ASTPMb (mkPrevFileSearchKeyWithName nm) astpipe)
+        maybeM (bcall $ ASTPMb bglob (mkPrevFileSearchKeyWithName nm) astpipe)
           (do cpSetLimitErrsWhen 1 "Run Core(Run) errors" [rngLift emptyRange Err_Str $ "Cannot load CoreRun module: " ++ show nm]
               return $ panic "cpRunCoreRun5: not allowed to use AST result!!"
           ) $

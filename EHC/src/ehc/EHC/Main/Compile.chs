@@ -96,6 +96,7 @@ compileN_Alternate fpL topModNmL@(modNm:_) = do
     crsi <- bcall $ CRSI
     let opts    = crsi ^. crsiOpts
         astpipe = astpipeForEHCOpts opts
+        bglob   = BuildGlobal astpipe
     case (ehcOptTarget opts, fpL, topModNmL) of
 %%[[(8 corerun)
 {-
@@ -107,9 +108,9 @@ compileN_Alternate fpL topModNmL@(modNm:_) = do
 -}
       (Target_None_Core_AsIs, (fp:_), (modNm:_)) | CoreOpt_Run `elem` ehcOptCoreOpts opts -> do
           let modSearchKey = PrevFileSearchKey (FileSearchKey modNm $ ASTFileNameOverride_FPathAsTop fp) Nothing
-          maybeM (bcall $ BuildPlanPMb modSearchKey astpipe) (return ()) $ \astplan -> do
-            -- cpRunCoreRun4 modSearchKey astplan
-            cpRunCoreRun5 modSearchKey astplan
+          maybeM (bcall $ BuildPlanPMb bglob modSearchKey astpipe) (return ()) $ \astplan -> do
+            -- cpRunCoreRun4 bglob modSearchKey astplan
+            cpRunCoreRun5 bglob modSearchKey astplan
 %%]]
       (_, fpL, topModNmL) -> do
           zipWithM (\fp topModNm -> bcall $ EcuOfPrevNameAndPath (PrevFileSearchKey (FileSearchKey topModNm $ ASTFileNameOverride_FPathAsTop fp) Nothing)) fpL topModNmL

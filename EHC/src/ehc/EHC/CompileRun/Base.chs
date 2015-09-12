@@ -16,6 +16,8 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[8 import (Data.Typeable)
 %%]
+%%[8 import(GHC.Generics(Generic))
+%%]
 %%[8 import(qualified UHC.Util.RelMap as Rel, UHC.Util.Hashable)
 %%]
 %%[8 import(Control.Exception as CE)
@@ -88,6 +90,28 @@ deriving instance Typeable Identity
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info on which build depends, passed along explicitly as to partake in memoization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(BuildGlobal(..))
+-- | Global parameterisation for build calls
+data BuildGlobal =
+  BuildGlobal
+    { _bglobPipe		:: ASTPipe		-- ^ the global pipe for the current compilation, required when recursing into imported modules
+    }
+  deriving (Eq, Ord, Typeable, Generic)
+
+instance Hashable BuildGlobal
+
+instance Show BuildGlobal where
+  show (BuildGlobal p) = "Glob(" ++ show p ++ ")"
+
+instance PP BuildGlobal where
+  pp (BuildGlobal p) = "Glob" >#< p
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Build function explicit representation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -104,13 +128,15 @@ data BFun' m res where
 %%[[50
   --- | Obtain global state specific for compile order
   CRSIWithCompileOrderPl
-    :: ![[HsName]]				--- ^ compile order
+    :: !BuildGlobal
+    -> ![[HsName]]				--- ^ compile order
     -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m (EHCompileRunStateInfo m)
 
   --- | Obtain global state specific for imports
   CRSIWithImpsPl
-    :: !PrevFileSearchKey
+    :: !BuildGlobal
+    -> !PrevFileSearchKey
     -> !(Set.Set HsName)				--- ^ imports
     -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m (EHCompileRunStateInfo m)
@@ -125,12 +151,14 @@ data BFun' m res where
 -}
 
   CRSIOfNameP
-    :: !PrevFileSearchKey				--- ^ module name etc
+    :: !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name etc
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m (EHCompileRunStateInfo m)
 
   CRSIOfNamePl
-    :: !PrevFileSearchKey				--- ^ module name etc
+    :: !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name etc
     -> !ASTBuildPlan					--- ^ pipeline leading to content
     -> BFun' m (EHCompileRunStateInfo m)
 
@@ -151,13 +179,15 @@ data BFun' m res where
 %%[[50
   --- | Extract imported modules from a module
   ImportsOfNamePl
-    :: !PrevFileSearchKey				--- ^ module name etc
+    :: !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name etc
     -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m (HsName, Set.Set HsName)
 
   --- | Extract recursively all import relationships starting with imports
   ImportsRecursiveWithImpsP
-    :: !(Maybe PrevSearchInfo)
+    :: !BuildGlobal
+    -> !(Maybe PrevSearchInfo)
     -> !(Set.Set HsName)				--- ^ imports
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m
@@ -166,7 +196,8 @@ data BFun' m res where
 
   --- | Extract recursively all import relationships starting with module
   ImportsRecursiveOfNameP
-    :: !PrevFileSearchKey				--- ^ module name etc
+    :: !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name etc
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m
          ( HsName								-- the actual module name
@@ -209,13 +240,15 @@ data BFun' m res where
 
   --- | The build plan for a pipe
   BuildPlanPMb
-    :: !PrevFileSearchKey				--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name and possibly known path
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m (Maybe ASTBuildPlan)
 
   --- | The build plan choice for a pipe
   ASTBuildPlanChoicePMb
-    :: !PrevFileSearchKey				--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name and possibly known path
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m (Maybe (TmOfRes m))
 
@@ -251,19 +284,22 @@ data BFun' m res where
 
   --- | Get a particular AST for a module
   ASTP
-    :: !PrevFileSearchKey				--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name and possibly known path
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m res
 
   ASTPMb
     :: Typeable ast
-    => !PrevFileSearchKey				--- ^ module name and possibly known path
+    => !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name and possibly known path
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m (Maybe (ASTResult m ast))
 
   ASTPlMb
     :: Typeable ast
-    => !PrevFileSearchKey				--- ^ module name and possibly known path
+    => !BuildGlobal
+    -> !PrevFileSearchKey				--- ^ module name and possibly known path
     -> !ASTBuildPlan					--- ^ build plan leading to content
     -> BFun' m (Maybe (ASTResult m ast))
 
@@ -327,7 +363,8 @@ data BFun' m res where
 
   --- | Module has a 'main'
   HasMain
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey							--- ^ module name and possibly known path
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m Bool
 
@@ -433,7 +470,8 @@ data BFun' m res where
 
   --- | HS semantics
   FoldHsPMb
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey							--- ^ module name and possibly known path
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
@@ -446,7 +484,8 @@ data BFun' m res where
 
   --- | HS semantics
   FoldHsPlMb
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey							--- ^ module name and possibly known path
     -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
@@ -459,7 +498,8 @@ data BFun' m res where
 
   --- | EH semantics
   FoldEHPMb
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey							--- ^ module name and possibly known path
     -> !ASTPipe							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
@@ -468,7 +508,8 @@ data BFun' m res where
 
   --- | EH semantics
   FoldEHPlMb
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey							--- ^ module name and possibly known path
     -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
@@ -495,7 +536,8 @@ data BFun' m res where
 %%[[(8 core grin)
   --- | Core -> Grin semantics
   FoldCore2GrinPlMb
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey							--- ^ module name and possibly known path
     -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
@@ -506,7 +548,8 @@ data BFun' m res where
 %%[[(8 core corerun)
   --- | Core -> CoreRun semantics
   FoldCore2CoreRunPlMb
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey							--- ^ module name and possibly known path
     -> !ASTBuildPlan						--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
@@ -531,7 +574,8 @@ data BFun' m res where
 
   --- | CoreRun as src semantics
   FoldCoreRunCheckPlMb
-    :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    :: !BuildGlobal
+    -> !PrevFileSearchKey							--- ^ module name and possibly known path
     -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
@@ -557,70 +601,62 @@ bfunCompare :: BFun' m res1 -> BFun' m res2 -> Ordering
 bfunCompare f1 f2 = case (f1,f2) of
     (CRSI				 							, CRSI 											) -> EQ
 %%[[50
-    (CRSIWithCompileOrderPl		a1 b1 	 			, CRSIWithCompileOrderPl	a2 b2 	 			) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (CRSIWithImpsPl			    a1 b1 c1 			, CRSIWithImpsPl		   	a2 b2 c2 			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (CRSIWithCompileOrderPl		a1 b1 c1 	 		, CRSIWithCompileOrderPl	a2 b2 c2 	 		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (CRSIWithImpsPl			    a1 b1 c1 d1 		, CRSIWithImpsPl		   	a2 b2 c2 d2 		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
 %%]]
-    -- (CRSIOfName			    	a1 b1  				, CRSIOfName		    	a2 b2  				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (CRSIOfNameP			    a1 b1  				, CRSIOfNameP		    	a2 b2  				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (CRSIOfNamePl			    a1 b1  				, CRSIOfNamePl		    	a2 b2  				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (CRSIOfNameP			    a1 b1 c1  			, CRSIOfNameP		    	a2 b2 c2  			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (CRSIOfNamePl			    a1 b1 c1  			, CRSIOfNamePl		    	a2 b2 c2  			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
     (FPathSearchForFile 		a1 b1				, FPathSearchForFile 		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (FPathForAST           		a1 b1 c1 d1	 		, FPathForAST				a2 b2 c2 d2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
 %%[[50
-    (ImportsOfNamePl          	a1 b1 				, ImportsOfNamePl          	a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (ImportsRecursiveWithImpsP	a1 b1 c1 			, ImportsRecursiveWithImpsP	a2 b2 c2 			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
-    (ImportsRecursiveOfNameP	a1 b1  				, ImportsRecursiveOfNameP	a2 b2  				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (ImportsOfNamePl          	a1 b1 c1 			, ImportsOfNamePl          	a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (ImportsRecursiveWithImpsP	a1 b1 c1 d1 		, ImportsRecursiveWithImpsP	a2 b2 c2 d2 		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
+    (ImportsRecursiveOfNameP	a1 b1 c1  			, ImportsRecursiveOfNameP	a2 b2 c2  			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
 %%]]
     (ActualModNm		        a1   				, ActualModNm	    		a2   				) ->         a1 `compare` a2
-    (BuildPlanPMb            	a1 b1		 		, BuildPlanPMb				a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (ASTBuildPlanChoicePMb		a1 b1		 		, ASTBuildPlanChoicePMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (BuildPlanPMb            	a1 b1 c1		 	, BuildPlanPMb				a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (ASTBuildPlanChoicePMb		a1 b1 c1		 	, ASTBuildPlanChoicePMb		a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
     (EcuOf		              	a1   				, EcuOf	    				a2   				) ->         a1 `compare` a2
-    -- (EcuOfName              	a1   				, EcuOfName    				a2   				) ->         a1 `compare` a2
     (EcuOfPrevNameAndPath		a1 					, EcuOfPrevNameAndPath		a2 					) ->         a1 `compare` a2
-    -- (EcuOfNameAndPath			a1 					, EcuOfNameAndPath			a2 					) ->         a1 `compare` a2
     (EHCOptsOf             		a1   				, EHCOptsOf					a2   				) ->         a1 `compare` a2
     (ASTRefFromFileEither      	a1 b1 c1 d1	e1 f1	, ASTRefFromFileEither		a2 b2 c2 d2	e2 f2	) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2, f1 `compare` f2]
-    -- (ASTRefFromFileMb          	a1 b1 c1 d1	e1 		, ASTRefFromFileMb			a2 b2 c2 d2	e2		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2]
     (ASTFromFile            	a1 b1 c1 d1	e1 		, ASTFromFile				a2 b2 c2 d2	e2		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2]
-    (ASTP            			a1 b1		 		, ASTP						a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (ASTPMb            			a1 b1		 		, ASTPMb					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (ASTPlMb            		a1 b1		 		, ASTPlMb					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (ASTP            			a1 b1 c1		 	, ASTP						a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (ASTPMb            			a1 b1 c1		 	, ASTPMb					a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (ASTPlMb            		a1 b1 c1		 	, ASTPlMb					a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
 %%[[50
     (ModfTimeOfFile         	a1 b1 c1 d1			, ModfTimeOfFile			a2 b2 c2 d2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
     (ASTFileIsValid         	a1 b1 c1 d1			, ASTFileIsValid			a2 b2 c2 d2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
     (ASTFileIsNewerThan        	a1 b1   			, ASTFileIsNewerThan		a2 b2 	 			) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (DirOfModIsWriteable		a1   				, DirOfModIsWriteable		a2   				) ->         a1 `compare` a2
     (CanCompile					a1 					, CanCompile				a2 					) ->         a1 `compare` a2
-    -- (NeedsCompile				a1 					, NeedsCompile				a2 					) ->         a1 `compare` a2
     (IsTopMod					a1 					, IsTopMod					a2 					) ->         a1 `compare` a2
 %%]]
-    (HasMain					a1 b1				, HasMain					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (HasMain					a1 b1 c1			, HasMain					a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
 %%[[50
     (FoldHsMod					a1 b1				, FoldHsMod					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    -- (ModnameAndImports			a1 b1				, ModnameAndImports			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    -- (ModnameAndImportsP			a1 b1				, ModnameAndImportsP		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    -- (ModnameAndImportsPMb		a1 b1				, ModnameAndImportsPMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ModnameAndImportsPlMb		a1 b1				, ModnameAndImportsPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (HsModnameAndImports		a1 					, HsModnameAndImports		a2 					) ->         a1 `compare` a2
     (FoldHIInfo					a1 					, FoldHIInfo				a2 					) ->         a1 `compare` a2
     (ImportExportImpl			a1 b1				, ImportExportImpl			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ImportNameInfo				a1 b1				, ImportNameInfo			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
-    (FoldHsPMb					a1 b1				, FoldHsPMb					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (FoldHsPlMb					a1 b1				, FoldHsPlMb				a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (FoldEHPMb					a1 b1				, FoldEHPMb					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (FoldEHPlMb					a1 b1				, FoldEHPlMb				a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (FoldHsPMb					a1 b1 c1			, FoldHsPMb					a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (FoldHsPlMb					a1 b1 c1			, FoldHsPlMb				a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (FoldEHPMb					a1 b1 c1			, FoldEHPMb					a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
+    (FoldEHPlMb					a1 b1 c1			, FoldEHPlMb				a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
 %%[[(50 corein)
     (FoldCoreModPlMb			a1 b1				, FoldCoreModPlMb			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
 %%[[(8 core grin)
-    (FoldCore2GrinPlMb			a1 b1				, FoldCore2GrinPlMb			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (FoldCore2GrinPlMb			a1 b1 c1			, FoldCore2GrinPlMb			a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
 %%]]
 %%[[(8 core corerun)
-    (FoldCore2CoreRunPlMb		a1 b1				, FoldCore2CoreRunPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (FoldCore2CoreRunPlMb		a1 b1 c1			, FoldCore2CoreRunPlMb		a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
 %%]]
 %%[[(50 corerun corerunin)
     (FoldCoreRunModPlMb			a1 b1 				, FoldCoreRunModPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (FoldCoreRunCheckPlMb		a1 b1 				, FoldCoreRunCheckPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (FoldCoreRunCheckPlMb		a1 b1 c1 			, FoldCoreRunCheckPlMb		a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
 %%]]
 %%[[99
     (FPathPreprocessedWithCPP	a1 b1 				, FPathPreprocessedWithCPP	a2 b2 				) -> lexico [a1 `compare` a2, b1 `compare` b2]
@@ -639,70 +675,62 @@ instance Hashable (BFun' m res) where
   hashWithSalt salt x = case x of
 	CRSI 									-> salt `hashWithSalt` (maxBound-1::Int)
 %%[[50
-	CRSIWithCompileOrderPl		a b			-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b
-	CRSIWithImpsPl			   	a b	c		-> salt `hashWithSalt` (1::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	CRSIWithCompileOrderPl		a b	c		-> salt `hashWithSalt` (0::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	CRSIWithImpsPl			   	a b	c d		-> salt `hashWithSalt` (1::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
 %%]]
-	-- CRSIOfName			   		a b			-> salt `hashWithSalt` (2::Int) `hashWithSalt` a `hashWithSalt` b
-	CRSIOfNameP			   		a b			-> salt `hashWithSalt` (3::Int) `hashWithSalt` a `hashWithSalt` b
-	CRSIOfNamePl			   	a b			-> salt `hashWithSalt` (4::Int) `hashWithSalt` a `hashWithSalt` b
+	CRSIOfNameP			   		a b c		-> salt `hashWithSalt` (3::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	CRSIOfNamePl			   	a b c		-> salt `hashWithSalt` (4::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 	FPathSearchForFile 			a b			-> salt `hashWithSalt` (5::Int) `hashWithSalt` a `hashWithSalt` b
 	FPathForAST					a b	c d	 	-> salt `hashWithSalt` (6::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
 %%[[50
-	ImportsOfNamePl		   		a b			-> salt `hashWithSalt` (7::Int) `hashWithSalt` a `hashWithSalt` b
-	ImportsRecursiveWithImpsP	a b c		-> salt `hashWithSalt` (8::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
-	ImportsRecursiveOfNameP		a b			-> salt `hashWithSalt` (9::Int) `hashWithSalt` a `hashWithSalt` b
+	ImportsOfNamePl		   		a b	c		-> salt `hashWithSalt` (7::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	ImportsRecursiveWithImpsP	a b c d		-> salt `hashWithSalt` (8::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
+	ImportsRecursiveOfNameP		a b	c		-> salt `hashWithSalt` (9::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 %%]]
 	ActualModNm					a			-> salt `hashWithSalt` (10::Int) `hashWithSalt` a
-	BuildPlanPMb 				a b			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a `hashWithSalt` b
-	ASTBuildPlanChoicePMb		a b			-> salt `hashWithSalt` (11::Int) `hashWithSalt` a `hashWithSalt` b
+	BuildPlanPMb 				a b c		-> salt `hashWithSalt` (11::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	ASTBuildPlanChoicePMb		a b c		-> salt `hashWithSalt` (11::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 	EcuOf			   			a			-> salt `hashWithSalt` (12::Int) `hashWithSalt` a
-	-- EcuOfName		   			a			-> salt `hashWithSalt` (13::Int) `hashWithSalt` a
 	EHCOptsOf		   			a			-> salt `hashWithSalt` (14::Int) `hashWithSalt` a
 	EcuOfPrevNameAndPath		a 			-> salt `hashWithSalt` (15::Int) `hashWithSalt` a
-	-- EcuOfNameAndPath			a 			-> salt `hashWithSalt` (16::Int) `hashWithSalt` a
-	-- ASTRefFromFileMb			a b	c d	e 	-> salt `hashWithSalt` (17::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
 	ASTRefFromFileEither		a b	c d	e f	-> salt `hashWithSalt` (18::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e `hashWithSalt` f
 	ASTFromFile					a b	c d	e 	-> salt `hashWithSalt` (19::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
-	ASTP 						a b			-> salt `hashWithSalt` (20::Int) `hashWithSalt` a `hashWithSalt` b
-	ASTPMb 						a b			-> salt `hashWithSalt` (21::Int) `hashWithSalt` a `hashWithSalt` b
-	ASTPlMb 					a b			-> salt `hashWithSalt` (22::Int) `hashWithSalt` a `hashWithSalt` b
+	ASTP 						a b c		-> salt `hashWithSalt` (20::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	ASTPMb 						a b c		-> salt `hashWithSalt` (21::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	ASTPlMb 					a b c		-> salt `hashWithSalt` (22::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 %%[[50
 	ModfTimeOfFile				a b	c d		-> salt `hashWithSalt` (23::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
 	ASTFileIsValid				a b	c d		-> salt `hashWithSalt` (24::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
 	ASTFileIsNewerThan			a b			-> salt `hashWithSalt` (25::Int) `hashWithSalt` a `hashWithSalt` b
 	DirOfModIsWriteable 		a 			-> salt `hashWithSalt` (26::Int) `hashWithSalt` a
 	CanCompile		 			a 			-> salt `hashWithSalt` (27::Int) `hashWithSalt` a
-	-- NeedsCompile		 		a 			-> salt `hashWithSalt` (28::Int) `hashWithSalt` a
 	IsTopMod			 		a 			-> salt `hashWithSalt` (29::Int) `hashWithSalt` a
 %%]]
-	HasMain			 			a b			-> salt `hashWithSalt` (29::Int) `hashWithSalt` a `hashWithSalt` b
+	HasMain			 			a b c		-> salt `hashWithSalt` (29::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 %%[[50
 	FoldHsMod			 		a b			-> salt `hashWithSalt` (30::Int) `hashWithSalt` a `hashWithSalt` b
-	-- ModnameAndImports			a b			-> salt `hashWithSalt` (31::Int) `hashWithSalt` a `hashWithSalt` b
-	-- ModnameAndImportsP			a b			-> salt `hashWithSalt` (32::Int) `hashWithSalt` a `hashWithSalt` b
-	-- ModnameAndImportsPMb		a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
 	ModnameAndImportsPlMb		a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
 	HsModnameAndImports			a 			-> salt `hashWithSalt` (34::Int) `hashWithSalt` a
 	FoldHIInfo					a 			-> salt `hashWithSalt` (35::Int) `hashWithSalt` a
 	ImportExportImpl			a b			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a `hashWithSalt` b
 	ImportNameInfo				a b			-> salt `hashWithSalt` (37::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
-	FoldHsPMb					a b			-> salt `hashWithSalt` (38::Int) `hashWithSalt` a `hashWithSalt` b
-	FoldHsPlMb					a b			-> salt `hashWithSalt` (39::Int) `hashWithSalt` a `hashWithSalt` b
-	FoldEHPMb					a b			-> salt `hashWithSalt` (40::Int) `hashWithSalt` a `hashWithSalt` b
-	FoldEHPlMb					a b			-> salt `hashWithSalt` (41::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldHsPMb					a b c		-> salt `hashWithSalt` (38::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	FoldHsPlMb					a b c		-> salt `hashWithSalt` (39::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	FoldEHPMb					a b c		-> salt `hashWithSalt` (40::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
+	FoldEHPlMb					a b c		-> salt `hashWithSalt` (41::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 %%[[(50 corein)
 	FoldCoreModPlMb				a b			-> salt `hashWithSalt` (42::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
 %%[[(8 core grin)
-	FoldCore2GrinPlMb			a b			-> salt `hashWithSalt` (43::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldCore2GrinPlMb			a b c		-> salt `hashWithSalt` (43::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 %%]]
 %%[[(8 core corerun)
-	FoldCore2CoreRunPlMb		a b			-> salt `hashWithSalt` (44::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldCore2CoreRunPlMb		a b c		-> salt `hashWithSalt` (44::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 %%]]
 %%[[(50 corerun corerunin)
 	FoldCoreRunModPlMb			a b 		-> salt `hashWithSalt` (45::Int) `hashWithSalt` a `hashWithSalt` b
-	FoldCoreRunCheckPlMb		a b 		-> salt `hashWithSalt` (46::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldCoreRunCheckPlMb		a b c 		-> salt `hashWithSalt` (46::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 %%]]
 %%[[99
 	FPathPreprocessedWithCPP	a b			-> salt `hashWithSalt` (47::Int) `hashWithSalt` a `hashWithSalt` b

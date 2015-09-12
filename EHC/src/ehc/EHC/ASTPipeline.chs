@@ -188,24 +188,6 @@ instance PP ASTAvailableFile where
 
 %%]
 
-%%[8 export(ASTGlobal(..))
--- | Global parameterisation for AST building
-data ASTGlobal =
-  ASTGlobal
-    { _astglobPipe		:: ASTPipe		-- ^ the global pipe for the current compilation, required when recursing into imported modules
-    }
-  deriving (Eq, Ord, Typeable, Generic)
-
-instance Hashable ASTGlobal
-
-instance Show ASTGlobal where
-  show (ASTGlobal p) = "Glob(" ++ show p ++ ")"
-
-instance PP ASTGlobal where
-  pp (ASTGlobal p) = "Glob" >#< p
-
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Utils 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
