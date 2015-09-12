@@ -367,8 +367,8 @@ cpFlowCoreSemBeforeFold modNm
                           . ecuStoreHIUsedImpS usedImpS
                           . ecuStoreIntrodModS introdModS
                           )
-         -- ;  impNmL <- cpGenImportNameInfo modNm
-         ;  impNmL <- bcall $ ImportNameInfo (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
+         ;  impNmL <- cpGenImportNameInfo modNm
+         -- ;  impNmL <- bcall $ ImportNameInfo (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
          ;  cpUpdCU modNm ( ecuStoreCore $ cmodSetImports impNmL core
                           )
          }

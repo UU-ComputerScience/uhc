@@ -57,12 +57,12 @@ WRAPPER CodeAGItf
 deriving instance Typeable Syn_CodeAGItf
 %%]
 
-%%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRun'', cmod2CoreRunWithModNr, cmod2CoreRun)
+%%[(8 corerun) hs export(cmod2CoreRun', cmod2CoreRun'', cmod2CoreRun)
 -- | Translate to CoreRun
 cmod2CoreRun''
   :: EHCOpts
      -> Bool			-- ^ has main?
-     -> Int             -- ^ sequence nr of module (offset), used to create global per module references
+     -> Maybe Int       -- ^ sequence nr of module (offset), used to create global per module references
      -> CR.Nm2RefMp     -- ^ outer bindings
      -> CModule
      -> ( Syn_CodeAGItf
@@ -82,7 +82,7 @@ cmod2CoreRun'' opts hasMain modNr nm2ref cmod
 cmod2CoreRun'
   :: EHCOpts
      -> Bool			-- ^ has main?
-     -> Int             -- ^ sequence nr of module (offset), used to create global per module references
+     -> Maybe Int             -- ^ sequence nr of module (offset), used to create global per module references
      -> CR.Nm2RefMp     -- ^ outer bindings
      -> CModule
      -> ( CR.Mod        -- generated CoreRun
@@ -96,12 +96,12 @@ cmod2CoreRun' opts hasMain modNr nm2ref cmod
      )
   where t = cmod2CoreRun'' opts hasMain modNr nm2ref cmod
 
-cmod2CoreRunWithModNr :: Int -> CModule -> CR.Mod
+cmod2CoreRunWithModNr :: Maybe Int -> CModule -> CR.Mod
 cmod2CoreRunWithModNr nr m = m'
   where (m',_,_) = cmod2CoreRun' defaultEHCOpts True nr CR.emptyNm2RefMp m
 
 cmod2CoreRun :: CModule -> CR.Mod
-cmod2CoreRun = cmod2CoreRunWithModNr 0
+cmod2CoreRun = cmod2CoreRunWithModNr Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,7 +117,7 @@ ATTR CodeAGItf CModule [ hasMain: Bool | | ]
 
 %%[(8 corerun)
 -- | Module (sequence)nr, offset
-ATTR CodeAGItf AllCodeNT [ modNr: Int | | ]
+ATTR CodeAGItf AllCodeNT [ modNr: {Maybe Int} | | ]
 %%]
 
 %%[(50 corerun)
@@ -338,7 +338,7 @@ SEM CBound
 
 %%[(8 corerun)
 -- Name gathering
-ATTR CodeAGItf CModule AllBind CExpr [ | | nm2refGath USE {`CR.nm2refUnion`} {CR.emptyNm2RefMp} : {CR.Nm2RefMp} ]
+ATTR CodeAGItf AllCodeNT [ | | nm2refGath USE {`CR.nm2refUnion`} {CR.emptyNm2RefMp} : {CR.Nm2RefMp} ]
 
 SEM CModule
   | Mod         loc         .   nm2refNew       =   @expr.nm2refGath
@@ -365,7 +365,7 @@ SEM CAlt
   | Alt         loc         .   nm2refNew       =   Rel.fromList [ (n, CR.RRef_Fld @lhs.scrutRef i) | (n,i) <- zip @pat.fldNmL [0..] ]
 
 -- Name distribution
-ATTR CodeAGItf CModule AllExpr [ nm2ref: {CR.Nm2RefMp} | | ]
+ATTR CodeAGItf AllCodeNT [ nm2ref: {CR.Nm2RefMp} | | ]
 
 SEM CModule
   | Mod         expr        .   nm2ref          =   @nm2refNew `CR.nm2refUnion` @lhs.nm2ref
@@ -389,7 +389,8 @@ SEM CAlt
 ATTR AllAlt [ scrutRef: {CR.RRef} | | ]
 
 SEM CExpr
-  | Case        alts        .   scrutRef        =   maybe CR.noRRef (\n -> maybe (CR.RRef_Dbg n) id $ CR.nm2refLookup n @lhs.nm2ref) $ whatExprMbVar @expr.whatBelow
+  | Case        alts        .   scrutRef        =   -- maybe CR.noRRef (\n -> maybe (CR.RRef_Unr n) id $ CR.nm2refLookup n @lhs.nm2ref) $ whatExprMbVar @expr.whatBelow
+  													maybe CR.noRRef (\n -> CR.rrefResolve Nothing Nothing @lhs.nm2ref n) $ whatExprMbVar @expr.whatBelow
 %%]
 
 %%[(8 corerun)
@@ -458,9 +459,11 @@ ATTR CExpr [ | | vref: {CR.RRef} ]
 %%[(8 corerun)
 SEM CExpr
 %%[[8
-  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (                              CR.rrefToDif @lhs.lev) $ CR.nm2refLookup @nm @lhs.nm2ref
+  | Var         loc         .   vref            =   CR.rrefResolve (Just @lhs.lev) Nothing               @lhs.nm2ref @nm
+                                                    -- maybe (CR.RRef_Unr @nm) (                              CR.rrefToDif @lhs.lev) $ CR.nm2refLookup @nm @lhs.nm2ref
 %%][50
-  | Var         loc         .   vref            =   maybe (CR.RRef_Dbg @nm) (CR.rrefToImp @lhs.impNmLkup . CR.rrefToDif @lhs.lev) $ CR.nm2refLookup @nm @lhs.nm2ref
+  | Var         loc         .   vref            =   CR.rrefResolve (Just @lhs.lev) (Just @lhs.impNmLkup) @lhs.nm2ref @nm
+                                                    -- maybe (CR.RRef_Unr @nm) (CR.rrefToImp @lhs.impNmLkup . CR.rrefToDif @lhs.lev) $ CR.nm2refLookup @nm @lhs.nm2ref
 %%]]
   | * - Var
                 loc         .   vref            =   panic "Core.ToCoreRun.CExpr.ref"

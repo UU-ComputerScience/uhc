@@ -56,7 +56,10 @@ mkFileSuffMpHs opts
     , ( Just Cfg.suffixDotlessInputOutputBinaryCore , (ECUS_Core CRStartBinary, ASTType_Core, ASTFileContent_Binary, ASTFileUse_Src), True )
 %%]]
 %%[[(50 corebackend)
-    , ( Just Cfg.suffixDotlessBinaryCore , (ECUS_Core CRStartBinary, ASTType_Core, ASTFileContent_Binary, ASTFileUse_Src), False )
+    , ( Just Cfg.suffixDotlessBinaryCore , (ECUS_Core CRStartBinary, ASTType_Core, ASTFileContent_Binary, ASTFileUse_Cache), False )
+%%]]
+%%[[(50 corebackend corerun)
+    , ( Just Cfg.suffixDotlessBinaryCoreRun , (ECUS_CoreRun CRRStartBinary, ASTType_CoreRun, ASTFileContent_Binary, ASTFileUse_Cache), False )
 %%]]
     ]
 %%[[(90 codegen)

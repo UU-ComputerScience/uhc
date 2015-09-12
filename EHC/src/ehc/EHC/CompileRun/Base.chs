@@ -229,6 +229,7 @@ data BFun' m res where
     -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
     -> BFun' m (Either (String,[Err]) (BRef m ast))
 
+{-
   ASTRefFromFileMb
     :: Typeable ast
     => !PrevFileSearchKey				--- ^ module name and possibly known path
@@ -237,6 +238,7 @@ data BFun' m res where
     -> !ASTSuffixKey					--- ^ suffix and content variation
     -> !ASTFileTiming					--- ^ timing (i.e. previous or current)
     -> BFun' m (Maybe (BRef m ast))
+-}
 
   --- | Get a particular AST from file for a module
   ASTFromFile
@@ -347,6 +349,7 @@ data BFun' m res where
 %%]]
          )
 
+{-
   --- | The actual module name and imported modules, abstracted over the AST type
   ModnameAndImports
     :: !PrevFileSearchKey				--- ^ module name and possibly known path
@@ -368,11 +371,12 @@ data BFun' m res where
          , Maybe PrevSearchInfo			-- search info for modules to be imported from this one
          , Bool							-- has main
          )
+-}
 
   --- | The actual module name and imported modules, abstracted over the AST type
-  ModnameAndImportsPMb
+  ModnameAndImportsPlMb
     :: !PrevFileSearchKey				--- ^ module name and possibly known path
-    -> !ASTPipe							--- ^ pipeline leading to content
+    -> !ASTBuildPlan					--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
            ( HsName						-- module name
@@ -473,9 +477,9 @@ data BFun' m res where
 
 %%[[(50 corein)
   --- | Core as src semantics
-  FoldCoreModPMb
+  FoldCoreModPlMb
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
-    -> !ASTPipe							--- ^ pipeline leading to content
+    -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
            ( AST_Core_Sem_Check			-- all semantics
@@ -512,9 +516,9 @@ data BFun' m res where
 
 %%[[(50 corerun corerunin)
   --- | CoreRun as src semantics
-  FoldCoreRunModPMb
+  FoldCoreRunModPlMb
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
-    -> !ASTPipe							--- ^ pipeline leading to content
+    -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
            ( AST_CoreRun_Sem_Mod				-- all semantics
@@ -526,12 +530,13 @@ data BFun' m res where
          ) )
 
   --- | CoreRun as src semantics
-  FoldCoreRunCheckPMb
+  FoldCoreRunCheckPlMb
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
-    -> !ASTPipe							--- ^ pipeline leading to content
+    -> !ASTBuildPlan							--- ^ pipeline leading to content
     -> BFun' m
          ( Maybe
            ( AST_CoreRun_Sem_Check				-- all semantics
+           , AST_CoreRun				-- updated CoreRun
          ) )
 %%]]
 
@@ -574,7 +579,7 @@ bfunCompare f1 f2 = case (f1,f2) of
     -- (EcuOfNameAndPath			a1 					, EcuOfNameAndPath			a2 					) ->         a1 `compare` a2
     (EHCOptsOf             		a1   				, EHCOptsOf					a2   				) ->         a1 `compare` a2
     (ASTRefFromFileEither      	a1 b1 c1 d1	e1 f1	, ASTRefFromFileEither		a2 b2 c2 d2	e2 f2	) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2, f1 `compare` f2]
-    (ASTRefFromFileMb          	a1 b1 c1 d1	e1 		, ASTRefFromFileMb			a2 b2 c2 d2	e2		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2]
+    -- (ASTRefFromFileMb          	a1 b1 c1 d1	e1 		, ASTRefFromFileMb			a2 b2 c2 d2	e2		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2]
     (ASTFromFile            	a1 b1 c1 d1	e1 		, ASTFromFile				a2 b2 c2 d2	e2		) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2, e1 `compare` e2]
     (ASTP            			a1 b1		 		, ASTP						a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ASTPMb            			a1 b1		 		, ASTPMb					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
@@ -591,10 +596,10 @@ bfunCompare f1 f2 = case (f1,f2) of
     (HasMain					a1 b1				, HasMain					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%[[50
     (FoldHsMod					a1 b1				, FoldHsMod					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (ModnameAndImports			a1 b1				, ModnameAndImports			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (ModnameAndImportsP			a1 b1				, ModnameAndImportsP		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (ModnameAndImportsPMb		a1 b1				, ModnameAndImportsPMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    -- (ModnameAndImportsPlMb		a1 b1				, ModnameAndImportsPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    -- (ModnameAndImports			a1 b1				, ModnameAndImports			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    -- (ModnameAndImportsP			a1 b1				, ModnameAndImportsP		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    -- (ModnameAndImportsPMb		a1 b1				, ModnameAndImportsPMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (ModnameAndImportsPlMb		a1 b1				, ModnameAndImportsPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (HsModnameAndImports		a1 					, HsModnameAndImports		a2 					) ->         a1 `compare` a2
     (FoldHIInfo					a1 					, FoldHIInfo				a2 					) ->         a1 `compare` a2
     (ImportExportImpl			a1 b1				, ImportExportImpl			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
@@ -605,7 +610,7 @@ bfunCompare f1 f2 = case (f1,f2) of
     (FoldEHPMb					a1 b1				, FoldEHPMb					a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (FoldEHPlMb					a1 b1				, FoldEHPlMb				a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%[[(50 corein)
-    (FoldCoreModPMb				a1 b1				, FoldCoreModPMb			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (FoldCoreModPlMb			a1 b1				, FoldCoreModPlMb			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
 %%[[(8 core grin)
     (FoldCore2GrinPlMb			a1 b1				, FoldCore2GrinPlMb			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
@@ -614,8 +619,8 @@ bfunCompare f1 f2 = case (f1,f2) of
     (FoldCore2CoreRunPlMb		a1 b1				, FoldCore2CoreRunPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
 %%[[(50 corerun corerunin)
-    (FoldCoreRunModPMb			a1 b1 				, FoldCoreRunModPMb			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (FoldCoreRunCheckPMb		a1 b1 				, FoldCoreRunCheckPMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (FoldCoreRunModPlMb			a1 b1 				, FoldCoreRunModPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+    (FoldCoreRunCheckPlMb		a1 b1 				, FoldCoreRunCheckPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
 %%[[99
     (FPathPreprocessedWithCPP	a1 b1 				, FPathPreprocessedWithCPP	a2 b2 				) -> lexico [a1 `compare` a2, b1 `compare` b2]
@@ -655,7 +660,7 @@ instance Hashable (BFun' m res) where
 	EHCOptsOf		   			a			-> salt `hashWithSalt` (14::Int) `hashWithSalt` a
 	EcuOfPrevNameAndPath		a 			-> salt `hashWithSalt` (15::Int) `hashWithSalt` a
 	-- EcuOfNameAndPath			a 			-> salt `hashWithSalt` (16::Int) `hashWithSalt` a
-	ASTRefFromFileMb			a b	c d	e 	-> salt `hashWithSalt` (17::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
+	-- ASTRefFromFileMb			a b	c d	e 	-> salt `hashWithSalt` (17::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
 	ASTRefFromFileEither		a b	c d	e f	-> salt `hashWithSalt` (18::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e `hashWithSalt` f
 	ASTFromFile					a b	c d	e 	-> salt `hashWithSalt` (19::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d `hashWithSalt` e
 	ASTP 						a b			-> salt `hashWithSalt` (20::Int) `hashWithSalt` a `hashWithSalt` b
@@ -673,10 +678,10 @@ instance Hashable (BFun' m res) where
 	HasMain			 			a b			-> salt `hashWithSalt` (29::Int) `hashWithSalt` a `hashWithSalt` b
 %%[[50
 	FoldHsMod			 		a b			-> salt `hashWithSalt` (30::Int) `hashWithSalt` a `hashWithSalt` b
-	ModnameAndImports			a b			-> salt `hashWithSalt` (31::Int) `hashWithSalt` a `hashWithSalt` b
-	ModnameAndImportsP			a b			-> salt `hashWithSalt` (32::Int) `hashWithSalt` a `hashWithSalt` b
-	ModnameAndImportsPMb		a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
-	-- ModnameAndImportsPlMb		a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
+	-- ModnameAndImports			a b			-> salt `hashWithSalt` (31::Int) `hashWithSalt` a `hashWithSalt` b
+	-- ModnameAndImportsP			a b			-> salt `hashWithSalt` (32::Int) `hashWithSalt` a `hashWithSalt` b
+	-- ModnameAndImportsPMb		a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
+	ModnameAndImportsPlMb		a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
 	HsModnameAndImports			a 			-> salt `hashWithSalt` (34::Int) `hashWithSalt` a
 	FoldHIInfo					a 			-> salt `hashWithSalt` (35::Int) `hashWithSalt` a
 	ImportExportImpl			a b			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a `hashWithSalt` b
@@ -687,7 +692,7 @@ instance Hashable (BFun' m res) where
 	FoldEHPMb					a b			-> salt `hashWithSalt` (40::Int) `hashWithSalt` a `hashWithSalt` b
 	FoldEHPlMb					a b			-> salt `hashWithSalt` (41::Int) `hashWithSalt` a `hashWithSalt` b
 %%[[(50 corein)
-	FoldCoreModPMb				a b			-> salt `hashWithSalt` (42::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldCoreModPlMb				a b			-> salt `hashWithSalt` (42::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
 %%[[(8 core grin)
 	FoldCore2GrinPlMb			a b			-> salt `hashWithSalt` (43::Int) `hashWithSalt` a `hashWithSalt` b
@@ -696,8 +701,8 @@ instance Hashable (BFun' m res) where
 	FoldCore2CoreRunPlMb		a b			-> salt `hashWithSalt` (44::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
 %%[[(50 corerun corerunin)
-	FoldCoreRunModPMb			a b 		-> salt `hashWithSalt` (45::Int) `hashWithSalt` a `hashWithSalt` b
-	FoldCoreRunCheckPMb			a b 		-> salt `hashWithSalt` (46::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldCoreRunModPlMb			a b 		-> salt `hashWithSalt` (45::Int) `hashWithSalt` a `hashWithSalt` b
+	FoldCoreRunCheckPlMb		a b 		-> salt `hashWithSalt` (46::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
 %%[[99
 	FPathPreprocessedWithCPP	a b			-> salt `hashWithSalt` (47::Int) `hashWithSalt` a `hashWithSalt` b

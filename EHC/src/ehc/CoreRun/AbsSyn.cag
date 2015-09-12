@@ -33,7 +33,7 @@ DATA AGItf
 DATA Mod
   | Mod         ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's, 20150817 TBD: to be replaced with exports (see below)
                 moduleNm        : {HsName}
-                moduleNr        : {Int}			-- sequence nr, index later into global table of modules
+                moduleNr        : {Maybe Int}	-- sequence nr, index later into global table of modules; 20150902 TBD: remove, the Expl run variant does not depend on it anymore, the Impl variant still does
                 stkDepth        : {Int}			-- max depth of stack for setting up globals
                 imports         : ImportL
                 exports         : ExportL

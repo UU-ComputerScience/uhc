@@ -115,6 +115,9 @@ data EHCompileUnit
       , _ecuMbHSSem          :: !(Maybe AST_HS_Sem_Check)
       , _ecuMbEH             :: !(Maybe AST_EH)
       , _ecuMbEHSem          :: !(Maybe AST_EH_Sem_Check)
+%%[[8
+      , _ecuASTAvailFiles    :: [ASTAvailableFile]
+%%]]
 %%[[(8 codegen)
       , _ecuMbCore           :: !(Maybe AST_Core)
 %%]]
@@ -200,7 +203,7 @@ data EHCompileUnit
 mkLabel ''EHCompileUnit
 %%]
 
-%%[8 export(ecuASTType, ecuASTFileContent, ecuASTFileUse)
+%%[8 export(ecuASTAvailFiles, ecuASTType, ecuASTFileContent, ecuASTFileUse)
 %%]
 
 %%[(8 core) export(ecuMbCore, ecuCore, ecuMbCoreSem, ecuCoreSem)
@@ -307,6 +310,9 @@ emptyECU
       , _ecuMbEHSem          = Nothing
 %%[[102
 %%]]
+%%[[8
+      , _ecuASTAvailFiles    = []
+%%]]
 %%[[(8 codegen)
       , _ecuMbCore           = Nothing
 %%]]
@@ -386,6 +392,10 @@ emptyECU
       }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[50 export(ecuImpNmS,ecuImpNmL)
 ecuImpNmS :: EHCompileUnit -> Set.Set HsName
 ecuImpNmS ecu = -- (\v -> tr "XX" (pp $ Set.toList v) v) $
@@ -432,6 +442,12 @@ ecuHasAlreadyFlowed asttype flowstage ecu = ecuHasAlreadyFlowedWith asttype (flo
 -- | Is compilation from Core source
 ecuIsFromCoreSrc :: EHCompileUnit -> Bool
 ecuIsFromCoreSrc = ecuStateIsCore . ecuState
+%%]
+
+%%[8 export(ecuLookupAvailASTFile)
+-- | Lookup available AST file, left biased (according to fileSuffMpHs (in the end))
+ecuLookupAvailASTFile :: ASTType -> ASTFileUse -> (ASTSuffixKey -> Bool) -> EHCompileUnit -> Maybe ASTAvailableFile
+ecuLookupAvailASTFile t u isOkCont ecu = find (\a -> _astavailfType a == t && _astavailfUse a == u && isOkCont (_astavailfContent a, u)) (_ecuASTAvailFiles ecu)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

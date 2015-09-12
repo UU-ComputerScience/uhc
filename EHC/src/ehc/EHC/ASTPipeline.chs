@@ -23,7 +23,7 @@ Used by all compiler driver code
 %%[8 import(GHC.Generics)
 %%]
 
-%%[8 import(UHC.Util.Pretty, UHC.Util.Utils)
+%%[8 import(UHC.Util.Pretty, UHC.Util.FPath, UHC.Util.Utils)
 %%]
 
 %%[8 import({%{EH}EHC.ASTTypes}) export(module {%{EH}EHC.ASTTypes})
@@ -166,6 +166,57 @@ instance PP ASTFileTiming where
   pp = pp . show
 %%]
 
+%%[8 export(ASTAvailableFile(..))
+-- | Available File for AST (as checked when first searching for a file)
+data ASTAvailableFile =
+  ASTAvailableFile
+    { _astavailfFPath	:: FPath
+    , _astavailfType	:: ASTType
+    , _astavailfContent	:: ASTFileContent
+    , _astavailfUse		:: ASTFileUse
+    -- , _astavailfTiming	:: ASTFileTiming
+    }
+  deriving (Eq, Ord, Typeable, Generic)
+
+instance Hashable ASTAvailableFile
+
+instance Show ASTAvailableFile where
+  show (ASTAvailableFile f t c u {- tm -}) = "(" ++ [head (show t), head (show c), head (show u)] ++ ")"
+
+instance PP ASTAvailableFile where
+  pp (ASTAvailableFile f t c u {- tm -}) = f >#< ppParensCommas [pp t, pp c, pp u]
+
+%%]
+
+%%[8 export(ASTGlobal(..))
+-- | Global parameterisation for AST building
+data ASTGlobal =
+  ASTGlobal
+    { _astglobPipe		:: ASTPipe		-- ^ the global pipe for the current compilation, required when recursing into imported modules
+    }
+  deriving (Eq, Ord, Typeable, Generic)
+
+instance Hashable ASTGlobal
+
+instance Show ASTGlobal where
+  show (ASTGlobal p) = "Glob(" ++ show p ++ ")"
+
+instance PP ASTGlobal where
+  pp (ASTGlobal p) = "Glob" >#< p
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(astfileuseReadTiming)
+-- | The timing when read
+astfileuseReadTiming :: ASTFileUse -> ASTFileTiming
+astfileuseReadTiming ASTFileUse_Cache = ASTFileTiming_Prev
+astfileuseReadTiming _                = ASTFileTiming_Current
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% When is flowed into global state after semantics type: ASTSemFlowStage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -218,6 +269,8 @@ type ASTAlreadyFlowIntoCRSIInfo =
 data ASTTrf where
     -- | Optimize, valid for some scopes only
     ASTTrf_Optim :: [ASTScope] -> ASTTrf
+    -- | Check and adapt (source usually)
+    ASTTrf_Check :: ASTTrf
 
   deriving (Eq, Ord, Typeable, Generic)
 
@@ -225,9 +278,11 @@ instance Hashable ASTTrf
 
 instance Show ASTTrf where
   show (ASTTrf_Optim scs) = "Optim" ++ show scs
+  show (ASTTrf_Check    ) = "Check"
 
 instance PP ASTTrf where
   pp (ASTTrf_Optim scs) = "Optim" >#< ppBracketsCommas scs
+  pp trf                = pp (show trf)
 %%]
 
 %%[50 export(ASTPipeHowChoice(..))
@@ -251,10 +306,10 @@ instance PP ASTPipeHowChoice where
 %%[8 export(ASTPipe(..), emptyASTPipe)
 -- | Description of build pipelines
 data ASTPipe where
-    -- | From source file 
-    ASTPipe_Src :: { astpType :: ASTType } -> ASTPipe
+    -- | From source file. 20150904: astpTiming is ignored, derived from astpUse
+    ASTPipe_Src :: { astpUse :: ASTFileUse, astpTiming :: ASTFileTiming, astpType :: ASTType } -> ASTPipe
 
-    -- | Derived from
+    -- | Derived from (a different ast type)
     ASTPipe_Derived :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
 
     -- | Linked/combined as a library
@@ -271,7 +326,7 @@ data ASTPipe where
 
 %%[[50
     -- | From previously cached on file
-    ASTPipe_Cached :: { astpType :: ASTType }  -> ASTPipe
+    -- ASTPipe_Cached :: { astpType :: ASTType }  -> ASTPipe
 
     -- | Side effect inverse of ASTPipe_Cached, i.e. write/cache on file
     ASTPipe_Cache :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
@@ -291,14 +346,14 @@ instance Hashable ASTPipe
 
 instance Show ASTPipe where
   show p = case p of
-    ASTPipe_Src 		t		    -> "Sr(" ++ show t ++ ")."
+    ASTPipe_Src 		u tm t		-> "Sr(" ++ show u ++ "," ++ show tm ++ "," ++ show t ++ ")."
     ASTPipe_Derived 	t p'	    -> "Dr-" ++ show p'
     ASTPipe_Library 	t p'	    -> "Lb-"  ++ show p'
     ASTPipe_Trf 		t tr p'     -> "Tr(" ++ show tr ++ ")-" ++ show p'
     ASTPipe_Compound 	t ps	    -> "Cm(" ++ show t ++ ")" ++ show ps
     ASTPipe_Empty 				    -> ""
 %%[[50    
-    ASTPipe_Cached 		t		    -> "Cd(" ++ show t ++ ")."
+    -- ASTPipe_Cached 		t		    -> "Cd(" ++ show t ++ ")."
     ASTPipe_Cache 		t p'	    -> "Ch-" ++ show p'
     ASTPipe_Choose		h t p1 p2   -> "{(" ++ show h ++ ")1:" ++ show p1 ++ ",2:" ++ show p2 ++ "}"
     ASTPipe_Whole 		t p'	    -> "Wh-" ++ show p'
@@ -306,14 +361,14 @@ instance Show ASTPipe where
 
 instance PP ASTPipe where
   pp p = case p of
-    ASTPipe_Src 		t		    -> "Src" >#< t
+    ASTPipe_Src 		u tm t	 	-> "Src" >#< u >#< tm >#< t
     ASTPipe_Derived 	t p'	    -> "Deriv" >#< t >-< indent 2 p'
     ASTPipe_Library 	t p'	    -> "Lib" >#< t >-< indent 2 p'
     ASTPipe_Trf 		t tr p'     -> "Trf" >#< t >#< tr >-< indent 2 p'
     ASTPipe_Compound 	t ps	    -> "All" >#< t >-< indent 2 (ppCurlysCommasBlock ps)
     ASTPipe_Empty 				    -> pp "Emp"
 %%[[50    
-    ASTPipe_Cached 		t		    -> "Cached" >#< t
+    -- ASTPipe_Cached 		t		    -> "Cached" >#< t
     ASTPipe_Cache 		t p'	    -> "Cache" >#< t >-< indent 2 p'
     ASTPipe_Choose		h t p1 p2   -> "Choose" >#< h >#< t >-< indent 2 (p1 >-< p2)
     ASTPipe_Whole 		t p'	    -> "Whole" >#< t >-< indent 2 p'
@@ -327,24 +382,26 @@ instance PP ASTPipe where
 %%[8 export(TmChoice(..))
 -- | Fix of possible choices in an ASTPipe (based on time info)
 data TmChoice
-  = Choice_End					-- ^ base case
-  | Choice_No 	TmChoice		-- ^ no choice made
-  | Choices 	[TmChoice]		-- ^ compound
+  = Choice_End						-- ^ base case
+  | Choice_Src	ASTAvailableFile	-- ^ base case: src file
+  | Choice_No 	TmChoice			-- ^ no choice made
+  | Choices 	[TmChoice]			-- ^ compound
 %%[[50
-  | Choice_L 	TmChoice		-- ^ fst (of ASTPipe_Choose)
-  | Choice_R 	TmChoice		-- ^ snd (of ASTPipe_Choose)
+  | Choice_L 	TmChoice			-- ^ fst (of ASTPipe_Choose)
+  | Choice_R 	TmChoice			-- ^ snd (of ASTPipe_Choose)
 %%]]
   deriving (Eq, Ord, Typeable, Generic)
 
 instance Hashable TmChoice
 
 instance Show TmChoice where
-  show (Choice_End ) = "."
-  show (Choice_No c) = "-" ++ show c
-  show (Choices  cs) = show cs
+  show (Choice_End  ) = "."
+  show (Choice_Src s) = "S" ++ show s
+  show (Choice_No  c) = "-" ++ show c
+  show (Choices   cs) = show cs
 %%[[50
-  show (Choice_L  c) = "L" ++ show c
-  show (Choice_R  c) = "R" ++ show c
+  show (Choice_L   c) = "L" ++ show c
+  show (Choice_R   c) = "R" ++ show c
 %%]]
 
 instance PP TmChoice where
@@ -375,6 +432,33 @@ instance PP ASTBuildPlan where
 %%[8 export(mkBuildPlan)
 mkBuildPlan :: ASTPipe -> TmChoice -> ASTBuildPlan
 mkBuildPlan = ASTBuildPlan
+%%]
+
+%%[8 export(astplMbSubPlan)
+-- | Extract a subplan (i.e. from which is derived), if any
+astplMbSubPlan :: ASTBuildPlan -> Maybe ASTBuildPlan
+astplMbSubPlan pl = case pl of
+    ASTBuildPlan (ASTPipe_Derived {astpPipe =p'}) (Choice_No c') -> Just $ mkBuildPlan p' c'
+    ASTBuildPlan (ASTPipe_Trf     {astpPipe =p'}) (Choice_No c') -> Just $ mkBuildPlan p' c'
+%%[[50
+    ASTBuildPlan (ASTPipe_Choose  {astpPipe1=p'}) (Choice_L  c') -> Just $ mkBuildPlan p' c'
+    ASTBuildPlan (ASTPipe_Choose  {astpPipe2=p'}) (Choice_R  c') -> Just $ mkBuildPlan p' c'
+    ASTBuildPlan (ASTPipe_Cache   {astpPipe =p'}) (Choice_No c') -> Just $ mkBuildPlan p' c'
+    ASTBuildPlan (ASTPipe_Whole   {astpPipe =p'}) (Choice_No c') -> Just $ mkBuildPlan p' c'
+%%]]
+    _                                                            -> Nothing
+
+
+%%]
+
+%%[8 export(astplFind)
+-- | Find occurrence of predicate, yielding a new plan corresponding to the predicate, and
+astplFind :: (ASTPipe -> Maybe x) -> ASTBuildPlan -> Maybe (ASTBuildPlan, x)
+astplFind pred = fnd
+  where
+    fnd pl@(ASTBuildPlan p c) = case pred p of
+      Just res -> Just (pl, res)
+      _        -> astplMbSubPlan pl >>= fnd
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -453,7 +537,7 @@ emptyASTPipeBldCfg =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(astpipe_EH_from_HS)
-astpipe_HS_src = ASTPipe_Src ASTType_HS
+astpipe_HS_src = ASTPipe_Src ASTFileUse_Src ASTFileTiming_Current ASTType_HS
 astpipe_EH_from_HS = ASTPipe_Derived ASTType_EH astpipe_HS_src
 
 astpipe_EH = 
@@ -478,12 +562,12 @@ astpipe_Core_from_EH apbcfg =
 
 %%[(8 corein)
 astpipe_Core_src :: ASTPipe
-astpipe_Core_src = ASTPipe_Src ASTType_Core
+astpipe_Core_src = ASTPipe_Src ASTFileUse_Src ASTFileTiming_Current ASTType_Core
 %%]
 
 %%[(50 core)
 astpipe_Core_cached :: ASTPipe
-astpipe_Core_cached = ASTPipe_Cached ASTType_Core
+astpipe_Core_cached = ASTPipe_Src ASTFileUse_Cache ASTFileTiming_Prev ASTType_Core
 %%]
 
 %%[(8 core)
@@ -529,12 +613,12 @@ astpipe_Core apbcfg =
 
 %%[(8 corerunin)
 astpipe_CoreRun_src :: ASTPipe
-astpipe_CoreRun_src = ASTPipe_Src ASTType_CoreRun
+astpipe_CoreRun_src = ASTPipe_Trf ASTType_CoreRun ASTTrf_Check $ ASTPipe_Src ASTFileUse_Src ASTFileTiming_Current ASTType_CoreRun
 %%]
 
 %%[(50 corerun)
 astpipe_CoreRun_cached :: ASTPipe
-astpipe_CoreRun_cached = ASTPipe_Cached ASTType_CoreRun
+astpipe_CoreRun_cached = ASTPipe_Trf ASTType_CoreRun ASTTrf_Check $ ASTPipe_Src ASTFileUse_Cache ASTFileTiming_Prev ASTType_CoreRun
 %%]
 
 %%[(8 core corerun)
@@ -570,7 +654,7 @@ astpipe_Grin apbcfg =
 
 %%[50
 astpipe_HI_cached :: ASTPipe
-astpipe_HI_cached = ASTPipe_Cached ASTType_HI
+astpipe_HI_cached = ASTPipe_Src ASTFileUse_Cache ASTFileTiming_Prev ASTType_HI
 
 astpipe_HI :: ASTPipeBldCfg -> ASTPipe
 astpipe_HI apbcfg =
@@ -612,7 +696,7 @@ astpipe_GrinBytecode apbcfg =
 
 %%[(8 codegen)
 astpipe_C_src :: ASTPipe
-astpipe_C_src = ASTPipe_Src ASTType_C
+astpipe_C_src = ASTPipe_Src ASTFileUse_Src ASTFileTiming_Current ASTType_C
 %%]
 
 %%[(8 codegen core grin)

@@ -106,7 +106,7 @@ cpFoldCore2CoreRun modNm
                  core     				= panicJust "cpFoldCore2CoreRun" mbCore
                  inhLbl                 = crsiCoreRunState ^* crcrsiNm2RefMp
                  core2RunInh			= crsi ^. inhLbl
-                 (corerun,nm2ref,sem)	= Core2CoreRunSem.cmod2CoreRun' opts hasMain 0 core2RunInh core
+                 (corerun,nm2ref,sem)	= Core2CoreRunSem.cmod2CoreRun' opts hasMain Nothing core2RunInh core
                  core2RunInh'			= nm2ref `CoreRun.nm2refUnion` core2RunInh
          ;  when (isJust mbCore) $ do
                  -- between module flow part
@@ -143,7 +143,7 @@ cpFoldCoreRunMod modNm
          }
 %%]
 
-%%[(5050 codegen corein) export(cpFoldCoreMod)
+%%[(50 codegen corein) export(cpFoldCoreMod)
 cpFoldCoreMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCoreMod modNm
   =  do  {  cr <- get
@@ -153,7 +153,7 @@ cpFoldCoreMod modNm
                  inh      = Core2ChkSem.Inh_CodeAGItf
                                 { Core2ChkSem.opts_Inh_CodeAGItf = opts
                                 , Core2ChkSem.moduleNm_Inh_CodeAGItf = modNm
-                                , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh
+                                -- , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh
                                 }
                  coreSem  = Core2ChkSem.cmodCheck' inh core
                  hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem

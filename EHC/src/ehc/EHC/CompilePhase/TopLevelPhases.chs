@@ -321,8 +321,8 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
   = do { cr <- get
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              needsCompile = crModNeedsCompile modNm cr
-             -- canCompile   = ecuCanCompile ecu
-       ; canCompile <- bcall $ CanCompile $ mkPrevFileSearchKeyWithName modNm
+             canCompile   = ecuCanCompile ecu
+       -- ; canCompile <- bcall $ CanCompile $ mkPrevFileSearchKeyWithName modNm
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (liftIO $ putStrLn
                 (  show modNm
@@ -536,8 +536,8 @@ cpEhcModuleCompile1 targHSState modNm
              | {- cst == CRRStartText || -} isBinary
              -> do { cpMsg modNm VerboseNormal $ "Reading CoreRun (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    ; cpEhcHaskellModulePrepareSrc modNm
-                   -- ; modNm2 <- cpEhcCoreRunImport isBinary modNm
-                   ; (modNm2, _, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_CoreRun
+                   ; modNm2 <- cpEhcCoreRunImport isBinary modNm
+                   -- ; (modNm2, _, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_CoreRun
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_CoreRun CRROnlyImports))
                    ; return modNm2
                    }
@@ -555,8 +555,8 @@ cpEhcModuleCompile1 targHSState modNm
              | cst == CRStartText || isBinary
              -> do { cpMsg modNm VerboseNormal $ "Reading Core (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    ; cpEhcHaskellModulePrepareSrc modNm
-                   -- ; modNm2 <- cpEhcCoreImport isBinary modNm
-                   ; (modNm2, _, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_Core
+                   ; modNm2 <- cpEhcCoreImport isBinary modNm
+                   -- ; (modNm2, _, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_Core
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_Core CROnlyImports))
                    ; return modNm2
                    }
@@ -1047,7 +1047,7 @@ cpEhcCorePerModulePart1 modNm
        }
 %%]
 
-%%[(5050 codegen corein)
+%%[(50 codegen corein)
 -- | Get import information from Core module source text/binary.
 cpEhcCoreImport
   :: EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m HsName

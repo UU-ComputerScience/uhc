@@ -19,11 +19,30 @@
 %%[(8 corerunin) hs import(qualified UHC.Util.Rel as Rel, qualified UHC.Util.RelMap as RelMap)
 %%]
 
+%%[(8 corerunin) hs import(qualified Data.Vector as V, Data.List)
+%%]
+
 %%[(50 corerunin) hs import(qualified {%{EH}Module.ImportExport} as ModImpExp)
 %%]
 
 %%[(8 corerunin).WRAPPER ag import({CoreRun/AbsSyn})
-WRAPPER AGItf
+WRAPPER
+  AGItf
+  Mod
+  Exp
+  SExp
+  Alt
+%%]
+
+%%[(8 corerunin) hs
+chkExp'' :: InhChk -> Exp -> Exp
+chkExp'' inhchk x = crr_Syn_Exp $ wrap_Exp (sem_Exp x) (Inh_Exp {inhchk_Inh_Exp=inhchk})
+
+chkSExp'' :: InhChk -> SExp -> SExp
+chkSExp'' inhchk x = crr_Syn_SExp $ wrap_SExp (sem_SExp x) (Inh_SExp {inhchk_Inh_SExp=inhchk})
+
+chkAlt'' :: InhChk -> Alt -> Alt
+chkAlt'' inhchk x = crr_Syn_Alt $ wrap_Alt (sem_Alt x) (Inh_Alt {inhchk_Inh_Alt=inhchk})
 %%]
 
 %%[(8 corerunin) hs
@@ -54,14 +73,48 @@ crmodCheck' inh crmod
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Manual inh attrib passing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin) hs
+-- | Not all AST datatypes are expressed as AG, inherited info therefore implemented manually
+data InhChk
+  = InhChk
+      { nm2refInhChk	:: Nm2RefMp		-- ^ name to ref mapping
+      , impNmLkupInhChk :: Maybe (HsName -> Maybe Int)
+      }
+%%]
+
+mkEmptyInhChk :: InhChk
+mkEmptyInhChk = InhChk emptyNm2RefMp (const Nothing)
+
+%%[(8 corerun)
+ATTR AllCodeNT - Mod [ inhchk: InhChk | | ]
+%%]
+
+%%[(8 corerunin)
+SEM Mod
+  | Mod	       loc	     	.   inhchk        		=   InhChk @lhs.nm2ref (Just $ \n -> elemIndex n @imports.impNmL)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerunin)
-ATTR
-  AGItf Mod AllExport
-    [ moduleNr: Int
-    | | ]
+ATTR AGItf Mod AllExport [ moduleNr: {Maybe Int} | | ]
+%%]
+
+%%[(8 corerunin)
+ATTR AllExport [ moduleNm: HsName | | ]
+
+SEM Mod
+  | Mod         exports     .   moduleNm        	=   @moduleNm
+%%]
+
+%%[(8 corerunin)
+-- Name distribution
+ATTR AGItf Mod [ nm2ref: {Nm2RefMp} | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,10 +122,21 @@ ATTR
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerunin)
-ATTR AGItf Mod AllExport [ | | nm2ref USE {`nm2refUnion`} {emptyNm2RefMp} : Nm2RefMp ]
+ATTR AGItf Mod AllExport [ | | nm2refGath USE {`nm2refUnion`} {emptyNm2RefMp} : Nm2RefMp ]
 
 SEM Export
-  | Export		lhs			.   nm2ref				=   RelMap.singleton @nm (RRef_Imp @lhs.moduleNr @offset) -- (RRef_Exp @lhs.moduleNm @offset)
+  | Export		lhs			.   nm2refGath			=   RelMap.singleton @nm {- (RRef_Imp @lhs.moduleNr @offset) -- -} (RRef_Exp @lhs.moduleNm @offset)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import info: module name to index
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AllImport [ | | impNmL USE {++} {[]} : {[HsName]} ]
+
+SEM Import
+  | Import		lhs			.	impNmL			=	[@nm]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,5 +148,15 @@ ATTR AllNT [ | | crr: SELF ]
 ATTR AGItf [ | | crr: Mod ]
 
 SEM Mod
-  | Mod			lhs			.	crr					=	@crr {moduleNr_Mod_Mod = @lhs.moduleNr}
+  | Mod			lhs			.	crr					=	@crr {moduleNr_Mod_Mod = @lhs.moduleNr, binds_Mod_Mod = V.map (chkExp'' @inhchk) @binds}
+
+SEM Exp
+  | Case		lhs			.	crr					=	@crr {alts_Exp_Case = V.map (chkAlt'' @lhs.inhchk) @alts}
+  | FFI			lhs			.	crr					=	@crr {args_Exp_FFI = V.map (chkSExp'' @lhs.inhchk) @args}
+  | App			lhs			.	crr					=	@crr {args_Exp_App = V.map (chkSExp'' @lhs.inhchk) @args}
+  | Tup			lhs			.	crr					=	@crr {args_Exp_Tup = V.map (chkSExp'' @lhs.inhchk) @args}
+  | Let			lhs			.	crr					=	@crr {binds_Exp_Let = V.map (chkExp'' @lhs.inhchk) @binds}
+
+SEM SExp
+  | Var         lhs         .	crr					=	@crr {ref_SExp_Var = rrefResolveUnr (impNmLkupInhChk @lhs.inhchk) (nm2refInhChk @lhs.inhchk) @ref}
 %%]

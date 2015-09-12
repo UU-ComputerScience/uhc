@@ -107,11 +107,7 @@ compileN_Alternate fpL topModNmL@(modNm:_) = do
 -}
       (Target_None_Core_AsIs, (fp:_), (modNm:_)) | CoreOpt_Run `elem` ehcOptCoreOpts opts -> do
           let modSearchKey = PrevFileSearchKey (FileSearchKey modNm $ ASTFileNameOverride_FPathAsTop fp) Nothing
-          -- (_ :: AST_CoreRun) <- bcall $ ASTP modSearchKey astpipe
-          -- cr <- get
-          -- cpTr TraceOn_BuildResult ["compileN_Alternate", show $ Map.keys $ cr ^. crCUCache, show $ cr ^. crNmForward]
           maybeM (bcall $ BuildPlanPMb modSearchKey astpipe) (return ()) $ \astplan -> do
-            -- modNm' <- bcall $ ActualModNm modNm
             -- cpRunCoreRun4 modSearchKey astplan
             cpRunCoreRun5 modSearchKey astplan
 %%]]
@@ -200,7 +196,7 @@ import1 opts fileSuffMpHs searchPath desiredState mbFp mbPrev nm
        ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
 %%][99
        ; let searchPath' = prevSearchInfoAdaptedSearchPath mbPrev searchPath
-       ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) (\(x,_,_) -> x) False fileSuffMpHs' searchPath' (Just nm) mbFp
+       ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) tup1234to1 False fileSuffMpHs' searchPath' (Just nm) mbFp
 %%]]
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (do { liftIO $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)

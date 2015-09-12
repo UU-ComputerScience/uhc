@@ -118,7 +118,7 @@ cpGetCoreRunModnameAndImports modNm
          }
 %%]
 
-%%[(5050 corein) export(cpGetCoreModnameAndImports)
+%%[(50 corein) export(cpGetCoreModnameAndImports)
 cpGetCoreModnameAndImports :: EHCCompileRunner m => HsName -> EHCompilePhaseT m HsName
 cpGetCoreModnameAndImports modNm
   =  do  {  cr <- get

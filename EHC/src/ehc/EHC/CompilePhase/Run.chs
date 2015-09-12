@@ -19,7 +19,19 @@
 %%[(8 corerun) import(Control.Exception)
 %%]
 
-%%[8 import (UHC.Util.Lens)
+%%[(8 corerun) import (UHC.Util.Lens)
+%%]
+%%[(8 corerun) hs import(qualified UHC.Util.RelMap as Rel)
+%%]
+%%[(8 corerun) hs import(qualified Data.Set as Set)
+%%]
+
+-- debug
+%%[(99 corerun) hs import({%{EH}EHC.CompilePhase.Output})
+%%]
+%%[(99 corerun) import ({%{EH}EHC.ASTHandler}, {%{EH}EHC.ASTHandler.Instances})
+%%]
+%%[(99 corerun) import(qualified {%{EH}Config} as Cfg)
 %%]
 
 -- Acccess to Core
@@ -95,7 +107,7 @@ cpRunCoreRun2 modNm = do
           return $ flip evalState emptyNm2RefMp $ do
             forM (zip cores [0..]) $ \(cr,modnr) -> do
               prevNm2Ref <- get
-              let (m,nm2ref,_) = cmod2CoreRun' opts hasMain modnr prevNm2Ref cr
+              let (m,nm2ref,_) = cmod2CoreRun' opts hasMain (Just modnr) prevNm2Ref cr
               put $ nm2refUnion nm2ref prevNm2Ref
               return m
 %%]]
@@ -180,8 +192,19 @@ cpRunCoreRun4 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchN
 cpRunCoreRun5 :: EHCCompileRunner m => PrevFileSearchKey -> ASTBuildPlan -> EHCompilePhaseT m ()
 cpRunCoreRun5 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) = do
     maybeM (bcall $ ASTPlMb modSearchKey astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
+%%[[99
+      -- debug
+      ecu <- bcall $ EcuOf modNm
+      cpOutputSomeModule (const mod) astHandler'_CoreRun ASTFileContent_Text "-cpRunCoreRun5" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
+%%]]
       crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
       let impModNmL = (crsi ^. crsiCoreRunState ^. crcrsiReqdModules) \\ [modNm]
+      cpTrPP TraceOn_BuildMod $
+        [ "cpRunCoreRun5 mod=" >|< modNm >#< "imps=" >|< ppParensCommas impModNmL
+        , "astplan" >#< astplan
+        , "crsi nm2ref mods:" >-< indent 2 (vlist $ Set.toList $ Set.map fromJust $ Set.filter isJust $ Set.map hsnQualifier $ Rel.dom $ crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp)
+        ] ++
+        [ n >#< ppCommas rs | (n,rs) <- Rel.toDomList $ crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp ]
       impModL <- forM impModNmL $ \nm ->
         maybeM (bcall $ ASTPMb (mkPrevFileSearchKeyWithName nm) astpipe)
           (do cpSetLimitErrsWhen 1 "Run Core(Run) errors" [rngLift emptyRange Err_Str $ "Cannot load CoreRun module: " ++ show nm]

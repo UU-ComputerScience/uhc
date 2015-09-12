@@ -161,20 +161,26 @@ bcall bfun = do
 
 %%[[50
 
-          CRSIWithCompileOrderPl compileOrder astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astbplChoice=choice}) -> do
-               -- let forAstTypes = 
+          CRSIWithCompileOrderPl compileOrder {- astplan@ -}(ASTBuildPlan {_astbplPipe=astpipe {-, _astbplChoice=choice -} }) -> do
+               cpTrPP TraceOn_BuildImport $ ["CRSIWithCompileOrderPl pipe:" >#< astpipe] ++ map pp compileOrder
                case compileOrder of
                    _ | length mutRecL > 0 -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MutRecModules mutRecL]
-                     | otherwise          -> forM_ compileOrder $ \[modNm] -> flow1 modNm
+                     | otherwise          -> forM_ compileOrder $ \[modNm] -> do
+                                               bLiftASTPipeToASTBuildPlan (return ()) (\k p -> flow1 k p) (mkPrevFileSearchKeyWithName modNm) astpipe
                      where mutRecL = filter ((> 1) . length) compileOrder
                            
                            -- Flow module info into global state
-                           flow1 modNm = do
+                           flow1 modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan = do
+                               let allowFlow = bAllowFlowPl modNm astplan ASTSemFlowStage_BetweenModule
+
                                -- From: cpFlowHsSem1
                                updHS <- maybe2M
-                                   -- (allowFlow $ \p -> astpType p == ASTType_HS)
                                    (allowFlow $ astpMbFromHSToEH True)
-                                   (\p -> bGetHsSemPlMb (mkPrevFileSearchKeyWithName modNm) $ mkBuildPlan p choice) (return id) $ \(hsSem) -> do
+                                   (\pl -> do
+                                      -- let pl = mkBuildPlan p choice
+                                      cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_BetweenModule astpMbFromHSToEH" >#< modSearchKey, pp pl]
+                                      bGetHsSemPlMb modSearchKey pl
+                                   ) (return id) $ \_ (hsSem) -> do
                                  return $ \crsi ->
                                    let hsInh  = crsi ^. crsiHSInh
                                        ig     = HSSem.gathIdGam_Syn_AGItf hsSem
@@ -189,9 +195,12 @@ bcall bfun = do
 
                                -- From: cpFlowEHSem1
                                updEH <- maybe2M
-                                   -- (allowFlow $ \p -> astpType p == ASTType_EH)
                                    (allowFlow $ astpMbFromEH True)
-                                   (\p -> bcall $ FoldEHPlMb (mkPrevFileSearchKeyWithName modNm) $ mkBuildPlan p choice) (return id) $ \ehSem -> do
+                                   (\pl -> do
+                                      -- let pl = mkBuildPlan p choice
+                                      cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_BetweenModule astpMbFromEH" >#< modSearchKey, pp pl]
+                                      bcall $ FoldEHPlMb modSearchKey pl
+                                   ) (return id) $ \_ ehSem -> do
                                  return $ \crsi ->
                                    let opts   = crsi ^. crsiOpts
                                        ehInh  = crsi ^. crsiEHInh
@@ -214,8 +223,12 @@ bcall bfun = do
 %%[[(50 core corein)
                                -- From: cpFlowCoreModSem
                                updCoreSrc <- maybe2M
-                                   (allowFlow $ astpMbSrcCore True)
-                                   (\p -> bcall $ FoldCoreModPMb (mkPrevFileSearchKeyWithName modNm) p) (return id) $ \(coreChkSem, _, _, _, _, _) -> do
+                                   (allowFlow $ astpMbSrcCachedCore True)
+                                   (\pl -> do
+                                      let p = _astbplPipe pl
+                                      cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_BetweenModule astpMbSrcCachedCore" >#< modSearchKey, pp p]
+                                      bcall $ FoldCoreModPlMb modSearchKey pl
+                                   ) (return id) $ \_ (coreChkSem, _, _, _, _, _) -> do
                                  return $ crsiCoreInh ^$= \coreInh ->
                                    coreInh { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem }
 %%][50
@@ -225,10 +238,14 @@ bcall bfun = do
 %%[[(50 corerun corerunin)
                                -- From: cpFlowCoreModSem
                                updCoreRunSrc <- maybe2M
-                                   (allowFlow $ astpMbSrcCoreRun True)
-                                   (\p -> bcall $ FoldCoreRunCheckPMb (mkPrevFileSearchKeyWithName modNm) p) (return id) $ \(corerunChkSem) -> do
+                                   (allowFlow $ astpMbCheckCoreRunToCoreRun True)
+                                   (\pl -> do
+                                      -- let p = _astbplPipe pl
+                                      cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_BetweenModule astpMbSrcCachedCoreRun" >#< modSearchKey, pp pl]
+                                      bcall $ FoldCoreRunCheckPlMb modSearchKey pl
+                                   ) (return id) $ \_ (corerunChkSem,_) -> do
                                  -- modNm' <- bcall $ ActualModNm modNm
-                                 return $ ((crsiCoreRunState ^* crcrsiNm2RefMp) ^$= \coreRunInh -> CoreRun2ChkSem.nm2ref_Syn_AGItf corerunChkSem `CoreRun.nm2refUnion` coreRunInh)
+                                 return $ ((crsiCoreRunState ^* crcrsiNm2RefMp) ^$= \coreRunInh -> CoreRun2ChkSem.nm2refGath_Syn_AGItf corerunChkSem `CoreRun.nm2refUnion` coreRunInh)
                                         . ((crsiCoreRunState ^* crcrsiReqdModules) ^$= (++ [modNm]))
 %%][50
                                let updCoreRunSrc = id
@@ -238,7 +255,11 @@ bcall bfun = do
                                -- From: cpFlowCoreSemAfterFold
                                updCoreGrin <- maybe2M
                                    (allowFlow $ astpMbFromCoreToGrin True)
-                                   (\p -> bcall $ FoldCore2GrinPlMb (mkPrevFileSearchKeyWithName modNm) $ mkBuildPlan p choice) (return id) $ \core2GrinSem -> do
+                                   (\pl -> do
+                                      -- let pl = mkBuildPlan p choice
+                                      cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_BetweenModule astpMbFromCoreToGrin" >#< modSearchKey, pp pl]
+                                      bcall $ FoldCore2GrinPlMb modSearchKey pl
+                                   ) (return id) $ \_ core2GrinSem -> do
                                  return $ crsiCoreInh ^$= \coreInh ->
                                    -- assumption: old info can safely be overridden, otherwise merge should be done here
                                    coreInh { Core2GrSem.lamMp_Inh_CodeAGItf = Core2GrSem.gathLamMp_Syn_CodeAGItf core2GrinSem `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh }
@@ -250,16 +271,17 @@ bcall bfun = do
                                -- From: cpFoldCore2CoreRun
                                updCoreCoreRun <- maybe2M
                                    (allowFlow $ astpMbFromCoreToCoreRun True)
-                                   (\p -> bcall $ FoldCore2CoreRunPlMb (mkPrevFileSearchKeyWithName modNm) $ mkBuildPlan p choice) (return id) $ \core2corerunSem -> do
+                                   (\pl -> do
+                                      -- let pl = mkBuildPlan p choice
+                                      cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_BetweenModule astpMbFromCoreToCoreRun" >#< modSearchKey, pp pl]
+                                      bcall $ FoldCore2CoreRunPlMb modSearchKey pl
+                                   ) (return id) $ \_ core2corerunSem -> do
                                  return $ (crsiCoreRunState ^* crcrsiNm2RefMp) ^$= \core2RunInh -> 
                                    Core2CoreRunSem.nm2refGath_Syn_CodeAGItf core2corerunSem `CoreRun.nm2refUnion` core2RunInh
 %%][50
                                let updCoreCoreRun = id
 %%]]
-            
                                cpUpdSI $ updCoreRunSrc . updCoreCoreRun . updCoreSrc . updCoreGrin . updEH . updHS
-                       
-                             where allowFlow = bAllowFlowP modNm astpipe ASTSemFlowStage_BetweenModule
                  
                brefto bfun BRef_CRSI
 
@@ -270,29 +292,29 @@ bcall bfun = do
                bcall $ CRSIWithCompileOrderPl compileOrder astplan
                brefto bfun BRef_CRSI
 %%]]
-{-
-          CRSIOfName modSearchKey forAstType -> do
-               bcall $ CRSIOfNameP modSearchKey $ mkASTPipeForASTTypes [minBound .. forAstType]
--}
 
           CRSIOfNameP modSearchKey astpipe -> do
                bLiftASTPipeToASTBuildPlan (brefto bfun BRef_CRSI) (\k p -> bcall $ CRSIOfNamePl k p) modSearchKey astpipe
 
           CRSIOfNamePl modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astbplChoice=choice}) -> do
-               let allowFlow = bAllowFlowP modNm astpipe ASTSemFlowStage_PerModule
+               let allowFlow = bAllowFlowPl modNm astplan ASTSemFlowStage_PerModule
 %%[[50
                ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
                cpTrPP TraceOn_BuildPipe [pp "CRSIOfNamePl", pp astplan]
                
                -- first recursively take care of all imports
                (_, imps) <- bcall $ ImportsOfNamePl modSearchKey astplan
+               cpTr TraceOn_BuildImport ["CRSIOfNamePl " ++ show modSearchKey, "imps=" ++ show imps]
                bcall $ CRSIWithImpsPl (mkPrevFileSearchKeyWithNameMbPrev modNm (_ecuMbPrevSearchInfo ecu)) imps astplan
 
                -- flow HS semantics forward into global state for current module, for a next stage in the pipeline
                -- From: cpFlowHsSem1
-               maybe2M -- (allowFlow $ \p -> astpType p == ASTType_HS)
-                       (allowFlow $ astpMbFromHSToEH True)
-                       (\p -> bGetHsSemPlMb modSearchKey $ mkBuildPlan p choice) (return ()) $ \hsSem -> do
+               maybe2M (allowFlow $ astpMbFromHSToEH True)
+                       (\pl -> do
+                          -- let pl = mkBuildPlan p choice
+                          cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_PerModule astpMbFromHSToEH" >#< modSearchKey, pp pl]
+                          bGetHsSemPlMb modSearchKey pl
+                       ) (return ()) $ \_ hsSem -> do
                    cpUpdSI $ \crsi -> 
                        let ehInh  = crsi ^. crsiEHInh
                            ig     = HSSem.gathIdGam_Syn_AGItf hsSem
@@ -305,9 +327,12 @@ bcall bfun = do
 
                -- flow HS semantics forward into global state for current module, for a next stage in the pipeline
                -- From: cpFlowHsSem1
-               maybe2M -- (allowFlow $ \p -> astpType p == ASTType_HS)
-                       (allowFlow $ astpMbFromHS True)
-                       (\p -> bGetHsSemPlMb modSearchKey $ mkBuildPlan p choice) (return ()) $ \hsSem -> do
+               maybe2M (allowFlow $ astpMbFromHS True)
+                       (\pl -> do
+                          -- let pl = mkBuildPlan p choice
+                          cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_PerModule astpMbFromHS" >#< modSearchKey, pp pl]
+                          bGetHsSemPlMb modSearchKey pl
+                       ) (return ()) $ \_ hsSem -> do
                    cpUpdSI $ \crsi -> 
                        let ehInh  = crsi ^. crsiEHInh
                            opts   = crsi ^. crsiOpts
@@ -326,9 +351,12 @@ bcall bfun = do
 
                -- flow EH semantics forward into global state for current module, for a next stage in the pipeline
                -- From: cpFlowEHSem1
-               maybe2M -- (allowFlow $ \p -> astpType p == ASTType_EH)
-                       (allowFlow $ astpMbFromEH True)
-                       (\p -> bcall $ FoldEHPlMb (mkPrevFileSearchKeyWithName modNm) $ mkBuildPlan p choice) (return ()) $ \ehSem -> do
+               maybe2M (allowFlow $ astpMbFromEH True)
+                       (\pl -> do
+                          -- let pl = mkBuildPlan p choice
+                          cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_PerModule astpMbFromEH" >#< modSearchKey, pp pl]
+                          bcall $ FoldEHPlMb modSearchKey pl
+                       ) (return ()) $ \_ ehSem -> do
                    crsi <- bcall CRSI
                    let mmi      = panicJust "cpFlowEHSem1.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                        mentrelFilterMp
@@ -354,9 +382,12 @@ bcall bfun = do
 %%[[(8 core)
                -- flow EH semantics specific for Core forward into global state for current module, for a next stage in the pipeline
                -- From: cpFlowEHSem1
-               maybe2M -- (allowFlow $ \p -> astpType p == ASTType_EH)
-                       (allowFlow $ astpMbFromEHToCore True)
-                       (\p -> bcall $ FoldEHPlMb (mkPrevFileSearchKeyWithName modNm) $ mkBuildPlan p choice) (return ()) $ \ehSem -> do
+               maybe2M (allowFlow $ astpMbFromEHToCore True)
+                       (\pl -> do
+                          -- let pl = mkBuildPlan p choice
+                          cpTrPP TraceOn_BuildFlow ["ASTSemFlowStage_PerModule astpMbFromEHToCore" >#< modSearchKey, pp pl]
+                          bcall $ FoldEHPlMb modSearchKey pl
+                       ) (return ()) $ \_ ehSem -> do
                    cpUpdSI $ \crsi -> 
                        let ehInh  = crsi ^. crsiEHInh
                            coreInh= crsi ^. crsiCoreInh
@@ -388,7 +419,8 @@ bcall bfun = do
           ImportsOfNamePl modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) -> do
                let dflt = return (modNm, Set.empty)
                maybeM (bcall $ ASTBuildPlanChoicePMb modSearchKey astpipe) dflt $ \tmOfRes -> do
-                 maybeM (_tmofresDelayed tmOfRes) dflt $ \TmOfDelayedRes {_tmofdresModNm=nm, _tmofdresImpMp=mp} ->
+                 maybeM (_tmofresDelayed tmOfRes) dflt $ \TmOfDelayedRes {_tmofdresModNm=nm, _tmofdresImpMp=mp} -> do
+                   cpTr TraceOn_BuildImport ["ImportsOfNamePl " ++ show modSearchKey, "actual modNm=" ++ show nm, "impNmS=" ++ show (Map.keysSet mp)]
                    breturn (nm, Map.keysSet mp)
 
           ImportsRecursiveWithImpsP mbPrev imps astpipe -> do
@@ -410,10 +442,13 @@ bcall bfun = do
           ActualModNm modSearchKey -> (fmap ecuModNm $ bcall $ EcuOfPrevNameAndPath modSearchKey) >>= breturn
 
           BuildPlanPMb modSearchKey astpipe ->
-               maybeM (bcall $ ASTBuildPlanChoicePMb modSearchKey astpipe) (return Nothing) $ \tmr ->
-                 breturn $ Just $ mkBuildPlan astpipe $ _tmofresChoice tmr
+               maybeM (bcall $ ASTBuildPlanChoicePMb modSearchKey astpipe) (return Nothing) $ \tmr -> do
+                 let pl = mkBuildPlan astpipe $ _tmofresChoice tmr
+                 cpTrPP TraceOn_BuildPlan ["BuildPlanPMb" >#< modSearchKey, pp pl]
+                 breturn $ Just pl
 
           ASTBuildPlanChoicePMb modSearchKey astpipe -> do
+               -- cpTrPP TraceOn_BuildPlan ["ASTBuildPlanChoicePMb" >#< modSearchKey, "astpipe:" >#< astpipe]
                maybeM (bMkASTPMbChoice modSearchKey astpipe) (return Nothing) (breturn . Just)
 
           EcuOf modNm -> brefto bfun $ BRef_ECU modNm
@@ -440,9 +475,7 @@ bcall bfun = do
            
           EcuOfPrevNameAndPath modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm, _fsrchOverr=overrFp}, _pfsrchMbCxtInfo=mbPrev}) -> do
                opts <- bcall $ EHCOptsOf modSearchKey
-               let -- mbFp            = astFileNameOverrideToMaybe overrFp
-                   -- isTopModule     = isJust mbFp
-                   (mbFp,isTopModule) = case overrFp of
+               let (mbFp,isTopModule) = case overrFp of
                      ASTFileNameOverride_AsIs          -> (Nothing, False)
                      ASTFileNameOverride_FPath      fp -> (Just fp, False)
                      ASTFileNameOverride_FPathAsTop fp -> (Just fp, True )
@@ -450,25 +483,25 @@ bcall bfun = do
 %%[[8
                    adaptFileSuffMp = id
 %%][50
-                   adaptFileSuffMp = if isTopModule then (fileSuffMpHsNoSuff ++) else id
+                   adaptFileSuffMp = {-  -} if isTopModule then (fileSuffMpHsNoSuff ++) else id -- 20150904 TBD: sort this out, is hackish... Issue: be able to detect what commandline choice is and let that one override in buildplan choice construction
+%%]]
+%%[[8
+                   searchPath' = searchPath
+%%][99
+                   searchPath' = prevSearchInfoAdaptedSearchPath mbPrev searchPath
 %%]]
                fileSuffMpHs <- fmap (map tup123to12 . adaptFileSuffMp) $ getl $ crStateInfo ^* crsiFileSuffMp
-%%[[8
-               fpFound  <- cpFindFileForFPath fileSuffMpHs searchPath (Just modNm) mbFp
-%%][50
-               fpsFound <- cpFindFilesForFPath False fileSuffMpHs searchPath (Just modNm) mbFp
-%%][99
-               let searchPath' = prevSearchInfoAdaptedSearchPath mbPrev searchPath
                cpTr TraceOn_BuildSearchPaths ["FPathSearchForFile: " ++ show modNm, "sp1=" ++ show searchPath, "sp2=" ++ show searchPath', "prev=" ++ show mbPrev]
-               fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) tup123to1 False fileSuffMpHs searchPath' (Just modNm) mbFp
-%%]]
-%%[[99
-               cpTr TraceOn_BuildFPaths $ ["EcuOfPrevNameAndPath: " ++ show modSearchKey, "on searchpath: " ++ show searchPath', "suffices: " ++ show fileSuffMpHs] ++ [ "found: " ++ show (fpathToStr fp) | fp <- fpsFound ]
-%%]]
+               fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) tup1234to13 False fileSuffMpHs searchPath' (Just modNm) mbFp
+               let astAvailFiles = [ ASTAvailableFile fp t c u {-tm-} | (fp,(_,t,c,u {-,tm-})) <- fpsFound ]
+               cpTrPP TraceOn_BuildFPaths $ ["EcuOfPrevNameAndPath:" >#< modSearchKey, "on searchpath:" >#< vlist searchPath', "suffices:" >#< show fileSuffMpHs] ++ map ("found:" >#<) astAvailFiles
+
+               bUpdECU modNm $
+                   (ecuASTAvailFiles ^= astAvailFiles)
 %%[[50
-               when isTopModule
-                    (bUpdECU modNm (ecuSetIsTopMod True))
+                 . ecuSetIsTopMod isTopModule
 %%]]
+
                bmemo $ (BRef_ECU modNm :: BRef m res)
                fmap (panicJust "EcuOfPrevNameAndPath") $ bLookupECU modNm
            
@@ -487,11 +520,13 @@ bcall bfun = do
           ASTFromFile modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) chkTimeStamp asttype skey tkey -> do
                maybeM (bASTFromFileMb modSearchKey chkTimeStamp asttype skey tkey) (undefFor modNm) $ \(res,_) -> breturn res
 
+{-
           ASTRefFromFileMb modSearchKey chkTimeStamp asttype skey tkey -> do
                eithAST <- bcall $ ASTRefFromFileEither modSearchKey False chkTimeStamp asttype skey tkey
                case eithAST of
                  Left  _   -> return Nothing
                  Right res -> breturn $ Just res
+-}
 
           ASTRefFromFileEither modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNmAsked, _fsrchOverr=overr}}) yieldErr (AlwaysEq chkTimeStamp) asttype skey@(astfcont,_) tkey -> do
                (fp, suffoverr, ecu) <- bcall $ FPathForAST modSearchKey asttype skey tkey
@@ -717,19 +752,15 @@ ecuIsHSNewerThanHI ecu
 %%]]
 
           HasMain modSearchKey astpipe -> do
-{-
-               maybeM (bcall $ ModnameAndImportsPMb modSearchKey astpipe) (return False) $ \(_, _, _, hasMain) ->
-                 breturn hasMain
--}
                let dflt = return False
-               maybeM (bcall $ ASTBuildPlanChoicePMb modSearchKey astpipe) dflt $ \tmofres@(TmOfRes {_tmofresHasMain=hasMain}) -> do
-                 if hasMain
+               maybeM (bcall $ ASTBuildPlanChoicePMb modSearchKey astpipe) dflt $ \tmofres -> do
+                 if _tmofresHasMain tmofres
                    then breturn True
                    else do
 %%[[8
-                     return False
+                     breturn False
 %%][50
-                     maybeM (_tmofresDelayed tmofres) dflt (return . _tmofdresHasMain)
+                     maybeM (_tmofresDelayed tmofres) dflt (breturn . _tmofdresHasMain)
 %%]]
 
 %%[[50
@@ -779,8 +810,9 @@ ecuIsHSNewerThanHI ecu
 %%]]
                  )
 
+{-
           ModnameAndImports modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}, _pfsrchMbCxtInfo=mbPrev}) asttype -> do
-               maybeM' (bcall $ ModnameAndImportsPMb modSearchKey (ASTPipe_Src asttype)) breturn $ do
+               maybeM' (bcall $ ModnameAndImportsPMb modSearchKey (ASTPipe_Src ASTFileUse_Src ASTFileTiming_Current asttype)) breturn $ do
                    cpSetLimitErrsWhen 1 "bcall ModnameAndImports" [rngLift emptyRange Err_Str $ "Cannot extract module name and imports from " ++ show modNm ++ " (" ++ show asttype ++ ")" ]
                    -- should not arrive at usage of this result
                    return $ panic $ "BuildFunction.Run.bcall ModnameAndImports: " ++ show modNm
@@ -788,10 +820,12 @@ ecuIsHSNewerThanHI ecu
           ModnameAndImportsP modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}, _pfsrchMbCxtInfo=mbPrev}) astpipe -> do
                maybeM' (bcall $ ModnameAndImportsPMb modSearchKey astpipe) breturn $ do
                    return (modNm, Set.empty, Nothing, False)
+-}
 
-          ModnameAndImportsPMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}, _pfsrchMbCxtInfo=mbPrev}) astpipe -> do
+          ModnameAndImportsPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}, _pfsrchMbCxtInfo=mbPrev}) astplan -> do
                -- ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
-               let asttype = astpType astpipe
+               let astpipe = _astbplPipe astplan
+                   asttype = astpType astpipe
                case asttype of
                  ASTType_HS -> fmap Just $ bcall $ HsModnameAndImports modSearchKey
                  ASTType_EH -> return $ Just (modNm, Set.empty, mbPrev, False)
@@ -800,12 +834,14 @@ ecuIsHSNewerThanHI ecu
                    breturn $ Just (modNm, impNmS, mbPrev, hasMain)
 %%[[(50 corein)
                  ASTType_Core -> do
-                   maybeM (bcall $ FoldCoreModPMb modSearchKey astpipe) (return Nothing) $ \(_, modNm', impNmS, _, hasMain, newPrev) ->
+                   maybeM (bcall $ FoldCoreModPlMb modSearchKey astplan) (return Nothing) $ \(_, modNm', impNmS, _, hasMain, newPrev) -> do
+                     cpTr TraceOn_BuildImport ["ModnameAndImportsPlMb FoldCoreModPlMb " ++ show modSearchKey, "astplan=" ++ show astplan, "impNmS=" ++ show impNmS]
                      breturn $ Just (modNm', impNmS, newPrev, hasMain)
 %%]]
 %%[[(50 corerunin)
                  ASTType_CoreRun -> do
-                   maybeM (bcall $ FoldCoreRunModPMb modSearchKey astpipe) (return Nothing) $ \(_, modNm', impNmS, _, hasMain, newPrev) ->
+                   maybeM (bcall $ FoldCoreRunModPlMb modSearchKey astplan) (return Nothing) $ \(_, modNm', impNmS, _, hasMain, newPrev) -> do
+                     cpTr TraceOn_BuildImport ["ModnameAndImportsPlMb FoldCoreRunModPlMb " ++ show modSearchKey, "astplan=" ++ show astplan, "impNmS=" ++ show impNmS]
                      breturn $ Just (modNm', impNmS, newPrev, hasMain)
 %%]]
                  _ -> do 
@@ -926,8 +962,8 @@ ecuIsHSNewerThanHI ecu
                
           FoldHsPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astbplChoice= Choice_No c}) -> do
                cpTrPP TraceOn_BuildFold $ ["FoldHsPMb" >#< modNm, pp astplan]
-               maybe2M (return $ astpMbFromHSToEH False astpipe)
-                       (\(p,_) -> bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c) (return Nothing) $ \(ASTResult {_astresAST=hs}) -> do
+               maybe2M (return $ bIsAllowedFlowPl astplan $ astpMbFromHSToEH False)
+                       (\pl -> bcall $ ASTPlMb modSearchKey pl) (return Nothing) $ \_ (ASTResult {_astresAST=hs}) -> do
                cpTr TraceOn_BuildFold $ ["FoldHsPMb ok"]
                ecu      <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts     <- bcall $ EHCOptsOf modSearchKey
@@ -991,7 +1027,7 @@ ecuIsHSNewerThanHI ecu
 
           FoldEHPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astbplChoice= Choice_No c}) -> do
                maybe2M (return $ astpMbFromEH False astpipe)
-                       (\(p,_) -> bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c) (return Nothing) $ \(ASTResult {_astresAST=eh}) -> do
+                       (\(p,_) -> bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c) (return Nothing) $ \_ (ASTResult {_astresAST=eh}) -> do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts <- bcall $ EHCOptsOf modSearchKey
                crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
@@ -1086,12 +1122,12 @@ ecuIsHSNewerThanHI ecu
 %%]]
 
 %%[[(50 corein)
-          FoldCoreModPMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astpipe -> do
+          FoldCoreModPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) (ASTBuildPlan {_astbplPipe= astpipe, _astbplChoice= Choice_Src astavail}) -> do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
-               maybe2M (return $ astpMbSrcCore True astpipe)
-                       (\(p,_) -> bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) (astpType p) (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current)
+               maybe2M (return $ astpMbSrcCachedCore True astpipe)
+                       (\(p,_) -> bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) (astpType p) (_astavailfContent astavail, astpUse p) (astfileuseReadTiming $ astpUse p))
                        (return Nothing) $
-                         \(core,_) -> do
+                         \_ (core,_) -> do
                opts <- bcall $ EHCOptsOf modSearchKey
                let inh      = Core2ChkSem.Inh_CodeAGItf
                                   { Core2ChkSem.opts_Inh_CodeAGItf = opts
@@ -1103,7 +1139,7 @@ ecuIsHSNewerThanHI ecu
                    modNm'   = Core2ChkSem.realModuleNm_Syn_CodeAGItf coreSem
                    impNmS   = Set.fromList $ Core2ChkSem.impModNmL_Syn_CodeAGItf coreSem
                    mod      = Core2ChkSem.mod_Syn_CodeAGItf coreSem
-               cpTr TraceOn_BuildResult ["FoldCoreModPMb " ++ show modSearchKey ++ " hasMain=" ++ show hasMain]
+               cpTr TraceOn_BuildResult ["FoldCoreModPlMb " ++ show modSearchKey ++ " hasMain=" ++ show hasMain]
                (modNmNew, newPrev) <- newModNm modSearchKey modNm' $
                  ( ecuStoreCoreSemMod coreSem
                  . ecuSetHasMain hasMain
@@ -1118,42 +1154,12 @@ ecuIsHSNewerThanHI ecu
                  , hasMain
                  , newPrev
                  )
-{-  
-          FoldCoreModPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astbplChoice= Choice_End}) -> do
-               maybe2M (return $ astpMbSrcCore True astpipe)
-                       (\(p,_) -> bcall $ ASTPlMb modSearchKey astplan) (return Nothing) $ \(ASTResult {_astresAST=core}) -> do
-               opts <- bcall $ EHCOptsOf modSearchKey
-               let inh      = Core2ChkSem.Inh_CodeAGItf
-                                  { Core2ChkSem.opts_Inh_CodeAGItf = opts
-                                  , Core2ChkSem.moduleNm_Inh_CodeAGItf = modNm
-                                  -- , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh
-                                  }
-                   coreSem  = Core2ChkSem.cmodCheck' inh core
-                   hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
-                   modNm'   = Core2ChkSem.realModuleNm_Syn_CodeAGItf coreSem
-                   impNmS   = Set.fromList $ Core2ChkSem.impModNmL_Syn_CodeAGItf coreSem
-                   mod      = Core2ChkSem.mod_Syn_CodeAGItf coreSem
-               (modNmNew, newPrev) <- newModNm modSearchKey modNm' $
-                 ( ecuStoreCoreSemMod coreSem
-                 . ecuSetHasMain hasMain
-                 . ecuStoreMod mod
-                 . ecuStoreSrcDeclImpS impNmS
-                 )
-               breturn $ Just
-                 ( coreSem
-                 , modNmNew
-                 , impNmS
-                 , mod
-                 , hasMain
-                 , newPrev
-                 )
--}
 %%]]
 
 %%[[(8 core grin)
           FoldCore2GrinPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astbplChoice= Choice_No c}) -> do
-               maybe2M (return $ astpMbFromCoreToGrin False astpipe)
-                       (\(p,_) -> bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c) (return Nothing) $ \(ASTResult {_astresAST=core}) -> do
+               maybe2M (return $ bIsAllowedFlowPl astplan $ astpMbFromCoreToGrin False)
+                       (\pl -> bcall $ ASTPlMb modSearchKey pl) (return Nothing) $ \_ (ASTResult {_astresAST=core}) -> do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts <- bcall $ EHCOptsOf modSearchKey
                crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
@@ -1171,14 +1177,14 @@ ecuIsHSNewerThanHI ecu
 %%]]
 
 %%[[(8 core corerun)
-          FoldCore2CoreRunPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe, _astbplChoice= Choice_No c}) -> do
-               maybe2M (return $ astpMbFromCoreToCoreRun False astpipe)
-                       (\(p,_) -> fmap (fmap ((,) p)) $ bcall $ ASTPlMb modSearchKey $ mkBuildPlan p c) (return Nothing) $ \(subpipe, ASTResult {_astresAST=core}) -> do
+          FoldCore2CoreRunPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe {- , _astbplChoice= Choice_No c -}}) -> do
+               maybe2M (return $ (bIsAllowedFlowPl astplan $ astpMbFromCoreToCoreRun False) >>= astplMbSubPlan)
+                       (\pl -> bcall $ ASTPlMb modSearchKey pl) (return Nothing) $ \pl ASTResult {_astresAST=core} -> do
                opts <- bcall $ EHCOptsOf modSearchKey
                crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
-               hasMain <- bcall $ HasMain modSearchKey subpipe
-               cpTr TraceOn_BuildResult ["FoldCore2CoreRunPlMb " ++ show modSearchKey ++ " subpipe=" ++ show subpipe ++ " hasMain=" ++ show hasMain]
-               let sem = Core2CoreRunSem.cmod2CoreRun'' opts hasMain (length $ crsi ^. crsiCoreRunState ^. crcrsiReqdModules) (crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp) core
+               hasMain <- bcall $ HasMain modSearchKey $ _astbplPipe pl
+               cpTr TraceOn_BuildResult ["FoldCore2CoreRunPlMb " ++ show modSearchKey ++ " subpipe=" ++ show (_astbplPipe pl) ++ " hasMain=" ++ show hasMain]
+               let sem = Core2CoreRunSem.cmod2CoreRun'' opts hasMain Nothing {- (Just $ length $ crsi ^. crsiCoreRunState ^. crcrsiReqdModules) -} (crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp) core
                cpUpdSI $ (crsiCoreRunState ^* crcrsiReqdModules) ^$= (++ [modNm]) -- (++ [ecuModNm ecu])
                -- between module flow part, TBD: corerun, nmref part
                -- cpUpdSI (\crsi -> crsi {crsiCore2RunInh = nm2ref'})
@@ -1191,12 +1197,12 @@ ecuIsHSNewerThanHI ecu
 %%]]
 
 %%[[(50 corerun corerunin)
-          FoldCoreRunModPMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astpipe -> do
-               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
-               maybe2M (return $ astpMbSrcCoreRun True astpipe)
-                       (\(p,_) -> bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) (astpType p) (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current)
+          FoldCoreRunModPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) (ASTBuildPlan {_astbplPipe= astpipe, _astbplChoice= Choice_Src astavail}) -> do
+               -- ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               maybe2M (return $ astpMbSrcCachedCoreRun True astpipe)
+                       (\(p,_) -> bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) (astpType p) (_astavailfContent astavail, astpUse p) (astfileuseReadTiming $ astpUse p))
                        (return Nothing) $
-                         \(crr,_) -> do
+                         \_ (crr,_) -> do
                let inh      = CoreRunSemMod.Inh_AGItf
                                   { CoreRunSemMod.moduleNm_Inh_AGItf = modNm
                                   }
@@ -1205,7 +1211,7 @@ ecuIsHSNewerThanHI ecu
                    modNm'   = CoreRunSemMod.realModuleNm_Syn_AGItf crrSem
                    impNmS   = Set.fromList $ CoreRunSemMod.impModNmL_Syn_AGItf crrSem
                    mod      = CoreRunSemMod.mod_Syn_AGItf crrSem
-               cpTr TraceOn_BuildResult ["FoldCoreRunModPMb " ++ show modSearchKey ++ " hasMain=" ++ show hasMain]
+               cpTr TraceOn_BuildResult ["FoldCoreRunModPlMb " ++ show modSearchKey, "hasMain=" ++ show hasMain, "impNmS=" ++ show impNmS]
                (modNmNew, newPrev) <- newModNm modSearchKey modNm' $
                  ( (ecuCoreRunSemMod ^= crrSem)
                  . ecuSetHasMain hasMain
@@ -1221,24 +1227,35 @@ ecuIsHSNewerThanHI ecu
                  , newPrev
                  )
   
-          FoldCoreRunCheckPMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astpipe -> do
-               ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
-               maybe2M (return $ astpMbSrcCoreRun True astpipe)
-                       (\(p,_) -> bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) (astpType p) (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current)
+          FoldCoreRunCheckPlMb modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) astplan@(ASTBuildPlan {_astbplPipe=astpipe}) -> do
+               -- ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               maybe2M (return $ (bIsAllowedFlowPl astplan $ astpMbCheckCoreRunToCoreRun False) >>= astplMbSubPlan)
+                       (\pl -> bcall $ ASTPlMb modSearchKey pl) (return Nothing) $ \pl ASTResult {_astresAST=crr} -> do
+{-
+               maybe2M (return $ astpMbCheckCoreRunToCoreRun False astpipe)
+                       -- 20150905 TBD: get rid of _ecuASTFileContent
+                       (\(p,_) -> bASTFromFileMb modSearchKey (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) (astpType p) (_ecuASTFileContent ecu, astpUse p) (astfileuseReadTiming $ astpUse p))
                        (return Nothing) $
-                         \(crr,_) -> do
-               crsi <- bcall $ CRSIOfNameP modSearchKey astpipe
-               let inh      = CoreRun2ChkSem.Inh_AGItf
-                                  { CoreRun2ChkSem.moduleNr_Inh_AGItf = length $ crsi ^. crsiCoreRunState ^. crcrsiReqdModules
-                                  -- , CoreRun2ChkSem.dataGam_Inh_AGItf = EHSem.dataGam_Inh_AGItf $ _crsiEHInh crsi
-                                  }
-                   crrSem   = CoreRun2ChkSem.crmodCheck' inh crr
+                         \_ (crr,_) -> do
+-}
+               crsi <- bcall $ CRSIOfNamePl modSearchKey astplan
+               let inh    = CoreRun2ChkSem.Inh_AGItf
+                                { CoreRun2ChkSem.moduleNr_Inh_AGItf = Nothing -- Just $ length $ crsi ^. crsiCoreRunState ^. crcrsiReqdModules
+                                , CoreRun2ChkSem.nm2ref_Inh_AGItf = crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp
+                                }
+                   crrSem = CoreRun2ChkSem.crmodCheck' inh crr
+%%[[99
+               -- debug
+               ecu <- bcall $ EcuOf modNm
+               cpOutputSomeModule (const $ CoreRun2ChkSem.crr_Syn_AGItf crrSem) astHandler'_CoreRun ASTFileContent_Text "-FoldCoreRunCheckPlMb" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
+%%]]
                bUpdECU modNm $
                  ( (ecuCoreRunSemChk ^= crrSem)
                  . (ecuCoreRun ^= CoreRun2ChkSem.crr_Syn_AGItf crrSem)
                  )
                breturn $ Just
                  ( crrSem
+                 , CoreRun2ChkSem.crr_Syn_AGItf crrSem
                  )
   
 %%]]
@@ -1358,52 +1375,66 @@ bMkASTPMbChoice :: forall m . (EHCCompileRunner m) => PrevFileSearchKey -> ASTPi
 bMkASTPMbChoice modSearchKey astpipe = do
     tmOf modSearchKey astpipe
   where
+    -- cached variant
+    bTmOf :: PrevFileSearchKey -> ASTPipe -> TmOfResM m
+    bTmOf k p = bcall $ ASTBuildPlanChoicePMb k p
+
     tmOf :: PrevFileSearchKey -> ASTPipe -> TmOfResM m
     -- source: time of src itself + imports
-    tmOf modSearchKey p@(ASTPipe_Src {astpType=t}) = do
+    tmOf modSearchKey p@(ASTPipe_Src {astpUse=u, {- astpTiming=tm, -} astpType=t})
+      {- | (u,tm) `elem` [(ASTFileUse_Src,ASTFileTiming_Current), (ASTFileUse_Cache,ASTFileTiming_Prev)] -} = do
+        let overrMbFp@(~(Just (overrFp,overr)))
+                      = astFileNameOverrideMbFPath $ _fsrchOverr $ _pfsrchKey modSearchKey
+            isOverr   = isJust overrMbFp && overr
         ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
-%%[[8
-        do
-%%][50
-        mbTm <- bcall $ ModfTimeOfFile modSearchKey t (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current
-        case mbTm of
-          Just (tm,fp) -> do
-            cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Src:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p, "asked type:" >#< t, "cmdln type:" >#< _ecuASTType ecu]
-%%]]
-            return $ Just $ emptyTmOfRes
-              { _tmofresChoice = Choice_End
-              , _tmofresIsOverr = t == _ecuASTType ecu && (maybe False snd $ astFileNameOverrideMbFPath $ _fsrchOverr $ _pfsrchKey modSearchKey)
+        case ecuLookupAvailASTFile t u (if isOverr then isOkSuff (fpathSuff overrFp) t else const True) ecu of
+          Just av -> do
+            let tm = astfileuseReadTiming u
+                choice = Choice_Src av
+                astplan = mkBuildPlan p choice
+            mbTm <- bcall $ ModfTimeOfFile modSearchKey t (_astavailfContent av, u) tm
+            cpTrPP TraceOn_BuildResult ["bMkASTPMbChoice ASTPipe_Src:" >#< modSearchKey, "pipe:" >#< p, "mbTm=" >|< mbTm]
+            case mbTm of
+              Just (tm,fp) -> do
+                cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Src:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p, "asked type:" >#< t, "cmdln type:" >#< _ecuASTType ecu, "isOverr:" >#< isOverr, "avail:" >#< av]
+                return $ Just $ emptyTmOfRes
+                  { _tmofresChoice = choice
+                  , _tmofresIsOverr = {- t == _ecuASTType ecu && -} isOverr
 %%[[50
-              , _tmofresDelayed =
-                  maybeM (bcall $ ModnameAndImportsPMb modSearchKey p) (return Nothing) $ \(nm, imps, _, hasMain) -> do
-                    imptms <- forM (Set.toList imps) $ \n -> tmOf (mkPrevFileSearchKeyWithName n) p >>= \mbt -> return (n, fmap _tmofresTm mbt)
-                    if all (isJust . snd) imptms
-                      then return $ Just $ emptyTmOfDelayedRes
-                             { _tmofdresModNm   = nm
-                             , _tmofdresHasMain = hasMain
-                             , _tmofdresImpMp   = Map.fromList [(n,t) | (n, Just t) <- imptms]
-                             }
-                      else return Nothing
-              , _tmofresTm = tm
+                  , _tmofresDelayed = do
+                      cpTr TraceOn_BuildImport ["bMkASTPMbChoice ASTPipe_Src _tmofresDelayed (1) " ++ show modSearchKey, " =" ++ show p]
+                      maybeM (bcall $ ModnameAndImportsPlMb modSearchKey astplan) (return Nothing) $ \(nm, imps, _, hasMain) -> do
+                        imptms <- forM (Set.toList imps) $ \n -> bTmOf (mkPrevFileSearchKeyWithName n) astpipe >>= \mbt -> return (n, fmap _tmofresTm mbt)
+                        cpTrPP TraceOn_BuildImport $ ["bMkASTPMbChoice ASTPipe_Src _tmofresDelayed (2)" >#< show modSearchKey, "astpipe=" >|< p] ++ [n >#< t | (n,t) <- imptms]
+                        if all (isJust . snd) imptms
+                          then return $ Just $ emptyTmOfDelayedRes
+                                 { _tmofdresModNm   = nm
+                                 , _tmofdresHasMain = hasMain
+                                 , _tmofdresImpMp   = Map.fromList [(n,t) | (n, Just t) <- imptms]
+                                 }
+                          else return Nothing
+                  , _tmofresTm = tm
 %%]]
-              }
-%%[[50
+                  }
+              _ -> return Nothing
           _ -> return Nothing
-%%]]
+      where
+        isOkSuff :: String -> ASTType -> ASTSuffixKey -> Bool
+        isOkSuff suff t sk = fromMaybe False $ asthandlerLookup' t $ \hdlr -> (astsuffixLookupSuff sk $ _asthdlrSuffixRel hdlr) >>= (return . (== suff))
 
 %%[[50
     -- choose first available
     tmOf modSearchKey p@(ASTPipe_Choose {astpHow=ASTPipeHowChoice_Avail, astpPipe1=p1, astpPipe2=p2}) =
-        maybeM' (tmOf modSearchKey p1) (return . Just . updTmChoice Choice_L) $ 
-          updTmChoiceM Choice_R $ tmOf modSearchKey p2
+        maybeM' (bTmOf modSearchKey p1) (return . Just . updTmChoice Choice_L) $ 
+          updTmChoiceM Choice_R $ bTmOf modSearchKey p2
 
     -- choose first available, only to be overridden with second if indicated
     tmOf modSearchKey p@(ASTPipe_Choose {astpHow=ASTPipeHowChoice_Overr, astpPipe1=p1, astpPipe2=p2}) = do
-        mbTm1 <- tmOf modSearchKey p1
+        mbTm1 <- bTmOf modSearchKey p1
         case mbTm1 of
           Just tm1@(TmOfRes {_tmofresIsOverr=True}) -> return $ Just $ updTmChoice Choice_L tm1
           _ -> do
-              mbTm2 <- tmOf modSearchKey p2
+              mbTm2 <- bTmOf modSearchKey p2
               case (mbTm1, mbTm2) of
                 (_      , Just tm2@(TmOfRes {_tmofresIsOverr=True})) -> return $ Just $ updTmChoice Choice_R tm2
                 (Nothing, _                                        ) -> return $ fmap (updTmChoice Choice_R) mbTm2
@@ -1411,28 +1442,30 @@ bMkASTPMbChoice modSearchKey astpipe = do
 
     -- choose based on newest in combi with imports also indicating being newer
     tmOf modSearchKey p@(ASTPipe_Choose {astpHow=ASTPipeHowChoice_Newer, astpPipe1=p1, astpPipe2=p2}) =
-        tmChoose modSearchKey (return Nothing) (tmOf modSearchKey p1) (tmOf modSearchKey p2) (ret "1" p1 Choice_L) (ret "2" p2 Choice_R)
+        tmChoose modSearchKey (return Nothing) (bTmOf modSearchKey p1) (bTmOf modSearchKey p2) (ret "1" p1 Choice_L) (ret "2" p2 Choice_R)
       where ret msg _ ch res@(TmOfRes {_tmofresChoice=choice,_tmofresTm=tm}) = do
               let choice' = ch choice
               cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_FirstNewestAvailable:" >#< msg >#< tm, "choice:" >#< show choice', "pipe:" >#< p]
               return $ Just $ res {_tmofresChoice=choice'}
 
+{-
     -- cached: just time of cached file itself, if file is valid
-    tmOf modSearchKey p@(ASTPipe_Cached {astpType=t}) = ifM' (bcall $ ASTFileIsValid modSearchKey t (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev) (return Nothing) $ do
+    tmOf modSearchKey p@(ASTPipe_Src {astpUse=ASTFileUse_Cache, astpType=t}) = ifM' (bcall $ ASTFileIsValid modSearchKey t (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev) (return Nothing) $ do
         mbTm <- bcall $ ModfTimeOfFile modSearchKey t (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
         case mbTm of
           Just (tm,fp) -> do
-            cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Cached:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p]
+            cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Src ASTFileUse_Cache ASTFileTiming_Prev:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p]
             return $ Just $ emptyTmOfRes {_tmofresDelayed= return Nothing, _tmofresTm= tm}
           _ -> return Nothing
+-}
 
     -- cache: time recursively computed, if file can be cached
     tmOf modSearchKey (ASTPipe_Cache {astpPipe=p}) = do
-        ifM' (bcall $ DirOfModIsWriteable modSearchKey) (return Nothing) $ updTmChoiceM Choice_No $ tmOf modSearchKey p
+        ifM' (bcall $ DirOfModIsWriteable modSearchKey) (return Nothing) $ updTmChoiceM Choice_No $ bTmOf modSearchKey p
 
     -- whole: time recursively computed, merged into 1 time for all
     tmOf modSearchKey (ASTPipe_Whole {astpPipe=p}) = do
-        maybeM (tmOf modSearchKey p) (return Nothing) $ \tmr@(TmOfRes {_tmofresDelayed=mimps,_tmofresChoice=choice,_tmofresTm=tm}) -> do
+        maybeM (bTmOf modSearchKey p) (return Nothing) $ \tmr@(TmOfRes {_tmofresDelayed=mimps,_tmofresChoice=choice,_tmofresTm=tm}) -> do
           maybeM mimps (return Nothing) $ \tmdr@(TmOfDelayedRes {_tmofdresImpMp=imps}) -> do
             return $ Just $ tmr
               { _tmofresDelayed= return $ Just $ tmdr {_tmofdresImpMp= Map.empty}
@@ -1445,14 +1478,14 @@ bMkASTPMbChoice modSearchKey astpipe = do
     -- derived: time recursively computed
     tmOf modSearchKey (ASTPipe_Derived {astpPipe=p}) = do
         cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Derived:" >#< modSearchKey, "pipe:" >#< p]
-        updTmChoiceM Choice_No $ tmOf modSearchKey p
+        updTmChoiceM Choice_No $ bTmOf modSearchKey p
 
     -- transformation (also derived): time recursively computed
-    tmOf modSearchKey (ASTPipe_Trf {astpPipe=p}) = updTmChoiceM Choice_No $ tmOf modSearchKey p
+    tmOf modSearchKey (ASTPipe_Trf {astpPipe=p}) = updTmChoiceM Choice_No $ bTmOf modSearchKey p
 
     -- compound: maximum of all, ignoring possible absence of imports
     tmOf modSearchKey (ASTPipe_Compound {astpPipes=ps}) = do 
-        tms <- mapM (tmOf modSearchKey) ps
+        tms <- mapM (bTmOf modSearchKey) ps
         if null tms || not (all isJust tms)
           then return Nothing
           else do
@@ -1495,19 +1528,6 @@ bMkASTPMbChoice modSearchKey astpipe = do
           cpTrPP TraceOn_BuildPipe ["tmChoose stamps" >#< modSearchKey, "tm1" >#< tm1, "mxtm2" >#< mxtm2, "tm2" >#< (tm2 >-< indent 2 (vlist $ Map.toList ti2))]
           if tm1 `diffClockTimes` mxtm2 > noTimeDiff then a1 t1 else a2 t2
       _ -> adflt
-%%]]
-%%]
-
-%%[8888
--- | Extract actual module name from AST
-bNmEtcFromAST :: EHCCompileRunner m => PrevFileSearchKey -> ASTPipe -> EHCompilePhaseT m (HsName, PrevFileSearchKey)
-bNmEtcFromAST modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNmAsked}}) astpipe = do
-%%[[8
-  return (modNmAsked, modSearchKey)
-%%][50
-  (modNm, _, _, _) <- bcall $ ModnameAndImportsP modSearchKey astpipe
-  return (modNm, updPrevFileSearchKeyWithName modNm modSearchKey)
-  -- return (modNmAsked, modSearchKey)
 %%]]
 %%]
 
@@ -1575,16 +1595,17 @@ bExecASTPMbChoice modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fs
 %%]]  
 			 bRetAST modSearchKey astpipe hii2
 %%]]
-		 ASTBuildPlan {_astbplPipe= ASTPipe_Src asttypeAsked, _astbplChoice= Choice_End}
-		   | asttypeAsked == _ecuASTType ecu -> do
-			 bASTFromFileEither modSearchKey False (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_ecuASTFileContent ecu, _ecuASTFileUse ecu) ASTFileTiming_Current >>=
+		 ASTBuildPlan {_astbplPipe= ASTPipe_Src ASTFileUse_Src _ asttypeAsked, _astbplChoice= Choice_Src av}
+		   -- | asttypeAsked == _ecuASTType ecu -> do
+		   -> do
+			 bASTFromFileEither modSearchKey False (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_astavailfContent av, _astavailfUse av) (astfileuseReadTiming $ _astavailfUse av) >>=
 			   -- 20150818 TBD: factor below out
 			   either (\_ -> return Nothing)
 					  (\(a,r,t) -> fmap Just $ mkASTResult' a r astpipe (Just t))
 
 %%[[50
-		 ASTBuildPlan {_astbplPipe= ASTPipe_Cached asttypeAsked, _astbplChoice= Choice_End} -> do
-			 bASTFromFileEither modSearchKey True (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) asttypeAsked (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev >>=
+		 ASTBuildPlan {_astbplPipe= ASTPipe_Src ASTFileUse_Cache _ asttypeAsked, _astbplChoice= Choice_Src av} -> do
+			 bASTFromFileEither modSearchKey True (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) asttypeAsked (_astavailfContent av, _astavailfUse av) (astfileuseReadTiming $ _astavailfUse av) >>=
 			   -- 20150818 TBD: factor below out
 			   either (\_ -> return Nothing)
 					  (\(a,r,t) -> fmap Just $ mkASTResult' a r astpipe (Just t))
@@ -1636,8 +1657,18 @@ bExecASTPMbChoice modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fs
 				r <- bRetAST modSearchKey astpipe $ Core2CoreRunSem.crm_Syn_CodeAGItf sem
 				-- debug
 				ecu <- bcall $ EcuOf modNm
-				cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Text "xxxx" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
+				cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Text "-astpMbFromCoreToCoreRun" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
 				return r
+
+		 ASTBuildPlan {_astbplPipe= p, _astbplChoice= Choice_No c}
+		   | isJust $ astpMbCheckCoreRunToCoreRun True p -> do
+			 maybeM (bcall $ FoldCoreRunCheckPlMb modSearchKey astplan) dflt $ \(_,crr) -> do
+				r <- bRetAST modSearchKey astpipe crr
+				-- debug
+				ecu <- bcall $ EcuOf modNm
+				cpOutputSomeModule (const crr) astHandler'_CoreRun ASTFileContent_Text "-astpMbCheckCoreRunToCoreRun" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
+				return r
+
 %%]]
 
 		 _ -> dflt
@@ -1728,29 +1759,6 @@ bASTFromFileMb modSearchKey chkTimeStamp asttype skey tkey =
 %%]
 
 %%[8
-%%]
-
-%%[8
-{-
--- | Get possible Hs semantics
-bGetHsSemMb
-  :: EHCCompileRunner m
-  => HsName
-  -> EHCompilePhaseT m
-       ( Maybe
-         ( AST_HS_Sem_Check             -- all semantics
-       ) )
-bGetHsSemMb modNm = fmap (fmap extr) $ bcall $ FoldHsMb (mkPrevFileSearchKeyWithName modNm)
-     where
-%%[[8
-       extr hsSem = hsSem
-%%][50
-       extr (hsSem, _) = hsSem
-%%]]
--}
-%%]
-
-%%[8
 -- | Get possible Hs semantics
 bGetHsSemPlMb
   :: (EHCCompileRunner m)
@@ -1767,38 +1775,6 @@ bGetHsSemPlMb modSearchKey astplan = fmap (fmap extr) $ bcall $ FoldHsPlMb modSe
 %%][50
        extr (hsSem, _) = hsSem
 %%]]
-%%]
-
-%%[8
--- | Check whether a particular flow of semantics is allowed, and mark it to have occurred
-bAllowFlow :: (EHCCompileRunner m) => HsName -> Set.Set ASTType -> ASTSemFlowStage -> ASTType -> EHCompilePhaseT m Bool
-bAllowFlow modNm forAstTypes flowstage asttype = do
-   ecu <- bcall (EcuOf modNm)
-   let nyf = not $ ecuHasAlreadyFlowed asttype flowstage ecu
-       res = nyf && asttype `Set.member` forAstTypes
-   when res $ bUpdAlreadyFlowIntoCRSI modNm asttype flowstage
-   return res
-
--- | Check whether a particular flow of semantics is allowed, and mark it to have occurred
-bAllowFlowP
-  :: (EHCCompileRunner m)
-  => HsName
-  -> ASTPipe
-  -> ASTSemFlowStage
-  -> (ASTPipe -> Maybe (ASTPipe,ASTAlreadyFlowIntoCRSIFromToInfo))
-  -> EHCompilePhaseT m (Maybe ASTPipe)
-bAllowFlowP modNm astpipe flowstage astpred = do
-   ecu <- bcall (EcuOf modNm)
-   let fnd@(~(Just (astpipeFnd,flowFnd)))
-               = astpred astpipe
-       asttype = astpType astpipeFnd
-       key     = (flowstage, Just flowFnd)
-       nyf     = not $ ecuHasAlreadyFlowedWith asttype key ecu
-   if isJust fnd && nyf
-     then do
-       bUpdAlreadyFlowIntoCRSIWith modNm asttype key
-       return $ Just astpipeFnd
-     else return Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1873,6 +1849,48 @@ bderef bref = do
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+type ASTFlowPred  = ASTPipe -> Maybe (ASTPipe,ASTAlreadyFlowIntoCRSIFromToInfo)
+type ASTFlowPred' = Bool -> ASTFlowPred
+%%]
+
+%%[8
+-- | Is a particular flow of semantics allowed?
+bIsAllowedFlowPl'' :: ASTBuildPlan -> ASTFlowPred -> Maybe (ASTBuildPlan, (ASTPipe,ASTAlreadyFlowIntoCRSIFromToInfo))
+bIsAllowedFlowPl'' astplan astpred = astplFind astpred astplan
+
+-- | Is a particular flow of semantics allowed?
+bIsAllowedFlowPl' :: ASTBuildPlan -> ASTFlowPred -> Maybe (ASTBuildPlan, ASTAlreadyFlowIntoCRSIFromToInfo)
+bIsAllowedFlowPl' astplan astpred = fmap (\(pl,(_,fl)) -> (pl,fl)) $ bIsAllowedFlowPl'' astplan astpred
+
+-- | Is a particular flow of semantics allowed?
+bIsAllowedFlowPl :: ASTBuildPlan -> ASTFlowPred -> Maybe ASTBuildPlan
+bIsAllowedFlowPl astplan astpred = fmap fst $ bIsAllowedFlowPl' astplan astpred
+
+-- | Check whether a particular flow of semantics is allowed, and mark it to have occurred
+bAllowFlowPl
+  :: (EHCCompileRunner m)
+  => HsName
+  -> ASTBuildPlan
+  -> ASTSemFlowStage
+  -> ASTFlowPred
+  -> EHCompilePhaseT m (Maybe ASTBuildPlan)
+bAllowFlowPl modNm astplan flowstage astpred = do
+   ecu <- bcall (EcuOf modNm)
+   let fnd@(~(Just (astplanFnd,flowFnd)))
+               		= bIsAllowedFlowPl' astplan astpred
+       asttype 		= astpType $ _astbplPipe astplanFnd
+       key     		= (flowstage, Just flowFnd)
+       nyf     		= not $ ecuHasAlreadyFlowedWith asttype key ecu
+   cpTrPP TraceOn_BuildFlow ["bAllowFlowPl" >#< modNm >#< flowstage, "astplan:" >#< astplan, "pred:" >#< fnd]
+   if isJust fnd && nyf
+     then do
+       bUpdAlreadyFlowIntoCRSIWith modNm asttype key
+       return $ Just astplanFnd
+     else return Nothing
+%%]
+
+%%[8
+astpMbFromHSToEH, astpMbFromEHToCore, astpMbFromHS, astpMbFromEH :: ASTFlowPred'
 astpMbFromHSToEH top p = case p of {ASTPipe_Derived ASTType_EH p' | astpType p' == ASTType_HS -> Just (if' top p p', (Just ASTType_EH, ASTType_HS)); _ -> Nothing}
 astpMbFromEHToCore top p = case p of {ASTPipe_Derived ASTType_Core p' | astpType p' == ASTType_EH -> Just (if' top p p', (Just ASTType_Core, ASTType_EH)); _ -> Nothing}
 astpMbFromHS top p = case p of {ASTPipe_Derived _ p' | astpType p' == ASTType_HS -> Just (if' top p p', (Nothing, ASTType_HS)); _ -> Nothing}
@@ -1880,20 +1898,56 @@ astpMbFromEH top p = case p of {ASTPipe_Derived _ p' | astpType p' == ASTType_EH
 %%]
 
 %%[(8 core grin)
+astpMbFromCoreToGrin :: ASTFlowPred'
 astpMbFromCoreToGrin top p = case p of {ASTPipe_Derived ASTType_Grin p' | astpType p' == ASTType_Core -> Just (if' top p p', (Just ASTType_Grin, ASTType_Core)); _ -> Nothing}
 %%]
 
 %%[(8 core corein)
--- astpMbSrcCore top p = case p of {ASTPipe_Derived _ p'@(ASTPipe_Src ASTType_Core) -> Just (if' top p p', (Nothing, ASTType_Core)); _ -> Nothing}
-astpMbSrcCore top p = case p of {ASTPipe_Src ASTType_Core -> Just (if' top p p, (Nothing, ASTType_Core)); _ -> Nothing}
+astpMbSrcCore, astpMbCachedCore, astpMbSrcCachedCore :: ASTFlowPred'
+astpMbSrcCore top p = case p of
+  ASTPipe_Src ASTFileUse_Src _ ASTType_Core
+    -> Just (if' top p p, (Nothing, ASTType_Core))
+  _ -> Nothing
+
+astpMbCachedCore top p = case p of
+  ASTPipe_Src ASTFileUse_Cache _ ASTType_Core
+    -> Just (if' top p p, (Nothing, ASTType_Core))
+  _ -> Nothing
+
+astpMbSrcCachedCore = astpMbSrcCore <|||> astpMbCachedCore
 %%]
 
 %%[(8 corerun corerunin)
--- astpMbSrcCoreRun top p = case p of {ASTPipe_Derived _ p'@(ASTPipe_Src ASTType_CoreRun) -> Just (if' top p p', (Nothing, ASTType_CoreRun)); _ -> Nothing}
-astpMbSrcCoreRun top p = case p of {ASTPipe_Src ASTType_CoreRun -> Just (if' top p p, (Nothing, ASTType_CoreRun)); _ -> Nothing}
+astpMbSrcCoreRun, astpMbCachedCoreRun, astpMbSrcCachedCoreRun :: ASTFlowPred'
+astpMbSrcCoreRun top p = case p of
+  ASTPipe_Src ASTFileUse_Src _ ASTType_CoreRun
+    -> Just (if' top p p, (Nothing, ASTType_CoreRun))
+  _ -> Nothing
+
+astpMbCachedCoreRun top p = case p of
+  ASTPipe_Src ASTFileUse_Cache _ ASTType_CoreRun
+    -> Just (if' top p p, (Nothing, ASTType_CoreRun))
+  _ -> Nothing
+
+astpMbSrcCachedCoreRun = astpMbSrcCoreRun <|||> astpMbCachedCoreRun
 %%]
 
 %%[(8 core corerun)
+astpMbFromCoreToCoreRun :: ASTFlowPred'
 astpMbFromCoreToCoreRun top p = case p of {ASTPipe_Derived ASTType_CoreRun p' | astpType p' == ASTType_Core -> Just (if' top p p', (Just ASTType_CoreRun, ASTType_Core)); _ -> Nothing}
+%%]
+
+%%[(8 core corerun)
+astpMbCheckCoreRunToCoreRun :: ASTFlowPred'
+astpMbCheckCoreRunToCoreRun top p = case p of {ASTPipe_Trf ASTType_CoreRun ASTTrf_Check p' | astpType p' == ASTType_CoreRun -> Just (if' top p p', (Just ASTType_CoreRun, ASTType_CoreRun)); _ -> Nothing}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+f1 <||>  f2 = \a   -> f1 a   <|> f2 a
+f1 <|||> f2 = \a b -> f1 a b <|> f2 a b
 %%]
 

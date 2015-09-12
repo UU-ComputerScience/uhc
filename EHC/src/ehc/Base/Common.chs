@@ -457,7 +457,7 @@ strBlankPad :: Int -> String -> String
 strBlankPad n s = s ++ replicate (n - length s) ' '
 %%]
 
-%%[9 export(snd3,thd)
+%%[9999 export(snd3,thd)
 snd3 :: (a,b,c) -> b
 snd3 (a,b,c) = b
 
@@ -487,15 +487,19 @@ data Verbosity
 -- | Trace on specific topic(s)
 data TraceOn
   = TraceOn_BuildFun				-- build functions (bcall, ...)
+  | TraceOn_BuildFlow				-- build flow
   | TraceOn_BuildFPaths				-- build fpaths constructed
   | TraceOn_BuildSearchPaths		-- build searchpath used
   | TraceOn_BuildSccImports			-- build compile order (scc = strongly connected components)
   | TraceOn_BuildTypeables			-- build Typeable instances encountered
   | TraceOn_BuildPipe				-- build Pipe related
+  | TraceOn_BuildPlan				-- build Plan related
   | TraceOn_BuildFold				-- build folds related
   | TraceOn_BuildTimes				-- build file times related
   | TraceOn_BuildResult				-- build results related
+  | TraceOn_BuildImport				-- build import related
   | TraceOn_BuildRef				-- build reference related
+  | TraceOn_BuildMod				-- build module related
   deriving (Eq,Ord,Enum,Show,Typeable,Bounded,Generic)
 
 instance DataAndConName TraceOn
@@ -990,11 +994,11 @@ maybeM mmaybe mnothing mjust = mmaybe >>= maybe mnothing mjust
 {-# INLINE maybeM #-}
 
 -- | Variation of `maybe` where the maybe is computed in a monad. See also `maybeM'`
-maybe2M :: Monad m => m (Maybe a1) -> (a1 -> m (Maybe a2)) -> m b -> (a2 -> m b) -> m b
+maybe2M :: Monad m => m (Maybe a1) -> (a1 -> m (Maybe a2)) -> m b -> (a1 -> a2 -> m b) -> m b
 maybe2M mmaybe1 mmaybe2 mnothing mjust = do
-  mb1 <- mmaybe1
+  mb1@(~(Just m1)) <- mmaybe1
   if (isJust mb1)
-    then maybeM (mmaybe2 $ fromJust mb1) mnothing mjust
+    then maybeM (mmaybe2 m1) mnothing (mjust m1)
     else mnothing
 
 -- | Variation of `maybe` where the maybe is computed in a monad and a guard is involved. See also `maybeM'`

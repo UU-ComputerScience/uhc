@@ -334,7 +334,7 @@ instance
       s <- liftIO $ newRValEnv 100000 -- 100000 --  
       return (emptyRValCxt, s, undefined)
   
-    rsemSetup opts modImpL mod@(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) = do
+    rsemSetup opts modImpL mod {- @(Mod_Mod {moduleNr_Mod_Mod=mainModNr}) -} = do
 {-
 -}
         rsemSetupTracing opts

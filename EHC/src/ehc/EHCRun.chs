@@ -38,14 +38,14 @@ main = do
         opts          = maybe opts0 id o
     
     case ehcOptImmQuit opts of
-      Just immq     -> handleImmQuitOption ehcrunCmdLineOpts ["rcr", "tcrr", "cr", "bcr", "tcr"] immq opts
+      Just immq     -> handleImmQuitOption ehcrunCmdLineOpts ["rcr", "bcrr", "tcrr", "cr", "bcr", "tcr"] immq opts
       _             -> case (n,errs) of
         ([fname], []) -> do
           let (bname,ext) = splitExtension fname
           case ext of
             -- ".tcrr" -> runRCR opts fname
             ".crr"  -> runRCR opts fname
-            e | e `elem` [".cr", ".bcr", ".tcr", ".tcrr"]
+            e | e `elem` [".cr", ".bcr", ".tcr", ".bcrr", ".tcrr"]
                    -> mainEHC $ opts
                         { ehcOptMbTarget = JustOk Target_None_Core_AsIs
                         , ehcOptCoreOpts = {- CoreOpt_RunTrace : -} CoreOpt_Run : CoreOpt_LoadOnly : ehcOptCoreOpts opts
