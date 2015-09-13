@@ -33,6 +33,8 @@
 %%]
 %%[(99 corerun) import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[(8 corerun) import({%{EH}Base.Trace})
+%%]
 
 -- Acccess to Core
 %%[(8 corerun) import({%{EH}EHC.CompilePhase.Parsers})
@@ -200,11 +202,12 @@ cpRunCoreRun5 bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_
       crsi <- bcall $ CRSIOfNamePl bglob modSearchKey astplan
       let impModNmL = (crsi ^. crsiCoreRunState ^. crcrsiReqdModules) \\ [modNm]
       cpTrPP TraceOn_BuildMod $
-        [ "cpRunCoreRun5 mod=" >|< modNm >#< "imps=" >|< ppParensCommas impModNmL
-        , "astplan" >#< astplan
+        [ "cpRunCoreRun5 mod=" >|< modNm
+        , "astplan:" >#< astplan
+        , "imps:" >-< indent 2 (vlist impModNmL)
         , "crsi nm2ref mods:" >-< indent 2 (vlist $ Set.toList $ Set.map fromJust $ Set.filter isJust $ Set.map hsnQualifier $ Rel.dom $ crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp)
-        ] ++
-        [ n >#< ppCommas rs | (n,rs) <- Rel.toDomList $ crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp ]
+        ]
+        -- ++ [ n >#< ppCommas rs | (n,rs) <- Rel.toDomList $ crsi ^. crsiCoreRunState ^. crcrsiNm2RefMp ]
       impModL <- forM impModNmL $ \nm ->
         maybeM (bcall $ ASTPMb bglob (mkPrevFileSearchKeyWithName nm) astpipe)
           (do cpSetLimitErrsWhen 1 "Run Core(Run) errors" [rngLift emptyRange Err_Str $ "Cannot load CoreRun module: " ++ show nm]
@@ -213,9 +216,12 @@ cpRunCoreRun5 bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_
           \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> return mod
       opts <- bcall $ EHCOptsOf modSearchKey
       cpMsg modNm VerboseNormal "Run Core (5)"
+      {-
       res <- liftIO $ catch
         (runCoreRun opts impModL mod $ cmodRun opts mod)
         (\(e :: SomeException) -> hFlush stdout >> (return $ Left $ strMsg $ "cpRunCoreRun5: " ++ show e))
+      -}
+      res <- liftIO $ runCoreRun2 opts impModL mod $ cmodRun opts mod
       either (\e -> cpSetLimitErrsWhen 1 "Run Core(Run) errors" [e])
 %%[[8
              (liftIO . putStrLn . show . pp)

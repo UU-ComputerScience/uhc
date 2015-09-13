@@ -72,7 +72,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,Range RLList TermLike UID Parser Parser2 Pragma Strictness Target Fld Common HsName Debug TreeTrie CfgPP LaTeX HtmlCommon FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,Trace Range RLList TermLike UID Parser Parser2 Pragma Strictness Target Fld Common HsName Debug TreeTrie CfgPP LaTeX HtmlCommon FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Base/HsName/,Builtin) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Core CoreRun Foreign GrinCode) \

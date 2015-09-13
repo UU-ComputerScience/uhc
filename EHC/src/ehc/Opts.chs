@@ -40,6 +40,9 @@
 %%[(8 codegen) import({%{EH}Base.Target})
 %%]
 
+%%[8 import({%{EH}Base.Trace})
+%%]
+
 %%[(8 codegen) import({%{EH}Base.Optimize}) export(Optimize(..), OptimizationLevel(..))
 %%]
 
@@ -302,8 +305,9 @@ defaultEHCOpts
 %%[1 export(ehcCmdLineOpts)
 -- | Commandline opts for ehc/uhc (EHC)
 ehcCmdLineOpts :: GetOptCmdLineOpts
-ehcCmdLineOpts = sharedCmdLineOpts ++
-     [
+ehcCmdLineOpts = sortOptions $
+     sharedCmdLineOpts
+  ++ [
 %%[[1
         Option "t"  ["target"]              (OptArg oTarget "")                     "code generation not available"
 %%][(8 codegen)
@@ -448,9 +452,6 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
      ,  Option ""   ["pgmP"]                (ReqArg (oPgmExec PgmExec_CPP)          "alternate program for cmd")
                                                                                     "pgm: alternate executable used by compiler, currently only P (preprocessing)"
 %%]]
-%%[[(8 codegen)
-     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("opts (specific) for core: " ++ showStr2stMp coreOptMp)
-%%]]
 %%[[(8 codegen tycore)
      ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")         ("temporary/development: use (specific) typed core. opts: " ++ showStr2stMp tycoreOptMp)
 %%]]
@@ -507,9 +508,6 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
 %%]]
 %%[[(8 grin)
          oTimeCompile    o =  o { ehcOptTimeGrinCompile       = True    }
-%%]]
-%%[[(8 codegen)
-         oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s ++ ehcOptCoreOpts o}
 %%]]
 %%[[(8 codegen cmm)
          oOptCmm     s   o =  o { ehcOptCmmOpts = optOpts cmmOptMp s }
@@ -749,14 +747,24 @@ ehcCmdLineOpts = sharedCmdLineOpts ++
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(sortOptions)
+-- | Sort options according to long descr field
+sortOptions :: GetOptCmdLineOpts -> GetOptCmdLineOpts
+sortOptions = sortOn (\(Option _ d _ _) -> d)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options as passed on the command line for EHCRun
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 export(ehcrunCmdLineOpts)
 -- | Commandline opts for ehcr/uhcr (EHCRun)
 ehcrunCmdLineOpts :: GetOptCmdLineOpts
-ehcrunCmdLineOpts
-     =  sharedCmdLineOpts
+ehcrunCmdLineOpts = sortOptions $
+        sharedCmdLineOpts
 %%[[(8 corerun)
      ++ [  Option ""   ["trace"]               (boolArg optTrace)                      "corerun: trace execution"
         ]
@@ -799,6 +807,9 @@ sharedCmdLineOpts
 %%]]
                                                                                     )
 %%]]
+%%[[(8 codegen)
+     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("opts (specific) for core: " ++ showStr2stMp coreOptMp)
+%%]]
      ]
 %%]
 
@@ -824,6 +835,10 @@ oVerbose    ms  o =  case ms of
                        _           -> o
 %%]
 
+%%[[(8 codegen)
+oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s ++ ehcOptCoreOpts o}
+%%]]
+
 %%[99
 oNumVersion            o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_VersionDotted }
 oVersionAsNumber       o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_VersionAsNumber }
@@ -831,7 +846,7 @@ oVersionAsNumber       o   = o { ehcOptImmQuit                     = Just Immedi
 
 %%[8
 oAltDriver             o   = o { ehcOptAltDriver                   = not $ ehcOptAltDriver o }
-oTraceOn               s o = o {ehcOptTraceOn = optOpts allTraceOnMp s ++ ehcOptTraceOn o}
+oTraceOn               s o = o { ehcOptTraceOn = Set.fromList (optOpts allTraceOnMp s) `Set.union` ehcOptTraceOn o }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

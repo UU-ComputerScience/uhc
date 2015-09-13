@@ -19,10 +19,16 @@
 %%[(8 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
+%%[(8 corerun) hs import({%{EH}Base.Trace})
+%%]
+
 %%[(8 corerun) hs import({%{EH}CoreRun}, {%{EH}CoreRun.Run}, {%{EH}CoreRun.Run.Val}, {%{EH}CoreRun.Run.Val.Prim})
 %%]
 
 %%[(8 corerun) hs import({%{EH}CoreRun.Pretty}, UHC.Util.Pretty)
+%%]
+
+%%[(8 corerun) hs import(UHC.Util.Lens)
 %%]
 
 %%[(8 corerun) hs import(qualified Data.Vector as V, qualified Data.Vector.Mutable as MV)
@@ -149,7 +155,7 @@ cmodRun opts (Mod_Mod {mbbody_Mod_Mod = Just e}) = do
   mustReturn $ rsemExp e
   -- v <- renvFrStkPop1
 %%[[8
-  dumpEnvM False
+  dumpEnvM' -- False
 %%][100
 %%]]
   -- return v
@@ -220,11 +226,11 @@ rvalExplStkExp :: RunSem RValCxt RValEnv RVal m () => Exp -> RValT m ()
 -- {-# INLINE rvalExplStkExp #-}
 rvalExplStkExp e = do
 %%[[8
-  rsemTr $ ">E:" >#< e
+  rsemTr'' TraceOn_RunEval $ ">E:" >#< e
 %%][100
-  rsemTr $ ">E:" >#< e
+  rsemTr'' TraceOn_RunEval $ ">E:" >#< e
 %%][103
-  rsemTr $ ">E:" >#< e
+  rsemTr'' TraceOn_RunEval $ ">E:" >#< e
 %%]]
   -- e' <- case e of
   case e of
@@ -283,11 +289,11 @@ rvalExplStkExp e = do
     -- e -> err $ "CoreRun.Run.Val.RunExplStk.rvalExplStkExp:" >#< e
 
 %%[[8
-  rsemTr $ "<E:" >#< (e) -- >-< e')
+  rsemTr'' TraceOn_RunEval $ "<E:" >#< (e) -- >-< e')
 %%][100
-  rsemTr $ "<E:" >#< (e) -- >-< e')
+  rsemTr'' TraceOn_RunEval $ "<E:" >#< (e) -- >-< e')
 %%][103
-  rsemTr $ "<E:" >#< (e) -- >-< e')
+  rsemTr'' TraceOn_RunEval $ "<E:" >#< (e) -- >-< e')
 %%]]
   -- return e'
 %%]
@@ -296,6 +302,7 @@ rvalExplStkExp e = do
 -- | Add module
 rvalExplAddModule :: RunSem RValCxt RValEnv RVal m () => Mod -> RValT m HpPtr
 rvalExplAddModule mod@(Mod_Mod {moduleNm_Mod_Mod=nm, ref2nm_Mod_Mod=r2n, binds_Mod_Mod=bs, stkDepth_Mod_Mod=sz, imports_Mod_Mod=imports}) = do
+    rsemTr'' TraceOn_RunMod $ ">rvalExplAddModule:" >#< nm
     -- add new entry
     env@(RValEnv {renvModulesMV=mods}) <- get
     mods' <- liftIO $ MV.grow mods 1
@@ -319,8 +326,10 @@ rvalExplAddModule mod@(Mod_Mod {moduleNm_Mod_Mod=nm, ref2nm_Mod_Mod=r2n, binds_M
       writeIORef (rcxtMdRef cx) m
     -- compute module bindings into current frame
     V.forM_ bs rsemExp
+    rsemTr'' TraceOn_RunMod $ "<rvalExplAddModule:" >#< nm >#< "-> modhpptr=" >|< m
     -- remove the frame
-    explStkPopFrameM
+    f <- explStkPopFrameM
+    return f
   where
 %%]
 
@@ -339,10 +348,11 @@ instance
 -}
         rsemSetupTracing opts
         let modAllL = modImpL ++ [mod]
-        modFrames <- forM modAllL $ \mod -> do
+            updTr   = rcxtTraceOnS ^= ehcOptTraceOn opts
+        modFrames <- local updTr $ forM modAllL $ \mod -> do
           rvalExplAddModule mod
         explStkPushFrameM (last modFrames)
-        rcxtUpdDatatypes modAllL
+        fmap updTr $ rcxtUpdDatatypes modAllL
 {-
         -- rsemSetTrace True
         rsemGcEnterRootLevel
@@ -370,6 +380,8 @@ instance
     rsemSetTrace doTrace doExtensive = modify $ \env ->
       env {renvDoTrace = doTrace, renvDoTraceExt = doExtensive}
     
+    rsemTraceOnS = asks _rcxtTraceOnS
+
     rsemExp = rvalExplStkExp
 
     rsemSExp se = do

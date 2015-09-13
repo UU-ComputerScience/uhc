@@ -480,35 +480,6 @@ data Verbosity
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tracing
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(TraceOn(..), allTraceOnMp)
--- | Trace on specific topic(s)
-data TraceOn
-  = TraceOn_BuildFun				-- build functions (bcall, ...)
-  | TraceOn_BuildFlow				-- build flow
-  | TraceOn_BuildFPaths				-- build fpaths constructed
-  | TraceOn_BuildSearchPaths		-- build searchpath used
-  | TraceOn_BuildSccImports			-- build compile order (scc = strongly connected components)
-  | TraceOn_BuildTypeables			-- build Typeable instances encountered
-  | TraceOn_BuildPipe				-- build Pipe related
-  | TraceOn_BuildPlan				-- build Plan related
-  | TraceOn_BuildFold				-- build folds related
-  | TraceOn_BuildTimes				-- build file times related
-  | TraceOn_BuildResult				-- build results related
-  | TraceOn_BuildImport				-- build import related
-  | TraceOn_BuildRef				-- build reference related
-  | TraceOn_BuildMod				-- build module related
-  deriving (Eq,Ord,Enum,Show,Typeable,Bounded,Generic)
-
-instance DataAndConName TraceOn
-
-allTraceOnMp :: Map.Map String TraceOn
-allTraceOnMp = str2stMpWithShow (strToLower . showUnprefixed 1) 
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR scoped translation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -62,7 +62,8 @@ letoffUpd upd i@(InhPP {letoffInhPP=o}) = i {letoffInhPP = upd o}
 -- | PP using InhPP
 ppRRef :: InhPP -> RRef -> PP_Doc
 -- ppRRef inhpp r = ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) r
-ppRRef inhpp r = {- ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) -} pp r
+-- ppRRef inhpp r = {- ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) -} pp r
+ppRRef inhpp r = ppCmtExtra inhpp (maybe (pp "?") pp $ ref2nmLookup r $ r2nInhPP inhpp) $ pp r
 %%]
 
 %%[(8 corerun) hs
@@ -189,7 +190,7 @@ ppBindItems :: [PP_Doc] -> PP_Doc
 ppBindItems bs = vlist [ ppSemi b | b <- bs ]
 
 ppBinds''' :: InhPP -> (Int -> PP_Doc) -> Int -> AssocL Int PP_Doc -> PP_Doc
-ppBinds''' inhpp mkr off bs = ppBindItems [ ppCmtExtra inhpp ((mkr $ off+i)) e | (i,e) <- bs ]
+ppBinds''' inhpp mkr off bs = ppBindItems [ ppCmtExtra inhpp (mkr $ off+i) e | (i,e) <- bs ]
 
 ppBinds'' :: InhPP -> (Int -> RRef) -> Int -> CRArray Bind -> PP_Doc
 ppBinds'' inhpp mkr off bs = ppBinds''' inhpp (ppRRef inhpp . mkr) off [ (i, ppExp'' inhpp e) | (i,e) <- craAssocs bs ]

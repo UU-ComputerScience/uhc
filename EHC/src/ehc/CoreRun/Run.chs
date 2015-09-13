@@ -13,10 +13,13 @@
 %%[(8 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
+%%[(8 corerun) hs import({%{EH}Base.Trace})
+%%]
+
 %%[(8 corerun) hs import({%{EH}CoreRun} as CR, {%{EH}CoreRun.Prim})
 %%]
 
-%%[(8 corerun) hs import(qualified UHC.Util.FastSeq as Seq, qualified Data.Map as Map)
+%%[(8 corerun) hs import(qualified UHC.Util.FastSeq as Seq, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 %%[(8 corerun) hs import(UHC.Util.Pretty)
@@ -26,6 +29,10 @@
 %%]
 
 %%[(8 corerun) hs import(Data.IORef)
+%%]
+%%[(8 corerun) hs import(System.IO)
+%%]
+%%[(8 corerun) import(Control.Exception)
 %%]
 
 %%[(8 corerun) hs import(Control.Monad, Control.Monad.Error, Control.Monad.RWS.Strict) export(module Control.Monad.RWS.Strict, module Control.Monad, module Control.Monad.Error)
@@ -92,6 +99,10 @@ class (Monad m, MonadIO m, Functor m) => RunSem r s v m a
   -- | Set tracing on/off, 2nd param to tell to do it extensively
   rsemSetTrace :: Bool -> Bool -> RunT' r s v m ()
   rsemSetTrace _ _ = return ()
+
+  -- | On what is being traced
+  rsemTraceOnS :: RunT' r s v m (Set.Set TraceOn)
+  rsemTraceOnS = return Set.empty
 
   -- | Exp
   rsemExp :: Exp -> RunT' r s v m a
@@ -164,7 +175,7 @@ err msg = throwError $ rngLift emptyRange Err_PP $ pp msg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- For now, only a specialised variant, later do the splitting into abstraction and variation (via classes).
-%%[(8 corerun) hs export(runCoreRun)
+%%[(8 corerun) hs export(runCoreRun, runCoreRun2)
 runCoreRun
   :: forall r s v m a .
      (RunSem r s v m a)
@@ -184,6 +195,30 @@ runCoreRun opts modImpL mod m = do
                 (m >>= rsemPop >>= rsemDeref >>= rsemPop))
             r s
   return e
+
+runCoreRun2
+  :: forall r s v m a .
+     (RunSem r s v IO a)
+  => EHCOpts
+     -> [Mod]
+     -> Mod
+     -> RunT' r s v IO a
+     -> IO (Either Err v) -- RunT' r s v m a
+runCoreRun2 opts modImpL mod m = do
+  (r, s, _ :: a) <- rsemInitial
+  -- let s = error "runCoreRun.RWS"
+  --     r = error "runCoreRun.Reader"
+  res <- flip catch (\(e :: SomeException) -> do
+      hFlush stdout >> (return $ Left $ strMsg $ "runCoreRun2: " ++ show e)
+    ) $ do
+    (e, _, _) <-
+      runRWST (runErrorT $ do
+                r' <- rsemSetup opts modImpL mod
+                local (const r') $
+                  (m >>= rsemPop >>= rsemDeref >>= rsemPop))
+              r s
+    return e
+  return res
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

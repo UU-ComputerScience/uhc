@@ -41,6 +41,9 @@
 %%[8 import({%{EH}Base.Target})
 %%]
 
+%%[8 import({%{EH}Base.Trace})
+%%]
+
 %%[8 import({%{EH}Base.Optimize})
 %%]
 
@@ -293,7 +296,7 @@ data EHCOpts
       ,  ehcOptImportFileLocPath
                               ::  FileLocPath
       ,  ehcOptVerbosity      ::  Verbosity         -- verbosity level
-      ,  ehcOptTraceOn        ::  [TraceOn]         -- on what to trace
+      ,  ehcOptTraceOn        ::  !(Set.Set TraceOn)         -- on what to trace
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptEnvironment    ::  EHCEnvironment    -- runtime environment
@@ -472,7 +475,7 @@ emptyEHCOpts
       ,  ehcOptVerbosity        =   VerboseMinimal
 %%]]
 %%[[8
-      ,  ehcOptTraceOn          =   []
+      ,  ehcOptTraceOn          =   Set.empty
 %%]]
 %%[[8
       ,  ehcOptEmitHS           =   False

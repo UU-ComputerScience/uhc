@@ -18,6 +18,9 @@
 %%[(8 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
+%%[(8 corerun) hs import({%{EH}Base.Trace})
+%%]
+
 %%[(8 corerun) hs import({%{EH}CoreRun}, {%{EH}CoreRun.Run}, {%{EH}CoreRun.Run.Val}, {%{EH}CoreRun.Run.Val.Prim})
 %%]
 
@@ -99,7 +102,7 @@ cmodRun opts (Mod_Mod {mbbody_Mod_Mod = Just e}) = do
   -- dumpEnvM True
   v <- mustReturn $ rsemExp e
 %%[[8
-  dumpEnvM False
+  dumpEnvM' -- False
 %%][100
 %%]]
   return v
@@ -165,7 +168,7 @@ rvalImplStkExp :: RunSem RValCxt RValEnv RVal m RVal => Exp -> RValT m RVal
 {-# INLINE rvalImplStkExp #-}
 rvalImplStkExp e = do
 %%[[8
-  rsemTr $ ">E:" >#< e
+  rsemTr'' TraceOn_RunEval $ ">E:" >#< e
   e' <- case e of
 %%][100
   case e of
@@ -223,7 +226,7 @@ rvalImplStkExp e = do
     -- e -> err $ "CoreRun.Run.Val.RunExplStk.rvalImplStkExp:" >#< e
 
 %%[[8
-  rsemTr $ "<E:" >#< e -- (e >-< e')
+  rsemTr'' TraceOn_RunEval $ "<E:" >#< e -- (e >-< e')
   return e'
 %%][100
 %%]]

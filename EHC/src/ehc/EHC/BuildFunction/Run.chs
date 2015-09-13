@@ -67,6 +67,8 @@ Running of BuildFunction
 %%]
 %%[8 import (Control.Applicative, Control.Monad.State, Control.Monad.Error)
 %%]
+%%[8 import({%{EH}Base.Trace})
+%%]
 
 %%[50 import(qualified UHC.Util.Rel as Rel)
 %%]

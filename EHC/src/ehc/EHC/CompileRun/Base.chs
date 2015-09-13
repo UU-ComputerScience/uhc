@@ -28,6 +28,8 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[8 import({%{EH}EHC.Common})
 %%]
+%%[8 import({%{EH}Base.Trace})
+%%]
 %%[8 import({%{EH}EHC.FileSuffMp})
 %%]
 %%[8 import({%{EH}Base.Optimize})
@@ -1295,26 +1297,19 @@ cpTrPP :: EHCCompileRunner m => TraceOn -> [PP_Doc] -> EHCompilePhaseT m ()
 cpTrPP ton ms = do
     cr <- MS.get
     let (_,opts) = crBaseInfo' cr
+    trOnPP (`Set.member` ehcOptTraceOn opts) ton ms
+{-
     when (ton `elem` ehcOptTraceOn opts) $ liftIO $ pr ms
   where pr []      = return ()
         pr [m]     = putPPLn $ show ton >|< ":" >#< m
         pr (m:ms)  = do pr [m]
                         forM_ ms $ \m -> putPPLn $ indent 2 m
+-}
 
 -- | Tracing
 cpTr :: EHCCompileRunner m => TraceOn -> [String] -> EHCompilePhaseT m ()
 cpTr ton ms = cpTrPP ton $ map pp ms
 %%]
--- | Tracing
-cpTr :: EHCCompileRunner m => TraceOn -> [String] -> EHCompilePhaseT m ()
-cpTr ton ms = do
-    cr <- MS.get
-    let (_,opts) = crBaseInfo' cr
-    when (ton `elem` ehcOptTraceOn opts) $ liftIO $ pr ms
-  where pr []      = return ()
-        pr [m]     = putStrLn $ show ton ++ ": " ++ m
-        pr (m:ms)  = do pr [m]
-                        forM_ ms $ \m -> putStrLn $ "  " ++ m
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: debug info, mem usage
