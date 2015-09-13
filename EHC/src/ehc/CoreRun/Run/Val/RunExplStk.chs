@@ -305,26 +305,43 @@ rvalExplAddModule mod@(Mod_Mod {moduleNm_Mod_Mod=nm, ref2nm_Mod_Mod=r2n, binds_M
     rsemTr'' TraceOn_RunMod $ ">rvalExplAddModule:" >#< nm
     -- add new entry
     env@(RValEnv {renvModulesMV=mods}) <- get
+    let nr = MV.length mods
+    -- liftIO $ putStrLn $ " rvalExplAddModule 1"
     mods' <- liftIO $ MV.grow mods 1
+    -- frame IORef with dummy ptr
+    fr <- liftIO $ newIORef nullPtr
+    m  <- heapAllocM $ RVal_Module nm (crarrayFromList []) fr
+    -- write dummy
+    liftIO $ MV.write mods' nr m -- $ RVal_Module nm (crarrayFromList []) fr
+    -- liftIO $ putStrLn $ " rvalExplAddModule 2"
+    -- set as new module array
     put $ env {renvModulesMV = mods'}
+    -- liftIO $ putStrLn $ " rvalExplAddModule 3"
     --
     env@(RValEnv {renvModulesMV=mods, renvGlobalsMV=globs}) <- get
-    let nr = MV.length mods - 1
+    -- liftIO $ putStrLn $ " rvalExplAddModule 4"
     -- get import indirection table
-    imptbl <- renvResolveModNames [ nm | Import_Import {nm_Import_Import=nm} <- imports ]
+    imptbl <- renvResolveModNames (nr-1) [ nm | Import_Import {nm_Import_Import=nm} <- imports ]
+    -- liftIO $ putStrLn $ " rvalExplAddModule 6"
     -- construct context (module is patched in later)
     cx <- liftIO $ mkRCxt nullPtr nullPtr 
+    -- liftIO $ putStrLn $ " rvalExplAddModule 7"
     -- construct frame
     f <- explStkPushAllocFrameM r2n cx sz emptyExplArgs
+    -- liftIO $ putStrLn $ " rvalExplAddModule 8"
     -- construct module, set the module entry
-    fr <- liftIO $ newIORef f
-    m <- heapAllocM $ RVal_Module nm (crarrayFromList imptbl) fr
+    liftIO $ writeIORef fr f
+    -- liftIO $ putStrLn $ " rvalExplAddModule 9"
+    -- m <- heapAllocM $ RVal_Module nm (crarrayFromList imptbl) fr
+    heapUpdM m (\m -> return $ m {rvalModImpsV=crarrayFromList imptbl})
+    -- liftIO $ putStrLn $ " rvalExplAddModule 10"
     liftIO $ do
       -- fill global module entry
       MV.write mods nr m
       -- patch module ref in context
       writeIORef (rcxtMdRef cx) m
     -- compute module bindings into current frame
+    -- liftIO $ putStrLn $ " rvalExplAddModule 11"
     V.forM_ bs rsemExp
     rsemTr'' TraceOn_RunMod $ "<rvalExplAddModule:" >#< nm >#< "-> modhpptr=" >|< m
     -- remove the frame

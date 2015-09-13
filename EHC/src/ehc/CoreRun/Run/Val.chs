@@ -624,13 +624,15 @@ newRValEnv hpSz = do
 
 %%[(8 corerun) hs export(renvResolveModNames)
 -- | Resolve module names into indirection/re-indexing table
-renvResolveModNames :: (RunSem RValCxt RValEnv RVal m x) => [HsName] -> RValT m [Int]
-renvResolveModNames nms = do
+renvResolveModNames :: (RunSem RValCxt RValEnv RVal m x) => Int -> [HsName] -> RValT m [Int]
+renvResolveModNames upb nms = do
     env@(RValEnv {renvModulesMV=ms, renvHeap=hp}) <- get
-    let lkup 0 nm = err $ "No module entry for: " ++ show nm
-        lkup n nm = (liftIO $ MV.read ms n >>= heapGetM'' hp) >>= \(RVal_Module {rvalModNm=nm'}) -> if nm == nm' then return n else lkup (n-1) nm
+    let lkup n nm | n > upb   = err $ "No module entry for: " ++ show nm
+                  | otherwise = (liftIO $ MV.read ms n >>= heapGetM'' hp) >>= \(RVal_Module {rvalModNm=nm'}) -> if nm == nm' then return n else lkup (n+1) nm
     forM nms $ \nm -> do
-      i <- lkup (MV.length ms - 1) nm
+      -- liftIO $ putStrLn $ "renvResolveModNames 1 " ++ show nm ++ " upb=" ++ show upb ++ " len=" ++ show (MV.length ms)
+      i <- lkup 0 nm
+      -- liftIO $ putStrLn $ "renvResolveModNames 2 " ++ show nm ++ " fnd=" ++ show i
       rsemTr'' TraceOn_RunMod $ "renvResolveModNames" >#< nm >#< "->" >#< i
       return i
 %%]
@@ -1272,8 +1274,16 @@ ref2valM r = do
         RVal_Frame {rvalCx=RCxt {rcxtMdRef=mdref}} <- renvTopFrameM
         liftIO $ do
           RVal_Module {rvalModImpsV=imps} <- heapGetM'' hp =<< readIORef mdref
-          RVal_Frame {rvalFrVals=frvals} <- heapGetM'' hp =<< MV.read mods (imps V.! m)
+          RVal_Module {rvalFrRef=frref} <- heapGetM'' hp =<< MV.read mods (imps V.! m)
+          RVal_Frame {rvalFrVals=frvals} <- heapGetM'' hp =<< readIORef frref
           MV.read frvals e
+{-
+        liftIO (readIORef mdref >>= heapGetM'' hp) >>= \mval -> case mval of
+          RVal_Module {rvalModImpsV=imps} -> liftIO (MV.read mods (imps V.! m) >>= heapGetM'' hp) >>= \fval -> case fval of
+            RVal_Frame {rvalFrVals=frvals} -> liftIO $ MV.read frvals e
+            _ -> err $ "CoreRun.Run.Val.ref2valM.RRef_Imp, is not RVal_Frame: (" >|< r >|< "):" >#< fval
+          _ -> err $ "CoreRun.Run.Val.ref2valM.RRef_Imp, is not RVal_Module: (" >|< r >|< "):" >#< mval
+-}
     RRef_Mod e -> do
         RVal_Frame {rvalCx=RCxt {rcxtMdRef=mdref}} <- renvTopFrameM
         liftIO $ do
