@@ -1264,7 +1264,7 @@ ptr2valM v = case v of
 -- | Dereference a RRef
 ref2valM :: (RunSem RValCxt RValEnv RVal m x) => RRef -> RValT m RVal
 ref2valM r = do
-  rsemTr'' TraceOn_RunRef $ ">R:" >#< r
+  -- rsemTr'' TraceOn_RunRef $ ">R:" >#< r
   env@(RValEnv {renvHeap=hp, renvModulesMV=mods}) <- get
   v <- case r of
     RRef_Glb m e -> do
@@ -1330,7 +1330,7 @@ ref2valM r = do
           _               -> err $ "CoreRun.Run.Val.ref2valM.RRef_Tag:" >#< v
     _ -> err $ "CoreRun.Run.Val.ref2valM.r:" >#< r
 
-  rsemTr'' TraceOn_RunRef $ "<R:" >#< r >#< "->" >#< v
+  -- rsemTr'' TraceOn_RunRef $ "<R:" >#< r >#< "->" >#< v
   return v
 {-# INLINE ref2valM #-}
 %%]
