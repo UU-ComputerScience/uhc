@@ -494,7 +494,13 @@ bcall bfun = do
 %%]]
                fileSuffMpHs <- fmap (map tup123to12 . adaptFileSuffMp) $ getl $ crStateInfo ^* crsiFileSuffMp
                cpTr TraceOn_BuildSearchPaths ["FPathSearchForFile: " ++ show modNm, "sp1=" ++ show searchPath, "sp2=" ++ show searchPath', "prev=" ++ show mbPrev]
-               fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) tup1234to13 False fileSuffMpHs searchPath' (Just modNm) mbFp
+               fpsFound <- cpFindFilesForFPathInLocations
+%%[[8
+                 (\l _ p -> [(l,p,[])])
+%%][99
+                 (fileLocSearch opts)
+%%]]
+                 tup1234to13 False fileSuffMpHs searchPath' (Just modNm) mbFp
                let astAvailFiles = [ ASTAvailableFile fp t c u {-tm-} | (fp,(_,t,c,u {-,tm-})) <- fpsFound ]
                cpTrPP TraceOn_BuildFPaths $ ["EcuOfPrevNameAndPath:" >#< modSearchKey, "on searchpath:" >#< vlist searchPath', "suffices:" >#< show fileSuffMpHs] ++ map ("found:" >#<) astAvailFiles
 
@@ -1394,11 +1400,16 @@ bMkASTPMbChoice bglob modSearchKey astpipe = do
             let tm = astfileuseReadTiming u
                 choice = Choice_Src av
                 astplan = mkBuildPlan p choice
+%%[[8
+            let mbTm = Just undefined
+            do
+%%][50
             mbTm <- bcall $ ModfTimeOfFile modSearchKey t (_astavailfContent av, u) tm
             cpTrPP TraceOn_BuildResult ["bMkASTPMbChoice ASTPipe_Src:" >#< modSearchKey, "pipe:" >#< p, "mbTm=" >|< mbTm]
             case mbTm of
               Just (tm,fp) -> do
                 cpTrPP TraceOn_BuildPipe ["bMkASTPMbChoice ASTPipe_Src:" >#< modSearchKey >#< tm, "file:" >#< fp, "pipe:" >#< p, "asked type:" >#< t, "cmdln type:" >#< _ecuASTType ecu, "isOverr:" >#< isOverr, "avail:" >#< av]
+%%]]
                 return $ Just $ emptyTmOfRes
                   { _tmofresChoice = choice
                   , _tmofresIsOverr = {- t == _ecuASTType ecu && -} isOverr
@@ -1418,7 +1429,9 @@ bMkASTPMbChoice bglob modSearchKey astpipe = do
                   , _tmofresTm = tm
 %%]]
                   }
+%%[[50
               _ -> return Nothing
+%%]]
           _ -> return Nothing
       where
         isOkSuff :: String -> ASTType -> ASTSuffixKey -> Bool
@@ -1494,14 +1507,15 @@ bMkASTPMbChoice bglob modSearchKey astpipe = do
             let subs = map (panicJust $ "bMkASTPMbChoice: " ++ show modSearchKey) tms
 %%[[8
                 (cs, os, ms) = unzip3 [ (c,o,m) | TmOfRes {_tmofresChoice=c, _tmofresIsOverr=o, _tmofresHasMain=m} <- subs ]
+                hasMain = or ms
 %%][50
                 (mtsimps, cs, ts, os, ms) = unzip5 [ (s,c,t,o,m) | TmOfRes {_tmofresDelayed=s, _tmofresChoice=c, _tmofresTm=t, _tmofresIsOverr=o, _tmofresHasMain=m} <- subs ]
-%%]]
             (tsimpsSeen, mtsimpsMbFound) <- if or ms
               then return ([], Just mtsimps)
               else do (seen,mb) <- breakM (maybe False _tmofdresHasMain) mtsimps
                       return (seen, fmap snd mb)
             let hasMain = isJust mtsimpsMbFound
+%%]]
             return $ Just $ emptyTmOfRes
               { _tmofresChoice = Choices cs
               , _tmofresIsOverr = or os
@@ -1661,7 +1675,8 @@ bExecASTPMbChoice bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKe
 				-- ecu <- bcall $ EcuOf modNm
 				-- cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Text "-astpMbFromCoreToCoreRun" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
 				return r
-
+%%]]
+%%[[(50 core corerun)
 		 ASTBuildPlan {_astbplPipe= p, _astbplChoice= Choice_No c}
 		   | isJust $ astpMbCheckCoreRunToCoreRun True p -> do
 			 maybeM (bcall $ FoldCoreRunCheckPlMb bglob modSearchKey astplan) dflt $ \(_,crr) -> do
@@ -1941,7 +1956,7 @@ astpMbFromCoreToCoreRun :: ASTFlowPred'
 astpMbFromCoreToCoreRun top p = case p of {ASTPipe_Derived ASTType_CoreRun p' | astpType p' == ASTType_Core -> Just (if' top p p', (Just ASTType_CoreRun, ASTType_Core)); _ -> Nothing}
 %%]
 
-%%[(8 core corerun)
+%%[(50 core corerun)
 astpMbCheckCoreRunToCoreRun :: ASTFlowPred'
 astpMbCheckCoreRunToCoreRun top p = case p of {ASTPipe_Trf ASTType_CoreRun ASTTrf_Check p' | astpType p' == ASTType_CoreRun -> Just (if' top p p', (Just ASTType_CoreRun, ASTType_CoreRun)); _ -> Nothing}
 %%]

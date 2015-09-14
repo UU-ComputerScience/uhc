@@ -157,6 +157,9 @@ SEM Exp
   | Tup			lhs			.	crr					=	@crr {args_Exp_Tup = V.map (chkSExp'' @lhs.inhchk) @args}
   | Let			lhs			.	crr					=	@crr {binds_Exp_Let = V.map (chkExp'' @lhs.inhchk) @binds}
 
+%%]
+
+%%[(50 corerunin)
 SEM SExp
   | Var         lhs         .	crr					=	@crr {ref_SExp_Var = rrefResolveUnr (impNmLkupInhChk @lhs.inhchk) (nm2refInhChk @lhs.inhchk) @ref}
 %%]

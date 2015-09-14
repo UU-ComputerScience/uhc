@@ -220,7 +220,20 @@ mapRRef f r@(RRef_Tag {rrefRef=r'}) = r {rrefRef = mapRRef f r'}
 mapRRef f r                         = f r
 %%]
 
-%%[(50 corerun) hs export(rrefToImp, rrefToExp, rrefResolve, rrefResolveUnr)
+%%[(8 corerun) hs export(rrefResolve)
+-- | Resolve as far as possible
+rrefResolve :: Maybe Int -> Maybe (HsName -> Maybe Int) -> Nm2RefMp -> HsName -> RRef
+rrefResolve mbLev mbImpNmLkup nm2ref nm = maybe
+  (RRef_Unr nm)
+  ( maybe id rrefToDif mbLev
+%%[[50
+  . maybe id rrefToImp mbImpNmLkup
+%%]]
+  )
+  $ nm2refLookup nm nm2ref
+%%]
+
+%%[(50 corerun) hs export(rrefToImp, rrefToExp, rrefResolveUnr)
 -- | Convert to RRef_Exp to RRef_Imp, i.e. named module to indexed module ref
 rrefToImp :: (HsName -> Maybe Int) -> RRef -> RRef
 rrefToImp lkup = mapRRef f
@@ -233,17 +246,6 @@ rrefToExp :: HsName -> RRef -> RRef
 rrefToExp nm = mapRRef f
   where f r@(RRef_Mod o) = RRef_Exp nm o
         f r              = r
-
--- | Resolve as far as possible
-rrefResolve :: Maybe Int -> Maybe (HsName -> Maybe Int) -> Nm2RefMp -> HsName -> RRef
-rrefResolve mbLev mbImpNmLkup nm2ref nm = maybe
-  (RRef_Unr nm)
-  ( maybe id rrefToDif mbLev
-%%[[50
-  . maybe id rrefToImp mbImpNmLkup
-%%]]
-  )
-  $ nm2refLookup nm nm2ref
 
 -- | Resolve RRef_Unr
 rrefResolveUnr :: Maybe (HsName -> Maybe Int) -> Nm2RefMp -> RRef -> RRef

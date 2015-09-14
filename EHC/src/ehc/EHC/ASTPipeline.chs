@@ -595,12 +595,20 @@ astpipe_Core apbcfg =
 
 %%[(8 corerunin)
 astpipe_CoreRun_src :: ASTPipe
-astpipe_CoreRun_src = ASTPipe_Trf ASTType_CoreRun ASTTrf_Check $ ASTPipe_Src ASTFileUse_Src ASTFileTiming_Current ASTType_CoreRun
+astpipe_CoreRun_src =
+%%[[50
+  ASTPipe_Trf ASTType_CoreRun ASTTrf_Check $
+%%]]
+    ASTPipe_Src ASTFileUse_Src ASTFileTiming_Current ASTType_CoreRun
 %%]
 
 %%[(50 corerun)
 astpipe_CoreRun_cached :: ASTPipe
-astpipe_CoreRun_cached = ASTPipe_Trf ASTType_CoreRun ASTTrf_Check $ ASTPipe_Src ASTFileUse_Cache ASTFileTiming_Prev ASTType_CoreRun
+astpipe_CoreRun_cached = 
+%%[[50
+  ASTPipe_Trf ASTType_CoreRun ASTTrf_Check $
+%%]]
+    ASTPipe_Src ASTFileUse_Cache ASTFileTiming_Prev ASTType_CoreRun
 %%]
 
 %%[(8 core corerun)
