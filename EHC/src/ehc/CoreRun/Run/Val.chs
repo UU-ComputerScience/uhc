@@ -1466,6 +1466,6 @@ rsemTr = rsemTr' False
 %%% Template stuff
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(rcxtTraceOnS)
+%%[(8 corerun) export(rcxtTraceOnS)
 mkLabel ''RValCxt
 %%]

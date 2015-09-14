@@ -200,7 +200,7 @@ cpFoldHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHs modNm
   =  do  {  cr <- get
 %%[[50
-         ;  isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+         -- ;  isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
 %%]]
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbHS   = _ecuMbHS ecu
@@ -210,7 +210,7 @@ cpFoldHs modNm
                                                 , HSSem.gUniq_Inh_AGItf            = crsi ^. crsiHereUID
 %%[[50
                                                 , HSSem.moduleNm_Inh_AGItf         = modNm
-                                                , HSSem.isTopMod_Inh_AGItf         = isTopMod -- ecuIsTopMod ecu
+                                                , HSSem.isTopMod_Inh_AGItf         = {- isTopMod -- -} ecuIsTopMod ecu
                                                 , HSSem.modInScope_Inh_AGItf       = inscps
                                                 , HSSem.modEntToOrig_Inh_AGItf     = exps
                                                 , HSSem.topInstanceNmL_Inh_AGItf   = modInstNmL (ecuMod ecu)

@@ -475,8 +475,8 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSOnlyImports
 %%]]
              -> do { cpMsg modNm VerboseMinimal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
-                   ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
-                   ; cpEhcHaskellModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts st
+                   -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+                   ; cpEhcHaskellModuleAfterImport {- isTopMod -} (ecuIsTopMod ecu) opts st
 %%[[99
                                                    (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
@@ -544,8 +544,8 @@ cpEhcModuleCompile1 targHSState modNm
              where isBinary = cst == CRRStartBinary
            (ECUS_CoreRun CRROnlyImports,Just (ECUS_CoreRun CRRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling CoreRun"
-                   ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
-                   ; cpEhcCoreRunModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts modNm
+                   -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+                   ; cpEhcCoreRunModuleAfterImport {- isTopMod -} (ecuIsTopMod ecu) opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_CoreRun CRRAllSem))
                    ; return defaultResult
                    }
@@ -563,8 +563,8 @@ cpEhcModuleCompile1 targHSState modNm
              where isBinary = cst == CRStartBinary
            (ECUS_Core CROnlyImports,Just (ECUS_Core CRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
-                   ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
-                   ; cpEhcCoreModuleAfterImport isTopMod {- (ecuIsTopMod ecu) -} opts modNm
+                   -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+                   ; cpEhcCoreModuleAfterImport {- isTopMod -} (ecuIsTopMod ecu) opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult
                    }
