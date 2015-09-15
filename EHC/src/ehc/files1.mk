@@ -95,7 +95,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 														$(addprefix BuildFunction/,Run) \
 														$(addprefix ASTHandler/,Instances) \
 														$(addprefix CompileRun/,Base) \
-														$(addprefix CompilePhase/,Run Parsers Output Translations Transformations \
+														$(addprefix CompilePhase/,Run Parsers Output Translations Transformations Common \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM CompileJavaScript Link \
 															Cleanup Module TopLevelPhases \

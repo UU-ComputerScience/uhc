@@ -148,8 +148,8 @@ cpGetHsModnameAndImports modNm
                  upd        = ecuStoreSrcDeclImpS ( -- (\v -> tr "XX" (pp $ Set.toList v) v) $ 
                                                   HSSemMod.modImpNmS_Syn_AGItf hsSemMod)
          ;  case mbHsSemMod of
-              Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
-                     | otherwise       -> do { cpUpdCU modNm upd ; return modNm }
+              Just _ | _ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
+                     | otherwise        -> do { cpUpdCU modNm upd ; return modNm }
               _      -> return modNm
          }
 %%]

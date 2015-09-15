@@ -32,9 +32,11 @@ Translation to another AST
 %%]
 %%[(8 codegen cmm) hs import({%{EH}CodeGen.Const} as Const (emptyConstSt))
 %%]
+%%[(50 codegen) hs import({%{EH}EHC.CompilePhase.Common})
+%%]
 
 -- build call
-%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%[8888 import({%{EH}EHC.BuildFunction.Run})
 %%]
 
 -- EH semantics
@@ -260,10 +262,12 @@ cpGenGrinGenInfo
        , HsName2FldMp
        )
 cpGenGrinGenInfo modNm
-  = do let modSearchKey = mkPrevFileSearchKeyWithName modNm
-       opts <- bcall $ EHCOptsOf modSearchKey
-       -- mieimpl <- cpGenModuleImportExportImpl modNm
-       mieimpl <- bcall $ ImportExportImpl modSearchKey (ehcOptOptimizationScope opts)
+  = do cr <- get
+       let  (_,_,opts,_) = crBaseInfo modNm cr
+       -- let modSearchKey = mkPrevFileSearchKeyWithName modNm
+       -- opts <- bcall $ EHCOptsOf modSearchKey
+       mieimpl <- cpGenModuleImportExportImpl modNm
+       -- mieimpl <- bcall $ ImportExportImpl modSearchKey (ehcOptOptimizationScope opts)
        return (mieimplLamMp mieimpl, mieimplUsedModNmL mieimpl, mieimplHsName2FldMpMp mieimpl, mieimplHsName2FldMp mieimpl)
 %%]
 

@@ -73,7 +73,7 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 
 -- build call
-%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%[8888 import({%{EH}EHC.BuildFunction.Run})
 %%]
 
 -- Misc

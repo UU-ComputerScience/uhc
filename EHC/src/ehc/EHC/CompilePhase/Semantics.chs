@@ -23,9 +23,11 @@ Folding over AST to compute semantics
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
 %%]
+%%[(50 codegen) import({%{EH}EHC.CompilePhase.Common})
+%%]
 
 -- build call
-%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%[8888 import({%{EH}EHC.BuildFunction.Run})
 %%]
 
 -- EH semantics
@@ -173,8 +175,8 @@ cpFoldEH modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
 %%[[(50 codegen)
-         -- ;  mieimpl <- cpGenModuleImportExportImpl modNm
-         ;  mieimpl <- bcall $ ImportExportImpl (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
+         ;  mieimpl <- cpGenModuleImportExportImpl modNm
+         -- ;  mieimpl <- bcall $ ImportExportImpl (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
 %%]]
          ;  let  mbEH   = _ecuMbEH ecu
                  ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf $ panicJust "cpFoldEH" mbEH)
@@ -210,7 +212,7 @@ cpFoldHs modNm
                                                 , HSSem.gUniq_Inh_AGItf            = crsi ^. crsiHereUID
 %%[[50
                                                 , HSSem.moduleNm_Inh_AGItf         = modNm
-                                                , HSSem.isTopMod_Inh_AGItf         = {- isTopMod -- -} ecuIsTopMod ecu
+                                                , HSSem.isTopMod_Inh_AGItf         = {- isTopMod -- -} _ecuIsTopMod ecu
                                                 , HSSem.modInScope_Inh_AGItf       = inscps
                                                 , HSSem.modEntToOrig_Inh_AGItf     = exps
                                                 , HSSem.topInstanceNmL_Inh_AGItf   = modInstNmL (ecuMod ecu)

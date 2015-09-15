@@ -333,7 +333,7 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
                 ++ ", can use HI instead of HS: " ++ show (ecuCanUseHIInsteadOfHS ecu)
                 ++ ", has main: " ++ show (ecuHasMain ecu)
                 ++ ", is main: " ++ show (ecuIsMainMod ecu)
-                ++ ", is top: " ++ show (ecuIsTopMod ecu)
+                ++ ", is top: " ++ show (_ecuIsTopMod ecu)
                 ++ ", valid HI: " ++ show (ecuIsValidHIInfo ecu)
                 ++ ", HS newer: " ++ show (ecuIsHSNewerThanHI ecu)
                 ))
@@ -436,9 +436,7 @@ cpEhcModuleCompile1 targHSState modNm
                                                   (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
                                                   modNm
-{-
-                   ; (modNm2, _, _, _) <- bcall $ HsModnameAndImports modNm
--}
+                   -- ; (modNm2, _, _, _) <- bcall $ HsModnameAndImports modNm
                    ; cpEhcHaskellModulePrepareHS2 modNm2
                    ; cpMsg modNm2 VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
@@ -476,7 +474,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
              -> do { cpMsg modNm VerboseMinimal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
                    -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
-                   ; cpEhcHaskellModuleAfterImport {- isTopMod -} (ecuIsTopMod ecu) opts st
+                   ; cpEhcHaskellModuleAfterImport {- isTopMod -} (_ecuIsTopMod ecu) opts st
 %%[[99
                                                    (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
@@ -545,7 +543,7 @@ cpEhcModuleCompile1 targHSState modNm
            (ECUS_CoreRun CRROnlyImports,Just (ECUS_CoreRun CRRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling CoreRun"
                    -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
-                   ; cpEhcCoreRunModuleAfterImport {- isTopMod -} (ecuIsTopMod ecu) opts modNm
+                   ; cpEhcCoreRunModuleAfterImport {- isTopMod -} (_ecuIsTopMod ecu) opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_CoreRun CRRAllSem))
                    ; return defaultResult
                    }
@@ -564,7 +562,7 @@ cpEhcModuleCompile1 targHSState modNm
            (ECUS_Core CROnlyImports,Just (ECUS_Core CRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
                    -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
-                   ; cpEhcCoreModuleAfterImport {- isTopMod -} (ecuIsTopMod ecu) opts modNm
+                   ; cpEhcCoreModuleAfterImport {- isTopMod -} (_ecuIsTopMod ecu) opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult
                    }

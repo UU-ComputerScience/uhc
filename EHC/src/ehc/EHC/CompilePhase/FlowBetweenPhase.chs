@@ -27,7 +27,7 @@ XXX
 %%]
 
 -- build call
-%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%[8888 import({%{EH}EHC.BuildFunction.Run})
 %%]
 
 -- module related

@@ -163,7 +163,7 @@ data EHCompileUnit
       						 										-- the semantics already flown into global state
 %%[[50
       , ecuImportUsedModules :: !ImportUsedModules                  -- imported modules info
-      , ecuIsTopMod          :: !Bool                               -- module has been specified for compilation on commandline
+      , _ecuIsTopMod         :: !Bool                               -- module has been specified for compilation on commandline
       , ecuHasMain           :: !Bool                               -- has a def for 'main'?
       , ecuNeedsCompile      :: !Bool                               -- (re)compilation from .hs needed?
       , _ecuMbSrcTime        :: !(Maybe ClockTime)                  -- timestamp of possibly absent source (hs, or other type) file
@@ -237,6 +237,9 @@ ecuHSSem = isoMb "ecuMbHSSem" ecuMbHSSem
 %%[8 export(ecuAlreadyFlowIntoCRSI)
 %%]
 
+%%[50 export(ecuIsTopMod)
+%%]
+
 %%[50 export(ecuMbHIInfo, ecuHIInfo, ecuMbPrevHIInfo, ecuPrevHIInfo, ecuMbHSSemMod, ecuHSSemMod, ecuMbSrcTime, ecuSrcTime, ecuMbHIInfoTime, ecuHIInfoTime)
 ecuHIInfo = isoMbWithDefault HI.emptyHIInfo ecuMbHIInfo
 ecuPrevHIInfo = isoMb "ecuMbPrevHIInfo" ecuMbPrevHIInfo
@@ -279,7 +282,7 @@ ecuFilePath ecu
 
 %%[50 export(ecuIsMainMod)
 ecuIsMainMod :: EHCompileUnit -> Bool
-ecuIsMainMod e = ecuIsTopMod e && ecuHasMain e
+ecuIsMainMod e = _ecuIsTopMod e && ecuHasMain e
 %%]
 
 %%[99 export(ecuAnHIInfo)
@@ -357,7 +360,7 @@ emptyECU
       						 = Map.empty
 %%[[50
       , ecuImportUsedModules = emptyImportUsedModules
-      , ecuIsTopMod          = False
+      , _ecuIsTopMod         = False
       , ecuHasMain           = False
       , ecuNeedsCompile      = True
       , _ecuMbSrcTime        = Nothing
@@ -692,7 +695,7 @@ ecuStoreMod :: EcuUpdater Mod
 ecuStoreMod x ecu = ecu { ecuMod = x }
 
 ecuSetIsTopMod :: EcuUpdater Bool
-ecuSetIsTopMod x ecu = ecu { ecuIsTopMod = x }
+ecuSetIsTopMod x ecu = ecu { _ecuIsTopMod = x }
 
 ecuSetHasMain :: EcuUpdater Bool
 ecuSetHasMain x ecu = ecu { ecuHasMain = x }

@@ -507,7 +507,13 @@ bcall bfun = do
                bUpdECU modNm $
                    (ecuASTAvailFiles ^= astAvailFiles)
 %%[[50
-                 . ecuSetIsTopMod isTopModule
+                 . (ecuIsTopMod ^$= (isTopModule ||))
+%%]]
+%%[[50
+{-
+               when isTopModule
+                    (bUpdECU modNm (ecuSetIsTopMod True))
+-}
 %%]]
 
                bmemo $ (BRef_ECU modNm :: BRef m res)
@@ -755,7 +761,7 @@ ecuIsHSNewerThanHI ecu
 
           IsTopMod modSearchKey -> do
                ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
-               breturn $ ecuIsTopMod ecu
+               breturn $ _ecuIsTopMod ecu
                      
 %%]]
 
@@ -985,7 +991,7 @@ ecuIsHSNewerThanHI ecu
                                                    , HSSem.gUniq_Inh_AGItf            = crsi ^. crsiHereUID
 %%[[50
                                                    , HSSem.moduleNm_Inh_AGItf         = modNm
-                                                   , HSSem.isTopMod_Inh_AGItf         = isTopMod -- ecuIsTopMod ecu
+                                                   , HSSem.isTopMod_Inh_AGItf         = isTopMod -- _ecuIsTopMod ecu
                                                    , HSSem.modInScope_Inh_AGItf       = inscps
                                                    , HSSem.modEntToOrig_Inh_AGItf     = exps
                                                    , HSSem.topInstanceNmL_Inh_AGItf   = modInstNmL (ecuMod ecu)
