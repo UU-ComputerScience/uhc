@@ -507,13 +507,7 @@ bcall bfun = do
                bUpdECU modNm $
                    (ecuASTAvailFiles ^= astAvailFiles)
 %%[[50
-                 . (ecuIsTopMod ^$= (isTopModule ||))
-%%]]
-%%[[50
-{-
-               when isTopModule
-                    (bUpdECU modNm (ecuSetIsTopMod True))
--}
+                 . (ecuIsTopMod ^$= (isTopModule ||))		-- 20150915 TBD: this cannot be a plain set, not sure why but probably due to sideeffect and impl of bcall $ IsTopMod
 %%]]
 
                bmemo $ (BRef_ECU modNm :: BRef m res)
