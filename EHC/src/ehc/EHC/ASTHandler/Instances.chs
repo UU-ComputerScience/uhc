@@ -57,6 +57,9 @@
 %%]
 
 
+-- Language semantics: HS, EH
+%%[8 import(qualified {%{EH}EH.Main} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
+%%]
 -- CoreRun output
 %%[(8 corerun) import({%{EH}CoreRun} as CoreRun, {%{EH}Core.ToCoreRun}, {%{EH}CoreRun.Pretty})
 %%]
@@ -251,6 +254,7 @@ astHandler'_EH = mk emptyASTHandler'
             , _asthdlrEcuStore          = ecuStoreEH
             , _asthdlrParseScanOpts     = \opts _ -> ehScanOpts opts
             , _asthdlrParser            = \_ _ -> Just $ ASTParser EHPrs.pAGItf
+            , _asthdlrPretty			= \_ ecu _ -> fmap EHSem.pp_Syn_AGItf $ _ecuMbEHSem ecu
             
 {-
             -- the rest, avoid record update (http://hackage.haskell.org/trac/ghc/ticket/2595, http://breaks.for.alienz.org/blog/2011/10/21/record-update-for-insufficiently-polymorphic-field/) 

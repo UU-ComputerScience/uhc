@@ -21,7 +21,7 @@ ppNestInfo :: PP a => EHCOpts -> [a] -> [PP_Doc] -> [PP_Doc] -> AssocL String PP
 ppNestInfo opts nms attrs ps infos
   = ppListSep "" "" "_" nms
     >#< (   (if null attrs then empty else ppSpaced attrs)
-        >-< (if ehcOptDebug opts then vlist (map (\(i,p) -> pp i >|< ":" >#< p) infos) else empty)
+        >-< (if ehcOptEhAstPPExtensive opts then vlist (map (\(i,p) -> pp i >|< ":" >#< p) infos) else empty)
         )
     >-< indent 2 (vlist ps)
 

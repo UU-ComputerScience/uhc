@@ -1069,6 +1069,9 @@ ecuIsHSNewerThanHI ecu
                     (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
                when (ehcOptShowEH opts)
                     (liftIO $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
+               when (EhOpt_Dump `elem` ehcOptEhOpts opts) $
+                    -- void $ cpOutputSomeModule (^. ecuEH) astHandler'_EH ASTFileContent_Text "" Cfg.suffixDotlessOutputTextualEh modNm
+                    liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) Cfg.suffixDotlessOutputTextualEh) (EHSem.pp_Syn_AGItf ehSem) 1000
 %%[[99
                isTopMod <- bcall $ IsTopMod modSearchKey
 %%]]
@@ -1078,6 +1081,8 @@ ecuIsHSNewerThanHI ecu
 %%][99
                when (isTopMod && ehcOptShowAst opts)
                     (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+               when (isTopMod && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+                    liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 %%][100
 %%]]
 %%[[(99 hmtyinfer tyderivtree)

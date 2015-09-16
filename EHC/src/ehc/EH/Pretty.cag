@@ -39,7 +39,7 @@ SEM Expr
 %%[[1
   | Let         loc     .   pp      =   
 %%][100
-  | Let         loc     .   pp      =   if ehcOptShowEH @lhs.opts || ehcOptEmitEH @lhs.opts
+  | Let         loc     .   pp      =   if ehcOptEhPP @lhs.opts
                                         then
 %%]]
                                              "let"
@@ -119,10 +119,7 @@ SEM Decls
 
 SEM AGItf
   | AGItf       lhs     .   pp      =   @extraPP >-< @expr.pp
-%%[[1
                                         >-< @errTopPP
-%%][102
-%%]]
                 loc     .   extraPP =   empty
 %%]
 
@@ -559,13 +556,13 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
-                                            then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst)
-                                                       >-<  ppGam @lQuTyGam
-                                                       >-<  ppGam (@lhs.finTyVarMp `varUpd` @finValGamDecls)
-                                                       >-<  ppGam @lClGamNoDups
+  | Let         loc     .   extraPP     :=  if True -- ehcOptVerbosity @lhs.opts > VerboseNormal
+                                            then ppCmt (    ppGam (@lhs.finTyVarMp `varUpd` @finValGamDecls)
+                                                       -- >-<  ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst)
+                                                       -- >-<  ppGam @lQuTyGam
+                                                       -- >-<  ppGam @lClGamNoDups
 %%[[17
-                                                       >-<  ppGam @loc.finGathPolGam_extra
+                                                       -- >-<  ppGam @loc.finGathPolGam_extra
 %%]]
                                                        )
                                             else empty

@@ -117,18 +117,26 @@ emptyPkgOption = PkgOption emptyPkgName [] []
 %%% Option specific options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1 export(EhOpt(..))
+-- | EH specific options
+data EhOpt
+  = EhOpt_NONE				-- no-op option
+  | EhOpt_Dump 				-- dump textual EH output
+  | EhOpt_DumpAST 			-- dump textual EH output, as annotated AST
+  deriving (Eq, Ord, Enum, Bounded)
+%%]
+
 %%[(8 codegen) export(CoreOpt(..))
--- | Core options
+-- | Core specific options
 data CoreOpt
   = CoreOpt_NONE				-- no-op option
 %%[[(8 coreout)
 --  | CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
-  | CoreOpt_Dump 				-- dump textual core output
-%%[[50
-  | CoreOpt_DumpBinary			-- dump binary core output
+  | CoreOpt_Readable			-- when there is a choice, make it more readable
 %%]]
+  | CoreOpt_Dump
+  | CoreOpt_DumpBinary
   | CoreOpt_DumpAlsoNonParseable-- dump also the parts which are not parseable
-%%]]
 %%[[(8 corerun)
   | CoreOpt_Run					-- run after compilation
   | CoreOpt_LoadOnly			-- only load what is available, to be used only (for now) by alternate compiler driver
@@ -214,6 +222,7 @@ data EHCOpts
       ,  ehcOptAspects        ::  String            -- which aspects are included in this compiler
       ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
+      ,  ehcOptEhOpts         ::  [EhOpt]  	    	-- EH options
 %%[[(8 codegen tycore)
       ,  ehcOptShowTyCore     ::  Bool              -- show TyCore ast on stout
 %%]]
@@ -389,6 +398,7 @@ emptyEHCOpts
       {  ehcOptTrace            =   \_ x -> x
       ,  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
       ,  ehcOptShowHS           =   False
+      ,  ehcOptEhOpts           =   []
 %%[[(8 codegen tycore)
       ,  ehcOptShowTyCore       =   False
 %%]]
@@ -559,6 +569,22 @@ emptyEHCOpts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Derived accessors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(ehcOptEhAstPP, ehcOptEhAstPPExtensive)
+-- | PP EH AST, with annotations
+ehcOptEhAstPP :: EHCOpts -> Bool
+ehcOptEhAstPP opts = ehcOptShowAst opts || EhOpt_DumpAST `elem` ehcOptEhOpts opts
+
+-- | PP EH AST, with annotations
+ehcOptEhAstPPExtensive :: EHCOpts -> Bool
+ehcOptEhAstPPExtensive opts = (ehcOptEhAstPP opts && ehcOptDebug opts) || EhOpt_DumpAST `elem` ehcOptEhOpts opts
+%%]
+
+%%[8 export(ehcOptEhPP)
+-- | Do some plain PP on EH
+ehcOptEhPP :: EHCOpts -> Bool
+ehcOptEhPP opts = ehcOptShowEH opts || ehcOptEmitEH opts || EhOpt_Dump `elem` ehcOptEhOpts opts
+%%]
 
 %%[8 export(ehcOptTarget,ehcOptTargetFlavor)
 ehcOptTarget :: EHCOpts -> Target

@@ -107,14 +107,15 @@ cpOutputSomeModules' write mkfp mknmsuff suff modNm mods = do
 -- | Abstraction for writing some module to output with variation in suffices
 cpOutputSomeModules
   :: EHCCompileRunner m
-     => ASTHandler' mod -- (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO Bool)
+     => Maybe EHCOpts
+     -> ASTHandler' mod -- (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO Bool)
      -> ASTFileContent
      -> (Int -> String -> String)
      -> String
      -> HsName
      -> [(String,mod)]
      -> EHCompilePhaseT m [Maybe FPath]
-cpOutputSomeModules astHdlr how mknmsuff suff modNm mods = do
+cpOutputSomeModules mbOpts astHdlr how mknmsuff suff modNm mods = do
     cr <- get
     let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
     forM (zip [1..] mods) $ \(nr,(nmsuff,mod)) -> do
@@ -144,7 +145,7 @@ cpOutputSomeModule getMod astHdlr how nmsuff suff modNm
          ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
                  mod    = getMod ecu
          ;  cpMsg modNm VerboseALot $ "Emit " ++ _asthdlrName astHdlr
-         ;  fmap head $ cpOutputSomeModules astHdlr how (\_ nm -> nm) suff modNm [(nmsuff,mod)]
+         ;  fmap head $ cpOutputSomeModules Nothing astHdlr how (\_ nm -> nm) suff modNm [(nmsuff,mod)]
          }
 %%]
 

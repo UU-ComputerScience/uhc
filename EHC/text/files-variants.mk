@@ -31,7 +31,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								ldta09-agidiom \
 								hs09-uhcarch \
 								icfp2012-js \
-								theplan
+								theplan \
+								flops2016-explimpl
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \

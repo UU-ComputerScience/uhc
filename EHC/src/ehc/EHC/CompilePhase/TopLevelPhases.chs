@@ -1247,7 +1247,7 @@ cpProcessEH modNm
        ; cpCleanupFoldEH modNm
 %%]]
        ; cpFlowEHSem1 modNm
-       -- ; cpTranslateEH2Output modNm
+       ; cpTranslateEH2Output modNm
 %%[[(8 codegen)
 {- -- %%[[(8 tycore)
        ; if ehcOptTyCore optsTr

@@ -19,6 +19,13 @@ Translation to another AST
 %%]
 %%[(50 codegen) import({%{EH}EHC.CompilePhase.Module})
 %%]
+%%[8 import({%{EH}EHC.CompilePhase.Output})
+%%]
+%%[8 import({%{EH}EHC.ASTHandler.Instances})
+%%]
+
+%%[8 import(qualified {%{EH}Config} as Cfg)
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -121,12 +128,12 @@ cpTranslateHs2EH modNm
          }
 %%]
 
-%%[8888 export(cpTranslateEH2Output)
+%%[8 export(cpTranslateEH2Output)
 cpTranslateEH2Output :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2Output modNm
   =  do  {  cr <- get
 %%[[50
-         ;  isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+         -- ;  isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
 %%]]
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbEHSem= _ecuMbEHSem ecu
@@ -147,6 +154,9 @@ cpTranslateEH2Output modNm
 %%[[8
                      ; when (ehcOptEmitEH opts)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
+                     ; when (EhOpt_Dump `elem` ehcOptEhOpts opts) $
+                            -- void $ cpOutputSomeModule (^. ecuEH) astHandler'_EH ASTFileContent_Text "" Cfg.suffixDotlessOutputTextualEh (ecuModNm ecu)
+                            liftIO $ putPPFPath (mkOutputFPath opts modNm fp Cfg.suffixDotlessOutputTextualEh) (EHSem.pp_Syn_AGItf ehSem) 1000
                      ; when (ehcOptShowEH opts)
                             (liftIO $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
 %%][102
@@ -155,12 +165,14 @@ cpTranslateEH2Output modNm
                      ; when (ehcOptShowAst opts)
                             (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][99
-                     ; when (isTopModu && ehcOptShowAst opts)
+                     ; when (_ecuIsTopMod ecu && ehcOptShowAst opts)
                             (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+                     ; when (_ecuIsTopMod ecu && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+                            liftIO $ putPPFPath (mkOutputFPath opts modNm fp Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 %%][100
 %%]]
 %%[[(99 hmtyinfer tyderivtree)
-                     ; when (isTopMod && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
+                     ; when (_ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)
 %%][100
 %%]]

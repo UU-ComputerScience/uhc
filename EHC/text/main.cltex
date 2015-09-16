@@ -520,6 +520,10 @@
 \usepackage{mathabx}
 %%]
 
+%%[4
+\usepackage{txfonts}
+%%]
+
 %%[22
 \usepackage{txfonts}
 %%]

@@ -54,6 +54,11 @@ AC_SUBST(EH_VERSION_MEDIUM,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINOR
 AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_VERSION_MINORMINORMINOR)
 AC_SUBST(EH_VERSION_ASNUMBER,$EH_VERSION_MAJOR$EH_VERSION_MINOR_ZEROPAD$EH_VERSION_MINORMINOR_ZEROPAD$EH_VERSION_MINORMINORMINOR_ZEROPAD)
 
+### global settings, variables, defaults
+# command/msg to run when tool is absent
+cmdForExitIfAbsentLibOrTool='echo "**** ERROR **** : A tool or library is missing. Check ./configure summary." ; exit 1'
+
+
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
 [
@@ -627,7 +632,7 @@ if test "$rulerCmd" != "no" -a -x "$rulerCmd" ; then
   rulerVersion=`$rulerCmd --version`
   buildOptionalToolDependenciesUnchecked="ruler>=0.4.0.1 ${buildOptionalToolDependenciesUnchecked}"
 else
-  rulerCmd=""
+  rulerCmd="${cmdForExitIfAbsentLibOrTool}"
   rulerExists="no"
 fi
 AC_SUBST(RULER_CMD,$rulerCmd)
@@ -1273,7 +1278,7 @@ if test "x$uuagcExists" = "xyes" \
 then
   exitIfAbsentLibOrTool=""
 else
-  exitIfAbsentLibOrTool='echo "**** ERROR **** : A tool or library is missing. Check ./configure summary." ; exit 1'
+  exitIfAbsentLibOrTool="${cmdForExitIfAbsentLibOrTool}"
 fi
 AC_SUBST(EXIT_IF_ABSENT_LIB_OR_TOOL, $exitIfAbsentLibOrTool)
 
@@ -1397,6 +1402,11 @@ echo "  haddock is available?         : $haddockExists"
 if test "x$haddockExists" = "xyes" ;then
 echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
+fi
+echo "  ruler is available?           : $rulerExists"
+if test "x$rulerExists" = "xyes" ;then
+echo "    version                     : $rulerVersion"
+echo "    command for ruler           : $rulerCmd"
 fi
 
 echo "Absolute location of directories:"

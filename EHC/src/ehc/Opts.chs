@@ -116,6 +116,16 @@ optOptsIsYes mos o = maybe False (o `elem`) mos
 
 %%]
 
+%%[1
+instance Show EhOpt where
+  show EhOpt_Dump            	 	= "dump"
+  show EhOpt_DumpAST            	= "dump-ast"
+  show _      						= "-"
+
+ehOptMp :: Map.Map String EhOpt
+ehOptMp = str2stMpWithOmit [EhOpt_NONE]
+%%]
+
 %%[(8 codegen)
 instance Show CoreOpt where
 %%[[(8 coreout)
@@ -807,8 +817,11 @@ sharedCmdLineOpts
 %%]]
                                                                                     )
 %%]]
+%%[[1
+     ,  Option ""   ["ehopt"]               (ReqArg oOptEh   "opt[,...]")           ("opts (specific) for EH: " ++ showStr2stMp ehOptMp)
+%%]]
 %%[[(8 codegen)
-     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("opts (specific) for core: " ++ showStr2stMp coreOptMp)
+     ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("opts (specific) for Core: " ++ showStr2stMp coreOptMp)
 %%]]
      ]
 %%]
@@ -834,6 +847,10 @@ oVerbose    ms  o =  case ms of
                        Nothing     -> o { ehcOptVerbosity     = succ (ehcOptVerbosity o)}
                        _           -> o
 %%]
+
+%%[[1
+oOptEh      s   o =  o { ehcOptEhOpts   = optOpts ehOptMp s ++ ehcOptEhOpts o}
+%%]]
 
 %%[[(8 codegen)
 oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s ++ ehcOptCoreOpts o}

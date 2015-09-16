@@ -108,8 +108,13 @@ instance PP CTy where
 %%]
 
 %%[(8 coreout) hs
+ppCNm' :: EHCOpts -> HsName -> PP_Doc
+ppCNm' opts
+  | CoreOpt_Readable `elem` ehcOptCoreOpts opts = pp
+  | otherwise                                   = ppCoreNm
+
 ppCNm :: HsName -> PP_Doc
-ppCNm = ppCoreNm
+ppCNm = ppCNm' emptyEHCOpts
 %%]
 ppCNm :: EHCOpts -> HsName -> PP_Doc
 ppCNm _ n = fst $ ppHsnEscapeWith '$' (hsnOkChars '$' $ copts) (hsnNotOkStrs copts) n
@@ -311,7 +316,7 @@ ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
-  | Mod         lhs         .   pp          =   ppSemi ("module" >#< ppCNm @moduleNm)
+  | Mod         lhs         .   pp          =   ppSemi ("module" >#< ppCNm' @lhs.opts @moduleNm)
                                                 >-< (ppSemiTerminated @exports.ppL)
                                                 >-< (ppSemiTerminated @imports.ppL)
                                                 >-< (ppSemiTerminated @declMetas.ppL)
@@ -322,19 +327,19 @@ SEM CModule
                                                 -- >-< ppCTagsMp CfgPP_Core @ctagsMp
 
 SEM CDeclMeta
-  | Data		lhs			.	pp			=	howDef @lhs.ppHow ("data" >#< ppCNm @tyNm) ("=" >#< ppBlockWithStrings{-H-} "" "" ", " @dataCons.ppL)
+  | Data		lhs			.	pp			=	howDef @lhs.ppHow ("data" >#< ppCNm' @lhs.opts @tyNm) ("=" >#< ppBlockWithStrings{-H-} "" "" ", " @dataCons.ppL)
 
 SEM CImport
-  | Import		lhs			.	pp			=	"import" >#< ppCNm @nm
+  | Import		lhs			.	pp			=	"import" >#< ppCNm' @lhs.opts @nm
 
 SEM CExport
-  | Export		lhs			.	pp			=	"export" >#< ppCNm @nm
-  | ExportData	lhs			.	pp			=	"export data" >#< ppMbPost ppParensCommas @mbConNmL (ppCNm @nm)
+  | Export		lhs			.	pp			=	"export" >#< ppCNm' @lhs.opts @nm
+  | ExportData	lhs			.	pp			=	"export data" >#< ppMbPost ppParensCommas @mbConNmL (ppCNm' @lhs.opts @nm)
   
   -- ppMbPost :: (PP x, PP r) => (a -> x) -> Maybe a -> r -> PP_Doc
 
 SEM CDataCon
-  | Con			lhs			.	pp			=	ppCNm @conNm >#< "=" >#< ppCurlysCommas [pp @tagNr, pp @arity]
+  | Con			lhs			.	pp			=	ppCNm' @lhs.opts @conNm >#< "=" >#< ppCurlysCommas [pp @tagNr, pp @arity]
 
 SEM CExpr
   | Int         loc         .   pp          =   ppLit "Int"    (show @int)
@@ -343,7 +348,7 @@ SEM CExpr
 %%[[97
   | Integer     loc         .   pp          =   ppLit "Integer" (show @integer)
 %%]
-  | Var         loc         .   pp          =   ppACoreBindRef ppCNm @ref
+  | Var         loc         .   pp          =   ppACoreBindRef (ppCNm' @lhs.opts) @ref
 %%[[(8888 corerun)
   | VarRRef		loc         .   pp          =   pp @ref
 %%]]
@@ -363,9 +368,9 @@ SEM CExpr
   | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of"
                                                 >-< indent 1 (ppSemiTerminated @alts.ppL >-< ppSemiTerminated [howDef @lhs.ppHow (pp "default") @dflt.pp])
   | Tup         loc         .   pp          =   "#Tag" >#< ppTag @tag
-  | TupDel      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
-  | TupIns      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) (howDef @lhs.ppHow ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
-  | TupUpd      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) (howDef @lhs.ppHow (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
+  | TupDel      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm' @lhs.opts @nm])
+  | TupIns      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) (howDef @lhs.ppHow ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm' @lhs.opts @nm]) (ppParens @fldExpr.pp))
+  | TupUpd      loc         .   pp          =   howDef @lhs.ppHow (ppParens @expr.pp) (howDef @lhs.ppHow (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm' @lhs.opts @nm]) (ppParens @fldExpr.pp))
   | CaseAltFail loc         .   pp          =   pp "FAIL" >#< @failReason >-< whenMore @lhs.opts (indent 2 $ ppCurlys @errorExpr.pp)
   | FFI         loc         .   pp          =   ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),@ppent,ppTyWithCfg' CfgPP_Core @ty])
 %%[[8
@@ -399,7 +404,7 @@ SEM CBind
                                                         | otherwise                                      = id
                                                     isSingleNoNm = hsnIsWild @nm && length @bindAspects.ppBindInfoL == 1
                                                     def | isSingleNoNm = par                                           val
-                                                        | otherwise    = par $ howDef @lhs.ppHow (ppCNm @nm) val
+                                                        | otherwise    = par $ howDef @lhs.ppHow (ppCNm' @lhs.opts @nm) val
                                                         where val = p $ [ ppBound @lhs.opts isSingleNoNm Nothing s pv | (s,_,pv) <- @bindAspects.ppBindInfoL ] -- ++ (maybe [] (\x -> [pp x]) $ Map.lookup @nm @lhs.lamMp)
                                                 in  def
 
@@ -436,16 +441,16 @@ SEM CAlt
 SEM CPat
   | Int         lhs         .   pp          =   ppLit "Int"    (show @int)
   | Char        lhs         .   pp          =   ppLit "Char"   [@char]
-  | Var         lhs         .   pp          =   ppCNm @pnm
+  | Var         lhs         .   pp          =   ppCNm' @lhs.opts @pnm
   | Con         lhs         .   pp          =   howDef @lhs.ppHow ("#Tag" >#< ppTag @tag)
                                                       (ppCurly (ppMbPre (>#< "|") @rest.ppMb $ ppCommas' @binds.ppL))
 
 SEM CPatFld
-  | Fld         lhs         .   pp          =   whenMore @lhs.opts (ppCurlysCommas' [ppCNm @lbl,@offset.pp {- ,ppCNm @nm -}] >|< "=") >|< @bind.pp
+  | Fld         lhs         .   pp          =   whenMore @lhs.opts (ppCurlysCommas' [ppCNm' @lhs.opts @lbl,@offset.pp {- ,ppCNm @nm -}] >|< "=") >|< @bind.pp
                                                 >|< (if null @fldAnns.ppL then empty else ppParensCommas' @fldAnns.ppL)
 
 SEM CPatRest
-  | Var         loc         .   pp          =   ppCNm @nm
+  | Var         loc         .   pp          =   ppCNm' @lhs.opts @nm
 
 %%]
   | Undef       lhs         .   pp          =   pp hsnUnknown

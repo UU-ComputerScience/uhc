@@ -47,7 +47,7 @@ instance PP Ty where
 %%]
 
 %%[(8 hmtyinfer || hmtyast).ppTy -1.ppTy hs export(ppTyWithCfg',ppTyWithCfg,ppTy)
-ppTyWithCfg' :: CfgPP x => x -> Ty -> PP_Doc
+ppTyWithCfg' :: CfgPP' x => x -> Ty -> PP_Doc
 ppTyWithCfg' x ty = pp_Syn_TyAGItf $ synTyWithCfg (cfgPPTy x) ty
 
 synTyWithCfg :: CfgPPTy -> Ty -> Syn_TyAGItf
@@ -113,7 +113,7 @@ instance PP (Annotation a) where
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(ppPredOccId')
-ppPredOccId' :: CfgPP x => x -> PredOccId -> PP_Doc
+ppPredOccId' :: CfgPP' x => x -> PredOccId -> PP_Doc
 ppPredOccId' x poi
   = ppi (poiId poi)
   where ppi = cfgppUID x
@@ -215,7 +215,7 @@ data CfgPPTy
 %%]
 
 %%[(8 hmtyinfer || hmtyast) hs
-cfgPPTy' :: CfgPP x => x -> CfgPPTy -> CfgPPTy
+cfgPPTy' :: CfgPP' x => x -> CfgPPTy -> CfgPPTy
 cfgPPTy' x c
   = c { cfgPPTyPPHsn        = cfgppHsName x
       , cfgPPTyPPVar        = \c u i -> cfgppVarHsName x Nothing (Just u) (Just i) Nothing
@@ -224,7 +224,7 @@ cfgPPTy' x c
       , cfgPPTyPPVarDflt    = \c pre tv mbpp -> cfgppTyPPVarDflt x pre tv mbpp
       }
 
-cfgPPTy :: CfgPP x => x -> CfgPPTy
+cfgPPTy :: CfgPP' x => x -> CfgPPTy
 cfgPPTy x = cfgPPTy' x cfgPPTyDflt
 %%]
 
@@ -235,7 +235,7 @@ cfgPPTyDflt
       { cfgPPTyPPHsn                = pp
       , cfgPPTyPPCon                = \_ -> ppCon
       , cfgPPTyPPVar                = \c _ i -> ppTnUniq c i
-      , cfgPPTyPPVarDflt            = \cfg pre tv mbpp -> cfgPPTyPPHsn cfg $ mkHNm $ show tv
+      , cfgPPTyPPVarDflt            = \cfg pre tv mbpp -> maybe (cfgPPTyPPHsn cfg $ mkHNm $ show tv) id mbpp
 %%[[9
       , cfgPPTyPPImplsPred          = \iv pr pv -> iv >|< "=" >|< pr >|< "/" >|< pv
       , cfgPPTyPPImplsTailCons      = \pr occs -> pr >|< occs
