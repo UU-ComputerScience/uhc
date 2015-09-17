@@ -201,7 +201,7 @@ cpRunCoreRun5 bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_
 %%]]
       crsi <- bcall $ CRSIOfNamePl bglob modSearchKey astplan
       let impModNmL = (crsi ^. crsiCoreRunState ^. crcrsiReqdModules) \\ [modNm]
-      cpTrPP TraceOn_BuildMod $
+      cpTrPP TraceOn_BldMod $
         [ "cpRunCoreRun5 mod=" >|< modNm
         , "astplan:" >#< astplan
         , "imps:" >-< indent 2 (vlist impModNmL)

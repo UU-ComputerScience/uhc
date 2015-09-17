@@ -321,6 +321,7 @@ simplify
         , SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp                            -- simplification work, for a next call
         , CHRPredOccEvidMp                                                                  -- map from constraint/pred occurrence to evidence
 %%[[(9 codegen)
+        , EvidCBindL																		-- bindings which can be directly inserted
         , EvidKeyToCBindMap                                                                 -- map from occurrence to binding, globally
         , PredScopeToCBindMap                                                               -- map from predscope to binding, per predscope opening/intro
         , EvidKeyToCExprMap                                                                 -- map from occurrence to expr + additional nesting info, for debug only
@@ -354,6 +355,7 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
         }
     , chrSolveEvidMp2
 %%[[(9 codegen)
+    , chrSolveEvidCBindL
     , chrSolveEvidBindMp, chrSolveScopeBindMp
     , chrSolveEvidCoreMp        -- for debug only
 %%]]
@@ -363,7 +365,8 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
     , chrSolveEvidCoreMpTC      -- for debug only
 %%]]
     )
-  where s = execState (simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev)
+  where opts                        =   feEHCOpts $ fiEnv env
+        s = execState (simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev)
                       (emptySimplifyState {simpEnv = env {fiUniq = u1}, simpToProveHereCnstrMp = toProveHereCnstrMp, simpRes = prevRes})
         env'                        =   simpEnv s
         chrSimplifyResult4          =   simpRes s
@@ -384,8 +387,10 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
           = evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
         
         -- get the bindings which must be introduced
-        (chrSolveEvidBindMp,chrSolveScopeBindMp)
-          = evidKeyCoreMpToBinds env' chrSolveEvidCoreMp
+        (chrSolveEvidCBindL,chrSolveEvidBindMp,chrSolveScopeBindMp)
+          = {- if True -- ehcOptPriv opts -- 20150917 works
+            then -} evidKeyCoreMpToBinds2 env' chrSolveEvidCoreMp
+            {- else let (m1,m2) = evidKeyCoreMpToBinds env' chrSolveEvidCoreMp in ([],m1,m2) -}
         
         -- overlapping errors; 20120209: is empty, detection done earlier
         -- overlapErrs = if null overlapEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ overlapevidPredOcc a,map pp $ overlapevidInfos a) | a <- overlapEvids]]
@@ -428,7 +433,7 @@ SEM AGItf
                             .   toProveHereCnstrMp  =   @toProveCnstrMp
                             .   (_,chrSolveMainRemCnstrMp,_,chrSolveSimpTyVarMp,chrSolveMainErrs,chrSimplifyResult,_
 %%[[(9 codegen)
-                                ,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,chrSolveMainEvidCoreMp
+                                ,chrSolveMainEvidCBindL,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,chrSolveMainEvidCoreMp
 %%]]
 %%[[(9 codegen tycore)
                                 ,chrSolveMainEvidBindMpTC,chrSolveMainScopeBindMpTC,chrSolveMainEvidCoreMpTC
@@ -453,7 +458,7 @@ SEM Expr
                             --  1st context simplification
                             .   (toProveHereCnstrMpCanon,chrSolve1RemCnstrMp,cannotRes1CnstrMp,chrSolve1SimpTyVarMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidMp
 %%[[(9 codegen)
-                                ,chrSolve1EvidBindMp  ,chrSolve1ScopeBindMp  ,chrSolve1EvidCoreMp
+                                ,chrSolve1EvidCBindL,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,chrSolve1EvidCoreMp
 %%]]
 %%[[(9 codegen tycore)
                                 ,chrSolve1EvidBindMpTC,chrSolve1ScopeBindMpTC,chrSolve1EvidCoreMpTC
@@ -473,7 +478,7 @@ SEM Expr
                 loc         .   secondProofIsNeeded =   not (Map.null @quantCnstrMp)
                             .   (_,chrSolve2RemCnstrMp,_,chrSolve2SimpTyVarMp,chrSolve2Errs,chrSimplifyResult2,_
 %%[[(9 codegen)
-                                ,chrSolve2EvidBindMp  ,chrSolve2ScopeBindMp  ,chrSolve2EvidCoreMp
+                                ,chrSolve2EvidCBindL,chrSolve2EvidBindMp,chrSolve2ScopeBindMp,chrSolve2EvidCoreMp
 %%]]
 %%[[(9 codegen tycore)
                                 ,chrSolve2EvidBindMpTC,chrSolve2ScopeBindMpTC,chrSolve2EvidCoreMpTC
@@ -485,7 +490,7 @@ SEM Expr
                                                              $ simplifyResultResetForAdditionalWork @chrSimplifyResult1
                                                         else ( emptyCnstrMp, @chrSolve1RemCnstrMp, emptyCnstrMp, emptyVarMp, [], @chrSimplifyResult1, @chrSolve1EvidMp
 %%[[(9 codegen)
-                                                             , @chrSolve1EvidBindMp  , @chrSolve1ScopeBindMp  , @chrSolve1EvidCoreMp
+                                                             , @chrSolve1EvidCBindL, @chrSolve1EvidBindMp, @chrSolve1ScopeBindMp, @chrSolve1EvidCoreMp
 %%]]
 %%[[(9 codegen tycore)
                                                              , @chrSolve1EvidBindMpTC, @chrSolve1ScopeBindMpTC, @chrSolve1EvidCoreMpTC
@@ -503,7 +508,7 @@ SEM Decl
                             .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp, @chrCtxtAssumeCnstrMp, @toProveGathCnstrMp]
                             .   (_,chrSolveDeclsRemCnstrMp,cannotResDeclsCnstrMp,chrSolveSimpTyVarMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_
 %%[[(9 codegen)
-                                ,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,_
+                                ,chrSolveDeclsEvidCBindL,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,_
 %%]]
 %%[[(9 codegen tycore)
                                 ,chrSolveDeclsEvidBindMpTC,chrSolveDeclsScopeBindMpTC,_
@@ -517,7 +522,7 @@ SEM Decl
                             .   toProveSuperCnstrMp =   cnstrMpUnions [@chrCtxtAssumeCnstrMp,@chrSuperProveCnstrMp]
                             .   (_,chrSolveSuperRemCnstrMp,cannotResSuperCnstrMp,chrSolveSuperSimpTyVarMp,chrSolveSuperErrs,chrSuperSimplifyResult,_
 %%[[(9 codegen)
-                                ,chrSolveSuperEvidBindMp,chrSolveSuperScopeBindMp,_
+                                ,chrSolveSuperEvidCBindL,chrSolveSuperEvidBindMp,chrSolveSuperScopeBindMp,_
 %%]]
 %%[[(9 codegen tycore)
                                 ,chrSolveSuperEvidBindMpTC,chrSolveSuperScopeBindMpTC,_

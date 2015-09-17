@@ -551,7 +551,7 @@ evidMpToCore env evidMp
                       = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vr r)) $ Map.lookup ev $ tcsEvMp st
 
 
-%%[(9 codegen) export(evidKeyCoreMpToBinds)
+%%[(9 codegen)
 evidKeyCoreMpToBinds :: FIIn' gm -> EvidKeyToCExprMap -> (EvidKeyToCBindMap,PredScopeToCBindMap)
 evidKeyCoreMpToBinds env m
   = dbg "evidKeyCoreMpToBinds.res"
@@ -591,20 +591,23 @@ Extract from the basic bindings for prove obligations the following:
 - foreach introduced assumption, the bindings required for depending prove obligations which only require that assumption.
 - the rest, which depends on multiple assumptions, and thus can only be introduced at the deepest scope. Hence a map from scope to such bindings.
 
+20150917.
+The above is now replaced with code below, which works.
+
 %%[(9 codegen) export(EvidCBindL,evidKeyCoreMpToBinds2)
 type EvidCBindL = [CBind]
 
 evidKeyCoreMpToBinds2 :: FIIn' gm -> EvidKeyToCExprMap -> (EvidCBindL,EvidKeyToCBindMap,PredScopeToCBindMap)
 evidKeyCoreMpToBinds2 env m
-  = (   [ mkd i (tcrCExpr r) (SysF.ty2TyCforFFI opts $ tcrTy r)
+  = (   [ mkd i r
         | (i,r) <- Map.toList independentOfAssumes
         ]
     , Map.unionsWith (++)
-      $ [ Map.singleton (subevdId $ head $ Set.toList $ tcrUsed r) [mkd i (tcrCExpr r) (SysF.ty2TyCforFFI opts $ tcrTy r)]
+      $ [ Map.singleton (subevdId $ head $ Set.toList $ tcrUsed r) [mkd i r]
         | (i,r) <- Map.toList dependentOn1Assume
         ]
     , Map.unionsWith (++)
-      $ [ Map.singleton (deepestScope (tcrScope r) (tcrUsed r)) [mkd i (tcrCExpr r) (SysF.ty2TyCforFFI opts $ tcrTy r)]
+      $ [ Map.singleton (deepestScope (tcrScope r) (tcrUsed r)) [mkd i r]
         | (i,r) <- Map.toList dependentOnNAssumes
         ]
     )
@@ -612,7 +615,8 @@ evidKeyCoreMpToBinds2 env m
           = Map.partition (\r -> Set.null $ tcrUsed r) m
         (dependentOn1Assume, dependentOnNAssumes)
           = Map.partition (\r -> Set.size (tcrUsed r) == 1) m
-        mkd i e t         = acoreBind1MetaTy (mkHNm i) CMetaVal_Dict t e
+        -- mkd i e t         = acoreBind1MetaTy (mkHNm i) CMetaVal_Dict t e
+        mkd i r = acoreBind1MetaTy (mkHNm i) CMetaVal_Dict (SysF.ty2TyCforFFI opts $ tcrTy r) (tcrCExpr r)
         deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
         opts = feEHCOpts $ fiEnv env        
 %%]

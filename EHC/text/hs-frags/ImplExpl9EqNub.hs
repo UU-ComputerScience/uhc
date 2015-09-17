@@ -20,6 +20,8 @@ f2 :: (Integral a, Eq a) => a -> a -> Bool
 f2 x y = let instance dEqI3 <: (Eq a, Integral a) => Eq (I a) where                                                -- (2)
                I i1 == I i2 = i1 `mod` 2 == i2 `mod` 2
          in  I x == I y
+-- variations that should work?
+-- omission of (Eq a, Integral a) and let tyvar a be brought into scope via x
 
 main = do
   let o = 1 :: Int

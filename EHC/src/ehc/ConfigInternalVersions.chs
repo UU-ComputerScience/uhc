@@ -27,9 +27,17 @@ internalVersionCombined =
       internalVersionHI
   .|. (internalVersionCore 		`shiftL` 8)
   .|. (internalVersionCoreRun 	`shiftL` 16)
+  .|. (internalVersionTySys 	`shiftL` 24)
+  .|. (internalVersionCodeGen 	`shiftL` 32)
 %%]
 
-%%[50 hs export(internalVersionHI, internalVersionCore, internalVersionCoreRun)
+%%[50 hs export(internalVersionTySys, internalVersionCodeGen, internalVersionHI, internalVersionCore, internalVersionCoreRun)
+-- | For variation in type inferencing
+internalVersionTySys = mkInternalVersion 2
+
+-- | For variation in code gen
+internalVersionCodeGen = mkInternalVersion 1
+
 -- | For binary/serialized HI .hi files and all data stored there
 internalVersionHI = mkInternalVersion 1
 

@@ -331,11 +331,8 @@ ehcCmdLineOpts = sortOptions $
 %%][(8 codegen tycore)
      ,  Option "p"  ["pretty"]              (OptArg oPretty "hs|eh|ast|ty|-")       "show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
 %%]]
-%%[[1
      ,  Option "d"  ["debug"]               (NoArg oDebug)                          "show debug information"
      ,  Option ""   ["priv"]                (boolArg oPriv)                         "private flag, used during development of 2 impls of 1 feature"
-%%][100
-%%]]
 %%[[(1 hmtyinfer)
      ,  Option ""   ["show-top-ty"]         (OptArg oShowTopTy "yes|no")            "show top ty, default=no"
 %%][100

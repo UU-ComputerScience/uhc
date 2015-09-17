@@ -109,7 +109,7 @@ SEM AGItf
 
 %%[(9 codegen)
 SEM AGItf
-  | AGItf       loc         .   extraCBindL :=  [(CBindCateg_Rec,@chrScopeMainBindL)]
+  | AGItf       loc         .   extraCBindL :=  [(CBindCateg_Rec, @chrSolveMainEvidCBindL ++ @chrScopeMainBindL)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,6 +206,9 @@ SEM Expr
                                                  )]
                             .   letValCBindL=   [( @howToBind
                                                  , @dataValCBindL
+%%[[9
+                                                   ++ @chrSolve2EvidCBindL
+%%]]
 %%[[92
                                                    ++ @cDataGenerBindL
 %%]]
@@ -1470,8 +1473,8 @@ SEM Decl
                                                         @finalTy @recTy
                                                         (@supClsFldNmL,@chrSuperProveNmL,@chrCtxtArgNmL)
                                                         bindL
-                                                        ( @chrAssumeDeclsInstBindL ++ @chrScopeDeclsBindL
-                                                        , @chrScopeSuperBindL
+                                                        ( @chrAssumeDeclsInstBindL ++ @chrSolveDeclsEvidCBindL ++ @chrScopeDeclsBindL
+                                                        , @chrSolveSuperEvidCBindL ++ @chrScopeSuperBindL
                                                         , @chrAssumeSuperBindL ++ @chrAssumeDeclsCtxtBindL
                                                         )
                                                       , foldr cSubstApp emptyCSubst cSubstInstL

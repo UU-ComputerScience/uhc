@@ -573,7 +573,12 @@ emptyEHCOpts
 %%[1 export(ehcOptEhAstPP, ehcOptEhAstPPExtensive)
 -- | PP EH AST, with annotations
 ehcOptEhAstPP :: EHCOpts -> Bool
-ehcOptEhAstPP opts = ehcOptShowAst opts || EhOpt_DumpAST `elem` ehcOptEhOpts opts
+ehcOptEhAstPP opts =
+%%[[1
+  ehcOptShowAst opts ||
+%%][100
+%%]]
+     EhOpt_DumpAST `elem` ehcOptEhOpts opts
 
 -- | PP EH AST, with annotations
 ehcOptEhAstPPExtensive :: EHCOpts -> Bool
