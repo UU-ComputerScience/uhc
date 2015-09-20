@@ -150,7 +150,7 @@ cpTranslateEH2Output modNm
                  errs   = []
 %%]]
          ;  when (isJust mbEHSem)
-                 (do { cpSetLimitErrsWhen 5 about errs
+                 (do { 
 %%[[8
                      ; when (ehcOptEmitEH opts)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
@@ -171,6 +171,7 @@ cpTranslateEH2Output modNm
                             liftIO $ putPPFPath (mkOutputFPath opts modNm fp Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 %%][100
 %%]]
+                     ; cpSetLimitErrsWhen 5 about errs
 %%[[(99 hmtyinfer tyderivtree)
                      ; when (_ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)

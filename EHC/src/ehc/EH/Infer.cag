@@ -611,8 +611,8 @@ SEM Decl
   | TySig       loc         .   gTyTvS              =   varFreeSet . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                             .   ty_sig_             :=  let fv  = Map.keysSet @tyExpr.tyVarWildMp `Set.union` @gTyTvS
                                                             t   = varmpIncMetaLev @lhs.finKiVarMp `varUpd` @tyExpr.ty
-                                                            tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
-                                                            t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
+                                                            -- tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
+                                                            t2k = tvarKi @lhs.finTyKiGam @tyExpr.intlTyKiGam @lhs.finKiVarMp emptyVarMp
                                                         in  tyQuantifyOuter t2k (`Set.member` fv) t
 %%]
 
@@ -628,8 +628,8 @@ SEM Decl
     FFE
 %%]]
                 loc         .   ty_sig_             =   let t   = varmpIncMetaLev @lhs.finKiVarMp `varUpd` @tyExpr.ty
-                                                            tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
-                                                            t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
+                                                            -- tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
+                                                            t2k = tvarKi @lhs.finTyKiGam @tyExpr.intlTyKiGam @lhs.finKiVarMp emptyVarMp
                                                         in  tyQuantifyOuter t2k (const False) t
                 lhs         .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @ty_sig_
 %%]

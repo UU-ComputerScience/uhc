@@ -33,7 +33,7 @@ internalVersionCombined =
 
 %%[50 hs export(internalVersionTySys, internalVersionCodeGen, internalVersionHI, internalVersionCore, internalVersionCoreRun)
 -- | For variation in type inferencing
-internalVersionTySys = mkInternalVersion 2
+internalVersionTySys = mkInternalVersion 5
 
 -- | For variation in code gen
 internalVersionCodeGen = mkInternalVersion 1

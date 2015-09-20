@@ -565,7 +565,8 @@ SET AllData         = AllDataField AllDataConstr AllDataConstrEq
 
 %%[9
 DATA Decl
-  | Class           tyPrExpr        : TyExpr
+  | Class           clNm			: HsName
+                    tyPrExpr        : TyExpr
 %%[[15
                     funcDeps        : FuncDeps
 %%]]

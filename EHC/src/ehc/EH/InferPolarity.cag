@@ -432,7 +432,7 @@ SEM Decl
 -- in environment
 SEM Decl
   | Data Type   lhs         .   patPolGam           =   gamAdd @tyNm (mkPGI @polSig) @lhs.patPolGam
-  | Class       lhs         .   patPolGam           =   gamAdd (hsnClass2Polarity @clsNm) (mkPGI @polSig) @lhs.patPolGam
+  | Class       lhs         .   patPolGam           =   gamAdd (hsnClass2Polarity @prClsNm) (mkPGI @polSig) @lhs.patPolGam
   | Instance    lhs         .   patPolGam           =   @lhs.patPolGam
 
 -- inferencing

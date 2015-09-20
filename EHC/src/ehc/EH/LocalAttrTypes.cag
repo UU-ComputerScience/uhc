@@ -49,9 +49,9 @@ SEM *
 		loc.clKiNmErrs  				: ErrL
 		loc.clMissNmS  					: {Set HsName}
 		loc.clNmS  						: {Set HsName}
-		loc.clsAllFldL 					: {[Assoc HsName Ty]}
-		loc.clsFldL 					: {[Assoc HsName Ty]}
-		loc.clsNm 						: HsName
+		-- loc.clsAllFldL 					: {[Assoc HsName Ty]}
+		-- loc.clsFldL 					: {[Assoc HsName Ty]}
+		loc.prClsNm 						: HsName
 		loc.dataDictNm 					: HsName
 		loc.clsTyRec 					: Ty
 		loc.dataConTy	 				: Ty
@@ -134,7 +134,7 @@ SEM *
 		loc.gTyTvL  					: {[TyVarId]}
 		loc.dataTyVarIdL  				: {[TyVarId]}
         loc.dataConProdTy       		: Ty
-		loc.dataConTyFv  				: {[TyVarId]}
+		-- loc.dataConTyFv  				: {[TyVarId]}
 		loc.gTyTvS  					: TyVarIdS
 		loc.noLetQuantTyVarIdS  		: TyVarIdS
 		loc.gUniq  						: UID

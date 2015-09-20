@@ -1910,9 +1910,9 @@ fitPredIntoPred fi pr1 pr2
 %%% Retrieving evidence type for predicate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(fitPredToEvid')
-fitPredToEvid' :: UID -> VarMp -> Ty -> Either ClGamInfo ClGam -> FIOut
-fitPredToEvid' u varmp prTy gg
+%%[(9 hmtyinfer) export(fitPredToEvid'')
+fitPredToEvid'' :: (ClGamInfo -> Ty) -> UID -> VarMp -> Ty -> Either ClGamInfo ClGam -> FIOut
+fitPredToEvid'' getTy u varmp prTy gg
   =  case prTy of
        Ty_Any  ->  emptyFO
        _       ->  fPr u prTy
@@ -1926,11 +1926,37 @@ fitPredToEvid' u varmp prTy gg
                     where fClgi u clgi prTy
                             = fo {foTy = appUnArrRes (foTy fo)}
                             where (u',u1,u2) = mkNewLevUID2 u
-                                  fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `appArr` mkTyVar u2)
+                                  fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (getTy clgi) ([prTy] `appArr` mkTyVar u2)
                  Ty_Pred (Pred_Pred t)
                     ->  let  (aL,r) = appUnArr t
                              (_,aLr'@(r':aL')) = foldr (\t (u,ar) -> let (u',u1) = mkNewLevUID u in (u',fPr u1 t : ar)) (u,[]) (r : aL)
                         in   manyFO (aLr' ++ [emptyFO {foTy = map foTy aL' `appArr` foTy r'}])
+%%]
+
+%%[(9 hmtyinfer) export(fitPredToEvid')
+fitPredToEvid' :: UID -> VarMp -> Ty -> Either ClGamInfo ClGam -> FIOut
+fitPredToEvid' = fitPredToEvid'' clgiPrToEvidRecTy
+{-
+fitPredToEvid' u varmp prTy gg = 
+  =  case prTy of
+       Ty_Any  ->  emptyFO
+       _       ->  fPr u prTy
+  where  fPr u prTy
+            =  case tyUnAnn prTy of -- TBD: necessary?
+                 Ty_Pred p@(Pred_Class _)
+                    ->  case gg of
+                          Left clgi -> fClgi u clgi prTy
+                          Right g   -> maybe err (\clgi -> fClgi u clgi prTy) $ gamLookup (fst $ predMatchNmArgs p) g
+                                    where err = emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [fst $ tyPredMatchNmArgs prTy]]}
+                    where fClgi u clgi prTy
+                            = fo {foTy = appUnArrRes (foTy fo)}
+                            where (u',u1,u2) = mkNewLevUID2 u
+                                  fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (clgiPrToEvidRecTy clgi) ([prTy] `appArr` mkTyVar u2)
+                 Ty_Pred (Pred_Pred t)
+                    ->  let  (aL,r) = appUnArr t
+                             (_,aLr'@(r':aL')) = foldr (\t (u,ar) -> let (u',u1) = mkNewLevUID u in (u',fPr u1 t : ar)) (u,[]) (r : aL)
+                        in   manyFO (aLr' ++ [emptyFO {foTy = map foTy aL' `appArr` foTy r'}])
+-}
 %%]
 
 %%[(9 hmtyinfer) export(fitPredToEvid)

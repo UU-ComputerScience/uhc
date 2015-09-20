@@ -1063,7 +1063,6 @@ ecuIsHSNewerThanHI ecu
 %%]]
                     errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
                     
-               cpSetLimitErrsWhen 5 about errs
                bUpdECU modNm $! ecuStoreEHSem $! ehSem
                when (ehcOptEmitEH opts)
                     (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
@@ -1085,6 +1084,7 @@ ecuIsHSNewerThanHI ecu
                     liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 %%][100
 %%]]
+               cpSetLimitErrsWhen 5 about errs
 %%[[(99 hmtyinfer tyderivtree)
                when (isTopMod && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
                     (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)

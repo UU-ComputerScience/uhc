@@ -561,11 +561,11 @@ pClassHead      =    pTyPrExprPrefix <*> pHd <|> pHd
 
 pDeclClass      ::   EHCParser Decl
 %%[[9
-pDeclClass      =    (\h d -> mkEH Decl_Class h Nothing d)
+pDeclClass      =    (\h d -> mkEH Decl_Class hsnUnknown h Nothing d)
 %%][15
-pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d)
+pDeclClass      =    (\h deps d -> mkEH Decl_Class hsnUnknown h deps Nothing d)
 %%][92
-pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d [])
+pDeclClass      =    (\h deps d -> mkEH Decl_Class hsnUnknown h deps Nothing d [])
 %%]]
                      <$   pKey "class"
                      <*>  pClassHead

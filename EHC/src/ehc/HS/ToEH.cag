@@ -202,7 +202,7 @@ SEM Declaration
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
                                             a = appArr c h
                                             (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
-                                        in  ( rngLift @range EH.Decl_Class a
+                                        in  ( rngLift @range EH.Decl_Class @classrefname a
 %%[[15
                                                       @dependencies.eh
 %%]]

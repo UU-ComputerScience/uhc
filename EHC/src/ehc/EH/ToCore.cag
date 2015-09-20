@@ -1108,7 +1108,7 @@ SEM Decl
                                                           $ acoreLam1Ty x (acoreTyErr "EH.ToCore.Decl.Class.valCBindL")
                                                           $ mkApp
                                                           $ mkSel n
-                                                        | (n,t) <- @clsFldL
+                                                        | (Just n,t) <- @clsFldTyL
                                                         ]
 %%]
 
