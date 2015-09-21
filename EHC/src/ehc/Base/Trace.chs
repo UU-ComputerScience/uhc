@@ -45,6 +45,7 @@ data TraceOn
   | TraceOn_BldRef					-- build reference related
   | TraceOn_BldMod					-- build module related
   | TraceOn_HsScc					-- HS scc of name dependency analysis
+  | TraceOn_HsDpd					-- HS dpd info of name dependency analysis
 %%[[(8 corerun)
   | TraceOn_RunMod					-- run module related
   | TraceOn_RunHeap					-- run heap related

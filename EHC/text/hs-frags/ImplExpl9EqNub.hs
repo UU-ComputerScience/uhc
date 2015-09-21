@@ -27,8 +27,6 @@ testInt = do
           in  1 == 3
   print $ let instance dEqInt <: Eq Integer
           in  1 == 3
-{-
-
 newtype I a = I a
 
 instance dEqI <: Eq (I Int) where                                                -- (1)
@@ -36,6 +34,8 @@ instance dEqI <: Eq (I Int) where                                               
 
 instance dEqI2 :: Eq (I Int) where                                                -- (2)
   I i1 == I i2 = i1 `mod` 2 == i2 `mod` 2
+
+{-
 
 {-
 f1 x y = let instance Eq (I Int) where                                                -- (2)
