@@ -26,7 +26,7 @@
 %%]
 
 -- debug only
-%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
+%%[(8888 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

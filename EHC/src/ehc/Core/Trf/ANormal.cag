@@ -24,7 +24,7 @@ For that to work, all arguments of an application closure must themselves be bou
 %%[(8 codegen) hs import({%{EH}AbstractCore},{%{EH}Core})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Debug})
+%%[(8888 codegen) hs import({%{EH}Base.Debug})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonCtxtPred},{Core/CommonBindNm},{Core/Trf/CommonFv},{Core/Trf/CommonLev})

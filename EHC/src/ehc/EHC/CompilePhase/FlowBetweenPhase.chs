@@ -71,7 +71,7 @@ XXX
 %%]
 
 -- for debug
-%%[50 hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[5050 hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

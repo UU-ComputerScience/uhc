@@ -44,7 +44,7 @@ Module analysis
 %%[(50 codegen) hs import({%{EH}CodeGen.RefGenerator})
 %%]
 
-%%[50 import({%{EH}Base.Debug})
+%%[5050 import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

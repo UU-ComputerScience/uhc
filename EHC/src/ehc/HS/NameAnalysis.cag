@@ -1273,29 +1273,36 @@ SEM Declaration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-idDpdMp2SccOrder :: IdDefOccGam -> IdDpdMp -> [[IdOcc]]
-idDpdMp2SccOrder gam mp
-  = dgSCCToList gr
+idDpdMp2SccOrder' :: IdDefOccGam -> IdDpdMp -> ([[IdOcc]],IdDpdMp)
+idDpdMp2SccOrder' gam mp
+  = (dgSCCToList gr, dpmp)
   where dflt = idDpdMpUnions [ idDpdMpSingleton o o | o <- gamKeys gam ] `Map.difference` mp
-        gr = mkDpdGrFromEdgesMp (idDpdMpUnions [mp,dflt])
+        dpmp = idDpdMpUnions [mp,dflt]
+        gr   = mkDpdGrFromEdgesMp dpmp
+
+idDpdMp2SccOrder :: IdDefOccGam -> IdDpdMp -> [[IdOcc]]
+idDpdMp2SccOrder gam mp = fst $ idDpdMp2SccOrder' gam mp
 %%]
 
 %%[1.Body.sccOrder
 SEM Body
     | Body
-        loc             .   sccOrder    =   idDpdMp2SccOrder @declarations.idDefOccGam @declarations.idDpdMp
+        loc             .   (sccOrder,sccOrderDpdMp)
+        								=   idDpdMp2SccOrder' @declarations.idDefOccGam @declarations.idDpdMp
 %%]
 
 %%[8.Body.sccOrder -1.Body.sccOrder
 SEM Body
     | Body
-        loc             .   sccOrder    =   idDpdMp2SccOrder (@idDefOccGamMain `gamUnion` @declarations.idDefOccGam) @declarations.idDpdMp
+        loc             .   (sccOrder,sccOrderDpdMp)
+        								=   idDpdMp2SccOrder' (@idDefOccGamMain `gamUnion` @declarations.idDefOccGam) @declarations.idDpdMp
 %%]
 
 %%[50.Body.sccOrder -8.Body.sccOrder
 SEM Body
     | Body
-        loc             .   sccOrder    =   idDpdMp2SccOrder (@idDefOccGamMain `gamUnion` @declarations.idDefOccGam) @idDpdMp
+        loc             .   (sccOrder,sccOrderDpdMp)
+        								=   idDpdMp2SccOrder' (@idDefOccGamMain `gamUnion` @declarations.idDefOccGam) @idDpdMp
 %%]
 
 %%[1

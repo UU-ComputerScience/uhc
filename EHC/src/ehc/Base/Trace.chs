@@ -14,7 +14,10 @@
 %%[8 import(Control.Monad, Control.Monad.IO.Class)
 %%]
 
-%%[8 import(qualified Data.Map as Map, qualified Data.Sequence as Seq, qualified Data.Foldable as Seq)
+%%[8 import(qualified Data.Map as Map, qualified Data.Sequence as Sq, qualified Data.Foldable as Sq)
+%%]
+
+%%[8 import(Data.Sequence((><))) export ((><))
 %%]
 
 %%[8 import({%{EH}Base.Common})
@@ -41,6 +44,7 @@ data TraceOn
   | TraceOn_BldImport				-- build import related
   | TraceOn_BldRef					-- build reference related
   | TraceOn_BldMod					-- build module related
+  | TraceOn_HsScc					-- HS scc of name dependency analysis
 %%[[(8 corerun)
   | TraceOn_RunMod					-- run module related
   | TraceOn_RunHeap					-- run heap related
@@ -62,17 +66,31 @@ allTraceOnMp = str2stMpWithShow (strToLower . showUnprefixed 1)
 %%% Tracing based on trace config/options, intended to be wrapped around in specific trace functions, hence the INLINE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(trPP, trOnPP, trOn)
+%%[8 export(TrPP, trppIsEmpty, trppEmpty)
+type TrPP = Sq.Seq PP_Doc
+
+trppIsEmpty :: TrPP -> Bool
+trppIsEmpty = Sq.null
+
+trppEmpty :: TrPP
+trppEmpty = Sq.empty
+%%]
+
+%%[8 export(trPPOnIO, trPP, trOnPP, trOn)
 -- | Tracing PPs
-trPP :: (TraceOn -> Bool) -> TraceOn -> [PP_Doc] -> Seq.Seq PP_Doc
-trPP onTr ton ms = if onTr ton then pr ms else Seq.empty
-  where pr []      = Seq.empty
-        pr [m]     = Seq.singleton $ show ton >|< ":" >#< m
-        pr (m:ms)  = pr [m] Seq.>< (Seq.fromList $ map (indent 2) ms)
+trPP :: (TraceOn -> Bool) -> TraceOn -> [PP_Doc] -> TrPP
+trPP onTr ton ms = if onTr ton then pr ms else trppEmpty
+  where pr []      = trppEmpty
+        pr [m]     = Sq.singleton $ show ton >|< ":" >#< m
+        pr (m:ms)  = pr [m] >< (Sq.fromList $ map (indent 2) ms)
+
+-- | Dump trace IO monadically
+trPPOnIO :: (Monad m, MonadIO m) => TrPP -> m ()
+trPPOnIO ppl = liftIO $ mapM_ putPPLn $ Sq.toList ppl
 
 -- | Tracing PPs, producing output on IO
 trOnPP :: (Monad m, MonadIO m) => (TraceOn -> Bool) -> TraceOn -> [PP_Doc] -> m ()
-trOnPP onTr ton ms = when (onTr ton) $ liftIO $ mapM_ putPPLn $ Seq.toList $ trPP onTr ton ms
+trOnPP onTr ton ms = when (onTr ton) $ trPPOnIO $ trPP onTr ton ms
 {-
   where pr []      = return ()
         pr [m]     = putPPLn $ show ton >|< ":" >#< m

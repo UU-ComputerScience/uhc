@@ -28,7 +28,7 @@
 %%]
 
 -- debug
-%%[(8 jazy) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(8888 jazy) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

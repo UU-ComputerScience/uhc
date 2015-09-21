@@ -46,7 +46,7 @@
 %%[50 hs export(Visible(..))
 %%]
 
-%%[50 hs import(Control.Monad, UHC.Util.Binary)
+%%[50 hs import(Control.Monad, UHC.Util.Binary,UHC.Util.Pretty)
 %%]
 %%[50 hs import(UHC.Util.Serialize)
 %%]
@@ -62,7 +62,7 @@
 %%]
 
 -- for debug
-%%[50 hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[5050 hs import({%{EH}Base.Debug})
 %%]
 
 

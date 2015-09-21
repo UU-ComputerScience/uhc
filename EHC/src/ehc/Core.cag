@@ -124,7 +124,7 @@ DERIVING CMetaBind
 %%]
 
 -- for debug only
-%%[(8 core) hs import({%{EH}Base.Debug})
+%%[(8888 core) hs import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

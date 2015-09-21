@@ -13,7 +13,7 @@
 %%[(3 hmtyinfer || hmtyast) hs import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug})
+%%[(4444 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug})
 %%]
 %%[(4 hmtyinfer || hmtyast) hs import(UHC.Util.Pretty)
 %%]

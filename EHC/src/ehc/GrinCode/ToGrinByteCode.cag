@@ -30,7 +30,7 @@
 %%]
 
 Debug
-%%[(8 codegen grin) hs import({%{EH}Base.Debug})
+%%[(8888 codegen grin) hs import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

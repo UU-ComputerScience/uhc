@@ -34,7 +34,7 @@ Substitution over a meta level higher is the same as over the current level, exc
 %%]
 
 -- debug
-%%[(6 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}Ty.Pretty})
+%%[(6666 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}Ty.Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

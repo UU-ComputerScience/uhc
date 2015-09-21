@@ -10,7 +10,7 @@
 %%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Quantify} import(UHC.Util.Utils,{%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyQuantify)
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(4444 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List)

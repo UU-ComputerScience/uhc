@@ -29,7 +29,7 @@
 %%[(9 codegen) import(Control.Monad.State)
 %%]
 
-%%[(9 codegen) import({%{EH}Base.Debug} as Debug)
+%%[(9999 codegen) import({%{EH}Base.Debug} as Debug)
 %%]
 
 %%[(9 codegen) import(Debug.Trace)

@@ -1,0 +1,26 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 ag
+ATTR AGItf AllNT [ | | trpp USE {><} {trppEmpty} : TrPP ]
+%%]
+
+%%[8 ag
+ATTR AllNT [ tr : {TraceOn -> [PP_Doc] -> TrPP} | | ]
+
+SEM AGItf
+    | AGItf
+        loc             .   tr          =   trPP (`Set.member` ehcOptTraceOn @lhs.opts)
+%%]
+
+%%[8 ag
+SEM Body
+    | Body
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsScc $ [pp "Body: sccOrder"] ++ map (ppBracketsCommas) @sccOrder)
+                                            >< (@lhs.tr TraceOn_HsScc $ [pp "Body: sccOrderDpdMp"] ++ [ fr >|< ":" >#< vlist to | (fr,to) <- Map.toList @sccOrderDpdMp ])
+%%[[50
+                                            >< @importdeclarations.trpp
+%%]]
+                                            >< @declarations.trpp
+%%]

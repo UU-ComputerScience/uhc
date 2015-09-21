@@ -23,7 +23,7 @@ The reduction is limited by the expansion cutoff limit indicated by option @ehcO
 For debug/trace:
 %%[(11 hmtyinfer) import(UHC.Util.Pretty)
 %%]
-%%[(11 hmtyinfer) import({%{EH}Base.Debug})
+%%[(1111 hmtyinfer) import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

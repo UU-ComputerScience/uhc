@@ -27,6 +27,9 @@ Translation to another AST
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
 
+%%[8 import({%{EH}Base.Trace})
+%%]
+
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
@@ -119,6 +122,8 @@ cpTranslateHs2EH modNm
                  errs   = Seq.toList $ HSSem.errSq_Syn_AGItf hsSem
          ;  when (isJust mbHsSem)
                  (do { cpUpdCU modNm (ecuStoreEH eh)
+                     ; let trpp = HSSem.trpp_Syn_AGItf hsSem
+                     ; when (not $ trppIsEmpty trpp) $ trPPOnIO trpp
                      ; cpSetLimitErrsWhen 5 "Dependency/name analysis" errs
                      ; when (ehcOptEmitHS opts)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "hs2") (HSSem.pp_Syn_AGItf hsSem) 1000)

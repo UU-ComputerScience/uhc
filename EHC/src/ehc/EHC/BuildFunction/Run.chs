@@ -1003,6 +1003,9 @@ ecuIsHSNewerThanHI ecu
 %%[[50
                     hasMain= HSSem.mainValExists_Syn_AGItf hsSem
 %%]]
+               let trpp = HSSem.trpp_Syn_AGItf hsSem
+               when (not $ trppIsEmpty trpp) $ trPPOnIO trpp
+
                cpSetLimitErrsWhen 5 "Dependency/name analysis" $ Seq.toList $ HSSem.errSq_Syn_AGItf hsSem
                bUpdECU modNm ( ecuStoreHSSem hsSem
 %%[[50

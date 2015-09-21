@@ -29,7 +29,7 @@
 %%[(9 codegen tycore) import(Control.Monad.State)
 %%]
 
-%%[(9 codegen tycore) import({%{EH}Base.Debug} as Debug)
+%%[(9999 codegen tycore) import({%{EH}Base.Debug} as Debug)
 %%]
 
 

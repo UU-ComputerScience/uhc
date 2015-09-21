@@ -37,7 +37,7 @@
 %%[(3 hmtyinfer) hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})
 %%]
 
-%%[4 hs import({%{EH}Base.Debug} as Debug,Debug.Trace)
+%%[4444 hs import({%{EH}Base.Debug} as Debug,Debug.Trace)
 %%]
 
 %%[(4 hmtyinfer) hs import({%{EH}Ty.FitsInCommon2})

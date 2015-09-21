@@ -70,7 +70,7 @@ grInline allow grmod
 -- for debugging:
 %%[(8 codegen grin) hs import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Debug})
+%%[(8888 codegen grin) hs import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

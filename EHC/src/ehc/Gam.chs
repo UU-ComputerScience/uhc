@@ -67,7 +67,7 @@
 %%[8.ScopeMapGam import(UHC.Util.ScopeMapGam)
 %%]
 
-%%[9 import({%{EH}Base.Debug})
+%%[9999 import({%{EH}Base.Debug})
 %%]
 
 %%[(9 codegen) import({%{EH}Core.Subst})

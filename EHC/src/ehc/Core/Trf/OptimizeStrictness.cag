@@ -34,7 +34,7 @@ Specific transformations:
 %%[(8 codegen) hs import({%{EH}LamInfo})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Debug},{%{EH}Base.HsName.Builtin})
+%%[(8888 codegen) hs import({%{EH}Base.Debug},{%{EH}Base.HsName.Builtin})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/CommonBindNm},{Core/CommonPred})
