@@ -911,7 +911,7 @@ SEM Declaration
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@type.conNm] IdOcc_Class IdAsp_Class_Class @range
     | InstanceUseImplicitly
         loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@type.conNm] IdOcc_Class IdAsp_Class_Class @range
     | Default
         loc             .   (classrefname,classrefnames,idUseOccGamDflt,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam (catMaybes [@name]) IdOcc_Class IdAsp_Class_Class @range
@@ -1157,7 +1157,7 @@ SEM Declaration
     | InstanceUseImplicitly
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
-                                                (gamUnions [@idUseOccGamInst,@types.idUseOccGam,@expression.idUseOccGam])
+                                                (gamUnions [@idUseOccGamInst,@type.idUseOccGam,@expression.idUseOccGam])
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
     | Default
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)

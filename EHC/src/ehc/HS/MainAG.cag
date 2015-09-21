@@ -231,9 +231,9 @@ SEM FieldDeclaration
         loc         .   isAsPred    =   False
 
 SEM Declaration
-    | Instance
+    | Instance InstanceUseImplicitly
         loc         .   isAsPred    =   True -- False -- True
-    | * - Instance
+    | * - Instance InstanceUseImplicitly
         loc         .   isAsPred    =   False
 
 SEM MaybeType Pattern Expression

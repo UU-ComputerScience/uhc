@@ -591,8 +591,8 @@ pBody' opts addDecl
                        (\((n,u),c,h) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c h d)
                        <$> pHeader
                        <*> pWhere' pDeclarationValue
-                   <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
-                       <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pTypeBase
+                   <|> (\e {- cl ts -} hty t -> Declaration_InstanceUseImplicitly (mkRange1 t) e hty) -- (tokMkQName cl) ts)
+                       <$> pExpression <* pLTCOLON <*> pHeaderTy -- qconid <*> pList1 pTypeBase
                    )
 %%[[91
           <|> -- (\t ((n,u),c,cl,ts) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c (tokMkQName cl) ts Nothing)
@@ -600,7 +600,8 @@ pBody' opts addDecl
               <$> pDERIVING <* pINSTANCE <*> pHeader
 %%]]
           -- where pHeader = (,,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
-          where pHeader = (,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> pType' pTypeOpBase (\_ p -> p)
+          where pHeader = (,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> pHeaderTy
+                pHeaderTy = pType' pTypeOpBase (\_ p -> p)
 %%]
 
 %%[9

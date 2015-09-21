@@ -324,6 +324,8 @@ SEM Declaration
                         .   idOccDefs   =   [@idOccDef,@idOccDefVal]
     | InstanceUseImplicitly
         loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
+                        -- .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
+                        -- .   idOccDefs   =   [@idOccDef,@idOccDefVal]
                         .   idOccDefs   =   [@idOccDef]
     | Default
         loc             .   idOccDef    =   IdOcc @defaultname IdOcc_Dflt
@@ -462,9 +464,9 @@ SEM Pattern
 %%[9
 SEM Declaration
     | Instance
-        loc         .   instancename=   maybe (hsnUniqifyUID HsNameUniqifier_ClassDict @lUniq (@type.conNm)) id @maybeinstancename -- maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
+        loc         .   instancename=   maybe (hsnUniqifyUID HsNameUniqifier_ClassDict @lUniq (@type.conNm)) id @maybeinstancename
     | Class
-        loc         .   instancename=   hsnUniqifyUID HsNameUniqifier_Class @lUniq (mkHNm @typelefthandside.name) -- hsnSuffix (mkHNm @lUniq) ("_class_"++ show @typelefthandside.name)
+        loc         .   instancename=   hsnUniqifyUID HsNameUniqifier_Class @lUniq (mkHNm @typelefthandside.name)
     | InstanceUseImplicitly
         loc         .   instancename=   mkHNm @lUniq
     | Default

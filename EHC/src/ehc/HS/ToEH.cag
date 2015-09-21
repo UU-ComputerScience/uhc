@@ -222,7 +222,8 @@ SEM Declaration
                                         in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) @instVariant (appArr c h) (concat @ehReorderedDecls)
         lhs         .   eh          =   [@eh]
     | InstanceUseImplicitly
-        loc         .   eh          =   let h = rngLift @range EH.PrExpr_Class @classrefname @types.eh
+        loc         .   eh          =   let -- h = rngLift @range EH.PrExpr_Class @classrefname @types.eh
+                                            h = {- rngLift @range EH.TyExpr_Pred $ -} panicJust "HS.ToEH.InstanceUseImplicitly.eh.type.ehMbAsPr" @type.ehMbAsPr
                                         in  rngLift @range EH.Decl_InstanceIntro (Just @instancerefname) @expression.eh h
         lhs         .   eh          =   [@eh]
     | Default

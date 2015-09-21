@@ -74,7 +74,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 18: slides: base (share), older UU style
 # 26: acm paper: base (share)
 # 30: book: base (share)
-# 32: llncs paper: base (share) - not yet available
+# 32: llncs paper: base (share)
 # 37: entcs paper: base (share)
 # 39: documentation using simplified latex/...: base (share)
 # 54: poster: base (share)
@@ -139,6 +139,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 68: doc: Improving the UHC JavaScript Backend
 # 69: paper (exp report for ICFP2012): "JavasScript (worktitle)"
 # 70: plain article: Improving the UHC JavaScript Backend (built upon 71, but not working)
+# 72: flops2016, llncs, explicit/implicit dicts (revised, renewed)
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -155,6 +156,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 22, \
 		1 < 26, \
 		1 < 30, \
+		1 < 32, \
 		1 < 77, \
 		1 < 37, \
 		1 < 54, \
@@ -206,5 +208,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		54 < 55, \
 		56 < 57, \
 		67 < 65, \
-		71 < 70
+		71 < 70, \
+		32 < 72
 		

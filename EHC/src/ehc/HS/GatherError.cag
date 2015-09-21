@@ -214,7 +214,7 @@ SEM Declaration
     | Instance
         loc         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errIdUse, @context.errSq, @type.errSq, {- @types.errSq, -} @where.errSq, Seq.fromList @errReorder]
     | InstanceUseImplicitly
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq, @types.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq, @type.errSq]
     | Default
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @types.errSq]
 %%]

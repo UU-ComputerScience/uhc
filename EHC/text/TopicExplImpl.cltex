@@ -35,12 +35,40 @@ enabling the elegant formulation of some forms of generic programming.
 %endif
 %%]
 
+%%[abstractFlops2016
+The Haskell class system 
+provides a mechanism for implicitly passing extra arguments:
+functions can have class predicates as part of their type
+signature, and dictionaries for such predicates are implicitly constructed as well as implicitly passed around,
+thus relieving the programmer from a lot of
+clerical work and removing clutter from the program text.
+Unfortunately Haskell maintains a very strict boundary between the implicit and the
+explicit world; if the implicit mechanisms fail to construct the hidden
+dictionaries there is no way the programmer can provide help, nor is it possible
+to override the choices made by the implicit mechanisms.
+In \thischapt\ we describe, in the context of Haskell, a mechanism that allows
+a programmer to explicitly construct implicit arguments for class predicates. This extension
+blends well with existing resolution mechanisms, since it only overrides
+the default behavior.
+We describe this mechanism by means of examples runnable using UHC (Utrecht Haskell Compiler) and explore design choices.
+The aim of \thischapt\ primarily is to provide the reader with an implemented reference point intended to be used for further exploration of the
+design space for explicit parameter passing of implicit parameters.
+We intend to elaborate on the formal aspects of the design and implementation in future work.
+%%]
+
 %%[open
 %{
 %format pred        = "\mathbf{pred}"
 %format rule        = "\mathbf{rule}"
 %format pia         = pi "^a"
 %format piasigma    = pia "_{" sigma "}"
+
+\newcommand{\citeTHAG}{%
+\cite{dijkstra04thag%
+%if not (storyPHD || storyEhcBook)
+,dijkstra05phd%
+%endif
+}}
 %%]
 
 %%[close
@@ -48,12 +76,6 @@ enabling the elegant formulation of some forms of generic programming.
 %%]
 
 %%[body
-\newcommand{\citeTHAG}{%
-\cite{dijkstra04thag%
-%if not (storyPHD || storyEhcBook)
-,dijkstra05phd%
-%endif
-}}
 
 \subsection{Introduction}
 
@@ -68,7 +90,7 @@ that some predicates have to be satisfied when the function is called:
 %%[[wrap=code defF
 f  ::  Eq a => a -> a -> Int
 f  =   \x y -> if x == y then 3 else 4
-%%]
+%%]]
 
 In this example the type signature for |f| specifies that values of
 any type |a| can be passed as arguments,
@@ -79,7 +101,7 @@ as in the following simplified version of Haskell's |Eq| class declaration:
 %%[[wrap=code classEq
 class Eq a where
   (==) :: a -> a -> Bool
-%%]
+%%]]
 
 The presence of such a class predicate in a type requires the availability
 of a collection of functions and values (here a collection with just one element)
@@ -121,6 +143,7 @@ f  =   \dEq x y -> if (eqEqD dEq) x y then 3 else 4
 
 %%]]
 
+%%[[bodyIntro2
 Inside a function the elements of the predicate's dictionaries
 are available, as if they were defined as top-level variables.
 This is accomplished by implicitly passing a dictionary
@@ -211,7 +234,7 @@ f  =   \          x     y ->  if x == y then 3 else 4
 v1 = f  2 4
 v2 = f  {! ((==) = \x y -> (x `mod` 2) == (y `mod` 2)) <: Eq Int !}
         2 4
-%%]
+%%]]
 
 A dictionary (encoded as a record) |d| of an instance is constructed and passed directly as part of
 the language construct |{! d <: ... !}| (to be explained later).
@@ -236,7 +259,7 @@ normalize a :: M s a = M (mod a (modulus (undefined :: s)))
 instance (Modular s a,Integral a) => Num (M s a) where
   M a + M b = normalize (a + b)
   ... -- remaining definitions omitted
-%%]
+%%]]
 
 The problem now is to create for a value |m| of type |a| an instance of |Modular s a| for
 which |modulus| returns this |m|.
@@ -249,7 +272,7 @@ for use by |k|:
 %%[[wrap=code
 withModulus ::  a ->  (forall ^ s . Modular s a => s -> w)  ->  w
 withModulus     m     k                                     =   ...
-%%]
+%%]]
 
 They point out that this could have been done more directly if local type class instances would have been available:
 
@@ -259,7 +282,7 @@ withModulus ::  a ->  (forall ^ s . Modular s a => s -> w) -> w
 withModulus     m     k
   =  let  instance Modular Label a where modulus _ = m
      in   k (undefined :: Label)
-%%]
+%%]]
 
 The use of explicit parameter passing for an implicit argument proposed by us in \thischapt\ would have
 even further simplified the example, as we can avoid the phantom type |Label| and related type hackery
@@ -482,8 +505,11 @@ Here we give algorithmic type rules.
 A corresponding implementation based on attribute grammars can be found in
 \cite{dijkstra04ehc-web}.
 \end{Itemize}
+%%]]
 
 \subsection{Preliminaries}
+
+%%[[bodyPreliminaries
 \label{ehc09-prelim}
 
 Intended as a platform for both education and research, EH offers a combination of advanced concepts:
@@ -609,7 +635,11 @@ in earlier chapters of this thesis.
 %%@AppxNotation.typeRecBasic
 \end{TabularCenterFigure}
 
+%%]]
+
 \subsection{Implicit parameters}
+
+%%[[bodyImplicitParams
 \label{ehc09-implparam}
 
 In this section we give EH example programs, demonstrating most of the features
@@ -1047,6 +1077,8 @@ here in both cases |dEqList| is the only choice possible.
 
 %endif %% not shortStory
 
+%%]]
+
 %if not (storyPHD || storyEhcBook || shortStory)
 
 \subsection{Partial type signatures}
@@ -1063,6 +1095,8 @@ We will show its use based on the function:
 %endif
 
 \subsection{Implementation}
+
+%%[[bodyImplementation
 \label{ehc09-implem}
 
 We focus on the distinguishing characteristics
@@ -1443,7 +1477,11 @@ sequence of implicit dictionaries.
 This is enforced by the judgement |fit| which gives us back predicates |Vec(pia)| used in a similar fashion as in
 \ruleRef{e-app}.
 
+%%]]
+
 \subsection{Discussion and related work}
+
+%%[[bodyDiscussionRelatedWork
 \label{ehc09-discussion}
 
 \Paragraph{Soundness, completeness and principal types}
@@ -1810,11 +1848,13 @@ Declarative version of the type system.
 Furthermore, we intend to shift towards a constraint-based approach as many problems can be described elegantly using such an approach.
 (Prototypical) implementations based on constraint solving
 are becoming mature \cite{heeren05phd-errormsg,sulzmann03chameleon,rossberg05www-alice}.
-
+%%]]
 %%]
 
 %%[conclusion
 \subsection{Conclusion}
+
+%%[[conclusionConclusion
 \label{ehc09-concl}
 
 In general, programming languages aim at maximising the amount of work done for a programmer,
@@ -1871,6 +1911,7 @@ higher ranked types, existentials, class system, explicit implicit parameters an
 into one package together with a description of the implementation.
 %endif
 
+%%]]
 %%]
 
 %%[scratch
