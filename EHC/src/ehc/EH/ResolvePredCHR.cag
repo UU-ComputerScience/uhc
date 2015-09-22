@@ -388,9 +388,7 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
         
         -- get the bindings which must be introduced
         (chrSolveEvidCBindL,chrSolveEvidBindMp,chrSolveScopeBindMp)
-          = {- if True -- ehcOptPriv opts -- 20150917 works
-            then -} evidKeyCoreMpToBinds2 env' chrSolveEvidCoreMp
-            {- else let (m1,m2) = evidKeyCoreMpToBinds env' chrSolveEvidCoreMp in ([],m1,m2) -}
+          = evidKeyCoreMpToBinds2 env' chrSolveEvidCoreMp
         
         -- overlapping errors; 20120209: is empty, detection done earlier
         -- overlapErrs = if null overlapEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ overlapevidPredOcc a,map pp $ overlapevidInfos a) | a <- overlapEvids]]

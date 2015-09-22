@@ -11,16 +11,25 @@
 %%[1 hs module {%{EH}HS.MainAG}
 %%]
 
-%%[1 hs import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UHC.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, UHC.Util.DependencyGraph)
+%%[1 hs import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin},{%{EH}Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect})
 %%]
 
-%%[1 hs import(qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils)
+%%[1 hs import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map)
+%%]
+
+%%[1 hs import({%{EH}Base.UnderDev})
+%%]
+
+%%[1 hs import(qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils,UHC.Util.Pretty,UHC.Util.DependencyGraph)
 %%]
 
 %%[1 hs import(qualified {%{EH}EH} as EH)
 %%]
 
 %%[1 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%]
+
+%%[1 hs import ({%{EH}Base.Trace})
 %%]
 
 %%[3 hs import(qualified Data.Set as Set)
@@ -33,9 +42,6 @@
 %%]
 
 %%[8 hs import ({%{EH}Base.Target})
-%%]
-
-%%[8 hs import ({%{EH}Base.Trace})
 %%]
 
 %%[9 hs export(clGam2IdDefOccGam)
@@ -63,7 +69,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 ag import({HS/AbsSyn},{HS/ToEH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Uniq})
+%%[1 ag import({HS/AbsSyn},{HS/ToEH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Uniq},{HS/NameDeclCxt})
 WRAPPER AGItf
 %%]
 

@@ -542,6 +542,9 @@ data InstVariant
   | InstDeriving InstDerivingFrom
 %%]]
   deriving (Eq,Ord,Show)
+
+instance PP InstVariant where
+  pp = pp . show
 %%]
 
 %%[91 export(InstDerivingFrom(..))
@@ -550,6 +553,9 @@ data InstDerivingFrom
   = InstDerivingFrom_Datatype
   | InstDerivingFrom_Standalone
   deriving (Eq,Ord,Show)
+
+instance PP InstDerivingFrom where
+  pp = pp . show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

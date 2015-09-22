@@ -1,0 +1,20 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 ag
+ATTR AGItf AllNT [ | | trpp USE {><} {trppEmpty} : TrPP ]
+%%]
+
+%%[8 ag
+ATTR AllNT [ tr : {TraceOn -> [PP_Doc] -> TrPP} | | ]
+
+SEM AGItf
+ | AGItf            loc     .   tr          =   trPP (`Set.member` ehcOptTraceOn @lhs.opts)
+%%]
+
+%%[9 ag
+SEM Decl
+  | Instance        loc     .   trpp        =   (@lhs.tr TraceOn_EhGam $ [@dictNm >#< " = Instance" >|< ppParens @instVariant >#< @instClsNm] ++ [ "clgi=" >#< @clgi ])
+                                                >< @tyPrExpr.trpp >< @decls.trpp
+%%]

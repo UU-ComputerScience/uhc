@@ -102,7 +102,13 @@ SEM LeftHandSide
 %%[1
 SEM FunctionBinding
     | FunctionBinding
+%%[[1
         loc             .   nmLev       =   @lhs.nmLev + 1
+%%][9999
+        loc             .   nmLev       =   if @lhs.nameDeclCxt == NameDeclCxt_Instance && ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
+                                            then @lhs.nmLev
+                                            else @lhs.nmLev + 1
+%%]]
                         .   nmLevFun    =   @lhs.nmLev
 %%]
 

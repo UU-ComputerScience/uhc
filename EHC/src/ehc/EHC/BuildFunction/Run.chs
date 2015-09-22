@@ -1067,6 +1067,10 @@ ecuIsHSNewerThanHI ecu
                     errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
                     
                bUpdECU modNm $! ecuStoreEHSem $! ehSem
+
+               let trpp = EHSem.trpp_Syn_AGItf ehSem
+               when (not $ trppIsEmpty trpp) $ trPPOnIO trpp
+
                when (ehcOptEmitEH opts)
                     (liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
                when (ehcOptShowEH opts)

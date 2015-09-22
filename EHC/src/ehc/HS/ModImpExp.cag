@@ -17,6 +17,9 @@
 %%[50 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
+%%[50 hs import({%{EH}Base.UnderDev})
+%%]
+
 %%[50 hs import(qualified UHC.Util.Rel as Rel,{%{EH}Module.ImportExport})
 %%]
 

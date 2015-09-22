@@ -20,6 +20,9 @@
 %%[1 import(Data.Typeable, Data.Maybe, qualified Data.Map as Map)
 %%]
 
+%%[1 import({%{EH}Base.UnderDev})
+%%]
+
 %%[4 import(UHC.Util.Pretty)
 %%]
 
@@ -226,6 +229,7 @@ data EHCOpts
 %%[[(8 codegen tycore)
       ,  ehcOptShowTyCore     ::  Bool              -- show TyCore ast on stout
 %%]]
+      ,  ehcOptUnderDev		  ::  Set.Set UnderDev  -- turning on something under development (available options change according to whim and weather)
       ,  ehcOptPriv           ::  Bool              -- privately used (in general during switch between 2 impls of 1 feature)
       ,  ehcOptHsChecksInEH   ::  Bool              -- do checks in EH which already have been done in HS (usually related to name absence/duplication). This is used for EH compilation only.
 %%[[1
@@ -403,6 +407,7 @@ emptyEHCOpts
       ,  ehcOptShowTyCore       =   False
 %%]]
       ,  ehcOptPriv             =   False
+      ,  ehcOptUnderDev         =   Set.empty
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
       ,  ehcOptShowEH           =   True
@@ -765,6 +770,16 @@ ehcOptFromJust opts panicMsg n m
 -- | Do linking into executable?
 ehcOptDoExecLinking :: EHCOpts -> Bool
 ehcOptDoExecLinking opts = ehcOptLinkingStyle opts == LinkingStyle_Exec
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Under development?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(ehcOptIsUnderDev)
+-- | Is something under development turned on?
+ehcOptIsUnderDev :: UnderDev -> EHCOpts -> Bool
+ehcOptIsUnderDev ud opts = ud `Set.member` ehcOptUnderDev opts
 %%]
 
 

@@ -1,0 +1,56 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The context declarations are in
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+-- | A name is used/occurs in a non plain context when their defs are to participate in the analysis on the same level as the context they occur in
+data NameDeclCxt
+  = NameDeclCxt_Plain
+%%[[9
+  | NameDeclCxt_Instance
+  | NameDeclCxt_Class
+%%]]
+  deriving Eq
+%%]
+
+%%[1
+ATTR
+  AllDeclaration AllFunctionBinding
+    [ nameDeclCxt : NameDeclCxt | | 
+    ]
+
+
+%%]
+
+%%[1
+SEM Declaration
+%%[[9
+    | Instance
+        loc             .   nameDeclCxt	=   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then NameDeclCxt_Instance else NameDeclCxt_Plain
+    | Class
+        loc             .   nameDeclCxt	=   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then NameDeclCxt_Class else NameDeclCxt_Plain
+%%]]
+
+SEM Body
+    | Body
+        loc             .   nameDeclCxt	=   NameDeclCxt_Plain
+
+SEM Expression
+%%[[5
+    Qualifier
+%%]]
+%%[[9
+    Statement
+%%]]
+    | Let
+        loc             .   nameDeclCxt	=   NameDeclCxt_Plain
+
+SEM RightHandSide
+    | Expression
+%%[[5
+      Guarded
+%%]]
+        loc             .   nameDeclCxt	=   NameDeclCxt_Plain
+
+%%]
+

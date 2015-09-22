@@ -73,8 +73,35 @@ type IdUseOccAsc = AssocL IdOcc [IdUseOcc]
 %%]
 
 %%[1 hs
+splitIdUseOccGam' :: Bool -> Int -> IdUseOccGam -> (IdUseOccGam, IdUseOccAsc, IdUseOccAsc, IdUseOccGam)
+splitIdUseOccGam' delayHere level g
+  = (assocDupLToGam o,h,i,assocDupLToGam e)
+  where -- minLev = minimum levels
+        -- maxLev = maximum levels
+        (o,h,i,e)
+          = foldr
+              (\x@(k,occs) (o,h,i,e)
+                 -> case partition (idIsDef . uoccIsDef) occs of
+                      (occ:_,[]) ->
+{-
+                          if      defLev < minLev then    (x:o,  h,  i,  e)
+                          else if defLev > maxLev then    (  o,  h,x:i,  e)
+                                                  else    (  o,x:h,  i,  e)
+-}
+                          case compare defLev level of
+                            LT             -> (x:o,  h,  i,  e)
+                            EQ | delayHere -> (x:o,  h,  i,  e)
+                               | otherwise -> (  o,x:h,  i,  e)
+                            GT             -> (  o,  h,x:i,  e)
+                        where defLev = idIsDefLev $ uoccIsDef $ occ
+                      (_,(_:_))  ->         (  o,  h,  i,x:e)
+              )
+              ([],[],[],[])
+              (gamToAssocDupL g)
+
 splitIdUseOccGam :: Int -> IdUseOccGam -> (IdUseOccGam, IdUseOccAsc, IdUseOccAsc, IdUseOccGam)
-splitIdUseOccGam level g
+splitIdUseOccGam level g = splitIdUseOccGam' False level g
+{-
   = (assocDupLToGam o,h,i,assocDupLToGam e)
   where (o,h,i,e)
           = foldr
@@ -88,6 +115,7 @@ splitIdUseOccGam level g
               )
               ([],[],[],[])
               (gamToAssocDupL g)
+-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -214,11 +242,10 @@ SEM Declaration
         loc             .   idDefOccGamType
                                         =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
                         .   idDefOccGamSigAsVar
-                                        -- =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idDefOccGam, iaspIsValSig (doccAsp d) ]
-                                        =   if ehcOptPriv @lhs.opts 
-                                            then @where.idTySigDefOccGam
-                                            else @where.idTySigDefOccGam
-                        .   idDefOccGam =   if ehcOptPriv @lhs.opts 
+                                        =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
+                                            then @where.idInClassTySigDefOccGam
+                                            else @where.idInClassTySigDefOccGam
+                        .   idDefOccGam =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
                                             then mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
                                                  `gamUnion` @idDefOccGamSigAsVar
                                             else mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
@@ -226,14 +253,17 @@ SEM Declaration
     | Instance
         loc             .   idDefOccGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range  @type.freeTvarS -- @types.freeTvarS
-                        .   idDefOccGam =   if ehcOptPriv @lhs.opts 
+                        .   idDefOccGamValAsVar
+                                        =   @where.idInInstanceValDefOccGam
+                        .   idDefOccGam =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
                                             then mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
                                                  `gamUnion` mkDefOccGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
                                             else mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
                                                  `gamUnion` mkDefOccGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
     | InstanceUseImplicitly
-        loc             .   idDefOccGam =   if ehcOptPriv @lhs.opts 
-                                            then mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) @idOccDefs
+        loc             .   idDefOccGam =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
+                                            then mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
+                                                 `gamUnion` mkDefOccGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
                                             else mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) @idOccDefs
     | Default
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Dflt_Def @eh @ignoredecl) @idOccDefs
@@ -371,20 +401,24 @@ SEM Deriving
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Identifier def's: special case, only type signature names as variable, used inside class def only
+%%% Identifier def's: special case, only type signature names as variable, used inside class/instance def only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
 ATTR
   AllDeclaration
-    [ | | idTySigDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
+    [ | | idInClassTySigDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
+          idInInstanceValDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
     ]
 %%]
 
 %%[9
 SEM Declaration
     | TypeSignature
-        loc             .   idTySigDefOccGam
+        loc             .   idInClassTySigDefOccGam
+                                        =   mkDefOccGam' @lhs.nmLev @range (\o -> IdAsp_Val_Var) @idOccDefs
+    | FunctionBindings PatternBinding
+        loc             .   idInInstanceValDefOccGam
                                         =   mkDefOccGam' @lhs.nmLev @range (\o -> IdAsp_Val_Var) @idOccDefs
 %%]
 
@@ -1066,7 +1100,7 @@ ATTR AllNT [ | | undefOccGam USE {`gamUnion`} {emptyGam}: IdUseOccGam ]
 SEM FunctionBinding
     | FunctionBinding
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
-                                        =   splitIdUseOccGam @lhs.nmLev
+                                        =   splitIdUseOccGam' (@lhs.nameDeclCxt /= NameDeclCxt_Plain) @lhs.nmLev
                                                  (gamUnions [@lefthandside.idUseOccGam,@righthandside.idUseOccGam])
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@lefthandside.undefOccGam,@righthandside.undefOccGam]
@@ -1079,7 +1113,7 @@ SEM Declaration
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
     | PatternBinding
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
-                                        =   splitIdUseOccGam @lhs.nmLev
+                                        =   splitIdUseOccGam' (@lhs.nameDeclCxt /= NameDeclCxt_Plain) @lhs.nmLev
                                                  (gamUnions [@pattern.idUseOccGam,@righthandside.idUseOccGam])
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                             `idDpdMpUnion`
@@ -1145,23 +1179,32 @@ SEM Declaration
                                                            , @idUseOccGamExtra
 %%]]
                                                            ])
-                        .   idDpdMp     =   idDpdMpUnions
-                                                [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
-                                                , idToOccGam2DpdMp [@idOccDef] @idDefOccGamSigAsVar
-                                                -- , idToOccGam2DpdMp [@idOccDef] @idDefOccGamInstForClass
-                                                , idFrOccGam2DpdMp @idDefOccGamSigAsVar [@idOccDef]
-                                                , idFrOccGam2DpdMp @idDefOccGamSigAsVar (gamKeys @idDefOccGamInstForClass)
-                                                , @where.idDpdMp
-                                                ]
+                        .   idDpdMp     =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
+                                            then idDpdMpUnions
+                                                     [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                                     , idToOccGam2DpdMp [@idOccDef] @idDefOccGamSigAsVar
+                                                     -- , idToOccGam2DpdMp [@idOccDef] @idDefOccGamInstForClass
+                                                     , idFrOccGam2DpdMp @idDefOccGamSigAsVar [@idOccDef]
+                                                     -- , idFrOccGam2DpdMp @idDefOccGamSigAsVar (gamKeys @idDefOccGamInstForClass)
+                                                     , @where.idDpdMp
+                                                     ]
+                                            else idDpdMpUnions
+                                                     [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                                     , idToOccGam2DpdMp [@idOccDef] @idDefOccGamSigAsVar
+                                                     -- , idToOccGam2DpdMp [@idOccDef] @idDefOccGamInstForClass
+                                                     , idFrOccGam2DpdMp @idDefOccGamSigAsVar [@idOccDef]
+                                                     , idFrOccGam2DpdMp @idDefOccGamSigAsVar (gamKeys @idDefOccGamInstForClass)
+                                                     , @where.idDpdMp
+                                                     ]
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@where.undefOccGam]
     | Instance
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
-                                        =   if ehcOptPriv @lhs.opts 
-                                            then splitIdUseOccGam @lhs.nmLev
+                                        =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
+                                            then splitIdUseOccGam @lhs.nmLev -- ' [@lhs.nmLev, @lhs.nmLev+1]
                                                    (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@type.idUseOccGam,@where.idUseOccGam])
                                             else splitIdUseOccGam @lhs.nmLev
                                                    (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@type.idUseOccGam,@where.idUseOccGam])
-                        .   idDpdMp     =   if ehcOptPriv @lhs.opts 
+                        .   idDpdMp     =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
                                             then idDpdMpUnions
                                                      [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                      , idDpdMpSingleton @idOccDefVal @idOccDef
@@ -1175,13 +1218,16 @@ SEM Declaration
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@where.undefOccGam]
     | InstanceUseImplicitly
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
-                                        =   if ehcOptPriv @lhs.opts 
+                                        =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
                                             then splitIdUseOccGam @lhs.nmLev
                                                    (gamUnions [@idUseOccGamInst,@type.idUseOccGam,@expression.idUseOccGam])
                                             else splitIdUseOccGam @lhs.nmLev
                                                    (gamUnions [@idUseOccGamInst,@type.idUseOccGam,@expression.idUseOccGam])
-                        .   idDpdMp     =   if ehcOptPriv @lhs.opts 
-                                            then idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                        .   idDpdMp     =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
+                                            then idDpdMpUnions
+                                                     [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                                     , idDpdMpSingleton @idOccDefVal @idOccDef
+                                                     ]
                                             else idToOccL2DpdMp [@idOccDef] @idUseHereOccL
     | Default
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
@@ -1451,8 +1497,9 @@ splitOff opts
   = foldr (\df dfs -> zipWith (++) (s df) dfs) (repeat [])
   where s d = case doccAsp d of
                 (IdAsp_Inst_Def  _ _)
-                  | not (ehcOptPriv opts) -> [[],[d]]
-                _                         -> [[d],[]]
+                  | not (ehcOptIsUnderDev UnderDev_NameAnalysis opts)
+                    -> [[],[d]]
+                _   -> [[d],[]]
 %%]
 
 %%[1 hs

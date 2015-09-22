@@ -25,6 +25,9 @@
 %%[1 hs import(qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils)
 %%]
 
+%%[1 hs import ({%{EH}Base.Trace})
+%%]
+
 %%[(2 hmtyinfer) hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils1})
 %%]
 
@@ -163,6 +166,11 @@ WRAPPER AGItf
 %%[(6 hmtyinfer) ag import({EH/TvKiVarMp})
 %%]
 
+%%[8 ag import({EH/GatherMisc})
+%%]
+%%[8 ag import({EH/Trace})
+%%]
+
 %%[(1 hmtyinfer).EHRulerRules ag import(EHRulerRules)
 %%]
 
@@ -213,8 +221,6 @@ WRAPPER AGItf
 %%[(8 hmtyinfer codegen) ag import({EH/SysfTy},{EH/SysfEnv})
 %%]
 %%[(8 codegen tycore) ag import({EH/ToTyCore})
-%%]
-%%[8 ag import({EH/GatherMisc})
 %%]
 
 %%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})

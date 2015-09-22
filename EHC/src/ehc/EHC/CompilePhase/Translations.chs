@@ -155,7 +155,8 @@ cpTranslateEH2Output modNm
                  errs   = []
 %%]]
          ;  when (isJust mbEHSem)
-                 (do { 
+                 (do { let trpp = EHSem.trpp_Syn_AGItf ehSem
+                     ; when (not $ trppIsEmpty trpp) $ trPPOnIO trpp
 %%[[8
                      ; when (ehcOptEmitEH opts)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)

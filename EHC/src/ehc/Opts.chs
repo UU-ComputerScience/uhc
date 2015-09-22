@@ -20,6 +20,9 @@
 %%[1 import(Data.Maybe,qualified Data.Map as Map,Data.Char)
 %%]
 
+%%[1 import({%{EH}Base.UnderDev})
+%%]
+
 %%[4 import(UHC.Util.Pretty)
 %%]
 
@@ -333,6 +336,7 @@ ehcCmdLineOpts = sortOptions $
 %%]]
      ,  Option "d"  ["debug"]               (NoArg oDebug)                          "show debug information"
      ,  Option ""   ["priv"]                (boolArg oPriv)                         "private flag, used during development of 2 impls of 1 feature"
+     ,  Option ""   ["underdev"]            (ReqArg oUnderDev "opt[,...]")          ("opts (specific) for turning on under development features: " ++ showStr2stMp allUnderDevMp)
 %%[[(1 hmtyinfer)
      ,  Option ""   ["show-top-ty"]         (OptArg oShowTopTy "yes|no")            "show top ty, default=no"
 %%][100
@@ -940,6 +944,10 @@ boolArg tr = OptArg (optBoolean tr) boolArgStr
 
 %%[1
 oPriv                o b = o { ehcOptPriv           = b }
+%%]
+
+%%[1
+oUnderDev          s   o = o { ehcOptUnderDev = Set.fromList (optOpts allUnderDevMp s) `Set.union` ehcOptUnderDev o }
 %%]
 
 %%[(8 codegen)

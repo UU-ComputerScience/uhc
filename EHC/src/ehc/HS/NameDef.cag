@@ -324,9 +324,8 @@ SEM Declaration
                         .   idOccDefs   =   [@idOccDef,@idOccDefVal]
     | InstanceUseImplicitly
         loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
-                        -- .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
-                        -- .   idOccDefs   =   [@idOccDef,@idOccDefVal]
-                        .   idOccDefs   =   [@idOccDef]
+                        .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
+                        .   idOccDefs   =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then [@idOccDef,@idOccDefVal] else [@idOccDef]
     | Default
         loc             .   idOccDef    =   IdOcc @defaultname IdOcc_Dflt
                         .   idOccDefs   =   [@idOccDef]

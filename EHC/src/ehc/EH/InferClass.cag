@@ -269,7 +269,11 @@ SEM Decl
                                                     =   maybe (poiHNm @instId,True) id @mbNmElim
                                 .   (dictBuildNm,dictSelfNm)
                                                     =   mkInstanceBuildNms @dictNm
-                                .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
+                                -- .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
+                                .   (clgi,clgiNmErrs)
+                                                    =   case gamLookup @instClsNm @lhs.clGam of
+                                                          Nothing    ->  (emptyCLGI,[rngLift @range mkErr_NamesNotIntrod "class" [@instClsNm]])
+                                                          Just clgi  ->  (clgi,[])
                                 .   supPrTyL        =   let  t      =  clgiRuleTy @clgi
                                                              st     =  mkNewTyVarL (length $ appUnArrArgs $ tyQuant t) @lUniq4 `appArr` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts @fe2 @lUniq3 (emptyVarMp :: VarMp) t st

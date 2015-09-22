@@ -195,7 +195,7 @@ ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
   | Ann         loc         .   cexpr       =   @expr.cexpr
-  | Let         loc         .   frontCBindL =   [(if True {- ehcOptPriv @lhs.opts -} then CBindCateg_Plain else CBindCateg_FFI,@decls.ffiCBindL)]
+  | Let         loc         .   frontCBindL =   [(CBindCateg_Plain,@decls.ffiCBindL)]
 %%[[90
                             .   backCBindL  =   [(CBindCateg_FFE,@decls.ffeCBindL)]
 %%]]

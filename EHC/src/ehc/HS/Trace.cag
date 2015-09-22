@@ -23,4 +23,34 @@ SEM Body
                                             >< @importdeclarations.trpp
 %%]]
                                             >< @declarations.trpp
+
+%%]
+
+%%[1 ag
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< " = FunctionBinding"] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @lefthandside.trpp >< @righthandside.trpp
+%%]
+
+%%[1 ag
+SEM Declaration
+    | PatternBinding
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< " = PatternBinding"] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @pattern.trpp >< @righthandside.trpp
+%%[[9
+    | Class
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= Class" >#< @classrefname] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @context.trpp >< @typelefthandside.trpp
+%%[[15
+                                            >< @dependencies.trpp
+%%]]
+                                            >< @where.trpp
+    | Instance
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= Instance" >#< @classrefname] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @context.trpp >< @type.trpp >< @where.trpp
+    | InstanceUseImplicitly
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= InstanceUseImplicitly" >#< @classrefname] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @expression.trpp >< @type.trpp
+%%]]
 %%]

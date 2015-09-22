@@ -2,32 +2,32 @@
 %%% Tracing in IO setting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Trace}
+%%[1 module {%{EH}Base.Trace}
 %%]
 
-%%[8 import(UHC.Util.Pretty, UHC.Util.Utils)
+%%[1 import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
-%%[8 import(GHC.Generics(Generic), Data.Typeable)
+%%[1 import(GHC.Generics(Generic), Data.Typeable)
 %%]
 
-%%[8 import(Control.Monad, Control.Monad.IO.Class)
+%%[1 import(Control.Monad, Control.Monad.IO.Class)
 %%]
 
-%%[8 import(qualified Data.Map as Map, qualified Data.Sequence as Sq, qualified Data.Foldable as Sq)
+%%[1 import(qualified Data.Map as Map, qualified Data.Sequence as Sq, qualified Data.Foldable as Sq)
 %%]
 
-%%[8 import(Data.Sequence((><))) export ((><))
+%%[1 import(Data.Sequence((><))) export ((><))
 %%]
 
-%%[8 import({%{EH}Base.Common})
+%%[1 import({%{EH}Base.Common})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tracing flags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(TraceOn(..), allTraceOnMp)
+%%[1 export(TraceOn(..), allTraceOnMp)
 -- | Trace on specific topic(s)
 data TraceOn
   = TraceOn_BldFun					-- build functions (bcall, ...)
@@ -46,6 +46,8 @@ data TraceOn
   | TraceOn_BldMod					-- build module related
   | TraceOn_HsScc					-- HS scc of name dependency analysis
   | TraceOn_HsDpd					-- HS dpd info of name dependency analysis
+  | TraceOn_HsOcc					-- HS name occurrence info
+  | TraceOn_EhGam					-- EH gam lookup results
 %%[[(8 corerun)
   | TraceOn_RunMod					-- run module related
   | TraceOn_RunHeap					-- run heap related
@@ -67,7 +69,7 @@ allTraceOnMp = str2stMpWithShow (strToLower . showUnprefixed 1)
 %%% Tracing based on trace config/options, intended to be wrapped around in specific trace functions, hence the INLINE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(TrPP, trppIsEmpty, trppEmpty)
+%%[1 export(TrPP, trppIsEmpty, trppEmpty)
 type TrPP = Sq.Seq PP_Doc
 
 trppIsEmpty :: TrPP -> Bool
@@ -77,7 +79,7 @@ trppEmpty :: TrPP
 trppEmpty = Sq.empty
 %%]
 
-%%[8 export(trPPOnIO, trPP, trOnPP, trOn)
+%%[1 export(trPPOnIO, trPP, trOnPP, trOn)
 -- | Tracing PPs
 trPP :: (TraceOn -> Bool) -> TraceOn -> [PP_Doc] -> TrPP
 trPP onTr ton ms = if onTr ton then pr ms else trppEmpty

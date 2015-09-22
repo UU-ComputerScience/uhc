@@ -15,18 +15,25 @@ data DTst a where
   Dtst2 :: DTst a
 -}
 
+eqInteger :: Integer -> Integer -> Bool
+eqInteger = (==)
+eqInteger2 = eqInteger
+
 instance dEqInt :: Eq Integer where
-  i1 == i2 = i1 `mod` 2 == i2 `mod` 2
+  i1 == i2 = (i1 `mod` 2) `eqInteger` (i2 `mod` 2)
   
 -- instance dEqInt <: Eq Integer
   
 testInt = do
   print $ 1 == 3
+{-
   print $ let instance Eq Integer where                                                -- (2)
                 i1 == i2 = i1 `mod` 2 == i2 `mod` 2
           in  1 == 3
+-}
   print $ let instance dEqInt <: Eq Integer
           in  1 == 3
+
 newtype I a = I a
 
 instance dEqI <: Eq (I Int) where                                                -- (1)

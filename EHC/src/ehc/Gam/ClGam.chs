@@ -74,9 +74,12 @@ deriving instance Data ClGamInfo
 %%[(9 hmtyinfer)
 instance PP ClGamInfo where
   pp clgi = "dictnm=" >#< pp (clgiDfltDictNm clgi) >-< indent 2 (
-    "rule=" >#< ppTy (clgiRuleTy clgi) >-<
-    "eviddataty=" >#< ppTy (clgiPrToEvidDataTy clgi) >-<
-    "evidrecty=" >#< ppTy (clgiPrToEvidRecTy clgi)
+        "rule=" >#< ppTy (clgiRuleTy clgi)
+    >-< "eviddataty=" >#< ppTy (clgiPrToEvidDataTy clgi)
+    >-< "evidrecty=" >#< ppTy (clgiPrToEvidRecTy clgi)
+%%[[92
+    >-< "clgiGenerDerivableL=" >#< ppAssocL (clgiGenerDerivableL clgi)
+%%]]
     )
 %%]
 
