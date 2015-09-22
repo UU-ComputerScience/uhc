@@ -132,7 +132,8 @@ SEM PatExpr
 %%]]
                                                                               ]
 %%[[(4 hmtyinfer)
-  | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_fitR_]
+  -- TBD: fo_fitP_ defined in variant 5
+  | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_fitP_, foErrSq @fo_fitR_]
   | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@patExpr.errSq, Seq.fromList @arityErrs, foErrSq @fo_fitR_]
 %%]]
 %%]

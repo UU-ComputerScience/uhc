@@ -207,7 +207,8 @@ SEM Declaration
                                                    , @dependencies.errSq
 %%]]
 %%[[99
-                                                   , Seq.fromList @errIdUseExtra
+                                                   , Seq.fromList @errIdUseGenerDeriv
+                                                   -- , Seq.fromList @errIdUseExtra
 %%]]
                                                    , @where.errSq
                                                    ]

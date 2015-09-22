@@ -453,16 +453,20 @@ ATTR AllDeclaration AllExpression [ generDerivMp: {Map.Map HsName [(HsName,HsNam
 
 SEM Body
     | Body
-        declarations    .   generDerivMp=   let nm n = hsnSetLevQual @lhs.nmLev @lhs.moduleNm n
+        declarations    .   generDerivMp=   let nm | ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts = id
+                                                   | otherwise                                        = hsnSetLevQual @lhs.nmLev @lhs.moduleNm
                                             in  Map.unionsWith (++)
-                                                    [ Map.singleton (nm clNm) [(nm fldNm,nm dfltNm)]
+                                                    [ Map.singleton clNm' [({- clNm', -} nm fldNm,nm dfltNm)]
                                                     | (Pragma.Pragma_Derivable clNm fldNm dfltNm) <- Set.toList @pragmas
+                                                    , let clNm' = nm clNm
                                                     ]
 
 SEM Declaration
     | Class
-        loc             .   generDerivInfoL
-                                        =   Map.findWithDefault [] @classrefname @lhs.generDerivMp
+        loc             .   generderivnames
+                                        =   Map.findWithDefault []
+                                                (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @typelefthandside.name else @classrefname)
+                                                @lhs.generDerivMp
 %%]
 
 %%[9999

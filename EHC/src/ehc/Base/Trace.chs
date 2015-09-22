@@ -47,7 +47,9 @@ data TraceOn
   | TraceOn_HsScc					-- HS scc of name dependency analysis
   | TraceOn_HsDpd					-- HS dpd info of name dependency analysis
   | TraceOn_HsOcc					-- HS name occurrence info
-  | TraceOn_EhGam					-- EH gam lookup results
+  | TraceOn_EhClsGam				-- EH class gam lookup results
+  | TraceOn_EhDataGam				-- EH data gam lookup results
+  | TraceOn_EhValGam				-- EH value gam lookup results
 %%[[(8 corerun)
   | TraceOn_RunMod					-- run module related
   | TraceOn_RunHeap					-- run heap related

@@ -1398,6 +1398,7 @@ raltIsConst (RAlt_Alt (p : _) _ _)
   where c (RPat_Int   _ _ _) = True
         c (RPat_Char  _ _ _) = True
         c _                  = False
+raltIsConst _                = False
 %%]
 
 %%[(8 codegen) hs export(raltIsConMany)

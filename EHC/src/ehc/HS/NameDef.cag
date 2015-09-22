@@ -234,10 +234,10 @@ SEM RecordPatternBinding
 %%% Extra names for some cases
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 SEM Declaration
 	| Class
-		loc				.	extranames	=	[] -- map snd @generDerivInfoL
+		loc				.	extranames	=	[] -- map snd @generderivnames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
