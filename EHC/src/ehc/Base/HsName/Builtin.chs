@@ -792,173 +792,219 @@ hsnNm2GenerSelector = hsnNm2Gener . hsnPrefix ("S_")
 %%% Namings upon which generic deriving depends, taken into account by name & dependency analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[92 export(builtinGenerClassNmL)
-builtinGenerClassNmL :: [HsName]
-builtinGenerClassNmL
-  = [ bi i
-    | bi <- [ ehbnGenerClassConstructor
-            , ehbnGenerClassDatatype
-            , ehbnGenerClassSelector
-            ]
-    ]
-  where i = mkEHBuiltinNames (\_ n -> hsnQualified n)
+%%[92 export(builtinGenerClassNmL, builtinGenerClassArityNmL, builtinGenerTypeNmL, builtinGenerTypeArityNmL)
+builtinGenerClassNmL     , builtinGenerTypeNmL      ::        [(HsName,IdOccKind)]
+builtinGenerClassArityNmL, builtinGenerTypeArityNmL :: Int -> [(HsName,IdOccKind)]
+(  builtinGenerClassNmL
+ , builtinGenerClassArityNmL
+ , builtinGenerTypeNmL
+ , builtinGenerTypeArityNmL
+ )
+  = ( mk [ ehbnGenerClassConstructor
+         , ehbnGenerClassDatatype
+         , ehbnGenerClassSelector
+         ]
+    , \arity -> mka arity
+         [ ehbnGenerClassRepresentableN
+         ]
+    , mk $
+         [ ehbnGenerDataVoid1
+         , ehbnGenerDataUnit1
+         , ehbnGenerDataKonst1
+         , ehbnGenerDataMeta1
+         , ehbnGenerDataFixity
+         , ehbnGenerDataAssociativity
+         , ehbnGenerDataSum
+         , ehbnGenerDataProd
+         , ehbnGenerDataMetaB
+         , ehbnGenerDataMetaR
+         , ehbnGenerDataMetaP
+         , ehbnGenerDataMetaD
+         , ehbnGenerDataMetaC
+         , ehbnGenerDataMetaS
+         , ehbnGenerDataMetaS1
+         ]
+    , \arity ->
+         ( mka arity
+             [ ehbnGenerDataMetaDN
+             , ehbnGenerDataMetaCN
+             ]
+         )
+         ++
+         mk
+           (case arity of
+              0 -> [ ehbnGenerDataPar0
+                   , ehbnGenerDataRec0
+                   ]
+              1 -> [ ehbnGenerDataPar1
+                   , ehbnGenerDataRec1
+                   , ehbnGenerDataComp1
+                   ]
+              _ -> []
+           )
+    )
+  where i       = mkEHBuiltinNames (\k n -> ({- hsnQualified -} n, k))
+        mk    l = [ bi i   | bi <- l ]
+        mka a l = [ bi i a | bi <- l ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Builtin names used without direct access from source code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(EHBuiltinNames(..),mkEHBuiltinNames)
-data EHBuiltinNames
+%%[8 export(EHBuiltinNames, EHBuiltinNames'(..),mkEHBuiltinNames)
+type EHBuiltinNames = EHBuiltinNames' HsName
+
+data EHBuiltinNames' nm
   = EHBuiltinNames
-      { ehbnId                          :: HsName
-      , ehbnUndefined                   :: HsName
-      , ehbnError                       :: HsName
-      , ehbnPackedString                :: HsName
-      , ehbnPackedStringToString        :: HsName
-      , ehbnPrimAddInt                  :: HsName
-      , ehbnPrimGtInt                   :: HsName
-      , ehbnBoolTrue                    :: HsName
-      , ehbnBoolFalse                   :: HsName
-      , ehbnDataListAltNil              :: HsName
-      , ehbnDataListAltCons             :: HsName
-      , ehbnDataOrderingAltLT           :: HsName
-      , ehbnDataOrderingAltEQ           :: HsName
-      , ehbnDataOrderingAltGT           :: HsName
-      , ehbnDataList                    :: HsName
-      , ehbnDataBool                    :: HsName
+      { ehbnId                          :: nm
+      , ehbnUndefined                   :: nm
+      , ehbnError                       :: nm
+      , ehbnPackedString                :: nm
+      , ehbnPackedStringToString        :: nm
+      , ehbnPrimAddInt                  :: nm
+      , ehbnPrimGtInt                   :: nm
+      , ehbnBoolTrue                    :: nm
+      , ehbnBoolFalse                   :: nm
+      , ehbnDataListAltNil              :: nm
+      , ehbnDataListAltCons             :: nm
+      , ehbnDataOrderingAltLT           :: nm
+      , ehbnDataOrderingAltEQ           :: nm
+      , ehbnDataOrderingAltGT           :: nm
+      , ehbnDataList                    :: nm
+      , ehbnDataBool                    :: nm
 %%[[11
-      , ehbnPrelString                  :: HsName
+      , ehbnPrelString                  :: nm
 %%]]
 %%[[50
 %%]]
 %%[[90
-      , ehbnFunPtr                      :: HsName
+      , ehbnFunPtr                      :: nm
 %%]]
 %%[[91
-      , ehbnMap                         :: HsName
-      , ehbnBoolAnd                     :: HsName
-      , ehbnBoolOr                      :: HsName
-      , ehbnClassEq                     :: HsName
-      , ehbnClassEqFldEq                :: HsName
-      , ehbnClassOrd                    :: HsName
-      , ehbnClassOrdFldCompare          :: HsName
-      , ehbnDataOrdering                :: HsName
-      , ehbnClassShow                   :: HsName
-      , ehbnClassShowFldShow            :: HsName
-      , ehbnClassShowFldShowsPrec       :: HsName
-      , ehbnPrelShowString              :: HsName
-      , ehbnPrelShowParen               :: HsName
-      , ehbnPrelConcat                  :: HsName
-      , ehbnPrelConcat2                 :: HsName
-      , ehbnPrelConcatMap               :: HsName
-      , ehbnPrelCompose                 :: HsName
-      , ehbnClassEnum                   :: HsName
-      , ehbnClassEnumFldFromEnum        :: HsName
-      , ehbnClassEnumFldToEnum          :: HsName
-      , ehbnClassEnumFldSucc            :: HsName
-      , ehbnClassEnumFldPred            :: HsName
-      , ehbnClassEnumFldEnumFrom        :: HsName
-      , ehbnClassEnumFldEnumFromTo      :: HsName
-      , ehbnClassEnumFldEnumFromThen    :: HsName
-      , ehbnClassEnumFldEnumFromThenTo  :: HsName
-      , ehbnClassBounded                :: HsName
-      , ehbnClassBoundedFldMinBound     :: HsName
-      , ehbnClassBoundedFldMaxBound     :: HsName
-      , ehbnPrimLtInt                   :: HsName
+      , ehbnMap                         :: nm
+      , ehbnBoolAnd                     :: nm
+      , ehbnBoolOr                      :: nm
+      , ehbnClassEq                     :: nm
+      , ehbnClassEqFldEq                :: nm
+      , ehbnClassOrd                    :: nm
+      , ehbnClassOrdFldCompare          :: nm
+      , ehbnDataOrdering                :: nm
+      , ehbnClassShow                   :: nm
+      , ehbnClassShowFldShow            :: nm
+      , ehbnClassShowFldShowsPrec       :: nm
+      , ehbnPrelShowString              :: nm
+      , ehbnPrelShowParen               :: nm
+      , ehbnPrelConcat                  :: nm
+      , ehbnPrelConcat2                 :: nm
+      , ehbnPrelConcatMap               :: nm
+      , ehbnPrelCompose                 :: nm
+      , ehbnClassEnum                   :: nm
+      , ehbnClassEnumFldFromEnum        :: nm
+      , ehbnClassEnumFldToEnum          :: nm
+      , ehbnClassEnumFldSucc            :: nm
+      , ehbnClassEnumFldPred            :: nm
+      , ehbnClassEnumFldEnumFrom        :: nm
+      , ehbnClassEnumFldEnumFromTo      :: nm
+      , ehbnClassEnumFldEnumFromThen    :: nm
+      , ehbnClassEnumFldEnumFromThenTo  :: nm
+      , ehbnClassBounded                :: nm
+      , ehbnClassBoundedFldMinBound     :: nm
+      , ehbnClassBoundedFldMaxBound     :: nm
+      , ehbnPrimLtInt                   :: nm
 %%]]
 %%[[92
 		-- for generic deriving
-      , ehbnGenerClassRepresentableN    	:: Int -> HsName
-      , ehbnGenerClassRepresentableNFldFrom	:: Int -> HsName
-      , ehbnGenerClassRepresentableNFldTo	:: Int -> HsName
-      , ehbnGenerClassDatatype    			:: HsName
-      , ehbnGenerClassDatatypeFldName    	:: HsName
-      , ehbnGenerClassDatatypeFldModule    	:: HsName
-      , ehbnGenerClassSelector    			:: HsName
-      , ehbnGenerClassSelectorFldName		:: HsName
-      , ehbnGenerDataNoSelector				:: HsName
-      , ehbnGenerClassConstructor    		:: HsName
-      , ehbnGenerClassConstructorFldName	:: HsName
-      , ehbnGenerClassConstructorFldFixity	:: HsName
-      , ehbnGenerClassConstructorFldIsRec	:: HsName
-      , ehbnGenerDataVoid1              	:: HsName
-      , ehbnGenerDataUnit1              	:: HsName
-      , ehbnGenerDataUnit1AltU1          	:: HsName
-      , ehbnGenerDataKonst1             	:: HsName
-      , ehbnGenerDataKonst1AltK1         	:: HsName
-      , ehbnGenerDataMeta1              	:: HsName
-      , ehbnGenerDataMeta1AltM1          	:: HsName
-      , ehbnGenerDataFixity    				:: HsName
-      , ehbnGenerDataFixityAltPrefix		:: HsName
-      , ehbnGenerDataFixityAltInfix			:: HsName
-      , ehbnGenerDataAssociativity    		:: HsName
-      , ehbnGenerDataAssociativityAltLeft	:: HsName
-      , ehbnGenerDataAssociativityAltRight	:: HsName
-      , ehbnGenerDataAssociativityAltNot	:: HsName
-      , ehbnGenerDataSum    				:: HsName
-      , ehbnGenerDataSumAltLeft				:: HsName
-      , ehbnGenerDataSumAltRight			:: HsName
-      , ehbnGenerDataProd    				:: HsName
-      , ehbnGenerDataProdAltProd			:: HsName
-      , ehbnGenerDataPar0    				:: HsName
-      , ehbnGenerDataPar1    				:: HsName
-      , ehbnGenerDataPar1AltPar1			:: HsName
-      , ehbnGenerDataRec0    				:: HsName
-      , ehbnGenerDataRec1    				:: HsName
-      , ehbnGenerDataRec1AltRec1			:: HsName
-      , ehbnGenerDataComp1    				:: HsName
-      , ehbnGenerDataComp1AltComp1			:: HsName
-      , ehbnGenerDataMetaB    				:: HsName
-      , ehbnGenerDataMetaR    				:: HsName
-      , ehbnGenerDataMetaP    				:: HsName
-      , ehbnGenerDataMetaD    				:: HsName
-      , ehbnGenerDataMetaC    				:: HsName
-      , ehbnGenerDataMetaS    				:: HsName
-      , ehbnGenerDataMetaDN    				:: Int -> HsName
-      , ehbnGenerDataMetaCN    				:: Int -> HsName
-      , ehbnGenerDataMetaS1    				:: HsName
-      , ehbnGenerTupleRepresentableN		:: Int -> Int -> HsName
+      , ehbnGenerClassRepresentableN    	:: Int -> nm
+      , ehbnGenerClassRepresentableNFldFrom	:: Int -> nm
+      , ehbnGenerClassRepresentableNFldTo	:: Int -> nm
+      , ehbnGenerClassDatatype    			:: nm
+      , ehbnGenerClassDatatypeFldName    	:: nm
+      , ehbnGenerClassDatatypeFldModule    	:: nm
+      , ehbnGenerClassSelector    			:: nm
+      , ehbnGenerClassSelectorFldName		:: nm
+      , ehbnGenerDataNoSelector				:: nm
+      , ehbnGenerClassConstructor    		:: nm
+      , ehbnGenerClassConstructorFldName	:: nm
+      , ehbnGenerClassConstructorFldFixity	:: nm
+      , ehbnGenerClassConstructorFldIsRec	:: nm
+      , ehbnGenerDataVoid1              	:: nm
+      , ehbnGenerDataUnit1              	:: nm
+      , ehbnGenerDataUnit1AltU1          	:: nm
+      , ehbnGenerDataKonst1             	:: nm
+      , ehbnGenerDataKonst1AltK1         	:: nm
+      , ehbnGenerDataMeta1              	:: nm
+      , ehbnGenerDataMeta1AltM1          	:: nm
+      , ehbnGenerDataFixity    				:: nm
+      , ehbnGenerDataFixityAltPrefix		:: nm
+      , ehbnGenerDataFixityAltInfix			:: nm
+      , ehbnGenerDataAssociativity    		:: nm
+      , ehbnGenerDataAssociativityAltLeft	:: nm
+      , ehbnGenerDataAssociativityAltRight	:: nm
+      , ehbnGenerDataAssociativityAltNot	:: nm
+      , ehbnGenerDataSum    				:: nm
+      , ehbnGenerDataSumAltLeft				:: nm
+      , ehbnGenerDataSumAltRight			:: nm
+      , ehbnGenerDataProd    				:: nm
+      , ehbnGenerDataProdAltProd			:: nm
+      , ehbnGenerDataPar0    				:: nm
+      , ehbnGenerDataPar1    				:: nm
+      , ehbnGenerDataPar1AltPar1			:: nm
+      , ehbnGenerDataRec0    				:: nm
+      , ehbnGenerDataRec1    				:: nm
+      , ehbnGenerDataRec1AltRec1			:: nm
+      , ehbnGenerDataComp1    				:: nm
+      , ehbnGenerDataComp1AltComp1			:: nm
+      , ehbnGenerDataMetaB    				:: nm
+      , ehbnGenerDataMetaR    				:: nm
+      , ehbnGenerDataMetaP    				:: nm
+      , ehbnGenerDataMetaD    				:: nm
+      , ehbnGenerDataMetaC    				:: nm
+      , ehbnGenerDataMetaS    				:: nm
+      , ehbnGenerDataMetaDN    				:: Int -> nm
+      , ehbnGenerDataMetaCN    				:: Int -> nm
+      , ehbnGenerDataMetaS1    				:: nm
+      , ehbnGenerTupleRepresentableN		:: Int -> Int -> nm
 %%]]
 %%[[97
-      , ehbnInt8                        :: HsName
-      , ehbnInt16                       :: HsName
-      , ehbnInt32                       :: HsName
-      , ehbnInt64                       :: HsName
-      , ehbnWord                        :: HsName
-      , ehbnWord8                       :: HsName
-      , ehbnWord16                      :: HsName
-      , ehbnWord32                      :: HsName
-      , ehbnWord64                      :: HsName
-      , ehbnFloat                       :: HsName
-      , ehbnDouble                      :: HsName
-      , ehbnPackedStringToInteger       :: HsName
-      , ehbnPrimIntToInteger            :: HsName
-      , ehbnFromInteger                 :: HsName
+      , ehbnInt8                        :: nm
+      , ehbnInt16                       :: nm
+      , ehbnInt32                       :: nm
+      , ehbnInt64                       :: nm
+      , ehbnWord                        :: nm
+      , ehbnWord8                       :: nm
+      , ehbnWord16                      :: nm
+      , ehbnWord32                      :: nm
+      , ehbnWord64                      :: nm
+      , ehbnFloat                       :: nm
+      , ehbnDouble                      :: nm
+      , ehbnPackedStringToInteger       :: nm
+      , ehbnPrimIntToInteger            :: nm
+      , ehbnFromInteger                 :: nm
 %%]]
 %%[[98
-      , ehbnIO                          :: HsName
-      , ehbnHandle                      :: HsName
-      , ehbnByteArray                   :: HsName
-      , ehbnRealWorld                   :: HsName
+      , ehbnIO                          :: nm
+      , ehbnHandle                      :: nm
+      , ehbnByteArray                   :: nm
+      , ehbnRealWorld                   :: nm
 %%]]
 %%[[99
-      , ehbnClassIx                     :: HsName
-      , ehbnClassIxFldRange             :: HsName
-      , ehbnClassIxFldIndex             :: HsName
-      , ehbnClassIxFldInRange           :: HsName
-      , ehbnClassRead                   :: HsName
-      , ehbnClassReadFldRead            :: HsName
-      , ehbnClassReadFldReadsPrec       :: HsName
-      , ehbnPrelLex                     :: HsName
-      , ehbnPrelReadParen               :: HsName
-      , ehbnPrimEqChar                  :: HsName
-      , ehbnAddr                        :: HsName
-      -- , ehbnStackTracePush              :: HsName
+      , ehbnClassIx                     :: nm
+      , ehbnClassIxFldRange             :: nm
+      , ehbnClassIxFldIndex             :: nm
+      , ehbnClassIxFldInRange           :: nm
+      , ehbnClassRead                   :: nm
+      , ehbnClassReadFldRead            :: nm
+      , ehbnClassReadFldReadsPrec       :: nm
+      , ehbnPrelLex                     :: nm
+      , ehbnPrelReadParen               :: nm
+      , ehbnPrimEqChar                  :: nm
+      , ehbnAddr                        :: nm
+      -- , ehbnStackTracePush              :: nm
 %%]]
       }
 
-mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
+mkEHBuiltinNames :: (IdOccKind -> HsName -> nm) -> EHBuiltinNames' nm
 mkEHBuiltinNames f
   = EHBuiltinNames
       { ehbnId                          = f IdOcc_Val       hsnPrelId

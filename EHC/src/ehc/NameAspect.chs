@@ -20,34 +20,6 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EH for an id
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Not used
-
-%%[1111 hs export(IdEH(..))
-data IdEH
-  = IdEH_Val_Pat       	{iehDecl   ::  EH.Decl                         }
-  | IdEH_Val_Fun       	{iehPatL   :: [EH.PatExpr], iehBody :: EH.Expr, iehUniq :: !UID}
-  | IdEH_Val_Sig       	{iehDecl   ::  EH.Decl                         }
-%%[[5
-  | IdEH_Type_Def      	{iehDecl   :: !EH.Decl                         }
-%%]]
-%%[[6
-  | IdEH_Type_Sig      	{iehDecl   :: !EH.Decl                         }
-%%]]
-%%[[8
-  | IdEH_Val_Foreign   	{iehDecl   :: !EH.Decl                         }
-%%]]
-%%[[9
-  | IdEH_Class_Class
-  | IdEH_Class_Def     	{iehDecl   :: !EH.Decl, iehDeclInst :: !EH.Decl}
-  | IdEH_Inst_Def      	{iehDecl   ::  EH.Decl, iehClassNm  :: !HsName}
-  | IdEH_Dflt_Def      	{iehDecl   :: !EH.Decl                         }
-%%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -200,6 +172,38 @@ instance PP IdAspect where
   pp (IdAsp_Dflt_Def  _ _)  = pp "default"
 %%]]
   pp  IdAsp_Any             = pp "ANY"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Default aspect for occurrence kind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(mbUseAspOfIdOccKind)
+-- | Default use aspect of occurrence kind, only if a sensible choice exists
+mbUseAspOfIdOccKind :: IdOccKind -> Maybe IdAspect
+mbUseAspOfIdOccKind ok = case ok of
+    IdOcc_Val		-> Just IdAsp_Val_Var
+    -- IdOcc_Pat
+    IdOcc_Type		-> Just IdAsp_Type_Con
+%%[[6
+    IdOcc_Kind		-> Just IdAsp_Kind_Con
+%%]]
+%%[[7
+    -- IdOcc_Fld
+%%]]
+%%[[9
+    IdOcc_Class		-> Just IdAsp_Class_Class
+    -- IdOcc_Inst
+    -- IdOcc_Dflt
+%%]]
+    -- IdOcc_Any	
+%%[[50
+    -- IdOcc_Data	
+%%]]
+%%[[93
+    -- IdOcc_Fusion	
+%%]]
+    _ 				-> Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

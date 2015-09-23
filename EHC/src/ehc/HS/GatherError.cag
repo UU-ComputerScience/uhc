@@ -146,6 +146,7 @@ SEM Declaration
                                                    , @derivings.errSq
 %%]]
 %%[[92
+                                                   , Seq.fromList @errIdUseGener
                                                    , Seq.fromList @errIdUseClass
 %%]]
                                                    ]

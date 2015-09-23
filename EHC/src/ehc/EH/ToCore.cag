@@ -1598,7 +1598,7 @@ mkDataGenerBinds
             , foErrL evFO
             )
           where (_,u1,u2) = mkNewLevUID2 uniq
-                clgi  = panicJust ("mkDataGenerBinds.clGam: " ++ show dictNm ++ ": " ++ show clNm) $ gamLookup clNm clGam
+                clgi  = panicJust ("mkDataGenerBinds.clGam: " ++ show dictNm ++ " :: class " ++ show clNm) $ gamLookup clNm clGam
                 
                 -- derived names required for building
                 (dictSelfNm,dictBuildNm) = mkInstanceBuildNms dictNm

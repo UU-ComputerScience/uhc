@@ -703,6 +703,12 @@ mkUseOccGam :: EHCOpts -> IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Ra
 mkUseOccGam opts idGam names kind asp rng = mkUseOccGam' opts idGam [(names,kind,asp)] rng
 %%]
 
+%%[92 hs
+-- | Variation which uses default aspects for IdOccKind
+mkUseOccGamDfltAsp :: EHCOpts -> IdDefOccGam -> [(HsName,IdOccKind)] -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
+mkUseOccGamDfltAsp opts idGam nmKs rng = mkUseOccGam' opts idGam [ ([n], k, fromMaybe IdAsp_Any $ mbUseAspOfIdOccKind k) | (n,k) <- nmKs ] rng
+%%]
+
 %%[50 -1.mkUseOccGam hs
 mkUseOccGam' :: EHCOpts -> IdDefOccGam -> [([HsName],IdOccKind,IdAspect)] -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam' _ _ [] _
@@ -1022,8 +1028,16 @@ SEM Declaration
     | Data Newtype GADT
         loc             .   (_,_,idUseOccGamClass,errIdUseClass)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam
-                                                        (if ehcOptGenGenerics @lhs.opts then builtinGenerClassNmL else [])
+                                                        (if ehcOptGenGenerics @lhs.opts && not (ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts)
+                                                         then assocLKeys builtinGenerClassNmL
+                                                         else [])
                                                         IdOcc_Class IdAsp_Class_Class @range
+                        .   (_,_,idUseOccGamGener,errIdUseGener)
+                                        =   mkUseOccGamDfltAsp @lhs.opts @lhs.idGam
+                                                (if ehcOptGenGenerics @lhs.opts && ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
+                                                 then builtinGenerClassNmL ++ builtinGenerTypeNmL ++ concat [builtinGenerClassArityNmL a ++ builtinGenerTypeArityNmL a | a <- [0 .. @generMaxRemArity]]
+                                                 else [])
+                                                @range
 %%]
 
 %%[93
@@ -1071,6 +1085,9 @@ SEM Declaration
 %%[1 hs
 type IdDpdMp = Map.Map IdOcc [IdOcc]
 
+emptyIdDpdMp :: IdDpdMp
+emptyIdDpdMp = Map.empty
+
 idDpdMpSingleton :: IdOcc -> IdOcc -> IdDpdMp
 idDpdMpSingleton f t = Map.singleton f [t]
 
@@ -1089,6 +1106,7 @@ idToOccGam2DpdMp :: [IdOcc] -> Gam IdOcc x -> IdDpdMp
 idToOccGam2DpdMp fs l
   = idToOccL2DpdMp fs (gamToAssocL l)
 
+-- | Dpd mp where 'g' dpds on 'ts'
 idFrOccGam2DpdMp :: Gam IdOcc x -> [IdOcc] -> IdDpdMp
 idFrOccGam2DpdMp g ts
   = if null ts then Map.empty else idDpdMpUnions [ Map.singleton f ts | (f,_) <- gamToAssocL g ]
@@ -1161,10 +1179,14 @@ SEM Declaration
                                                     , if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @derivings.idUseOccGam else emptyGam
 %%]]
 %%[[92
-                                                    , @idUseOccGamClass
+                                                    , if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then emptyGam else @idUseOccGamClass
 %%]]
                                                     ]
                                                 )
+%%[[92
+                        .   (idUseOccGenerGam,idUseHereGenerOccL,_,undefGenerOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @idUseOccGamGener
+%%]]
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                             `idDpdMpUnion`
                                             idFrOccGam2DpdMp @idDefOccGamConstrs [@idOccDef]
@@ -1174,8 +1196,36 @@ SEM Declaration
 %%]]
 %%[[92
                                             `idDpdMpUnion`
-                                            idFrOccGam2DpdMp @idDefOccGamGener [@idOccDef]
+                                            (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then emptyIdDpdMp else idFrOccGam2DpdMp @idDefOccGamGener [@idOccDef])
+                                            `idDpdMpUnion`
+                                            (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then idToOccL2DpdMp @idOccDefsGener @idUseHereGenerOccL else emptyIdDpdMp)
 %%]]
+        lhs             .   undefOccGam =   gamUnions
+        										[ @undefOccGam
+%%[[92
+        										, @undefGenerOccGam
+%%]]
+%%[[91
+        										, @derivings.undefOccGam
+%%]]
+%%[[9
+        										, @context.undefOccGam
+%%]]
+        										, @typelefthandside.undefOccGam, @constructors.undefOccGam
+        										]
+                        .   idUseOccGam =   gamUnions
+        										[ @idUseOccGam
+%%[[92
+        										, @idUseOccGenerGam
+%%]]
+%%[[91
+        										, @derivings.idUseOccGam
+%%]]
+%%[[9
+        										, @context.idUseOccGam
+%%]]
+        										, @typelefthandside.idUseOccGam, @constructors.idUseOccGam
+        										]
 %%]]
 %%[[6
     | KindSignature
