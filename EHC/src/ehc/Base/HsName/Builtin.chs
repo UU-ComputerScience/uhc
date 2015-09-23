@@ -915,6 +915,7 @@ data EHBuiltinNames' nm
 %%]]
 %%[[92
 		-- for generic deriving
+      , ehbnGenerClassGeneric    			:: nm
       , ehbnGenerClassRepresentableN    	:: Int -> nm
       , ehbnGenerClassRepresentableNFldFrom	:: Int -> nm
       , ehbnGenerClassRepresentableNFldTo	:: Int -> nm
@@ -1065,6 +1066,7 @@ mkEHBuiltinNames f
 %%]]
 %%[[92
 		-- for generic deriving
+      , ehbnGenerClassGeneric    	        =       f IdOcc_Class (mkGenerRV     "Generic"	        )
       , ehbnGenerClassRepresentableN    	= \n -> f IdOcc_Class (mkGenerRVN  n "Representable"	)
       , ehbnGenerClassRepresentableNFldFrom	= \n -> f IdOcc_Val   (mkGenerRVN  n "from"				)
       , ehbnGenerClassRepresentableNFldTo	= \n -> f IdOcc_Val   (mkGenerRVN  n "to"				)

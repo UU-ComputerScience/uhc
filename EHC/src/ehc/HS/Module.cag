@@ -220,7 +220,13 @@ SEM Body
 SEM Deriving
     | Deriving
         lhs             .   (modDefsRel,modHideDefsRel)
-                                        =   mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
+                                        =
+%%[[92
+                                            if @hasGenericDeriving
+                                            then (Rel.empty, Rel.empty)
+                                            else
+%%]]
+                                                 mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

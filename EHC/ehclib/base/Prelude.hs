@@ -59,6 +59,9 @@ import UHC.Base hiding
 
   -- * Representable type classes
   , Representable0(..), Representable1(..)
+  
+  -- * Dummy class
+  , Generic
   )
 import UHC.Eq
 import UHC.Ord

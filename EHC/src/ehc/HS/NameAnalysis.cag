@@ -396,8 +396,14 @@ SEM ContextItem
 %%[91
 SEM Deriving
     | Deriving
-        loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
-                                            `gamUnion` mkDefOccGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
+        loc             .   idDefOccGam =   
+%%[[92
+                                            if @hasGenericDeriving
+                                            then emptyGam
+                                            else
+%%]]
+                                                 mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
+                                                 `gamUnion` mkDefOccGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1028,13 +1034,13 @@ SEM Declaration
     | Data Newtype GADT
         loc             .   (_,_,idUseOccGamClass,errIdUseClass)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam
-                                                        (if ehcOptGenGenerics @lhs.opts && not (ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts)
+                                                        (if (ehcOptGenGenerics @lhs.opts || @derivings.hasGenericDeriving) && not (ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts)
                                                          then assocLKeys builtinGenerClassNmL
                                                          else [])
                                                         IdOcc_Class IdAsp_Class_Class @range
                         .   (_,_,idUseOccGamGener,errIdUseGener)
                                         =   mkUseOccGamDfltAsp @lhs.opts @lhs.idGam
-                                                (if ehcOptGenGenerics @lhs.opts && ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
+                                                (if (ehcOptGenGenerics @lhs.opts || @derivings.hasGenericDeriving) && ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
                                                  then builtinGenerClassNmL ++ builtinGenerTypeNmL ++ concat [builtinGenerClassArityNmL a ++ builtinGenerTypeArityNmL a | a <- [0 .. @generMaxRemArity]]
                                                  else [])
                                                 @range
@@ -1354,10 +1360,16 @@ SEM Body
 %%[91
 SEM Deriving
     | Deriving
-        lhs             .   idDpdMp     =   idDpdMpUnions
-                                                [ idDpdMpSingleton @idOccDef @lhs.idOccDefData
-                                                , idDpdMpSingleton @idOccDefVal @idOccDef
-                                                ]
+        lhs             .   idDpdMp     =   
+%%[[92
+                                            if @hasGenericDeriving
+                                            then emptyIdDpdMp
+                                            else
+%%]]
+                                                 idDpdMpUnions
+                                                     [ idDpdMpSingleton @idOccDef @lhs.idOccDefData
+                                                     , idDpdMpSingleton @idOccDefVal @idOccDef
+                                                     ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -295,7 +295,7 @@ SEM Declaration
                         .   generMaxRemArity
                                         =   length @typelefthandside.typevariables `min` 1
                         .   idOccDefsGener
-                                        =   if ehcOptGenGenerics @lhs.opts
+                                        =   if ehcOptGenGenerics @lhs.opts || @derivings.hasGenericDeriving
                                             then [ IdOcc (hsnNm2GenerReprSyn arity @typerefname) IdOcc_Type | arity <- [0 .. @generMaxRemArity] ]
                                             else []
 %%]]
@@ -389,7 +389,24 @@ SEM Deriving
     | Deriving
         loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
                         .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
-                        .   idOccDefs   =   [@idOccDef,@idOccDefVal]
+                        .   idOccDefs   =   
+%%[[92
+                                            if @hasGenericDeriving then [] else
+%%]]
+                                            [@idOccDef,@idOccDefVal]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Detection of generic deriving
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[92
+ATTR AllDeriving [ | | hasGenericDeriving USE {||} {False} : Bool ]
+
+SEM Deriving
+    | Deriving
+        loc             .   hasGenericDeriving
+        								=   @name == (hsnQualified $ ehbnGenerClassGeneric $ ehcOptBuiltinNames $ @lhs.opts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
