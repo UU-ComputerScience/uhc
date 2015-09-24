@@ -319,8 +319,27 @@ SEM Decl
 SEM Decl
   | Instance    loc             .   derivMp         =   mkDerivClsMp @fe @lhs.valGam @lhs.dataGam
                                 .   mbDerivDCL      =   Map.lookup @instClsNm @derivMp
+                                .   mbDerivDataCTags=   dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
                                 .   derivCanBeDoneBuiltin
                                                     =   isJust @mbDerivDCL && not (dgiIsRec @derivDataDGI)
+                                                        && (not (@derivIsEnum || @derivIsBounded || @derivIsIx) || not @derivDataHasFlds)
+                                .   derivDataHasFlds
+                                                    =   isJust @mbDerivDataCTags
+                                                        && (any (\t -> ctagArity t > 0) $ fromJust @mbDerivDataCTags)
+                                .   derivIsEnum     =   @instClsNm == (ehbnClassEnum $ ehcOptBuiltinNames @lhs.opts)
+                                .   derivIsBounded  =   @instClsNm == (ehbnClassBounded $ ehcOptBuiltinNames @lhs.opts)
+                                .   derivIsIx
+%%[[91
+                                                    =   False
+%%][99
+                                                    =   @instClsNm == (ehbnClassIx $ ehcOptBuiltinNames @lhs.opts)
+%%]]
+                                .   derivCanBeDoneGeneric
+%%[[91
+                                                    =   False
+%%][92
+                                                    =   not $ null @generForFitsInL
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1461,7 +1461,7 @@ SEM Decl
 %%[[91               
                                                              InstDeriving _
 %%[[92
-                                                               | not $ null @generForFitsInL
+                                                               | @derivCanBeDoneGeneric
                                                                           -> unzip
                                                                                [ (acoreBind1 fld $ acore1App f $ acoreBuiltinUndefined @lhs.opts,s)
                                                                                | ((fld,dflt,_,_),fo,u) <- zip3 @generForFitsInL @foGenerDerivL (mkNewLevUIDL (length @generForFitsInL) @lUniq_bind)

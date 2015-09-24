@@ -105,7 +105,7 @@ SEM Decl
                                                                  , fromJust @mbDerivDCL
                                                                  )
 %%[[92
-                                                            | not $ null @generForFitsInL
+                                                            | @derivCanBeDoneGeneric
                                                               -> ( cnstrMpUnions [ {- gathPredLToProveCnstrMp $ foVarMp foDt `varUpd` concat (altsPrOcc)
                                                                                  , -} @tyVarMpDeclsL0 `varUpd` @generCnstrMp
                                                                                  ]
