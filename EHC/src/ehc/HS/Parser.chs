@@ -451,7 +451,8 @@ pBody' opts addDecl
                      <|> (\cs der lhs cx k -> mk Declaration_Data k cx lhs cs der)
                          <$> pWhere'' (pGADTConstructor) <*> pDer
 %%]]
-                     <|> pSucceed (\lhs cx k -> mk Declaration_Data k cx lhs [] [])
+                     <|> (\der lhs cx k -> mk Declaration_Data k cx lhs [] der)
+                         <$> pDer
                    )))
           <|> pNEWTYPE
               <**> (   (\cx lhs c der k -> mk Declaration_Newtype k cx lhs c der)

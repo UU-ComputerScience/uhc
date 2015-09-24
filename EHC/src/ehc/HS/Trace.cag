@@ -47,7 +47,14 @@ SEM Declaration
 %%]]
                                             >< @where.trpp
     | Instance
-        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= Instance" >#< @classrefname] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= Instance" >#< @classrefname]
+        									++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL
+%%[[99
+        									   , "generRequiresReprTypes=" >#< @generRequiresReprTypes
+        									   , "idUseOccGamGenerRepr=" >#< ppGam @idUseOccGamGenerRepr
+        									   , "idUseHereGenerReprOccL=" >#< ppBracketsCommas @idUseHereGenerReprOccL
+%%]]
+        									   ])
                                             >< @context.trpp >< @type.trpp >< @where.trpp
     | InstanceUseImplicitly
         loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= InstanceUseImplicitly" >#< @classrefname] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])

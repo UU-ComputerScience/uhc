@@ -27,10 +27,10 @@ instance dEqInt :: Eq Integer where
 testInt = do
   print $ 1 == 3
 {-
-  print $ let instance Eq Integer where                                                -- (2)
-                i1 == i2 = i1 `mod` 2 == i2 `mod` 2
-          in  1 == 3
 -}
+  print $ let instance Eq Integer where                                                -- (2)
+                i1 == i2 = (i1 `mod` 2) `eqInteger` (i2 `mod` 2)
+          in  1 == 3
   print $ let instance dEqInt <: Eq Integer
           in  1 == 3
 

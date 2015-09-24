@@ -12,6 +12,7 @@ Definitions for types which
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
+{-# LANGUAGE GenericDeriving #-}
 
 module UHC.Types
   -- export all

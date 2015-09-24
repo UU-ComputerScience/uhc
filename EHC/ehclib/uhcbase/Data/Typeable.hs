@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude -XOverlappingInstances -funbox-strict-fields #-}
+{-# LANGUAGE GenericDeriving #-}
 
 -- The -XOverlappingInstances flag allows the user to over-ride
 -- the instances for Typeable given here.  In particular, we provide an instance

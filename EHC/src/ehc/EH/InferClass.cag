@@ -322,10 +322,14 @@ SEM Decl
                                 .   mbDerivDataCTags=   dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
                                 .   derivCanBeDoneBuiltin
                                                     =   isJust @mbDerivDCL && not (dgiIsRec @derivDataDGI)
-                                                        && (not (@derivIsEnum || @derivIsBounded || @derivIsIx) || not @derivDataHasFlds)
+                                                        && (not ((@derivIsEnum || @derivIsIx) && @derivDataHasFlds))
+                                                        && (not (@derivIsBounded && @derivDataHasGt1Constrs && @derivDataHasFlds))
                                 .   derivDataHasFlds
                                                     =   isJust @mbDerivDataCTags
                                                         && (any (\t -> ctagArity t > 0) $ fromJust @mbDerivDataCTags)
+                                .   derivDataHasGt1Constrs
+                                                    =   isJust @mbDerivDataCTags
+                                                        && (length (fromJust @mbDerivDataCTags) > 1)
                                 .   derivIsEnum     =   @instClsNm == (ehbnClassEnum $ ehcOptBuiltinNames @lhs.opts)
                                 .   derivIsBounded  =   @instClsNm == (ehbnClassBounded $ ehcOptBuiltinNames @lhs.opts)
                                 .   derivIsIx

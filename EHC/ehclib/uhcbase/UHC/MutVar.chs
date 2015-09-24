@@ -4,6 +4,7 @@
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE GenericDeriving #-}
 
 module UHC.MutVar
   ( MutVar

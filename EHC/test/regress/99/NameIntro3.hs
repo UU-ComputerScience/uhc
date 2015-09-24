@@ -3,6 +3,8 @@
    expected: error, report of duplicates
 ---------------------------------------------------------------------------------------- -}
 
+{-# LANGUAGE GenericDeriving #-}
+
 module Main where
 
 -- class

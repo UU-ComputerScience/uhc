@@ -1,5 +1,6 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
+{-# LANGUAGE GenericDeriving #-}
 
 module UHC.Show
   ( FFFormat(..)

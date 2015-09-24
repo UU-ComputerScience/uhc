@@ -111,7 +111,7 @@ test-expect test-regress: test-lists
           ehcTargetOpts="-Operwholecore" ; \
           ;; \
       esac ; \
-      echo "== testing with cmd: $${ehc} $${ehcOpts} $${ehcTargetOpts} ==" ; \
+      echo "== testing with cmd: $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} ==" ; \
 	  echo "== version $${v} ==" ; \
 	  if test -x $${ehc} ; \
 	  then \
@@ -192,7 +192,7 @@ test-expect test-regress: test-lists
                 then \
                   platformMsg="($${platformDpd}) --" ; \
                 fi ; \
-                $${ehc} $${ehcOpts} $${ehcTargetOpts} $${optPreludePath} $${t} > $${th} 2>&1 ; \
+                $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} $${optPreludePath} $${t} > $${th} 2>&1 ; \
                 if test $$? = 0 -a -r $${texe} ; \
                 then \
                   echo "== execution ==" >> $${th} ; \

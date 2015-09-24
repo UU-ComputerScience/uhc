@@ -46,11 +46,11 @@ encodeDefault rep x = encode' ((from0 x) `asTypeOf` rep)
 
 -- Representable0, parameterless
 data D = D | E Int | F D D | G Char
-  deriving Encode
+  deriving (Encode,Generic)
 
 -- Representable0, 1 type parameter
 data A a = A a
-  deriving Encode
+  deriving (Encode,Generic)
 
 main = do
   putStrLn (show (encode (F D (F (E 3) (G 'c')))))

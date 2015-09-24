@@ -336,7 +336,7 @@ ehcCmdLineOpts = sortOptions $
 %%]]
      ,  Option "d"  ["debug"]               (NoArg oDebug)                          "show debug information"
      ,  Option ""   ["priv"]                (boolArg oPriv)                         "private flag, used during development of 2 impls of 1 feature"
-     ,  Option ""   ["underdev"]            (ReqArg oUnderDev "opt[,...]")          ("opts (specific) for turning on under development features: " ++ showStr2stMp allUnderDevMp)
+     ,  Option ""   ["underdev"]            (ReqArg oUnderDev "opt[,...]")          ("opts (specific) for flipping (on/off) under development features: " ++ showStr2stMp allUnderDevMp ++ ", on: " ++ (concat $ intersperse " " $ map show $ Set.toList $ ehcOptUnderDev emptyEHCOpts))
 %%[[(1 hmtyinfer)
      ,  Option ""   ["show-top-ty"]         (OptArg oShowTopTy "yes|no")            "show top ty, default=no"
 %%][100
@@ -947,7 +947,9 @@ oPriv                o b = o { ehcOptPriv           = b }
 %%]
 
 %%[1
-oUnderDev          s   o = o { ehcOptUnderDev = Set.fromList (optOpts allUnderDevMp s) `Set.union` ehcOptUnderDev o }
+oUnderDev          s   o = o { ehcOptUnderDev = {- Set.fromList (optOpts allUnderDevMp s) `Set.union` ehcOptUnderDev o -- -}
+                                 foldr (\ud o -> if Set.member ud o then Set.delete ud o else Set.insert ud o) (ehcOptUnderDev o) (optOpts allUnderDevMp s)
+                             }
 %%]
 
 %%[(8 codegen)

@@ -1,5 +1,6 @@
 \begin{code}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE GenericDeriving #-}
 
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_HADDOCK hide #-}

@@ -235,7 +235,7 @@ throw e = primThrowException e
 ----------------------------------------------------------------
 
 data PackedString
---  deriving Generic
+  deriving Generic
 
 -- foreign import prim "primCStringToString"  packedStringToString  :: PackedString -> [Char]
 foreign import prim "primPackedStringNull" packedStringNull :: PackedString -> Bool
@@ -253,7 +253,7 @@ packedStringToString p = if packedStringNull p
 ----------------------------------------------------------------
 
 data ByteArray
---  deriving Generic
+  deriving Generic
 
 foreign import prim primByteArrayLength   :: ByteArray -> Int
 #if defined(__UHC_TARGET_JS__)
@@ -1094,7 +1094,10 @@ instance Read Integer where
 --------------------------------------------------------------
 
 data Float     -- opaque datatype of 32bit IEEE floating point numbers
+  deriving Generic
+
 data Double    -- opaque datatype of 64bit IEEE floating point numbers
+  deriving Generic
 
 #if defined(__UHC_TARGET_JS__)
 foreign import prim "primEqInt"          	primEqFloat             :: Float -> Float -> Bool
@@ -1402,6 +1405,7 @@ instance RealFrac Float where
 instance RealFrac Double where
     properFraction = floatProperFraction
 
+floatProperFraction :: (RealFloat a, Integral b) => a -> (b,a)
 floatProperFraction x
    | n >= 0      = (fromInteger m * fromInteger b ^ n, 0)
    | otherwise   = (fromInteger w, encodeFloat r n)
@@ -2449,18 +2453,18 @@ instance Constructor c => Constructor (M1 t c f a) where
 
 -- | Datatype to represent the arity of a tuple.
 data Arity = NoArity | Arity Int
-  deriving (Eq, Show, Ord, Read, Generic)
+  deriving (Eq, Show, Ord, Read)
 
 -- | Datatype to represent the fixity of a constructor. An infix
 -- | declaration directly corresponds to an application of 'Infix'.
 data Fixity = Prefix | Infix Associativity Int
-  deriving (Eq, Show, Ord, Read, Generic)
+  deriving (Eq, Show, Ord, Read)
 
 -- | Datatype to represent the associativy of a constructor
 data Associativity =  LeftAssociative 
                    |  RightAssociative
                    |  NotAssociative
-  deriving (Eq, Show, Ord, Read, Generic)
+  deriving (Eq, Show, Ord, Read)
 
 -- | Representable types of kind *
 class Representable0 a rep where

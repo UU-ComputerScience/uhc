@@ -3,6 +3,41 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Distribution of info derived from pragmas: class derivables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Assumption:
+The DERIVABLE pragma occurs in the same module as the class + generic definitions,
+so it does not participate in name analysis etc, and we brutally qualify the involved names and generate (elsewhere) additional name dependencies
+
+%%[99
+ATTR AllDeclaration AllExpression [ generDerivMp: {Map.Map HsName [(HsName,HsName)]} | | ]
+
+SEM Body
+    | Body
+        declarations    .   generDerivMp=   let nm | ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts = id
+                                                   | otherwise                                        = hsnSetLevQual @lhs.nmLev @lhs.moduleNm
+                                            in  Map.unionsWith (++)
+                                                    [ Map.singleton clNm' [({- clNm', -} nm fldNm,nm dfltNm)]
+                                                    | (Pragma.Pragma_Derivable clNm fldNm dfltNm) <- Set.toList @pragmas
+                                                    , let clNm' = nm clNm
+                                                    ]
+
+SEM Declaration
+    | Class
+        loc             .   generderivnames
+                                        =   Map.findWithDefault []
+                                                (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @typelefthandside.name else @classrefname)
+                                                @lhs.generDerivMp
+    | Instance
+        loc             .   generRequiresReprTypes
+                                        =   case (@instVariant, Map.lookup @type.conNm @lhs.generDerivMp) of
+                                                (InstDeriving InstDerivingFrom_Standalone, Just (_:_)) | ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
+                                                  -> True
+                                                _ -> False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifier occurrences
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -965,6 +1000,17 @@ SEM Declaration
         loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
                                         -- =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@type.conNm] IdOcc_Class IdAsp_Class_Class @range
+%%[[99
+                        .   (_,_,idUseOccGamGenerRepr,_)
+                                        =   mkUseOccGamDfltAsp @lhs.opts @lhs.idGam
+                                                (if @generRequiresReprTypes
+                                                 -- 20150924 TBD: upperbound 1 should be globally configured
+                                                 -- 20150924 TBD: use of @type.idUseOccGam is hackish, could be more (irrelevant) types than required...
+                                                 then -- [(hsnNm2GenerReprSyn a @type.conNm, IdOcc_Type) | a <- [0 .. 1]]
+                                                      [(hsnNm2GenerReprSyn a $ ioccNm o, ioccKind o) | (o,_) <- gamToAssocL @type.idUseOccGam, a <- [0 .. 1]]
+                                                 else [])
+                                                @range
+%%]]
     | InstanceUseImplicitly
         loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@type.conNm] IdOcc_Class IdAsp_Class_Class @range
@@ -1274,7 +1320,7 @@ SEM Declaration
                                                      [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                      , idToOccGam2DpdMp [@idOccDef] @idDefOccGamSigAsVar
                                                      -- Following dpdcy really necessary? 20150923 TBD...
-                                                     , idToOccGam2DpdMp [@idOccDef] @idDefOccGamInstForClass
+                                                     -- , idToOccGam2DpdMp [@idOccDef] @idDefOccGamInstForClass
                                                      , idFrOccGam2DpdMp @idDefOccGamSigAsVar [@idOccDef]
                                                      -- , idFrOccGam2DpdMp @idDefOccGamSigAsVar (gamKeys @idDefOccGamInstForClass)
                                                      , @where.idDpdMp
@@ -1295,10 +1341,17 @@ SEM Declaration
                                                    (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@type.idUseOccGam,@where.idUseOccGam])
                                             else splitIdUseOccGam @lhs.nmLev
                                                    (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@type.idUseOccGam,@where.idUseOccGam])
+%%[[99
+                        .   (_,idUseHereGenerReprOccL,_,_)
+                                        =   splitIdUseOccGam @lhs.nmLev @idUseOccGamGenerRepr
+%%]]
                         .   idDpdMp     =   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts 
                                             then idDpdMpUnions
                                                      [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                      , idDpdMpSingleton @idOccDefVal @idOccDef
+%%[[99
+                                                     , idToOccL2DpdMp [@idOccDef] @idUseHereGenerReprOccL
+%%]]
                                                      , @where.idDpdMp
                                                      ]
                                             else idDpdMpUnions
@@ -1423,7 +1476,8 @@ ATTR AllDeriving [ idOccDefsData: {[IdOcc]} | | ]
 SEM Declaration
     | Data Newtype GADT
         derivings       .   idOccDefsData
-        								=   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @idOccDefsGener else [@idOccDef]
+                                        =   (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @idOccDefsGener else [])
+                                            ++ [@idOccDef]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

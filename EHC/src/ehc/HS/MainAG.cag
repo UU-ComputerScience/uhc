@@ -441,42 +441,6 @@ SEM Body
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Distribution of info derived from pragmas: class derivables
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Assumption:
-The DERIVABLE pragma occurs in the same module as the class + generic definitions,
-so it does not participate in name analysis etc, and we brutally qualify the involved names.
-
-%%[99
-ATTR AllDeclaration AllExpression [ generDerivMp: {Map.Map HsName [(HsName,HsName)]} | | ]
-
-SEM Body
-    | Body
-        declarations    .   generDerivMp=   let nm | ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts = id
-                                                   | otherwise                                        = hsnSetLevQual @lhs.nmLev @lhs.moduleNm
-                                            in  Map.unionsWith (++)
-                                                    [ Map.singleton clNm' [({- clNm', -} nm fldNm,nm dfltNm)]
-                                                    | (Pragma.Pragma_Derivable clNm fldNm dfltNm) <- Set.toList @pragmas
-                                                    , let clNm' = nm clNm
-                                                    ]
-
-SEM Declaration
-    | Class
-        loc             .   generderivnames
-                                        =   Map.findWithDefault []
-                                                (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @typelefthandside.name else @classrefname)
-                                                @lhs.generDerivMp
-%%]
-
-%%[9999
--- to keep uuagc happy with a not-used dummy value
-SEM Module
-    | Module
-        loc             .   generDerivMp=   Map.empty
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Foreign entities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -407,7 +407,9 @@ emptyEHCOpts
       ,  ehcOptShowTyCore       =   False
 %%]]
       ,  ehcOptPriv             =   False
-      ,  ehcOptUnderDev         =   Set.empty
+      ,  ehcOptUnderDev         =   Set.fromList
+      									[ UnderDev_NameAnalysis		-- 20150924
+      									]
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
       ,  ehcOptShowEH           =   True

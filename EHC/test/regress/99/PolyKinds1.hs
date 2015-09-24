@@ -4,9 +4,11 @@
 ---------------------------------------------------------------------------------------- -}
 
 {-# LANGUAGE PolyKinds #-}
+-- {-# LANGUAGE GenericDeriving #-}
 
 module PolyKinds1 where
-  
+
+Proxy :: k -> *
 data Proxy t = Proxy
 
 class Foo t where

@@ -32,11 +32,14 @@
 data UnderDev
   = UnderDev_Anon					-- something under development not further specified
   | UnderDev_NameAnalysis			-- alternatate (more accurate) name dependency analysis, required for named instances
-  deriving (Eq,Ord,Enum,Show,Typeable,Bounded,Generic)
+  deriving (Eq,Ord,Enum,Typeable,Bounded,Generic)
 
 instance DataAndConName UnderDev
 
+instance Show UnderDev where
+  show = strToLower . showUnprefixed 1
+
 allUnderDevMp :: Map.Map String UnderDev
-allUnderDevMp = str2stMpWithShow (strToLower . showUnprefixed 1) 
+allUnderDevMp = str2stMp
 %%]
 
