@@ -67,6 +67,8 @@
 %%]
 %%[8 import(UHC.Util.Lens)
 %%]
+%%[92 import({%{EH}Base.UnderDev})
+%%]
 
 -- Build function state
 %%[8 import({%{EH}EHC.BuildFunction})
@@ -128,11 +130,16 @@ mainEHC opts0
 %%][103
                                 where p = mkFPath "uhcl"     -- hardbaked name
 %%]]
-%%[[1
-                 oo@(o,n,errs)  = ehcCmdLineOptsApply [] args opts1
-%%][103
-                 oo@(o,n,errs)  = ehcCmdLineOptsApply (maybe [] (\d -> [\o -> o {ehcOptCfgInstallRoot = Just d}]) mbDataDir) args opts1
+                 oo@(o,n,errs)  = ehcCmdLineOptsApply
+                                    ([]
+%%[[92
+                                    ++ [\o -> if ehcOptIsUnderDev UnderDev_NameAnalysis o then o {ehcOptGenGenerics=False} else o]
 %%]]
+%%[[103
+                                    ++ (maybe [] (\d -> [\o -> o {ehcOptCfgInstallRoot = Just d}]) mbDataDir)
+%%]]
+                                    )
+                                    args opts1
                  opts2          = maybe opts1 id o
 %%[[(8 codegen)
          ;  case opts2 of

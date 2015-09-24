@@ -174,7 +174,7 @@ SEM Declaration
         lhs         .   eh          =   [@eh]
 %%[[92
     | Data Newtype GADT
-        loc         .   ehGener     =   rngLift @range EH.Decl_GenerRep @generMaxRemArity @typerefname @constructors.conrefnames @constructors.conAndFldrefnames
+        loc         .   mkEhGener   =   \arity -> rngLift @range EH.Decl_GenerRep @generMaxRemArity arity @typerefname @constructors.conrefnames @constructors.conAndFldrefnames
 %%]]
 %%[[93
     | FusionDeclaration

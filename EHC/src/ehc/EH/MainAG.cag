@@ -28,6 +28,9 @@
 %%[1 hs import ({%{EH}Base.Trace})
 %%]
 
+%%[1 hs import({%{EH}Base.UnderDev})
+%%]
+
 %%[(2 hmtyinfer) hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils1})
 %%]
 

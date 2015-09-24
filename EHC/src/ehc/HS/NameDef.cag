@@ -294,10 +294,11 @@ SEM Declaration
 %%[[92
                         .   generMaxRemArity
                                         =   length @typelefthandside.typevariables `min` 1
-                        .   idOccDefsGener
+                        .   (idOccDefsGener, generArities)
                                         =   if ehcOptGenGenerics @lhs.opts || @derivings.hasGenericDeriving
-                                            then [ IdOcc (hsnNm2GenerReprSyn arity @typerefname) IdOcc_Type | arity <- [0 .. @generMaxRemArity] ]
-                                            else []
+                                            then let arities = [0 .. @generMaxRemArity]
+                                                 in  ([IdOcc (hsnNm2GenerReprSyn a @typerefname) IdOcc_Type | a <- arities], [])
+                                            else ([], [])
 %%]]
                         .   idOccDefs   =   [@idOccDef]
                                             ++ @idOccDefsCon

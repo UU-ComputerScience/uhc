@@ -426,6 +426,11 @@ SEM Decl
   | FFI         lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foFFI]
 %%]
 
+%%[(92 hmtyinfer)
+SEM Decl
+  | GenerRep    lhs         .   errSq        =  rngLift @range mkNestErr' @pp [Seq.fromList @errsNoIntroNm]
+%%]
+
 %%[(93 hmtyinfer)
 SEM Decl
   | FusionConv  lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @foBuildInverse]

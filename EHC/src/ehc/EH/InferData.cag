@@ -238,6 +238,9 @@ SEM DataConstr
                             .   dataUnConTyAsVar    =   mkNewTyVar @lUniq_uncon
                 lhs         .   patValGam           =   mkDataConstrValGam @conNm @dataConTyAsVar @dataUnConTyAsVar `gamUnion` @lhs.patValGam
                             .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar, @gadtTyVarMp `varUpd` @dataConTy),(@dataUnConTyVar,@dataQuUnConTy)] `varUpd` @lhs.patTyVarMp
+                -- Following causes cycles
+                -- lhs         .   gathTySigGam        =   mkDataConstrValGam @conNm @dataConTyAsVar @dataUnConTyAsVar `-- gamUnion` @lhs.gathTySigGam
+                --             .   gathTySigVarMp      =   assocTyLToVarMp [(@dataConTyVar, @gadtTyVarMp `varUpd` @dataConTy),(@dataUnConTyVar,@dataQuUnConTy)] -- `varUpd` @lhs.gathTySigVarMp
                 loc         .   lUniq_con           :   UNIQUEREF gUniq
                 loc         .   lUniq_uncon         :   UNIQUEREF gUniq
 %%]

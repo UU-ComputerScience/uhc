@@ -518,6 +518,9 @@ SEM AGItf
 %%[(1 hmtyinfer).gathTySigGam
 ATTR
   AllDecl
+%%[[5
+  -- AllData
+%%]]
     [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam
 %%[[2
           gathTySigVarMp USE {`varUpd`} {emptyVarMp} : VarMp

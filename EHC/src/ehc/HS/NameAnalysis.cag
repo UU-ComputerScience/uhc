@@ -220,7 +220,7 @@ SEM Declaration
 %%]]
 %%[[92
                         .   idDefOccGamGener
-                                        =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @ehGener) @idOccDefsGener
+                                        =   gamUnions $ zipWith (\arity def -> mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def $ @mkEhGener arity) [def]) @generArities @idOccDefsGener
 %%]]
                         .   idDefOccGam =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @eh) [@idOccDef]
                                             `gamAddGam` @idDefOccGamConstrs
@@ -1042,6 +1042,7 @@ SEM Declaration
                                         =   mkUseOccGamDfltAsp @lhs.opts @lhs.idGam
                                                 (if (ehcOptGenGenerics @lhs.opts || @derivings.hasGenericDeriving) && ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
                                                  then builtinGenerClassNmL ++ builtinGenerTypeNmL ++ concat [builtinGenerClassArityNmL a ++ builtinGenerTypeArityNmL a | a <- [0 .. @generMaxRemArity]]
+                                                      -- builtinGenerClassNmL ++ concat [builtinGenerClassArityNmL a | a <- [0 .. @generMaxRemArity]]
                                                  else [])
                                                 @range
 %%]
@@ -1204,7 +1205,12 @@ SEM Declaration
                                             `idDpdMpUnion`
                                             (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then emptyIdDpdMp else idFrOccGam2DpdMp @idDefOccGamGener [@idOccDef])
                                             `idDpdMpUnion`
-                                            (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then idToOccL2DpdMp @idOccDefsGener @idUseHereGenerOccL else emptyIdDpdMp)
+                                            (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
+                                             then idToOccL2DpdMp @idOccDefsGener @idUseHereGenerOccL
+                                                  `idDpdMpUnion`
+                                                  idToOccGam2DpdMp [@idOccDef] @idDefOccGamGener
+                                             else emptyIdDpdMp
+                                             )
 %%]]
         lhs             .   undefOccGam =   gamUnions
         										[ @undefOccGam
@@ -1261,6 +1267,7 @@ SEM Declaration
                                             then idDpdMpUnions
                                                      [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                      , idToOccGam2DpdMp [@idOccDef] @idDefOccGamSigAsVar
+                                                     -- Following dpdcy really necessary? 20150923 TBD...
                                                      , idToOccGam2DpdMp [@idOccDef] @idDefOccGamInstForClass
                                                      , idFrOccGam2DpdMp @idDefOccGamSigAsVar [@idOccDef]
                                                      -- , idFrOccGam2DpdMp @idDefOccGamSigAsVar (gamKeys @idDefOccGamInstForClass)

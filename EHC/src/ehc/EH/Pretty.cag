@@ -474,7 +474,7 @@ SEM DataConstrEqs
 
 %%[92
 SEM Decl
-  | GenerRep    loc     .   pp      =   "generic" >#< (@maxArity >#< @tyNm >-< (vlist @conNmL) >-< (ppAssocLV $ assocLMapElt ppCurlysCommas @recFldNmL))
+  | GenerRep    loc     .   pp      =   "generic" >#< (@arity >|< "<=" >|< @maxArity >#< @tyNm >-< (vlist @conNmL) >-< (ppAssocLV $ assocLMapElt ppCurlysCommas @recFldNmL))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

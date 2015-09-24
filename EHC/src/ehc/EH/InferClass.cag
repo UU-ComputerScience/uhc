@@ -247,7 +247,7 @@ SEM Decl
                                                                   (hd',derivTruncTailArity)
                                                                                 = case instFrom of
                                                                                     InstDerivingFrom_Datatype   -> (mkTyPr $ Pred_Class $ appTopApp [predTyCon, appTopApp (dataTyCon : dataTyArgs')], derivArity)
-                                                                                    InstDerivingFrom_Standalone -> (hd                                                                       , 0         )
+                                                                                    InstDerivingFrom_Standalone -> (hd                                                                              , 0         )
 %%]]
                                                                   (cxDt,_,errs2)= case instFrom of
                                                                                     InstDerivingFrom_Datatype

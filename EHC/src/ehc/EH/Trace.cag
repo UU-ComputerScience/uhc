@@ -21,5 +21,5 @@ SEM Decl
 
 %%[(5 hmtyinfer)
 SEM PatExpr
-  | Con        		loc     .   trpp        =   (@lhs.tr TraceOn_EhValGam $ ["PatExpr.Con" >#< hsnUn @nm] ++ [ "ty_g_=" >#< ppTy @ty_g_ ])
+  | Con        		loc     .   trpp        =   (@lhs.tr TraceOn_EhValGam $ ["PatExpr.Con" >#< hsnUn @nm] ++ [ "ty_g_=" >#< ppTy @ty_g_, "@lhs.patTyVarMp |=> ty_g_=" >#< ppTy (@lhs.patTyVarMp `varUpd` @ty_g_), "patFunTy=" >#< ppTy @patFunTy ])
 %%]
