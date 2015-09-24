@@ -587,19 +587,16 @@ pBody' opts addDecl
         pDeclarationInstance :: HSParser Declaration
         pDeclarationInstance
           =   pINSTANCE
-              <**> (   -- (\((n,u),c,cl,ts) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c (tokMkQName cl) ts d)
-                       (\((n,u),c,h) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c h d)
+              <**> (   (\((n,u),c,h) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c h d)
                        <$> pHeader
                        <*> pWhere' pDeclarationValue
-                   <|> (\e {- cl ts -} hty t -> Declaration_InstanceUseImplicitly (mkRange1 t) e hty) -- (tokMkQName cl) ts)
-                       <$> pExpression <* pLTCOLON <*> pHeaderTy -- qconid <*> pList1 pTypeBase
+                   <|> (\e hty t -> Declaration_InstanceUseImplicitly (mkRange1 t) e hty)
+                       <$> pExpression <* pLTCOLON <*> pHeaderTy
                    )
 %%[[91
-          <|> -- (\t ((n,u),c,cl,ts) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c (tokMkQName cl) ts Nothing)
-              (\t ((n,u),c,h) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c h Nothing)
+          <|> (\t ((n,u),c,h) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c h Nothing)
               <$> pDERIVING <* pINSTANCE <*> pHeader
 %%]]
-          -- where pHeader = (,,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
           where pHeader = (,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> pHeaderTy
                 pHeaderTy = pType' pTypeOpBase (\_ p -> p)
 %%]

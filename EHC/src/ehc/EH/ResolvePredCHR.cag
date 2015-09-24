@@ -96,13 +96,13 @@ SEM Decl
                loc          .   (toProveGathCnstrMp,derivAltsPrOcc,derivExtraPrOcc,derivDCL)
                                                     =   case @instVariant of
                                                           InstDeriving _
-                                                            | isJust derivDCL
+                                                            | @derivCanBeDoneBuiltin
 %%[[92
-                                                              && not (dgiIsRec @derivDataDGI)
+                                                              -- && not (dgiIsRec @derivDataDGI)
 %%]]
                                                               -> ( gathPredLToProveCnstrMp $ foVarMp foDt `varUpd` concat (extraPrOcc : altsPrOcc)
                                                                  , altsPrOcc, extraPrOcc
-                                                                 , fromJust derivDCL
+                                                                 , fromJust @mbDerivDCL
                                                                  )
 %%[[92
                                                             | not $ null @generForFitsInL
@@ -127,9 +127,8 @@ SEM Decl
                                                                        = [ rngLift @range mkPredOccRng (Pred_Class (dccMkTy cx)) (mkPrIdCHR u) @predScope
                                                                          | (cx,u) <- zip cxl (mkNewUIDL (length cxl) @lUniq_95_extraPrOcc)
                                                                          ]
-                                                                       where cxl = maybe [] dclExtraCtxt derivDCL
+                                                                       where cxl = maybe [] dclExtraCtxt @mbDerivDCL
                                                                   foDt = fitsIn unifyFIOpts @fe @lUniq_95_fitsIn_dataTy (emptyVarMp :: VarMp) dataTy @derivHdDataTy
-                                                                  derivDCL = Map.lookup @instClsNm @derivMp
                                                           _ -> (@tyVarMpDeclsL0 {- 1 -} `varUpd` @decls.gathCnstrMp,[],[],emptyDerivCls)
                 loc         .   lUniq_95_altsPrOcc  :   UNIQUEREF gUniq
                 loc         .   lUniq_95_extraPrOcc :   UNIQUEREF gUniq

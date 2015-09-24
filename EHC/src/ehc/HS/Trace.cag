@@ -53,4 +53,19 @@ SEM Declaration
         loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= InstanceUseImplicitly" >#< @classrefname] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
                                             >< @expression.trpp >< @type.trpp
 %%]]
+%%[[5
+    | Data
+        loc             .   trpp        =   trppEmpty
+%%[[91
+                                            >< (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= Data"] ++ [ "idOccDefs=" >#< ppBracketsCommas @idOccDefs, "idOccDefsGener=" >#< ppBracketsCommas @idOccDefsGener {- , "generArities=" >#< @generArities , "idUseOccGamGener=" >#< ppGam @idUseOccGamGener -} ])
+%%]]
+%%[[9
+                                            >< @context.trpp
+%%]]
+                                            >< @typelefthandside.trpp >< @constructors.trpp
+%%[[91
+                                            >< @derivings.trpp
+%%]]
+%%]]
 %%]
+

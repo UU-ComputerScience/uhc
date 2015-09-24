@@ -178,9 +178,9 @@ SEM Decl
                 lhs         .   generDataInfoMp     =   @generDataInfoMpNew `Map.union` @lhs.generDataInfoMp
   | GenerRep    loc         .   (generDataInfoL, errsNoIntroNm)
                                                     =   case Map.lookup @tyNm @lhs.generDataInfoMp of
-                                                            Just i | @arity == @maxArity                         -> ([i], [])
-                                                            _ | ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts -> ([], [rngLift @range mkErr_NamesNotIntrod "generic repr" [@tyNm]])
-                                                              | otherwise                                        -> ([], [])
+                                                            Just i  | @arity == @maxArity                              -> ([i], [])
+                                                            Nothing | ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts -> ([], [rngLift @range mkErr_NamesNotIntrod "datatype" [@tyNm]])
+                                                            _                                                          -> ([], [])
   																						
 
 SEM Expr
@@ -297,7 +297,7 @@ type GenerForFitsIn
 SEM Decl
   | Instance    loc         -- the set of fld + default names, their types, to be used ...
                             .   generForFitsInL     =   case @instVariant of
-                                                          InstDeriving _ | not $ null generDerivFlds
+                                                          InstDeriving _ | not @derivCanBeDoneBuiltin && not (null generDerivFlds)
                                                             -> [ ( fldNm, dfltvalNm
                                                                  , -- (\v -> tr "Decl.Instance.mbFSig" (ppTy v >-< ppTy (vgiTy (fromJust mbDSig))) v) $
                                                                    repTy `app1Arr` vgiTy (fromJust mbFSig)

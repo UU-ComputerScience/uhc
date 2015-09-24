@@ -1095,8 +1095,11 @@ type IdDpdMp = Map.Map IdOcc [IdOcc]
 emptyIdDpdMp :: IdDpdMp
 emptyIdDpdMp = Map.empty
 
+idDpdMpList :: IdOcc -> [IdOcc] -> IdDpdMp
+idDpdMpList f t = Map.singleton f t
+
 idDpdMpSingleton :: IdOcc -> IdOcc -> IdDpdMp
-idDpdMpSingleton f t = Map.singleton f [t]
+idDpdMpSingleton f t = idDpdMpList f [t]
 
 idDpdMpUnions :: [IdDpdMp] -> IdDpdMp
 idDpdMpUnions = Map.unionsWith (++)
@@ -1106,7 +1109,7 @@ idDpdMpUnion = Map.unionWith (++)
 
 idToOccL2DpdMp :: [IdOcc] -> AssocL IdOcc x -> IdDpdMp
 idToOccL2DpdMp fs l
-  = if null ts then Map.empty else idDpdMpUnions [ Map.singleton f ts | f <- fs ]
+  = if null ts then Map.empty else idDpdMpUnions [ idDpdMpList f ts | f <- fs ]
   where ts = assocLKeys l
 
 idToOccGam2DpdMp :: [IdOcc] -> Gam IdOcc x -> IdDpdMp
@@ -1116,7 +1119,7 @@ idToOccGam2DpdMp fs l
 -- | Dpd mp where 'g' dpds on 'ts'
 idFrOccGam2DpdMp :: Gam IdOcc x -> [IdOcc] -> IdDpdMp
 idFrOccGam2DpdMp g ts
-  = if null ts then Map.empty else idDpdMpUnions [ Map.singleton f ts | (f,_) <- gamToAssocL g ]
+  = if null ts then Map.empty else idDpdMpUnions [ idDpdMpList f ts | (f,_) <- gamToAssocL g ]
 %%]
 
 %%[1
@@ -1183,11 +1186,12 @@ SEM Declaration
                                                     , @context.idUseOccGam
 %%]]
 %%[[91
-                                                    , if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @derivings.idUseOccGam else emptyGam
+                                                    -- , if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @derivings.idUseOccGam else emptyGam
 %%]]
 %%[[92
                                                     , if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then emptyGam else @idUseOccGamClass
 %%]]
+        										    , @typelefthandside.idUseOccGam, @constructors.idUseOccGam
                                                     ]
                                                 )
 %%[[92
@@ -1208,7 +1212,9 @@ SEM Declaration
                                             (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
                                              then idToOccL2DpdMp @idOccDefsGener @idUseHereGenerOccL
                                                   `idDpdMpUnion`
-                                                  idToOccGam2DpdMp [@idOccDef] @idDefOccGamGener
+                                                  idFrOccGam2DpdMp @idDefOccGamGener [@idOccDef]
+                                                  -- `idDpdMpUnion`
+                                                  -- idToOccGam2DpdMp [@idOccDef] @idDefOccGamGener
                                              else emptyIdDpdMp
                                              )
 %%]]
@@ -1231,12 +1237,12 @@ SEM Declaration
         										, @idUseOccGenerGam
 %%]]
 %%[[91
-        										, @derivings.idUseOccGam
+        										-- , @derivings.idUseOccGam
 %%]]
 %%[[9
-        										, @context.idUseOccGam
+        										-- , @context.idUseOccGam
 %%]]
-        										, @typelefthandside.idUseOccGam, @constructors.idUseOccGam
+        										-- , @typelefthandside.idUseOccGam, @constructors.idUseOccGam
         										]
 %%]]
 %%[[6
@@ -1373,8 +1379,10 @@ SEM Deriving
                                             then emptyIdDpdMp
                                             else
 %%]]
+                                                 (if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then idToOccGam2DpdMp [@idOccDef] @idUseOccGam else emptyIdDpdMp)
+                                                 `idDpdMpUnion`
                                                  idDpdMpUnions
-                                                     [ idDpdMpSingleton @idOccDef @lhs.idOccDefData
+                                                     [ idDpdMpList @idOccDef @lhs.idOccDefsData
                                                      , idDpdMpSingleton @idOccDefVal @idOccDef
                                                      ]
 %%]
@@ -1410,11 +1418,12 @@ SEM Body
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[91
-ATTR AllDeriving [ idOccDefData: IdOcc | | ]
+ATTR AllDeriving [ idOccDefsData: {[IdOcc]} | | ]
 
 SEM Declaration
     | Data Newtype GADT
-        derivings       .   idOccDefData=   @idOccDef
+        derivings       .   idOccDefsData
+        								=   if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts then @idOccDefsGener else [@idOccDef]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

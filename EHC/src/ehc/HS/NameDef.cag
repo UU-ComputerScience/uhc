@@ -297,7 +297,7 @@ SEM Declaration
                         .   (idOccDefsGener, generArities)
                                         =   if ehcOptGenGenerics @lhs.opts || @derivings.hasGenericDeriving
                                             then let arities = [0 .. @generMaxRemArity]
-                                                 in  ([IdOcc (hsnNm2GenerReprSyn a @typerefname) IdOcc_Type | a <- arities], [])
+                                                 in  ([IdOcc (hsnNm2GenerReprSyn a @typerefname) IdOcc_Type | a <- arities], arities)
                                             else ([], [])
 %%]]
                         .   idOccDefs   =   [@idOccDef]

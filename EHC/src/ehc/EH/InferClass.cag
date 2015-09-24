@@ -318,6 +318,9 @@ SEM Decl
 %%[(91 codegen hmtyinfer)
 SEM Decl
   | Instance    loc             .   derivMp         =   mkDerivClsMp @fe @lhs.valGam @lhs.dataGam
+                                .   mbDerivDCL      =   Map.lookup @instClsNm @derivMp
+                                .   derivCanBeDoneBuiltin
+                                                    =   isJust @mbDerivDCL && not (dgiIsRec @derivDataDGI)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
