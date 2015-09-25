@@ -290,10 +290,12 @@ SEM Decl
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTy      =   appConApp @dataDictNm @instArgTyL
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
-                                .   vgi             =   ValGamInfo ((case @instVariant of
-                                                                       InstDefault -> [@dataDictTy]
-                                                                       _           -> map pred2DataTy @ctxtPrFixL
-                                                                     ) `appArr` @dataDictTy)
+                                .   vgi             =   ValGamInfo
+                                                          (tyQuantifyClosed $ varUpd @unfixPrTyVarMp $
+                                                            (case @instVariant of
+                                                              InstDefault -> [@dataDictTy]
+                                                              _           -> map pred2DataTy @ctxtPrFixL
+                                                            ) `appArr` @dataDictTy)
                                 .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo @recTyExts
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 				.	patTyVarMp		=	@fixPrTyVarMp `varUpd` @lhs.tyVarMp

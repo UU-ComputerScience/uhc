@@ -1,5 +1,5 @@
-let  foreign import jazy "primAddInt" primAddInt :: Int -> Int -> Int
-     foreign import jazy "primMulInt" primMulInt :: Int -> Int -> Int
+let  foreign import prim "primAddInt" primAddInt :: Int -> Int -> Int
+     foreign import prim "primMulInt" primMulInt :: Int -> Int -> Int
      class P a where
        p :: a -> a
      class Q a where

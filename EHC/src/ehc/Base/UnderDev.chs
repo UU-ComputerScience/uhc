@@ -31,7 +31,10 @@
 -- | Topics under development
 data UnderDev
   = UnderDev_Anon					-- something under development not further specified
-  | UnderDev_NameAnalysis			-- alternatate (more accurate) name dependency analysis, required for named instances
+  | UnderDev_NameAnalysis			-- alternate (more accurate) name dependency analysis, required for named instances
+%%[[9
+  | UnderDev_NamedInst				-- newer syntax for naming instances
+%%]]
   deriving (Eq,Ord,Enum,Typeable,Bounded,Generic)
 
 instance DataAndConName UnderDev

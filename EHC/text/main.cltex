@@ -1729,7 +1729,7 @@ Haskell, compiler architecture, attribute grammar, aspect orientation
 
 %%[72
 \begin{abstract}
-%%@TopicExplImpl.abstractFlops2016
+%%@TopicExplImpl2015.abstractFlops2016
 \end{abstract}
 %%]
 
@@ -2146,28 +2146,28 @@ this has been moved to \chapterRef{ehc-partial-sig-quant-guess}.
 %%[72
 %if not onlyAbstract
 
-%%@TopicExplImpl.open
+%%@TopicExplImpl2015.open
 
 \section{Introduction}
-%%@TopicExplImpl.bodyIntro1
-%%@TopicExplImpl.bodyIntro2
+%%@TopicExplImpl2015.bodyIntro1
+%%@TopicExplImpl2015.bodyIntro2
 
 \section{Preliminaries}
-%%@TopicExplImpl.bodyPreliminaries
+%%@TopicExplImpl2015.bodyPreliminaries
 
 \section{Implicit parameters}
-%%@TopicExplImpl.bodyImplicitParams
+%%@TopicExplImpl2015.bodyImplicitParams
 
-\section{Implementation}
-%%@TopicExplImpl.bodyImplementation
+%% \section{Implementation}
+%% %%@TopicExplImpl2015.bodyImplementation
 
 \section{Discussion and related work}
-%%@TopicExplImpl.bodyDiscussionRelatedWork
+%%@TopicExplImpl2015.bodyDiscussionRelatedWork
 
 \section{Conclusion}
-%%@TopicExplImpl.conclusionConclusion
+%%@TopicExplImpl2015.conclusionConclusion
 
-%%@TopicExplImpl.close
+%%@TopicExplImpl2015.close
 
 %endif
 %%]

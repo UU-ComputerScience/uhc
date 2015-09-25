@@ -256,7 +256,7 @@ SEM Expr
                                                     =   case @knImpls of
                                                             (a:r)  -> (a,r)
                                                             []     -> (Ty_Any,[])
-                            .   foPr                =   fitPredToEvid @lUniq @func.tyVarMp @knArgImpl @lhs.clGam
+                            .   foPr                =   fitPredToEvid'' clgiPrToEvidDataTy @lUniq @func.tyVarMp @knArgImpl (Right @lhs.clGam)
                 arg         .   knTy                =   foTy @foPr
                             .   tyVarMp             =   foVarMp @foPr `varUpd` @func.tyVarMp
                 loc         .   ty                  =   @knResImpls `appArr` @ty_
@@ -410,7 +410,7 @@ SEM Expr
                             .   (knImpls,ty_)       =   tyArrowImplsResWithLkup (varmpTyLookupCyc2 @knImplsVarMp) @funTy
                             .   (knArgImpl,knResImpls)
                                                     =   hdAndTl @knImpls
-                            .   foPr                =   fitPredToEvid @lUniq4 @knImplsVarMp @knArgImpl @lhs.clGam
+                            .   foPr                =   fitPredToEvid'' clgiPrToEvidDataTy @lUniq4 @knImplsVarMp @knArgImpl (Right @lhs.clGam)
                             .   forArgTyVarMp       =   foVarMp @foPr `varUpd` @knImplsVarMp
                 arg         .   knTy                =   foTy @foPr
                             .   patTyVarMp          =   @forArgTyVarMp

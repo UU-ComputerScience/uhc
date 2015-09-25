@@ -409,6 +409,9 @@ emptyEHCOpts
       ,  ehcOptPriv             =   False
       ,  ehcOptUnderDev         =   Set.fromList
       									[ UnderDev_NameAnalysis		-- 20150924
+%%[[9
+      									, UnderDev_NamedInst		-- 20150925
+%%]]
       									]
       ,  ehcOptHsChecksInEH     =   False
 %%[[1

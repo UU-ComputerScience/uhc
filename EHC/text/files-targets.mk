@@ -440,7 +440,7 @@ text-variant-icfp2012-js:
 text-variant-flops2016-explimpl:
 	$(MAKE) \
 	  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops2016 --set=llncs --set=kscode --set=shortStory --set=storyExplImplRevised --set=onlyAbstract --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops2016 --set=llncs --set=kscode --set=shortStory --set=storyExplImplRevised --unset=onlyAbstract --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=72 \
 	  text-variant-dflt-once
 
