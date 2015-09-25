@@ -1152,8 +1152,8 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
 %%]]
 %%[[(99 grin)
              , cpCleanupGrin [modNm]
-             , cpProcessAfterGrin modNm
 %%]]
+             , cpProcessAfterGrin modNm
              ]
           ++ (if not isMainMod || doMkExec
               then let how = if doMkExec then FinalCompile_Exec else FinalCompile_Module

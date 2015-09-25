@@ -338,6 +338,16 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 			IF_GB_TR_ON(3,{gb_prTOSAsInt() ;printf( "\n" ) ;})
 #		endif
 	}
+%%[[8
+	// show TOS as result
+	if ( GB_Word_IsPtr( GB_TOS ) ) {
+		gb_prWord( GB_TOS ) ;
+	} else {
+		gb_prTOSAsInt() ;
+	}
+	printf( "\n" ) ;
+%%][99
+%%]]
 	GB_GCSafe_Leave ;
 	return 0 ;
 }

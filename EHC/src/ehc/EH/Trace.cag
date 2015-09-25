@@ -13,13 +13,30 @@ SEM AGItf
  | AGItf            loc     .   tr          =   trPP (`Set.member` ehcOptTraceOn @lhs.opts)
 %%]
 
-%%[9 ag
+%%[(9 hmtyinfer) ag
 SEM Decl
   | Instance        loc     .   trpp        =   (@lhs.tr TraceOn_EhClsGam $ [@dictNm >#< " = Instance" >|< ppParens @instVariant >#< @instClsNm] ++ [ "clgi=" >#< @clgi ])
                                                 >< @tyPrExpr.trpp >< @decls.trpp
+  | Class           loc     .   trpp        =   (@lhs.tr TraceOn_EhClsGam $ [@clNm >#< " = Class"] ++ [ "clgi1=" >#< @clgi1, "clgi2=" >#< @clgi2, "patClGam2=" >#< ppGam @lhs.patClGam2 ])
+                                                >< @tyPrExpr.trpp
+%%[[15
+                                                >< @funcDeps.trpp
+%%]]
+                                                >< @decls.trpp
+%%[[92
+                                                -- >< @generDerivs.trpp
+%%]]
 %%]
 
 %%[(5 hmtyinfer)
 SEM PatExpr
-  | Con        		loc     .   trpp        =   (@lhs.tr TraceOn_EhValGam $ ["PatExpr.Con" >#< hsnUn @nm] ++ [ "ty_g_=" >#< ppTy @ty_g_, "@lhs.patTyVarMp |=> ty_g_=" >#< ppTy (@lhs.patTyVarMp `varUpd` @ty_g_), "patFunTy=" >#< ppTy @patFunTy ])
+  | Con             loc     .   trpp        =   (@lhs.tr TraceOn_EhValGam $ ["PatExpr.Con" >#< hsnUn @nm] ++ [ "ty_g_=" >#< ppTy @ty_g_, "@lhs.patTyVarMp |=> ty_g_=" >#< ppTy (@lhs.patTyVarMp `varUpd` @ty_g_), "patFunTy=" >#< ppTy @patFunTy ])
+%%]
+
+ATTR AllTyExpr [ | | clNmS USE {`Set.union`} {Set.empty}: HsNameS  clMissNmS USE {`Set.union`} {Set.empty}: HsNameS ]
+
+%%[(9 hmtyinfer)
+SEM PrExpr
+  | Class           loc     .   trpp        =   (@lhs.tr TraceOn_EhClsGam $ ["Class" >#< @nm] ++ [ "clGam=" >#< ppGam @lhs.clGam ])
+                                                >< @tyExprs.trpp
 %%]

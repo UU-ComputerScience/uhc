@@ -25,7 +25,7 @@
 %%]
 %%[(7 hmtyinfer) import(qualified Data.Set as Set)
 %%]
-%%[(90 hmtyinfer) import(Data.Maybe)
+%%[(7 hmtyinfer) import(Data.Maybe)
 %%]
 
 %%[(7 hmtyinfer) import({%{EH}VarMp},{%{EH}Substitutable})

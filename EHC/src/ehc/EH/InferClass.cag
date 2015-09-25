@@ -79,19 +79,21 @@ SEM Decl
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldTyL)        -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTy      =   tyDict @hdPrTy -- appConApp @dataDictNm @prClsArgTyL
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
-                                .   clgi2           =   @clgi1 { clgiPrToEvidRecTy	= tyQuantifyClosed $ [@hdPrTy] `appArr` @clsTyRec
+                                .   clgiUpd         =   \clgi -> clgi
+                                                               { clgiPrToEvidRecTy	= tyQuantifyClosed $ [@hdPrTy] `appArr` @clsTyRec
                                                                , clgiPrToEvidDataTy = tyQuantifyClosed $ [@hdPrTy] `appArr` @dataDictTy
                                                                , clgiRuleTy         = tyQuantifyClosed @tyPrExpr.ty
                                                                , clgiDictTag        = @dictTag
                                                                -- , clgiSupClsFldNmL   = @supClsFldNmL
                                                                }
+                                .   clgi2           =   @clgiUpd @clgi1
                                 .   (dataDictConTy, dataDictConProdTy)
                                                     =   mkDataConstrTys1 (assocLElts @clsAllFldTyL, @clsAllFldTyL) @dataDictTy
                                 .   dataDictQuUnConTy
                                                     =   mkDataConstrTys2 (tvarKi @lhs.finTyKiGam @tyPrExpr.intlTyKiGam @lhs.tvKiVarMp emptyVarMp) @dataDictConProdTy @dataDictTy
                 lhs             .   patTyGam        =   gamAdd @dataDictNm (TyGamInfo (appCon @dataDictNm)) @lhs.patTyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
-                                .   patClGam2       =   gamAdd @clNm @clgi2 @lhs.patClGam2
+                                .   patClGam2       =   gamTopUpdate @clgiUpd @clNm @lhs.patClGam2
                                 .	patValGam		=	mkDataConstrValGam @dataDictNm @dataDictConTy @dataDictQuUnConTy `gamUnion` @lhs.patValGam
                 decls           .   gathDataGam     =   emptyGam
                 lhs             .   gathDeclDataGam =   if ehcCfgClassViaRec @lhs.opts
@@ -298,7 +300,7 @@ SEM Decl
                 				.	tyVarMp			=	@decls.patTyVarMp
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
-                                .   patValGam       =   gamAdd @dictNm @vgi @lhs.patValGam
+                                .   patValGam       =   gamTopUpdate (const @vgi) @dictNm @lhs.patValGam
                                 .	patTyVarMp		=	@lhs.patTyVarMp
                 loc         	.   lUniq3		  	:   UNIQUEREF gUniq
                 loc         	.   lUniq4		  	:   UNIQUEREF gUniq
