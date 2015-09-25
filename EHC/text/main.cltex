@@ -546,6 +546,8 @@
 
 %%[72
 \usepackage{txfonts}
+\usepackage{wasysym}
+\usepackage{color}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2152,8 +2154,8 @@ this has been moved to \chapterRef{ehc-partial-sig-quant-guess}.
 %%@TopicExplImpl2015.bodyIntro1
 %%@TopicExplImpl2015.bodyIntro2
 
-\section{Preliminaries}
-%%@TopicExplImpl2015.bodyPreliminaries
+%% \section{Preliminaries}
+%% %%@TopicExplImpl2015.bodyPreliminaries
 
 \section{Implicit parameters}
 %%@TopicExplImpl2015.bodyImplicitParams
