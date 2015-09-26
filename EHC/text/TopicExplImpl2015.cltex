@@ -59,6 +59,8 @@ We intend to elaborate on the formal aspects of the design and implementation in
 %%[open
 %{
 %format pred = "pred"
+%format OI 	= "\;\{\hspace*{-0.2ex}!\hspace*{.03ex}"
+%format CI 	= "\hspace*{.03ex}!\hspace*{-0.2ex}\}\;"
 
 %\newcommand{\todo}[1]{{\color{red}#1}}
 \newcommand{\todo}[1]{}
@@ -252,12 +254,12 @@ f  ::    Eq a =>  a ->  a ->  Int
 f  =   \          x     y ->  if x == y then 3 else 4
 
 v1 = f  2 4
-v2 = f  {! Eq Int = dEqInt !}
+v2 = f  OI Eq Int = dEqInt CI
         2 4
 %%]]
 
 A dictionary (encoded as a datatype) |d| of an instance is constructed and passed directly as part of
-the language construct |{! ... d !}| (to be explained later).
+the language construct |OI ... d CI| (to be explained later).
 
 %if not shortStory
 As a second example we briefly discuss the use
@@ -450,7 +452,9 @@ our contribution, though inspired by and executed in the context of Haskell,
 offers language designers a mechanism for more sophisticated control over parameter passing,
 by allowing a mixture of explicit and implicit dictionary passing.
 
-Our design is partially prototyped in UHC (Utrecht Haskell Compiler) \todo{citations}\cite{www09uhc,dijkstra09uhc-arch}\footnote{As of the time of this writing the implementation is still in flux}.
+Our design is partially prototyped in UHC (Utrecht Haskell Compiler) \todo{citations}\cite{www09uhc,dijkstra09uhc-arch}%
+\footnote{As of the time of this writing (20150925) the implementation is still in flux: examples in \thischapt\ do work,
+but small variations may cause problems, or similar constructs which seem reasonable to also have are not implemented yet.}.
 %if indicateWorks
 To make this clear, examples which work in UHC (at the time of writing \thischapt) are marked with \worksInUHC;
 if it does not (yet) work this is marked with \worksNotInUHC, if standard Haskell this annotation is omitted.
@@ -503,10 +507,12 @@ instance dEqInt = Eq Int where
 %%]]
 \worksInUHCline
 
-The application |nub {! Eq Int = dEqInt !} l| now yields @[1,2]@.
+The application |nub OI Eq Int = dEqInt CI l| now yields @[1,2]@.
 The dictionary |dEqInt| is defined as if it were an instance, a \emph{named instance}.
+Dictionaries are represented by data types having having the same fields as their class counterpart.
+We use the words `dictionary' and (named) `instance' interchangeably.
 A named instance does not participate in the context reduction, unless we explicitly tell the compiler to do so (see further down below).
-The notation |{! pred = dict !}| allows a named instance |dict| to be used at a parameter position where
+The notation |OI pred = dict CI| allows a named instance |dict| to be used at a parameter position where
 normally the compiler silently and implicitly inserts a dictionary for the predicate |pred|.
 
 Note that Haskell's prelude also contains a variation on |nub| called |nubBy| with a type signature |nubBy :: (a -> a -> Bool) -> [a] -> [a]|
@@ -517,7 +523,7 @@ In the implementation of |nub| the explicitly passed dictionary can now be used 
 it can be accessed directly via pattern matching on the dictionary, for example to define |nub| in terms of |nubBy| without implicit dictionary usage:
 
 %%[[wrap=code
-nub = \{! Eq a = dEq !} -> nubBy ((==) {! Eq a = dEq !})
+nub = \OI Eq a = dEq CI -> nubBy ((==) OI Eq a = dEq CI)
 %%]]
 \worksInUHCline
 
@@ -564,7 +570,7 @@ The equals |=| binds an identifier, here |dEqInt|, to the dictionary representin
 The data type value |dEqInt| from now on is available as a normal value.
 \item
 Explicitly passing a parameter is syntactically denoted by an expression between
-|{!| and |!}|.
+|OI| and |CI|.
 The predicate before the |=| explicitly states the predicate for which the expression is an 
 instance dictionary (or \emph{evidence}).
 \end{Enumerate}
@@ -580,7 +586,7 @@ In the implicit case the language definition determines which value to take from
 \item
 Switching between the explicit and implicit world is accomplished by means of additional notation.
 We go from
-implicit to explicit by instance definitions with the naming extension, and in the reverse direction by means of the |{! ^^ !}| construct.
+implicit to explicit by instance definitions with the naming extension, and in the reverse direction by means of the |OI ^^ CI| construct.
 \end{itemize}
 
 %if not shortStory
@@ -602,7 +608,7 @@ instance (Modular a,Integral a) => Num (M a) where
 
 withModulus ::  a ->         (Modular a => w) -> w
 withModulus     (m :: a)     k
-  =  k {! (modulus = m) <: Modular a !}
+  =  k OI (modulus = m) <: Modular a CI
 %%]
 %}
 %endif
@@ -633,7 +639,7 @@ we can construct and pass such a dictionary explicitly:
 
 %%[[wrap=code
 (==)                                    l l2            ^^ -- yields @False@
-(==) {! Eq [Int] = dEqList dEqInt !}    l l2            ^^ -- yields @True@
+(==) OI Eq [Int] = dEqList dEqInt CI    l l2            ^^ -- yields @True@
 %%]
 \worksInUHCline
 
@@ -682,7 +688,7 @@ The following example is taken from Hinze \cite{hinze00derive-type-class}:
 The explicit variant of the computation for |v1| using the explicit parameter passing mechanism reads:
 
 %%[[wrap=code
-v1 = showBin  {! dBG dBI dBL <: Binary (GRose List Int) !}
+v1 = showBin  OI dBG dBI dBL <: Binary (GRose List Int) CI
               (GBranch 3 Nil)
 %%]
 
@@ -765,9 +771,9 @@ These yield the following results:
 instance dEqIntTrue = Eq Int where
   x == y = True
 
-twoEq2 3 4  {! Eq Int = dEqIntTrue !}      5 6                  ^^ -- @(False,True)@
-twoEq3      {! Eq Int = dEqIntTrue !} 3 4  5 6                  ^^ -- @(True,False)@
-twoEq4      {! Eq Int = dEqIntTrue !} 3 4  5 6                  ^^ -- @(False,True)@
+twoEq2 3 4  OI Eq Int = dEqIntTrue CI      5 6                  ^^ -- @(False,True)@
+twoEq3      OI Eq Int = dEqIntTrue CI 3 4  5 6                  ^^ -- @(True,False)@
+twoEq4      OI Eq Int = dEqIntTrue CI 3 4  5 6                  ^^ -- @(False,True)@
 %%]
 \worksInUHCline
 
@@ -807,8 +813,8 @@ instance dEqInt2 = Eq Int where
 
 instance Eq Int = dEqInt2
 
-v = twoEq  {! Eq Int = dEqInt1 !}  3 4          ^^ -- yields @(True,False)@
-           {! Eq Int = dEqInt2 !}  5 6
+v = twoEq  OI Eq Int = dEqInt1 CI  3 4          ^^ -- yields @(True,False)@
+           OI Eq Int = dEqInt2 CI  5 6
 %%]]
 \worksInUHCline
 
@@ -836,7 +842,7 @@ For |nub| defined earlier the following two invocations have a similar effect:
 %%[[wrap=code
 n1 =  let instance Eq Int = dEqInt          ^^ -- override by scope
       in  nub l
-n2 =  nub {! Eq Int = dEqInt !} l           ^^ -- override by explicit passing
+n2 =  nub OI Eq Int = dEqInt CI l           ^^ -- override by explicit passing
 %%]]
 \worksInUHCline
 
@@ -855,8 +861,8 @@ twoEq a b c d = (a == b, c == d)
 In the context of |dEqInt1| and |dEqInt2| defined above, we obtain the following results
 
 %%[[wrap=code
-twoEq  {! Eq Int = dEqInt1 !} 3 4                                   ^^ -- (1) @(True,False)@
-       {! Eq Int = dEqInt2 !} 5 6
+twoEq  OI Eq Int = dEqInt1 CI 3 4                                   ^^ -- (1) @(True,False)@
+       OI Eq Int = dEqInt2 CI 5 6
 
 let instance Eq Int = dEqInt1                                       ^^ -- (2) @(False,False)@
 in  twoEq 3 4 5 6
@@ -881,10 +887,10 @@ The coexistence of multiple instances for one instantiated class predicate also 
 
 %%[[wrap=code
 twoEqI :: Eq Int => Int -> Int -> Eq Int => Int -> Int -> (Bool, Bool)
-twoEqI =  \{! Eq Int = dA !} a b {! Eq Int = dB !} c d
-            -> ((==) {! Eq Int = dA !} a b, (==) {! Eq Int = dB !} c d)
+twoEqI =  \OI Eq Int = dA CI a b OI Eq Int = dB CI c d
+            -> ((==) OI Eq Int = dA CI a b, (==) OI Eq Int = dB CI c d)
 
-twoEqI {! Eq Int = dEqInt1 !} 3 4 {! Eq Int = dEqInt2 !} 5 6        ^^ -- @(True,False)@
+twoEqI OI Eq Int = dEqInt1 CI 3 4 OI Eq Int = dEqInt2 CI 5 6        ^^ -- @(True,False)@
 %%]]
 \worksInUHCline
 
@@ -934,8 +940,8 @@ a dictionary for |Eq (List a)| is explicitly constructed and passed to |eq|:
 %% 9-eq5.eh
 %%[[wrap=code test9eq5EqExplPassed
 f :: forall a . Eq a  =>  a ->  List a  -> Bool
-f = \{! dEq_a <: Eq a !}
-                      ->  \p q -> eq  {! dEqList dEq_a <: Eq (List a) !}
+f = \OI dEq_a <: Eq a CI
+                      ->  \p q -> eq  OI dEqList dEq_a <: Eq (List a) CI
                                       (Cons p Nil) q
 %%]
 
@@ -952,8 +958,8 @@ Such transformers can also be made explicit in the following variant:
 %% 9-eq6.eh
 %%[[wrap=code test9eq6DictTransf
 f  ::  (forall ^ a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
-f  =   \{! dEq_La <: forall ^ a . Eq a => Eq (List a) !}
-          ->  \p  q  -> eq  {! dEq_La dEqInt <: Eq (List Int) !}
+f  =   \OI dEq_La <: forall ^ a . Eq a => Eq (List a) CI
+          ->  \p  q  -> eq  OI dEq_La dEqInt <: Eq (List Int) CI
                             (Cons p Nil) q
 %%]
 
@@ -966,23 +972,6 @@ here in both cases |dEqList| is the only choice possible.
 %endif %% not shortStory
 
 %%]]
-
-%if not (storyPHD || storyEhcBook || shortStory)
-
-\subsection{Partial type signatures}
-\label{ehc09-partialtysig}
-
-Explicitly specifying complete type signatures can be a burden to the programmer,
-especially when
-types become large and only a portion of the type needs to be specified
-explicitly. EH therefore allows partial type signatures.
-We will show its use based on the function:
-
-%%@TopicPartialTySig.explImplExample
-
-%endif
-
-\subsection{Discussion and related work}
 
 %%[[bodyDiscussionRelatedWork
 \label{ehc09-discussion}
@@ -1001,45 +990,41 @@ which in turn makes type inferencing easier and facilitates more general types t
 This in itself is already somewhat cumbersome, as classes have default values which already mix make types and values depend on eachother.
 Generic deriving adds additional complexity, because it generates new classes, datatypes, and instances.
 Allowing instances to be named forces the dependency checker to some degree to be aware of how this generation takes place before it has actually occurred (this happens after type inference).
+In particular, care must be taken that data type declarations not end up in the same set of mutually recursive definitions as definitions using such data types:
+type information might not yet be fully known, depending on how clever the type inferencer is in implementing multiple passes over such mutually recursive definitions to extract this info in the right order.
 
 \item
-\textbf{GADT (Generalised Algebraic DataType) and type families}.
+\textbf{GADT (Generalised Algebraic DataType), type families, and other type extensions}.
 Although GADTs and type families are not implemented in UHC it is unclear how the notion of locality of local instances and locality of GADT induced type information available in case branches inspecting GADTs
 work together.
 The current implemented solution in GHC \cite{Vytiniotis:2011cs} delays the resolution of local constraints by adding implication constraints to inferred types.
 The presence of an open ended system for rewriting types (via type families) necessitates this.
 However, the implementation for local instances also requires the notion of scopes associated with all predicates, attempting to locally resolve as much predicates as possible.
 Lifting all this information to implication constraints will most likely make type signatures complex and unwieldy.
-This requires further investigation.
+This requires further investigation, just as the interaction with multiple parameter type classes, functional dependencies, etc. does.
+
+\item
+\textbf{Changes in data type semantics}.
+The implementation of the mechanisms in \thischapt\ benefits from the relative simplicity of data types: fields are globally unique, and the choice if data type name (is not, but) could come from the same namespace
+as classes.
+Changes in these assumptions (e.g. recently \cite{GHCTeam:2015vf}) may break the design in \thischapt.
 \end{itemize}
 
 
-
-%if False
-\Paragraph{Implementation}
-In \thischapt\ we focus on the design of language mechanisms for explicit parameter passing.
-Part of the implementation is described elsewhere \cite{Dijkstra:uJTh7KuB,geest07cnstr-tycls-ext}.
-The general idea
-%endif
-
-
 \Paragraph{How much explicitness is needed}
-Being explicit by means of the |{! ... !}| language construct very soon becomes cumbersome because
-our current implementation requires full specification of all predicates involved inside |{! ... !}|.
+Being explicit by means of the |OI ... CI| language construct very soon becomes cumbersome because
+our current implementation requires full specification of all predicates involved inside |OI ... CI|.
 Can we do with less?
 
 \begin{itemize}
 \item
-We could drop the requirement to specify a predicate and write just |{! dict !}| instead of |{! pred = dict !}|.
+We could drop the requirement to specify a predicate and write just |OI dict CI| instead of |OI pred = dict CI|.
 In this case we need a mechanism to find a predicate for the type of the evidence provided by
 |dict|.
 This should be possible as the data type of the dictionary corresponds directly to a class predicate.
 \item
 Partial type signatures \cite{Winant2014part-tysig,dijkstra05phd} would enable the specification of the part of a type that matters for explicit dictionary passing while omitting the remainder that can be inferred.
 \end{itemize}
-
-Whichever of these routes leads to the most useful solution for the programmer,
-if the need arises our solution always gives the programmer the full power of being explicit in what is required.
 
 %}
 
@@ -1109,6 +1094,11 @@ Dictionaries are represented by data types, and the mechanisms for updating data
 The catch here is that it must be ensured that other fields of a dictionary refer to updated fields they indeed refer to these.
 When such references are embedded inside (e.g.) closures this might be difficult.
 A solution could be to always pass the current dictionary around as an additional parameter.
+\item
+\textbf{Use of (extensible) records for dictionary representation}.
+An earlier prototype did use (extensible) records \cite{gaster96poly-ext-rec-var} for the representation of dictionaries.
+This allows for greater re-use, is more flexible, but it makes it difficult if not impossible to omit the predicate annotation in
+|OI pred = dict CI|: there is not enough type information associated with |dict| to tell which class it corresponds to.
 \item
 \textbf{Higher order predicates}.
 We only have briefly used and mentioned higher order predicates.
@@ -1214,10 +1204,10 @@ let  f  ::  r lacks l =>  (r | l :: a)  -> a
 Alternatively a more explicit notation could be employed:
 
 %%[[wrap=code
-let  f  ::  {! r lacks l !} ->  (r | l :: a)  -> a
+let  f  ::  OI r lacks l CI ->  (r | l :: a)  -> a
      f  =                       \r            -> r.l
-     g  ::  {! Eq a !} ->  [a] ->  [a] -> Bool
-     g  =   \{! eq !}      \x      \y  -> (==) {!eq!} ... && (==) ...
+     g  ::  OI Eq a CI ->  [a] ->  [a] -> Bool
+     g  =   \OI eq CI      \x      \y  -> (==) OI eq CI ... && (==) ...
 %%]
 
 The latter approach has a couple of advantages.
@@ -1228,7 +1218,7 @@ LL parsing is made easier.
 The same notation can be used for expressions (value terms) and patterns.
 \end{itemize}
 
-The obvious syntactic sugar can be added, e.g. |{! p, q !} ->| for |{! p !} -> {! q !} ->|
+The obvious syntactic sugar can be added, e.g. |OI p, q CI ->| for |OI p CI -> OI q CI ->|
 
 The idea is that two worlds of terms co-exist, one for normal (explicit) values and one for implicit values.
 Implicit values are associated with a predicate.
@@ -1255,8 +1245,8 @@ by means of bindings of the form |[pi :~> e]|, associating predicates |pi| to im
 The type language has an additional alternative:
 %%[[wrap=code
 sigma  =  ..
-       |  {! pi !}
-       |  {! ... !}
+       |  OI pi CI
+       |  OI ... CI
 pi     =  r lacks \
        |  C ^^ Vec(sigma)
        |  v = sigma
@@ -1264,9 +1254,9 @@ pi     =  r lacks \
 %%]
 The alternatives for |pi| respectively denote the lacking constraint for extensible records, class constraint and equality constraint
 (for use by generalized data types).
-Partial type signatures w.r.t. predicates are denoted by |{! ... !}|.
-Alternatively, the more concise denotations |pi| and |pvar| are used for |{! pi !}| and |{! ... !}| respectively.
-A predicate var |{! pivar !}| is shorthanded by |pivar|.
+Partial type signatures w.r.t. predicates are denoted by |OI ... CI|.
+Alternatively, the more concise denotations |pi| and |pvar| are used for |OI pi CI| and |OI ... CI| respectively.
+A predicate var |OI pivar CI| is shorthanded by |pivar|.
 \item
 The constraint language has to deal with additional constraints on predicates:
 %%[[wrap=code
@@ -1277,7 +1267,7 @@ Cnstr  =  ..
 %%]
 These additional
 alternatives deal with 
-which predicate may replace a predicate variable |p| or how much predicates may replace a wildcard |{! ... !}| or |pvar|.
+which predicate may replace a predicate variable |p| or how much predicates may replace a wildcard |OI ... CI| or |pvar|.
 The constraint |p :-> pi| is similar to type variables; the |pvar :-> | constraints limit the number of
 predicates.
 \item The environment |Gamma| now also may contain evidence for predicates:
@@ -1319,7 +1309,7 @@ passed.
 Predicates corresponding to class declarations are introduced by:
 %%[[wrap=code
 pred  Eq a :~> ( eq :: a -> a -> Bool )
-pred  Eq a :~> x => Ord a :~> ( lt :: a -> a -> Bool, Eq :: {! Eq a !} ) = ( r | Eq = x )
+pred  Eq a :~> x => Ord a :~> ( lt :: a -> a -> Bool, Eq :: OI Eq a CI ) = ( r | Eq = x )
 %%]
 This should be read as:
 \begin{itemize}
@@ -1339,8 +1329,8 @@ Or just only use the notation but under the hood use record structure as being k
 Rules, corresponding to instance declaratations, populate the world of predicates:
 %%[[wrap=code
 rule Eq Int = ( eq = primEqInt )
-rule Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq {! e !} (head a) (head b) &&
-                                                       eq {! l !} (tail a) (tail b)
+rule Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq OI e CI (head a) (head b) &&
+                                                       eq OI l CI (tail a) (tail b)
                                    )
 %%]
 This should be read as:
@@ -1374,11 +1364,11 @@ rule eqInt1 :: Eq Int = ( eq = primEqInt )
 Sofar an explicit parameter passed to a function just consisted of an identifier.
 Implicit parameter application could/should also be allowed
 %%[[wrap=code
-rule eqList1 :: Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq {! e !} (head a) (head b) &&
-                                                                  eq {! l !} (tail a) (tail b)
+rule eqList1 :: Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq OI e CI (head a) (head b) &&
+                                                                  eq OI l CI (tail a) (tail b)
                                               )
 
-... eq {! eqList1 eqInt1 !} ...
+... eq OI eqList1 eqInt1 CI ...
 %%]
 
 \Paragraph{Eq as predicate}
@@ -1447,9 +1437,9 @@ Issues/problems:
 \item
 Type inference means we do not yet know if a predicate must be passed.
 \item
-Yet the explicit passing via |{! expr !}| requires the presence of an implicit parameter (i.e. predicate in the corresponding type).
+Yet the explicit passing via |OI expr CI| requires the presence of an implicit parameter (i.e. predicate in the corresponding type).
 \item
-If given a |{! expr !}| how do we find the corresponding predicate |pi| for which |expr| is the evidence/proof?
+If given a |OI expr CI| how do we find the corresponding predicate |pi| for which |expr| is the evidence/proof?
 \end{Enumerate}
 
 Corresponding solutions:
