@@ -92,6 +92,14 @@ ATTR AGItf [ dataGam: DataGam | | ]
 
 SEM AGItf
   | AGItf       expr        .   dataGam             =   (specialtrace @expr.gathDataGam) `gamUnion` @lhs.dataGam
+
+{
+specialtrace :: DataGam -> DataGam
+specialtrace dg = dg --traceShow dgl dg
+  where dgl = map f $ gamToAssocL dg
+        f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
+}
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,13 +108,36 @@ SEM AGItf
 
 %%[(8 counting)
 
-ATTR AllNT [ | caFreshVar: {CA.Var} | ]
-ATTR AllNT [ caAnnDataMap: {Map.Map HsName Int} | | caAnnDataPartial USE {Map.union} {Map.empty} : {Map.Map HsName Int} ]
+ATTR AllNT [ caDataGam: {DataGam} | caFreshVar: {CA.Var} | ]
+ATTR AllNT [ | caLocalDataGam: {Map.Map HsName Int} | ]
+ATTR AllNT [ caLocalDataNames: {Set.Set HsName} | | caLocalDataNamesGath USE {Set.union} {Set.empty} : {Set.Set HsName} ]
+ATTR AllNT [ caLocalAnnVars: {[CA.Var]} | | caLocalAnnVarsGath USE {++} {[]} : {[CA.Var]} ]
+
 ATTR AllDataField AllTyExpr [ caDeeper: Bool | | ]
-ATTR DataField TyExpr [ | | caAnnTy: {CA.Rho CA.AnnotatedType}]
+
+ATTR DataField TyExpr [ | | caAnnTy: {CA.AnnotatedType}]
 ATTR TyExpr [ | |  caIsFunc: {Maybe Bool}]
-ATTR DataFields TyExprs [ | | caAnnTyList: {[CA.Rho CA.AnnotatedType]}]
-ATTR AllDataConstr AllDataField AllTyExpr [ caBaseDataTypeName: HsName caBaseAnnDataType: {CA.AnnotatedType} | | ]
+ATTR DataFields TyExprs [ | | caAnnTyList: {[CA.AnnotatedType]}]
+ATTR DataFields [ | | caLength: {Int} ]
+-- ATTR AllDataConstr AllDataField AllTyExpr [ caBaseDataTypeName: HsName caBaseAnnDataType: {CA.AnnotatedType} | | ]
+
+SEM AGItf
+  | AGItf
+    expr.caFreshVar = 0
+    expr.caDataGam = @lhs.dataGam
+    expr.caLocalAnnVars = []
+    expr.caLocalDataNames = Set.empty
+    expr.caLocalDataGam = baseAnnTypes
+
+SEM Expr
+  | Let
+    -- do i need these empties?
+      lhs.caLocalDataNamesGath = Set.empty
+      lhs.caLocalAnnVarsGath = []
+     body.caLocalDataNames = Set.empty
+     body.caLocalAnnVars = []
+    decls.caLocalDataNames = @decls.caLocalDataNamesGath
+    decls.caLocalAnnVars = @decls.caLocalAnnVarsGath
 
 SEM DataFields TyExprs
   | Cons
@@ -114,67 +145,68 @@ SEM DataFields TyExprs
   | Nil
     lhs.caAnnTyList        = []
 
-SEM AGItf
-  | AGItf
-    expr.caFreshVar = 0
-    expr.caAnnDataMap = Map.union baseAnnTypes $ extractNumAnns @lhs.dataGam
-
-SEM Decls
+SEM DataFields
   | Cons
-    tl.caAnnDataMap = Map.union @hd.caAnnDataPartial @lhs.caAnnDataMap
+    lhs.caLength = 1 + @tl.caLength
+  | Nil
+    lhs.caLength = 0
+
+SEM DataConstr
+  | Constr
+    loc.caAnnTyList = map (\(i,t) -> CA.Rho (CA.Eta t $ CA.AnnVar $ @fields.caFreshVar + 2 * i) $ CA.AnnVar $ @fields.caFreshVar + 2 * i + 1) $ zip [0 .. length @fields.caAnnTyList - 1] @fields.caAnnTyList
+    lhs.caFreshVar = @fields.caFreshVar + 2 * @fields.caLength
 
 SEM Decl
   | Data
-    lhs.caAnnDataPartial = Map.singleton @tyNm $ length @loc.caAnnVars
-    loc.caAnnVars = [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
-    constrs.caBaseDataTypeName = @tyNm
-    constrs.caBaseAnnDataType = CA.DataTy @tyNm (map CA.AnnVar @loc.caAnnVars) $ map (\x -> case x of Ty_Var y _ -> CA.TyVar $ mkHNm y) @tyVars.tyL
+    lhs.caLocalDataNamesGath = traceShow ("DataDecl: ", @tyNm) $ Set.singleton @tyNm
+    loc.caLocalAnnVarsGath = [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
+    lhs.caLocalAnnVarsGath = @loc.caLocalAnnVarsGath
+    lhs.caLocalDataGam = Map.insert @tyNm (length @loc.caLocalAnnVarsGath) @lhs.caLocalDataGam
 
 SEM TyExpr
   | *
-    lhs.caAnnTy = CA.replaceRho @lhs.caBaseAnnDataType @loc.caAnnTy
-    loc.caAnn1 = if @lhs.caDeeper then CA.annTop else CA.AnnVar $ @lhs.caFreshVar + 1
-    loc.caAnn2 = if @lhs.caDeeper then CA.annTop else CA.AnnVar @lhs.caFreshVar
-    loc.caAnnTyf = \x -> CA.Rho (CA.Eta x @loc.caAnn1) @loc.caAnn2
+    -- loc.caAnn1 = if @lhs.caDeeper then CA.annTop else CA.AnnVar $ @lhs.caFreshVar + 1
+    -- loc.caAnn2 = if @lhs.caDeeper then CA.annTop else CA.AnnVar @lhs.caFreshVar
+    -- loc.caAnnTyf = \x -> CA.Rho (CA.Eta x @loc.caAnn1) @loc.caAnn2
+    loc.caToAnn = if @lhs.caDeeper then const CA.annTop else CA.AnnVar
     loc.caIsFunc = Nothing
   | Var
-    lhs.caFreshVar = if @lhs.caDeeper then @lhs.caFreshVar else @lhs.caFreshVar + 2
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyVar @nm
+    lhs.caAnnTy = CA.TyVar @nm
   | Con
-    lhs.caIsFunc = case hsnBaseUnpack @nm of
+    lhs.caIsFunc = @loc.ismFunc
+    loc.ismFunc = case hsnBaseUnpack @nm of
                     Just ("->", _) -> Just True
                     _ -> Nothing
-    loc.caIsSelf = @nm == @lhs.caBaseDataTypeName
-    loc.caAnnTySelf = CA.TyVar $ hsnMkNr (-1) OrigNone
-    loc.caAnnTyNotSelf = CA.DataTy @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar + 1) [1 .. @loc.caNumAnn])  []
-    loc.caAnnTy = @loc.caAnnTyf $  if @loc.caIsSelf then @loc.caAnnTySelf else @loc.caAnnTyNotSelf
-    lhs.caFreshVar = if @lhs.caDeeper then @lhs.caFreshVar else @lhs.caFreshVar + 2 + @loc.caNumAnn
-    loc.caNumAnn = if @loc.caIsSelf then 0                                              
-                   else case Map.lookup @nm @lhs.caAnnDataMap of
-                          Just n -> n
-                          _ -> traceShow ("***", "not found", @nm, "****") 0 -- panic $ "Could not find data type " ++ show @nm ++". Mutual recursive and non-direct self recursive data types are not supported"
-    loc.caToAnn = if @lhs.caDeeper then const CA.annTop else CA.AnnVar 
+    loc.isFunc = fromMaybe False @loc.ismFunc
+    lhs.caFreshVar = if @lhs.caDeeper || @loc.isFunc then @lhs.caFreshVar else @lhs.caFreshVar + @loc.caNumAnn
+    loc.caNumAnn = fromJust $ @loc.caNumFunc <|> @loc.caNumLoc <|> @loc.caNumLdg <|> @loc.caNumIdg <|> @loc.caNumTy <|> @loc.caNumPanic
+       . caNumFunc = if @loc.isFunc then traceShow ("isFunc: ",@nm) (Just 0) else Nothing
+       . caNumLdg = Map.lookup @nm @lhs.caLocalDataGam
+       . caNumIdg = fmap (traceShow ("gam: ",@nm) . length . dgiAnnVars) $ @nm `dataGamLookup` @lhs.caDataGam
+       . caNumLoc = if @loc.localGroup then traceShow ("isFunc: ",@nm) (Just 0) else Nothing
+       . caNumTy = Just 0 -- @lhs.tyGam
+       . caNumPanic = panic $ "Could not find data type " ++ show @nm
+    lhs.caAnnTy = if @loc.localGroup then CA.DataTy @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
+                  else CA.DataTy @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
+    loc.localGroup = Set.member @nm @lhs.caLocalDataNames 
   | App
     lhs.caIsFunc = case @func.caIsFunc of
                     Just True -> Just False
                     _ -> Nothing
     loc.caAnnTy = case @func.caIsFunc of
                     Just True -> @arg.caAnnTy
-                    Just False -> @loc.caAnnTyf $ CA.TyFunc @func.caAnnTy $ CA.stripRho @arg.caAnnTy
+                    Just False -> CA.TyFunc (CA.Rho (CA.Eta @func.caAnnTy CA.annTop) CA.annTop) $ CA.Eta @arg.caAnnTy CA.annTop
                     -- Assume type constructor application
                     _ -> case @func.caAnnTy of
                           -- TODO does not deal with 
-                          CA.Rho (CA.Eta (CA.DataTy n ann ty) a1) a2 -> CA.Rho (CA.Eta (CA.DataTy n ann (ty ++ [CA.stripRhoEta @arg.caAnnTy])) a1) a2
+                          CA.DataTy n ann ty -> CA.DataTy n ann (ty ++ [@arg.caAnnTy])
                           _ -> @func.caAnnTy
-
-    func.caDeeper = True --case @func.caIsFunc of
-                    --Just _ -> True
-                    --_ -> @lhs.caDeeper
-    arg.caDeeper = True -- case @func.caIsFunc of
-                    --Just _ -> True
-                    --_ -> @lhs.caDeeper
-  -- | * - Var Con App
-  --   loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "Unsupported"
+    loc.isCurFunc = case @func.caIsFunc of
+                      Just False -> True
+                      _ -> False
+    -- func.caFreshVar = if @lhs.caDeeper || not @loc.isCurFunc then @lhs.caFreshVar else @lhs.caFreshVar + 3
+    -- func.caDeeper = 
+    arg.caDeeper = True
 
   | AppTop
     loc.caAnnTy = @tyExpr.caAnnTy
@@ -183,23 +215,23 @@ SEM TyExpr
   | Ann
     loc.caAnnTy = @tyExpr.caAnnTy
   | Wild
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedWild"
+    loc.caAnnTy = CA.TyError "UnsupportedWild"
   | Mono
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedMono"
+    loc.caAnnTy = CA.TyError "UnsupportedMono"
   | VarWild
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedVarWild"
+    loc.caAnnTy = CA.TyError "UnsupportedVarWild"
   | Quant
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedQuant"
+    loc.caAnnTy = CA.TyError "UnsupportedQuant"
   | Row
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedRow"
+    loc.caAnnTy = CA.TyError "UnsupportedRow"
   | Pred
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedPred"
+    loc.caAnnTy = CA.TyError "UnsupportedPred"
   | Impls
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedImpls"
+    loc.caAnnTy = CA.TyError "UnsupportedImpls"
   | NoImpls
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedNoImpls"
+    loc.caAnnTy = CA.TyError "UnsupportedNoImpls"
   | Lam
-    loc.caAnnTy = @loc.caAnnTyf $ CA.TyError "UnsupportedLam"
+    loc.caAnnTy = CA.TyError "UnsupportedLam"
 
 SEM DataConstr
   | Constr
@@ -210,63 +242,64 @@ SEM DataConstr
 SEM Decl
   | TySig
     tyExpr.caDeeper = False
-    tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTySig"
+    -- tyExpr.caBaseDataTypeName = hsnEmpty
+    -- tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTySig"
   | FFI
     tyExpr.caDeeper = False
-    tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedFFI"
+    -- tyExpr.caBaseDataTypeName = hsnEmpty
+    -- tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedFFI"
   | Type
     tyExpr.caDeeper = False
-    tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedType"
+    lhs.caLocalDataNamesGath = traceShow ("TypeDecl: ", @tyNm) Set.empty
+    -- tyExpr.caBaseDataTypeName = hsnEmpty
+    -- tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedType"
 %%[[90
   | FFE
     tyExpr.caDeeper = False
-    tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedFFE"
+    -- tyExpr.caBaseDataTypeName = hsnEmpty
+    -- tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedFFE"
 %%]]
   | Class
     tyPrExpr.caDeeper = False
-    tyPrExpr.caBaseDataTypeName = hsnEmpty
-    tyPrExpr.caBaseAnnDataType = CA.TyError "UnsupportedClass"
+    -- tyPrExpr.caBaseDataTypeName = hsnEmpty
+    -- tyPrExpr.caBaseAnnDataType = CA.TyError "UnsupportedClass"
   | Instance
     tyPrExpr.caDeeper = False
-    tyPrExpr.caBaseDataTypeName = hsnEmpty
-    tyPrExpr.caBaseAnnDataType = CA.TyError "UnsupportedInstance"
+    -- tyPrExpr.caBaseDataTypeName = hsnEmpty
+    -- tyPrExpr.caBaseAnnDataType = CA.TyError "UnsupportedInstance"
   | InstanceIntro
     prExpr.caDeeper = False
-    prExpr.caBaseDataTypeName = hsnEmpty
-    prExpr.caBaseAnnDataType = CA.TyError "UnsupportedInstanceIntro"
+    -- prExpr.caBaseDataTypeName = hsnEmpty
+    -- prExpr.caBaseAnnDataType = CA.TyError "UnsupportedInstanceIntro"
   | Default
     tyExprs.caDeeper = False
-    tyExprs.caBaseDataTypeName = hsnEmpty
-    tyExprs.caBaseAnnDataType = CA.TyError "UnsupportedDefault"
+    -- tyExprs.caBaseDataTypeName = hsnEmpty
+    -- tyExprs.caBaseAnnDataType = CA.TyError "UnsupportedDefault"
 
 SEM Expr
   | TypeAs
     tyExpr.caDeeper = False
-    tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTypeAs"
+    -- tyExpr.caBaseDataTypeName = hsnEmpty
+    -- tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTypeAs"
   | AppImpl
     argPr.caDeeper = False
-    argPr.caBaseDataTypeName = hsnEmpty
-    argPr.caBaseAnnDataType = CA.TyError "UnsupportedAppImpl"
+    -- argPr.caBaseDataTypeName = hsnEmpty
+    -- argPr.caBaseAnnDataType = CA.TyError "UnsupportedAppImpl"
   | LamImpl
     argPr.caDeeper = False
-    argPr.caBaseDataTypeName = hsnEmpty
-    argPr.caBaseAnnDataType = CA.TyError "UnsupportedLamImpl"
+    -- argPr.caBaseDataTypeName = hsnEmpty
+    -- argPr.caBaseAnnDataType = CA.TyError "UnsupportedLamImpl"
 
 SEM PatExpr
   | TypeAs
     tyExpr.caDeeper = False
-    tyExpr.caBaseDataTypeName = hsnEmpty
-    tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTypeAs"
+    -- tyExpr.caBaseDataTypeName = hsnEmpty
+    -- tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedTypeAs"
 
 {
-extractNumAnns :: DataGam -> Map HsName Int
-extractNumAnns dg = Map.fromList $ map f $ gamToAssocL dg
-  where f (x, y) = (x, length $ dgiAnnVars y)
+-- extractNumAnns :: DataGam -> Map HsName Int
+-- extractNumAnns dg = Map.fromList $ map f $ gamToAssocL dg
+--   where f (x, y) = (x, length $ dgiAnnVars y)
 
 baseAnnTypes :: Map HsName Int
 baseAnnTypes = Map.fromList [
@@ -274,13 +307,9 @@ baseAnnTypes = Map.fromList [
     (mkHNm "Bool", 0),
     (mkHNm "Char", 0)
   ]
-
-specialtrace :: DataGam -> DataGam
-specialtrace dg = traceShow dgl dg
-  where dgl = map f $ gamToAssocL dg
-        f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> (dtiFldTyL x, dtiFldAnnTyL x)) $ dgiConstrTagMp dgi) 
-
 }
+
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -308,7 +337,7 @@ SEM Decl
                                                               @mbGenerInfo
 %%]]
 %%[[(8 counting)
-                                                              @loc.caAnnVars
+                                                              @lhs.caLocalAnnVars
 %%]]
                 lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 
@@ -537,7 +566,7 @@ SEM DataConstr
                                                           , dtiFldRefL      = assocLElts @fldRefL
 %%]]
 %%[[(8 counting)
-                                                          , dtiFldAnnTyL    = @fields.caAnnTyList
+                                                          , dtiFldAnnTyL    = @loc.caAnnTyList
 %%]]
 %%[[91
                                                           , dtiMbFixityPrio = @mbFixityPrio
