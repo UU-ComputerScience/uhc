@@ -512,7 +512,7 @@ then
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           uhc-util)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.1&&<0.1.7"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.2&&<0.1.7"
             ;;
           uulib)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"

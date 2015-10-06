@@ -14,7 +14,7 @@
 %%[1 import(Control.Monad, Control.Monad.IO.Class)
 %%]
 
-%%[1 import(qualified Data.Map as Map, qualified Data.Sequence as Sq, qualified Data.Foldable as Sq)
+%%[1 import(qualified Data.Map as Map, qualified Data.Sequence as Sq, qualified Data.Foldable as Fld)
 %%]
 
 %%[1 import(Data.Sequence((><))) export ((><))
@@ -91,7 +91,7 @@ trPP onTr ton ms = if onTr ton then pr ms else trppEmpty
 
 -- | Dump trace IO monadically
 trPPOnIO :: (Monad m, MonadIO m) => TrPP -> m ()
-trPPOnIO ppl = liftIO $ mapM_ putPPLn $ Sq.toList ppl
+trPPOnIO ppl = liftIO $ mapM_ putPPLn $ Fld.toList ppl
 
 -- | Tracing PPs, producing output on IO
 trOnPP :: (Monad m, MonadIO m) => (TraceOn -> Bool) -> TraceOn -> [PP_Doc] -> m ()

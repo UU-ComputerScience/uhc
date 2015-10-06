@@ -38,7 +38,7 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[8 import(Control.Applicative)
 %%]
-%%[8 import(Control.Monad.Error, Control.Monad.Fix)
+%%[8 import(UHC.Util.Error, Control.Monad.Fix)
 %%]
 %%[8 import(System.IO, System.Exit, System.Environment, System.Process)
 %%]

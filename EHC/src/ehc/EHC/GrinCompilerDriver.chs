@@ -3,7 +3,7 @@
 
 %%[(8 codegen grin wholeprogAnal) import(System.IO, System.CPUTime, Numeric)
 %%]
-%%[(8 codegen grin wholeprogAnal) import(Control.Monad.Error, Control.Monad.State, Control.Exception)
+%%[(8 codegen grin wholeprogAnal) import(UHC.Util.Error, Control.Monad.State, Control.Exception)
 %%]
 %%[(8 codegen grin wholeprogAnal) import(Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]

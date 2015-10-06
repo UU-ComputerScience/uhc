@@ -16,7 +16,7 @@
 %%[1 hs import(UHC.Util.Pretty,qualified UHC.Util.FastSeq as Seq)
 %%]
 
-%%[1 hs import(Control.Monad.Error.Class)
+%%[1 hs import(UHC.Util.Error)
 %%]
 
 %%[1 ag import({Error/AbsSyn})

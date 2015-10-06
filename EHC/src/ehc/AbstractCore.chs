@@ -320,7 +320,7 @@ type ACoreAppLikeMetaBound = (ACoreBindAspectKeyS,MetaLev,CLbl)
 %%]
 
 %%[(8 codegen) hs
-instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e boundmeta {- () () -} where
+instance {-# OVERLAPPABLE  #-} AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e boundmeta {- () () -} where
   app1App       = acore1App
   appTop        = id
   appCon        = acoreVar . mkHNm
@@ -345,13 +345,13 @@ instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e 
 %%]
 
 %%[(8 codegen coresysf) hs
-instance (AppLike e ACoreAppLikeMetaBound, HSNM bndnm, AbstractCore e m b bound ACoreAppLikeMetaBound bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
+instance {-# OVERLAPPABLE  #-} (AppLike e ACoreAppLikeMetaBound, HSNM bndnm, AbstractCore e m b bound ACoreAppLikeMetaBound bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
   -- BndLike
   bndBndIn n l = app1MetaArr (Just $ mkHNm n,acoreBoundmeta acbaspkeyDefault l CLbl_None)
 %%]
 
 %%[(8 codegen) hs
-instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => RecLike e boundmeta {- () () -} where
+instance {-# OVERLAPPABLE  #-} AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => RecLike e boundmeta {- () () -} where
   recRow _ fs   = acoreTagTyTupBound CTagRec (acoreTyErr "AbstractCore.RecLike.recRow") [ acoreBound1MetaVal (acoreBoundmeta acbaspkeyDefault 0 (CLbl_Nm n)) e | (n,e) <- fs ]
   
   recMbRecRow  _= Nothing -- tyMbRecRowWithLkup (const Nothing)

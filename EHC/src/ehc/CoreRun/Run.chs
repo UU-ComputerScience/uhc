@@ -35,7 +35,7 @@
 %%[(8 corerun) import(Control.Exception)
 %%]
 
-%%[(8 corerun) hs import(Control.Monad, Control.Monad.Error, Control.Monad.RWS.Strict) export(module Control.Monad.RWS.Strict, module Control.Monad, module Control.Monad.Error)
+%%[(8 corerun) hs import(Control.Monad, UHC.Util.Error, Control.Monad.RWS.Strict) export(module Control.Monad.RWS.Strict, module Control.Monad, module UHC.Util.Error)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

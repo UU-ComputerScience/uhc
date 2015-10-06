@@ -507,7 +507,7 @@ FUN_GEN_CABAL		= \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" ; \
 					echo   "Exposed:			False" ; \
 					echo   "C-Sources:			$(subst $(space),$(comma),$(strip $(7)))" ; \
-					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC)" \
+					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC) -fno-warn-tabs" \
 					)
 
 # generate cabal file for library

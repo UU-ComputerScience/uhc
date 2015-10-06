@@ -46,7 +46,7 @@
 %%]
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[8 import(Control.Monad.State, Control.Monad.Error)
+%%[8 import(Control.Monad.State, UHC.Util.Error)
 %%]
 
 -- module

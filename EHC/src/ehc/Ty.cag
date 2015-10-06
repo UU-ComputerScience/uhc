@@ -812,7 +812,7 @@ tyIsLam ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer || hmtyast).AppLike hs
-instance AppLike Ty Ty {- TyAnn () -} where
+instance {-# OVERLAPPING  #-} AppLike Ty Ty {- TyAnn () -} where
   -- AppLike
   
   app1App        = Ty_App
@@ -864,7 +864,7 @@ instance BndLike Ty TyVarId {- TyAnn () -} where
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs
-instance RecLike Ty Ty {- TyAnn () -} where
+instance {-# OVERLAPPING  #-} RecLike Ty Ty {- TyAnn () -} where
   -- RecLike
 %%[[7
   recRow r 		= foldl (\t (n,e) -> Ty_Ext t n e) r

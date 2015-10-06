@@ -65,7 +65,7 @@ Running of BuildFunction
 %%]
 %%[8 import (Data.Maybe, Data.List, qualified Data.Map as Map, qualified Data.Set as Set, qualified UHC.Util.FastSeq as Seq)
 %%]
-%%[8 import (Control.Applicative, Control.Monad.State, Control.Monad.Error)
+%%[8 import (Control.Applicative, Control.Monad.State, UHC.Util.Error)
 %%]
 %%[8 import({%{EH}Base.Trace})
 %%]

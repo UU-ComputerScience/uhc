@@ -21,7 +21,7 @@ CompilePhase building blocks: parsers
 %%[8 import(UHC.Util.Lens)
 %%]
 
-%%[8 import(Control.Monad.Error, Control.Monad.State)
+%%[8 import(UHC.Util.Error, Control.Monad.State)
 %%]
 
 %%[8 import(qualified Data.Map as Map)

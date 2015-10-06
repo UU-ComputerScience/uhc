@@ -38,6 +38,9 @@ Note: everything is exported.
 %%[8 import ({%{EH}Base.Target})
 %%]
 
+%%[9 import ({%{EH}Base.UnderDev})
+%%]
+
 %%[97 import (Data.Ratio)
 %%]
 
@@ -110,7 +113,7 @@ ehScanOpts opts
                     ++ (if ehcOptExtensibleRecords opts then tokOpStrsEH7 else [])
 %%]
 %%[9
-                    ++ tokOpStrsEH9
+                    ++ tokOpStrsEH9 opts
 %%]
 %%[10
                     ++ tokOpStrsEH10
@@ -918,7 +921,8 @@ pDO              = pKeyTk "do"
 
 tokKeywStrsEH9 = [ "class", "instance" ]
 tokKeywStrsHS9 = [ "do" ]
-tokOpStrsEH9   = [ show hsnPrArrow, "<:" ]
+tokOpStrsEH9 opts
+               = [ show hsnPrArrow ] ++ if ehcOptIsUnderDev UnderDev_NamedInst opts then [] else [ "<:" ]
 tokOpStrsHS9   = [  ]
 %%]
 
