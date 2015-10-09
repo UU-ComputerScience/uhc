@@ -80,7 +80,9 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 
 -- other structures
-%%[(8 codegen) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%[(8 core) hs import({%{EH}CodeGen.ValAccess} as VA)
+%%]
+%%[8 hs import({%{EH}CodeGen.CEnv}) export(module {%{EH}CodeGen.CEnv})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -970,6 +972,8 @@ data EHCompileRunStateInfo (m :: * -> *)
       , _crsiHSInh      :: !AST_HS_Inh_Check                    -- current inh attrs for HS sem
       , _crsiEHInh      :: !AST_EH_Inh_Check                    -- current inh attrs for EH sem
       , _crsiFileSuffMp :: FileSuffMp							-- allowed suffixes
+      , _crsiCEnv		::  CEnv								-- globally required codegen info
+      															-- 20151009 AD: TBD, for now non strict field
 %%[[(8 core grin)
       , _crsiCoreInh    :: !AST_Core_Inh_ToGrin	                -- current inh attrs for Core2Grin sem
 %%]]
@@ -1007,6 +1011,7 @@ emptyEHCompileRunStateInfo
       , _crsiHSInh      =   panic "emptyEHCompileRunStateInfo.crsiHSInh"
       , _crsiEHInh      =   panic "emptyEHCompileRunStateInfo.crsiEHInh"
       , _crsiFileSuffMp =	emptyFileSuffMp
+      , _crsiCEnv		=   emptyCEnv
 %%[[(8 core grin)
       , _crsiCoreInh    =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
 %%]]
@@ -1160,6 +1165,9 @@ mkLabel ''EHCompileRunCoreRunStateInfo
 
 %%[8 export(crsiOpts, crsiASTPipe, crsiNextUID, crsiHereUID, crsiHSInh, crsiEHInh, crsiBState, crsiFileSuffMp)
 mkLabel ''EHCompileRunStateInfo
+%%]
+
+%%[8 export(crsiCEnv)
 %%]
 
 %%[(8 core grin) export(crsiCoreInh)

@@ -40,6 +40,9 @@ Initial values
 -- LamMp, SysF
 %%[(8 codegen) import({%{EH}LamInfo})
 %%]
+-- CEnv
+%%[(8 core) import({%{EH}CodeGen.CEnv})
+%%]
 
 %%[9 import(qualified {%{EH}Gam.ClGam} as Pr(initClGam))
 %%]
@@ -115,6 +118,16 @@ initialCore2GrSem opts
       , Core2GrSem.importUsedModules_Inh_CodeAGItf	= emptyImportUsedModules
 %%]]
       }
+%%]
+
+%%[8 export(initialCEnv)
+initialCEnv :: CEnv
+initialCEnv
+  = emptyCEnv
+%%[[(8 core)
+      { _cenvLamMp           		= initLamMp
+      }
+%%]]
 %%]
 
 %%[(8888 corerun) export(initialCore2CoreRunSem)

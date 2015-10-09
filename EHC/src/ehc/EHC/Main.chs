@@ -361,6 +361,7 @@ doCompilePrepare fnL@(fn:_) opts
                                                        (initialHSSem opts3)
                                                        (initialEHSem opts3 fp)
                                                        (mkFileSuffMpHs opts3)
+                                                       (initialCEnv)
 %%[[(8 core grin)
                                                        (initialCore2GrSem opts3)
 %%]]

@@ -220,7 +220,9 @@ bcall bfun = do
                                          }
 %%]]
                                    in  crsi -- From: cpFlowEHSem1
-                                         { _crsiEHInh = ehInh' }
+                                         { _crsiEHInh = ehInh'
+                                         , _crsiCEnv  = cenvDataGam ^$= (EHSem.gathDataGam_Syn_AGItf ehSem `gamUnion`) $ crsi ^. crsiCEnv
+                                         }
 
 %%[[(50 core corein)
                                -- From: cpFlowCoreModSem
@@ -231,14 +233,15 @@ bcall bfun = do
                                       cpTrPP TraceOn_BldFlow ["ASTSemFlowStage_BetweenModule astpMbSrcCachedCore" >#< modSearchKey, pp p]
                                       bcall $ FoldCoreModPlMb modSearchKey pl
                                    ) (return id) $ \_ (coreChkSem, _, _, _, _, _) -> do
-%%[[(50 grin)
                                  -- 20151008 AD: TBD: dataGam needs independent passing around
-                                 return $ crsiCoreInh ^$= \coreInh ->
-                                   coreInh
-                                     { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem }
-%%][50
-                                 return id
+                                 return (   ( crsiCEnv ^* cenvDataGam ^$= (`gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem)
+                                            )
+%%[[(50 grin)
+                                          . ( crsiCoreInh ^$= \coreInh ->
+                                                coreInh
+                                                  { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem }
 %%]]
+                                        )   )
 %%][50
                                let updCoreSrc = id
 %%]]
@@ -268,9 +271,11 @@ bcall bfun = do
                                       cpTrPP TraceOn_BldFlow ["ASTSemFlowStage_BetweenModule astpMbFromCoreToGrin" >#< modSearchKey, pp pl]
                                       bcall $ FoldCore2GrinPlMb bglob modSearchKey pl
                                    ) (return id) $ \_ core2GrinSem -> do
-                                 return $ crsiCoreInh ^$= \coreInh ->
-                                   -- assumption: old info can safely be overridden, otherwise merge should be done here
-                                   coreInh { Core2GrSem.lamMp_Inh_CodeAGItf = Core2GrSem.gathLamMp_Syn_CodeAGItf core2GrinSem `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh }
+                                 return $ ( (crsiCEnv ^* cenvLamMp) ^$= (Core2GrSem.gathLamMp_Syn_CodeAGItf core2GrinSem `lamMpUnionBindAspMp`) )
+                                        . ( crsiCoreInh ^$= \coreInh ->
+                                              -- assumption: old info can safely be overridden, otherwise merge should be done here
+                                              coreInh { Core2GrSem.lamMp_Inh_CodeAGItf = Core2GrSem.gathLamMp_Syn_CodeAGItf core2GrinSem `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh }
+                                          )
 %%][50
                                let updCoreGrin = id
 %%]]
@@ -399,6 +404,7 @@ bcall bfun = do
                    cpUpdSI $ \crsi -> 
                        let ehInh  = crsi ^. crsiEHInh
                            coreInh= crsi ^. crsiCoreInh
+                           cenv   = crsi ^. crsiCEnv
                            coreInh' = coreInh
 %%[[8
                              { Core2GrSem.dataGam_Inh_CodeAGItf = EHSem.gathDataGam_Syn_AGItf ehSem
@@ -411,8 +417,13 @@ bcall bfun = do
 %%[[50
                            lm       = EHSem.gathLamMp_Syn_AGItf      ehSem
 %%]]
+                           cenv'    = ( cenvDataGam ^$= (EHSem.gathDataGam_Syn_AGItf ehSem `gamUnion`) )
+%%[[(8 core)          
+                                    . ( cenvLamMp   ^$= (lm `lamMpUnionBindAspMp`) )		-- assumption: no duplicates, otherwise merging as done later has to be done
+%%]]          
+                                    $ cenv
                        in  crsi -- From: cpFlowEHSem1
-                             { _crsiCoreInh = coreInh' }
+                             { _crsiCoreInh = coreInh', _crsiCEnv = cenv' }
 %%]]
 
                brefto bfun BRef_CRSI
