@@ -218,7 +218,7 @@ cpTranslateEH2TyCore modNm
          }
 %%]
 
-%%[(8 codegen grin) export(cpTranslateCore2Grin)
+%%[(8 core grin) export(cpTranslateCore2Grin)
 cpTranslateCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCore2Grin modNm
   =  do  {  cr <- get

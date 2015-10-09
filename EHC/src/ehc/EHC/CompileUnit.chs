@@ -121,7 +121,7 @@ data EHCompileUnit
 %%[[(8 codegen)
       , _ecuMbCore           :: !(Maybe AST_Core)
 %%]]
-%%[[(8 codegen core)
+%%[[(8 codegen core grin)
       , _ecuMbCoreSem        :: !(Maybe AST_Core_Sem_ToGrin)
 %%]]
 %%[[(8 codegen corerun)
@@ -206,10 +206,14 @@ mkLabel ''EHCompileUnit
 %%[8 export(ecuASTAvailFiles, ecuASTType, ecuASTFileContent, ecuASTFileUse)
 %%]
 
-%%[(8 core) export(ecuMbCore, ecuCore, ecuMbCoreSem, ecuCoreSem)
-ecuCore = isoMb "ecuMbCore" ecuMbCore
+%%[(8 core grin) export(ecuMbCoreSem, ecuCoreSem)
 ecuCoreSem = isoMb "ecuMbCoreSem" ecuMbCoreSem
 %%]
+
+%%[(8 core) export(ecuMbCore, ecuCore)
+ecuCore = isoMb "ecuMbCore" ecuMbCore
+%%]
+
 %%[(8 grin) export(ecuMbGrin, ecuGrin)
 ecuGrin = isoMb "ecuMbGrin" ecuMbGrin
 %%]
@@ -319,7 +323,7 @@ emptyECU
 %%[[(8 codegen)
       , _ecuMbCore           = Nothing
 %%]]
-%%[[(8 codegen core)
+%%[[(8 core grin)
       , _ecuMbCoreSem        = Nothing
 %%]]
 %%[[(8 codegen corerun)
@@ -585,7 +589,7 @@ ecuStoreCoreSemMod :: EcuUpdater AST_Core_Sem_Check
 ecuStoreCoreSemMod x ecu = ecu { _ecuMbCoreSemMod = Just x }
 %%]
 
-%%[(8 codegen core) export(ecuStoreCoreSem)
+%%[(8 core grin) export(ecuStoreCoreSem)
 ecuStoreCoreSem :: EcuUpdater AST_Core_Sem_ToGrin
 ecuStoreCoreSem x ecu = ecu { _ecuMbCoreSem = Just x }
 %%]

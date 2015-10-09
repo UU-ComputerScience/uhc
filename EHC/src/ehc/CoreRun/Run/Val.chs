@@ -1444,7 +1444,7 @@ rsemTr'' :: (PP msg, RunSem RValCxt RValEnv RVal m x) => TraceOn -> msg -> RValT
 rsemTr'' ton msg = do
     tons <- rsemTraceOnS
     dump <- dumpPpEnvM' (`Set.member` tons)
-    trOnPP (\t -> t `Set.member` tons {- || not (null dump) -}) ton $ [pp msg] ++ dump
+    trOnPP (\t -> t `Set.member` tons) ton $ [pp msg] ++ dump
 
 %%]
 -- | Trace

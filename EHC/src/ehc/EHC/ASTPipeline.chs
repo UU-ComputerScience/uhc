@@ -86,7 +86,7 @@ instance PP ASTType where
 data ASTScope
   = ASTScope_Single			-- ^ single module
   | ASTScope_Whole			-- ^ whole program
-  -- | ASTScope_Any			-- ^ any/arbitrary of above
+  --- | ASTScope_Any			-- ^ any/arbitrary of above
   deriving (Eq, Ord, Enum, Typeable, Generic, Bounded)
 
 instance Hashable ASTScope
@@ -206,10 +206,10 @@ astfileuseReadTiming _                = ASTFileTiming_Current
 %%[8 export(ASTSemFlowStage(..))
 -- | An 'Enum' of the stage semantic results are flown into global state
 data ASTSemFlowStage
-  = -- | per module
+  = --- | per module
     ASTSemFlowStage_PerModule
 %%[[50
-  | -- | between subsequent module compilations
+  | --- | between subsequent module compilations
     ASTSemFlowStage_BetweenModule	
 %%]]
   deriving (Eq, Ord, Typeable, Generic)
@@ -249,9 +249,9 @@ type ASTAlreadyFlowIntoCRSIInfo =
 %%[8 export(ASTTrf(..))
 -- | Description of transformation
 data ASTTrf where
-    -- | Optimize, valid for some scopes only
+    --- | Optimize, valid for some scopes only
     ASTTrf_Optim :: [ASTScope] -> ASTTrf
-    -- | Check and adapt (source usually)
+    --- | Check and adapt (source usually)
     ASTTrf_Check :: ASTTrf
 
   deriving (Eq, Ord, Typeable, Generic)
@@ -288,35 +288,35 @@ instance PP ASTPipeHowChoice where
 %%[8 export(ASTPipe(..), emptyASTPipe)
 -- | Description of build pipelines
 data ASTPipe where
-    -- | From source file. 20150904: astpTiming is ignored, derived from astpUse
+    --- | From source file. 20150904: astpTiming is ignored, derived from astpUse
     ASTPipe_Src :: { astpUse :: ASTFileUse, astpTiming :: ASTFileTiming, astpType :: ASTType } -> ASTPipe
 
-    -- | Derived from (a different ast type)
+    --- | Derived from (a different ast type)
     ASTPipe_Derived :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
 
-    -- | Linked/combined as a library
+    --- | Linked/combined as a library
     ASTPipe_Library :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
 
-    -- | Transformation on same AST
+    --- | Transformation on same AST
     ASTPipe_Trf :: { astpType :: ASTType, astpTrf :: ASTTrf, astpPipe :: ASTPipe } -> ASTPipe
 
-    -- | Aggregrate of various different AST
+    --- | Aggregrate of various different AST
     ASTPipe_Compound :: { astpType :: ASTType, astpPipes :: [ASTPipe] } -> ASTPipe
 
-    -- | No pipe
+    --- | No pipe
     ASTPipe_Empty :: ASTPipe
 
 %%[[50
-    -- | From previously cached on file
+    --- | From previously cached on file
     -- ASTPipe_Cached :: { astpType :: ASTType }  -> ASTPipe
 
-    -- | Side effect inverse of ASTPipe_Cached, i.e. write/cache on file
+    --- | Side effect inverse of ASTPipe_Cached, i.e. write/cache on file
     ASTPipe_Cache :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
 
-    -- | Choose between first available, left biased, left one is src/cached, right one may be more complex/derived
+    --- | Choose between first available, left biased, left one is src/cached, right one may be more complex/derived
     ASTPipe_Choose :: { astpHow :: ASTPipeHowChoice, astpType :: ASTType, astpPipe1 :: ASTPipe, astpPipe2 :: ASTPipe } -> ASTPipe
 
-    -- | Whole program linked
+    --- | Whole program linked
     ASTPipe_Whole :: { astpType :: ASTType, astpPipe :: ASTPipe } -> ASTPipe
 %%]]
   deriving (Eq, Ord, Typeable, Generic)
@@ -537,7 +537,7 @@ astpipe_Core_from_EH apbcfg =
   where
     optim
 %%[[50
-      -- | apbcfgOptimScope apbcfg == OptimizationScope_WholeCore = id
+      --- | apbcfgOptimScope apbcfg == OptimizationScope_WholeCore = id
 %%]]
       | otherwise                                              = ASTPipe_Trf ASTType_Core $ ASTTrf_Optim [ASTScope_Single]
 %%]
@@ -751,11 +751,13 @@ astpipeForCfg apbcfg =
              ++ [astpipe_HI $ apbcfg {apbcfgOptimScope = OptimizationScope_PerModule}]
 %%]]
   where (base, topty) = case apbcfgTarget apbcfg of
+%%[[(8 grin)
           Target_Interpreter_Grin_C
 %%[[99
             | apbcfgLinkingStyle apbcfg == LinkingStyle_Pkg  -> ([ASTPipe_Derived ASTType_LibO $ astpipe_O apbcfg], ASTType_LibO)
 %%]]
             | apbcfgLinkingStyle apbcfg == LinkingStyle_Exec -> ([ASTPipe_Derived ASTType_ExecO $ astpipe_O apbcfg], ASTType_ExecO)
+%%]]
 %%[[(8 javascript)
           Target_Interpreter_Core_JavaScript
 %%[[99
@@ -766,7 +768,7 @@ astpipeForCfg apbcfg =
 %%[[(8 core)
           Target_None_Core_AsIs
 %%[[(8 corerun)
-            -- | onlyrun 										 -> ([astpipe_Core_src], ASTType_Core)
+            --- | onlyrun 										 -> ([astpipe_Core_src], ASTType_Core)
             | onlyrun 										 -> ([astpipe_CoreRun apbcfg], ASTType_CoreRun)
 %%]]
             | otherwise                                      -> ([astpipe_Core apbcfg], ASTType_Core)

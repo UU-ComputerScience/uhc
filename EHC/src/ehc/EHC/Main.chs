@@ -346,7 +346,7 @@ doCompilePrepare fnL@(fn:_) opts
                                 { _crsiOpts       =   opts3
                                 , _crsiHSInh      =   initialHSSem opts3
                                 , _crsiEHInh      =   initialEHSem opts3 fp
-%%[[(8 codegen)
+%%[[(8 core grin)
                                 , _crsiCoreInh    =   initialCore2GrSem opts3
 %%]]
 %%[[50
@@ -361,7 +361,7 @@ doCompilePrepare fnL@(fn:_) opts
                                                        (initialHSSem opts3)
                                                        (initialEHSem opts3 fp)
                                                        (mkFileSuffMpHs opts3)
-%%[[(8 codegen)
+%%[[(8 core grin)
                                                        (initialCore2GrSem opts3)
 %%]]
 %%[[(8 corerun)

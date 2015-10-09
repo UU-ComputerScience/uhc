@@ -39,7 +39,7 @@ Translation to another AST
 %%% Shared/common utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen) export(cpGenModuleImportExportImpl)
+%%[(50 core) export(cpGenModuleImportExportImpl)
 -- | Compute impl info for module codegen
 cpGenModuleImportExportImpl :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ModuleImportExportImpl
 cpGenModuleImportExportImpl modNm
@@ -59,14 +59,16 @@ cpGenModuleImportExportImpl modNm
        -- ; liftIO $ putStrLn $ "cpGenModuleImportExportImpl modOffMp " ++ show modOffMp
        -- ecuHSDeclImpNmS ecu, ecuHIDeclImpNmS ecu, ecuHIUsedImpNmS ecu
        ; return $ emptyModuleImportExportImpl
-           { mieimplLamMp 			= Core2GrSem.lamMp_Inh_CodeAGItf $ _crsiCoreInh crsi
-           , mieimplUsedModNmL 		= if ecuIsMainMod ecu then [ m | (m,_) <- sortOnLazy snd $ Map.toList $ Map.map fst modOffMp ] else []
+           { mieimplUsedModNmL 		= if ecuIsMainMod ecu then [ m | (m,_) <- sortOnLazy snd $ Map.toList $ Map.map fst modOffMp ] else []
            , mieimplHsName2FldMpMp 	= Map.fromList
                [ (n,(o,mp))
                | (n,o) <- refGen 0 1 impNmL
                , let (_,mp) = panicJust ("cpGenModuleImportExportImpl: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
                ]
            , mieimplHsName2FldMp 	= expNmFldMp
+%%[[(50 grin)
+           , mieimplLamMp 			= Core2GrSem.lamMp_Inh_CodeAGItf $ _crsiCoreInh crsi
+%%]]
            }
        }
 %%]

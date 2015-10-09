@@ -231,8 +231,14 @@ bcall bfun = do
                                       cpTrPP TraceOn_BldFlow ["ASTSemFlowStage_BetweenModule astpMbSrcCachedCore" >#< modSearchKey, pp p]
                                       bcall $ FoldCoreModPlMb modSearchKey pl
                                    ) (return id) $ \_ (coreChkSem, _, _, _, _, _) -> do
+%%[[(50 grin)
+                                 -- 20151008 AD: TBD: dataGam needs independent passing around
                                  return $ crsiCoreInh ^$= \coreInh ->
-                                   coreInh { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem }
+                                   coreInh
+                                     { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem }
+%%][50
+                                 return id
+%%]]
 %%][50
                                let updCoreSrc = id
 %%]]
@@ -253,7 +259,7 @@ bcall bfun = do
                                let updCoreRunSrc = id
 %%]]
 
-%%[[(50 core)
+%%[[(50 core grin)
                                -- From: cpFlowCoreSemAfterFold
                                updCoreGrin <- maybe2M
                                    (allowFlow $ astpMbFromCoreToGrin True)
@@ -381,7 +387,7 @@ bcall bfun = do
 %%]]
 %%]]
 
-%%[[(8 core)
+%%[[(8 core grin)
                -- flow EH semantics specific for Core forward into global state for current module, for a next stage in the pipeline
                -- From: cpFlowEHSem1
                maybe2M (allowFlow $ astpMbFromEHToCore True)
@@ -559,7 +565,7 @@ bcall bfun = do
                    case (mbRes, mbset, mbhdlr) of
                      (Just ast, _, _) -> ret ref ast
                  
-                     (_, Just set, Just (astHdlr :: ASTHandler' ast)) | chkTimeStamp == ASTFileTimeHandleHow_Ignore || isJust mbtm {- | isJust mbi && isJust mbl -} -> case astfcont of
+                     (_, Just set, Just (astHdlr :: ASTHandler' ast)) | chkTimeStamp == ASTFileTimeHandleHow_Ignore || isJust mbtm -> case astfcont of
 %%[[50
                           ASTFileContent_Binary -> do
                             cpMsg' modNm VerboseALot "Decoding" Nothing fpC
@@ -952,14 +958,16 @@ ecuIsHSNewerThanHI ecu
                    modOffMp   | isWholeProg = Map.filterWithKey (\n _ -> n == modNm) $ crsiModOffMp crsi
                               | otherwise   = crsiModOffMp crsi
                return $ emptyModuleImportExportImpl
-                 { mieimplLamMp             = Core2GrSem.lamMp_Inh_CodeAGItf $ _crsiCoreInh crsi
-                 , mieimplUsedModNmL        = if ecuIsMainMod ecu then [ m | (m,_) <- sortOnLazy snd $ Map.toList $ Map.map fst modOffMp ] else []
+                 { mieimplUsedModNmL        = if ecuIsMainMod ecu then [ m | (m,_) <- sortOnLazy snd $ Map.toList $ Map.map fst modOffMp ] else []
                  , mieimplHsName2FldMpMp    = Map.fromList
                      [ (n,(o,mp))
                      | (n,o) <- refGen 0 1 impNmL
                      , let (_,mp) = panicJust ("cpGenModuleImportExportImpl: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
                      ]
-                 , mieimplHsName2FldMp  = expNmFldMp
+                 , mieimplHsName2FldMp      = expNmFldMp
+%%[[(50 grin)
+                 , mieimplLamMp             = Core2GrSem.lamMp_Inh_CodeAGItf $ _crsiCoreInh crsi
+%%]]
                  }
   
   
@@ -1401,8 +1409,7 @@ bMkASTPMbChoice bglob modSearchKey astpipe = do
 
     tmOf :: PrevFileSearchKey -> ASTPipe -> TmOfResM m
     -- source: time of src itself + imports
-    tmOf modSearchKey p@(ASTPipe_Src {astpUse=u, {- astpTiming=tm, -} astpType=t})
-      {- | (u,tm) `elem` [(ASTFileUse_Src,ASTFileTiming_Current), (ASTFileUse_Cache,ASTFileTiming_Prev)] -} = do
+    tmOf modSearchKey p@(ASTPipe_Src {astpUse=u, {- astpTiming=tm, -} astpType=t}) = do
         let overrMbFp@(~(Just (overrFp,overr)))
                       = astFileNameOverrideMbFPath $ _fsrchOverr $ _pfsrchKey modSearchKey
             isOverr   = isJust overrMbFp && overr
@@ -1624,7 +1631,6 @@ bExecASTPMbChoice bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKe
 			 bRetAST modSearchKey astpipe hii2
 %%]]
 		 ASTBuildPlan {_astbplPipe= ASTPipe_Src ASTFileUse_Src _ asttypeAsked, _astbplChoice= Choice_Src av}
-		   -- | asttypeAsked == _ecuASTType ecu -> do
 		   -> do
 			 bASTFromFileEither modSearchKey False (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) asttypeAsked (_astavailfContent av, _astavailfUse av) (astfileuseReadTiming $ _astavailfUse av) >>=
 			   -- 20150818 TBD: factor below out

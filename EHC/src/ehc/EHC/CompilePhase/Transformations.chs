@@ -60,6 +60,10 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[8 import({%{EH}EHC.CompilePhase.Output})
 %%]
 
+-- EH semantics
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
+%%]
+
 -- HI syntax and semantics
 %%[50 import(qualified {%{EH}HI} as HI)
 %%]
@@ -83,7 +87,9 @@ cpTransformCore optimScope modNm
        
          -- transform
        ; let  mbCore     = _ecuMbCore ecu
+%%[[(8 grin)
               coreInh    = crsi ^. crsiCoreInh
+%%]]
               trfcoreIn  = emptyTrfCore
                              { trfstMod             	= panicJust "cpTransformCore" mbCore
                              , trfstUniq            	= crsi ^. crsiNextUID
@@ -100,11 +106,19 @@ cpTransformCore optimScope modNm
 %%]]
 %%[[50
                                  , trfcoreExpNmOffMp    = crsiExpNmOffMpDbg "cpTransformCore" modNm crsi
+%%]]
+%%[[(50 grin)
 								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsi ^. crsiCoreInh
 %%]]
                                  }
                              }
-              trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsi ^. crsiCoreInh) modNm trfcoreIn
+              trfcoreOut = trfCore opts optimScope
+%%[[(8 grin)
+                                   (Core2GrSem.dataGam_Inh_CodeAGItf $ crsi ^. crsiCoreInh)
+%%][8
+                                   (EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh)
+%%]]
+                                   modNm trfcoreIn
        
 %%[[(50 corein)
        -- ; liftIO $ putStrLn $ "cpTransformCore trfcoreNotYetTransformed: " ++ show (trfcoreNotYetTransformed $ trfstExtra trfcoreIn)

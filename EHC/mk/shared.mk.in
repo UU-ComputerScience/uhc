@@ -590,6 +590,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Exposed-Modules:		$(7)" ; \
 					echo   "  Other-Modules:		$(8)" ; \
+					echo   "  Ghc-Options:			-fno-warn-tabs" ; \
 					echo   "" ; \
 					echo   "Executable $(strip $(10))" ; \
 					echo   "  Hs-Source-Dirs:       $(18)" ; \

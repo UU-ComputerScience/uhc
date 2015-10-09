@@ -1306,7 +1306,7 @@ cpProcessCoreBasic modNm
         }
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 -- unfolded core -> folded core
 -- (called on merged core, and on core directly generated from cached grin)
 cpProcessCoreFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
@@ -1317,14 +1317,16 @@ cpProcessCoreFold modNm
 %%[[50
        ; cpFlowCoreSemBeforeFold modNm
 %%]]
+%%[[(50 grin)
        ; when (targetIsViaGrin (ehcOptTarget opts)) $
            cpFoldCore2Grin modNm
            -- void $ bcall $ FoldCore2Grin (mkPrevFileSearchKeyWithName modNm)
+%%]]
 %%[[(50 corerun)
        ; when (targetIsCoreVariation (ehcOptTarget opts)) $
            cpFoldCore2CoreRun modNm
 %%]]
-%%[[50
+%%[[(50 core grin)
        ; cpFlowCoreSemAfterFold modNm
 %%]]
        }

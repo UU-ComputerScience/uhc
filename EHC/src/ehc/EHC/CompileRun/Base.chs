@@ -970,7 +970,7 @@ data EHCompileRunStateInfo (m :: * -> *)
       , _crsiHSInh      :: !AST_HS_Inh_Check                    -- current inh attrs for HS sem
       , _crsiEHInh      :: !AST_EH_Inh_Check                    -- current inh attrs for EH sem
       , _crsiFileSuffMp :: FileSuffMp							-- allowed suffixes
-%%[[(8 codegen)
+%%[[(8 core grin)
       , _crsiCoreInh    :: !AST_Core_Inh_ToGrin	                -- current inh attrs for Core2Grin sem
 %%]]
 %%[[(8 corerun)
@@ -1007,7 +1007,7 @@ emptyEHCompileRunStateInfo
       , _crsiHSInh      =   panic "emptyEHCompileRunStateInfo.crsiHSInh"
       , _crsiEHInh      =   panic "emptyEHCompileRunStateInfo.crsiEHInh"
       , _crsiFileSuffMp =	emptyFileSuffMp
-%%[[(8 codegen)
+%%[[(8 core grin)
       , _crsiCoreInh    =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
 %%]]
 %%[[(8 corerun)
@@ -1162,7 +1162,7 @@ mkLabel ''EHCompileRunCoreRunStateInfo
 mkLabel ''EHCompileRunStateInfo
 %%]
 
-%%[(8 codegen) export(crsiCoreInh)
+%%[(8 core grin) export(crsiCoreInh)
 %%]
 
 %%[(8888 corerun) export(crsiCore2RunInh)
