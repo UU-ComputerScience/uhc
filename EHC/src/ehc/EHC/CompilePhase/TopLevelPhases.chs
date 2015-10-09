@@ -1326,9 +1326,10 @@ cpProcessCoreFold modNm
        ; when (targetIsCoreVariation (ehcOptTarget opts)) $
            cpFoldCore2CoreRun modNm
 %%]]
-%%[[(50 core grin)
+%%[[(8 core grin)
        ; cpFlowCoreSemAfterFold modNm
 %%]]
+       ; return ()
        }
 %%]
 

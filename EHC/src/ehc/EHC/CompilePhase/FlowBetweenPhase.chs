@@ -78,7 +78,7 @@ XXX
 %%% Additional processing before flowing into next whatever: in particular, force evaluation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50.prepFlow
+%%[8.prepFlow
 prepFlow :: a -> a
 prepFlow x | x `seq` True = x
 -- prepFlow = id
@@ -87,7 +87,7 @@ gamUnionFlow :: Ord k => Gam k v -> Gam k v -> Gam k v
 gamUnionFlow = gamUnion
 %%]
 
-%%[9999 -50.prepFlow
+%%[9999 -8.prepFlow
 prepFlow :: ForceEval a => a -> a
 prepFlow = forceEval
 
@@ -165,7 +165,7 @@ cpFlowEHSem1 modNm
                  dfg      = prepFlow $! EHSem.gathClDfGam_Syn_AGItf    ehSem
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
 %%]]
-%%[[(50 core)
+%%[[(8 core)
                  lm       = prepFlow $! EHSem.gathLamMp_Syn_AGItf      ehSem
 %%]]
 %%[[50
@@ -344,28 +344,31 @@ cpFlowCoreModSem modNm
 
 The following flow functions probably can be merged with the semantics itself, TBD & sorted out, 20140407
 
-%%[(50 core grin) export(cpFlowCoreSemAfterFold)
+%%[(8 core grin) export(cpFlowCoreSemAfterFold)
 cpFlowCoreSemAfterFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFlowCoreSemAfterFold modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  coreSem  = panicJust "cpFlowCoreSemAfterFold.coreSem" $ _ecuMbCoreSem ecu
-                 
+                 lm       = prepFlow $! Core2GrSem.gathLamMp_Syn_CodeAGItf coreSem
+%%[[50
                  coreInh  = crsi ^. crsiCoreInh
                  hii      = ecu ^. ecuHIInfo
-                 lm       = prepFlow $! Core2GrSem.gathLamMp_Syn_CodeAGItf coreSem
                  coreInh' = coreInh
                               { Core2GrSem.lamMp_Inh_CodeAGItf   = lm `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh	-- assumption: old info can be overridden, otherwise merge should be done here
                               }
                  hii'     = hii
                               { HI.hiiLamMp         = lm
                               }
+%%]]
          ;  when (isJust (_ecuMbCoreSem ecu))
                  (do { cpUpdSI $
                            ( (crsiCEnv ^* cenvLamMp) ^$= (lm `lamMpUnionBindAspMp`) )	-- assumption: old info can be overridden, otherwise merge should be done here
+%%[[50
                          . ( crsiCoreInh ^= coreInh')
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
                                      )
+%%]]
                      })
          }
 %%]
