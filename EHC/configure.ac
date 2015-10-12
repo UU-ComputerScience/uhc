@@ -56,7 +56,7 @@ AC_SUBST(EH_VERSION_ASNUMBER,$EH_VERSION_MAJOR$EH_VERSION_MINOR_ZEROPAD$EH_VERSI
 
 ### global settings, variables, defaults
 # command/msg to run when tool is absent
-cmdForExitIfAbsentLibOrTool='echo "**** ERROR **** : A tool or library is missing. Check ./configure summary." ; exit 1'
+cmdForExitIfAbsentLibOrTool='echo "**** ERROR **** A tool or library is missing. Check ./configure summary." ; exit 1'
 
 
 dnl macro for missing program
