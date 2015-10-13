@@ -131,7 +131,6 @@ cpFoldCoreRunMod modNm
                  inh      = CoreRun2ChkSem.Inh_AGItf
                                 { CoreRun2ChkSem.opts_Inh_AGItf = opts
                                 , CoreRun2ChkSem.moduleNm_Inh_AGItf = modNm
-                                -- , CoreRun2ChkSem.dataGam_Inh_AGItf = EHSem.dataGam_Inh_AGItf $ _crsiEHInh crsi
                                 }
                  crrSem   = CoreRun2ChkSem.crmodCheck' inh core
                  hasMain  = CoreRun2ChkSem.hasMain_Syn_AGItf crrSem
@@ -155,7 +154,6 @@ cpFoldCoreMod modNm
                  inh      = Core2ChkSem.Inh_CodeAGItf
                                 { Core2ChkSem.opts_Inh_CodeAGItf = opts
                                 , Core2ChkSem.moduleNm_Inh_CodeAGItf = modNm
-                                -- , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh
                                 }
                  coreSem  = Core2ChkSem.cmodCheck' inh core
                  hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem

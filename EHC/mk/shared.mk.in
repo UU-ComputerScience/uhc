@@ -262,6 +262,14 @@ SHELL_FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
 SHELL_AGDEPEND				:= $(BINABS_PREFIX)agdepend
 TAR							:= @TAR_CMD@
 
+#tool existence
+ifeq (@RULER_EXISTS@,yes)
+RULER_EXISTS				:= yes
+else
+# just leave empty
+RULER_EXISTS				:= 
+endif
+
 # lhs2TeX
 LHS2TEX_ENV					:= $(LHS2TEX)
 LHS2TEX_CMD					:= LHS2TEX=".$(PATHS_SEP)../../$(FMT_SRC_PREFIX)$(PATHS_SEP)$(LHS2TEX_ENV)" lhs2TeX

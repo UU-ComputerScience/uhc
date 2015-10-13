@@ -8,7 +8,9 @@ Translation to another AST
 %%]
 
 -- general imports
-%%[(50 codegen) import(qualified Data.Map as Map, qualified Data.Set as Set, qualified UHC.Util.FastSeq as Seq)
+%%[(50 codegen) import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+%%[(50 codegen) import(UHC.Util.Lens, qualified UHC.Util.FastSeq as Seq)
 %%]
 %%[(50 codegen) import(Control.Monad.State)
 %%]
@@ -67,7 +69,7 @@ cpGenModuleImportExportImpl modNm
                ]
            , mieimplHsName2FldMp 	= expNmFldMp
 %%[[(50 grin)
-           , mieimplLamMp 			= Core2GrSem.lamMp_Inh_CodeAGItf $ _crsiCoreInh crsi
+           , mieimplLamMp 			= crsi ^. crsiCEnv ^. cenvLamMp -- Core2GrSem.lamMp_Inh_CodeAGItf $ _crsiCoreInh crsi
 %%]]
            }
        }

@@ -687,6 +687,7 @@ CFLAGS
 CC
 GCC_CMD
 gccCmd
+RULER_EXISTS
 RULER_CMD
 rulerCmd
 SHUFFLE_CMD
@@ -4297,6 +4298,8 @@ else
   rulerExists="no"
 fi
 RULER_CMD=$rulerCmd
+
+RULER_EXISTS=$rulerExists
 
 
 # gcc

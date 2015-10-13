@@ -636,6 +636,7 @@ else
   rulerExists="no"
 fi
 AC_SUBST(RULER_CMD,$rulerCmd)
+AC_SUBST(RULER_EXISTS,$rulerExists)
 
 # gcc
 AC_ARG_WITH(gcc,

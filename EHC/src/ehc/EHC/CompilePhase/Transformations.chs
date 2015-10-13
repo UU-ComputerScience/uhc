@@ -108,16 +108,19 @@ cpTransformCore optimScope modNm
                                  , trfcoreExpNmOffMp    = crsiExpNmOffMpDbg "cpTransformCore" modNm crsi
 %%]]
 %%[[(50 grin)
-								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsi ^. crsiCoreInh
+								 , trfcoreInhLamMp      = crsi ^. crsiCEnv ^. cenvLamMp -- Core2GrSem.lamMp_Inh_CodeAGItf $ crsi ^. crsiCoreInh
 %%]]
                                  }
                              }
               trfcoreOut = trfCore opts optimScope
+                                   (crsi ^. crsiCEnv ^. cenvDataGam)
+{-
 %%[[(8 grin)
                                    (Core2GrSem.dataGam_Inh_CodeAGItf $ crsi ^. crsiCoreInh)
 %%][8
                                    (EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh)
 %%]]
+-}
                                    modNm trfcoreIn
        
 %%[[(50 corein)
@@ -169,7 +172,7 @@ cpTransformTyCore modNm
                               , trftycoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 %%]]
 %%[[99
-                              , trftycoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsi ^. crsiCoreInh
+                              , trftycoreInhLamMp      = crsi ^. crsiCEnv ^. cenvLamMp -- Core2GrSem.lamMp_Inh_CodeAGItf $ crsi ^. crsiCoreInh
 %%]]
                               }
               trftycoreOut = trfTyCore opts modNm trftycoreIn
