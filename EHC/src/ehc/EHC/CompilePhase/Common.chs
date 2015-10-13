@@ -69,7 +69,7 @@ cpGenModuleImportExportImpl modNm
                ]
            , mieimplHsName2FldMp 	= expNmFldMp
 %%[[(50 grin)
-           , mieimplLamMp 			= crsi ^. crsiCEnv ^. cenvLamMp -- Core2GrSem.lamMp_Inh_CodeAGItf $ _crsiCoreInh crsi
+           , mieimplLamMp 			= crsi ^. crsiCEnv ^. cenvLamMp
 %%]]
            }
        }

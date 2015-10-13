@@ -80,10 +80,9 @@ cpFoldCore2Grin modNm
                  mbCore   = _ecuMbCore ecu
                  core     = panicJust "cpFoldCore2Grin" mbCore
                  cenv     = crsi ^. crsiCEnv
-                 -- coreInh  = crsi ^. crsiCoreInh
                  coreSem  = Core2GrSem.wrap_CodeAGItf
                               (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
-                              (Core2GrSem.Inh_CodeAGItf -- coreInh
+                              (Core2GrSem.Inh_CodeAGItf
                                 { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID
                                 , Core2GrSem.opts_Inh_CodeAGItf                          = opts
                                 , Core2GrSem.dataGam_Inh_CodeAGItf                       = cenv ^. cenvDataGam

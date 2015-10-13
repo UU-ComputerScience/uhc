@@ -346,9 +346,6 @@ doCompilePrepare fnL@(fn:_) opts
                                 { _crsiOpts       =   opts3
                                 , _crsiHSInh      =   initialHSSem opts3
                                 , _crsiEHInh      =   initialEHSem opts3 fp
-%%[[(8 core grin)
-                                -- , _crsiCoreInh    =   initialCore2GrSem opts3
-%%]]
 %%[[50
                                 -- , crsiHIInh      =   initialHISem opts3
                                 , crsiHSModInh   =   initialHSSemMod opts3
@@ -362,9 +359,6 @@ doCompilePrepare fnL@(fn:_) opts
                                                        (initialEHSem opts3 fp)
                                                        (mkFileSuffMpHs opts3)
                                                        (initialCEnv)
-%%[[(8 core grin)
-                                                       -- (initialCore2GrSem opts3)
-%%]]
 %%[[(8 corerun)
                                                        initialCoreRunState
                                                        -- initialCore2CoreRunSem

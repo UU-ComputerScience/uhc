@@ -236,19 +236,7 @@ bcall bfun = do
                                       cpTrPP TraceOn_BldFlow ["ASTSemFlowStage_BetweenModule astpMbSrcCachedCore" >#< modSearchKey, pp p]
                                       bcall $ FoldCoreModPlMb modSearchKey pl
                                    ) (return id) $ \_ (coreChkSem, _, _, _, _, _) -> do
-                                 return $ \crsi ->
-                                   let cenv = cenvDataGam ^$= (`gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem) $ crsi ^. crsiCEnv
-                                   in  (   ( crsiCEnv ^= cenv )
-%%[[(50 grin)
-{-
-                                         . ( crsiCoreInh ^$= \coreInh ->
-                                               coreInh
-                                                 -- { Core2GrSem.dataGam_Inh_CodeAGItf = Core2GrSem.dataGam_Inh_CodeAGItf coreInh `gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem }
-                                                 {Core2GrSem.dataGam_Inh_CodeAGItf = cenv ^. cenvDataGam}
-                                           )
--}
-%%]]
-                                       ) $ crsi
+                                 return $ (crsiCEnv ^* cenvDataGam) ^$= (`gamUnion` Core2ChkSem.gathDataGam_Syn_CodeAGItf coreChkSem)
 %%][50
                                let updCoreSrc = id
 %%]]
@@ -278,19 +266,7 @@ bcall bfun = do
                                       cpTrPP TraceOn_BldFlow ["ASTSemFlowStage_BetweenModule astpMbFromCoreToGrin" >#< modSearchKey, pp pl]
                                       bcall $ FoldCore2GrinPlMb bglob modSearchKey pl
                                    ) (return id) $ \_ core2GrinSem -> do
-                                 return $ \crsi ->
-                                   let cenv = cenvLamMp ^$= (Core2GrSem.gathLamMp_Syn_CodeAGItf core2GrinSem `lamMpUnionBindAspMp`) $ crsi ^. crsiCEnv
-                                   in  (   ( crsiCEnv ^= cenv )
-{-
-                                         . ( crsiCoreInh ^$= \coreInh ->
-                                               coreInh
-                                               -- assumption: old info can safely be overridden, otherwise merge should be done here
-                                                 -- { Core2GrSem.lamMp_Inh_CodeAGItf = Core2GrSem.gathLamMp_Syn_CodeAGItf core2GrinSem `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh }
-                                                 { Core2GrSem.lamMp_Inh_CodeAGItf = cenv ^. cenvLamMp }
-                                           )
--}
-                                       ) $ crsi
-
+                                 return $ (crsiCEnv ^* cenvLamMp) ^$= (Core2GrSem.gathLamMp_Syn_CodeAGItf core2GrinSem `lamMpUnionBindAspMp`)
 %%][50
                                let updCoreGrin = id
 %%]]
@@ -418,7 +394,6 @@ bcall bfun = do
                        ) (return ()) $ \_ ehSem -> do
                    cpUpdSI $ \crsi -> 
                        let ehInh    = crsi ^. crsiEHInh
-                           -- coreInh  = crsi ^. crsiCoreInh
                            cenv     = crsi ^. crsiCEnv
                            lm       = EHSem.gathLamMp_Syn_AGItf ehSem
                            cenv'    = ( cenvDataGam ^$= (EHSem.gathDataGam_Syn_AGItf ehSem `gamUnion`) )
@@ -426,19 +401,8 @@ bcall bfun = do
                                     . ( cenvLamMp   ^$= (EHSem.gathLamMp_Syn_AGItf ehSem `lamMpUnionBindAspMp`) )		-- assumption: no duplicates, otherwise merging as done later has to be done
 %%]]          
                                     $ cenv
-{-
-                           coreInh' = coreInh
-%%[[8
-                             { Core2GrSem.dataGam_Inh_CodeAGItf = cenv' ^. cenvDataGam -- EHSem.gathDataGam_Syn_AGItf ehSem
-                             , Core2GrSem.lamMp_Inh_CodeAGItf   = cenv' ^. cenvLamMp   -- lm
-%%][50
-                             { Core2GrSem.dataGam_Inh_CodeAGItf = cenv' ^. cenvDataGam -- EHSem.dataGam_Inh_AGItf     ehInh
-                             , Core2GrSem.lamMp_Inh_CodeAGItf   = cenv' ^. cenvLamMp   -- lm `lamMpUnionBindAspMp` Core2GrSem.lamMp_Inh_CodeAGItf coreInh      -- assumption: no duplicates, otherwise merging as done later has to be done
-%%]]
-                             }
--}
                        in  crsi -- From: cpFlowEHSem1
-                             { {- _crsiCoreInh = coreInh', -} _crsiCEnv = cenv' }
+                             { _crsiCEnv = cenv' }
 %%]]
 
                brefto bfun BRef_CRSI
@@ -992,7 +956,7 @@ ecuIsHSNewerThanHI ecu
                      ]
                  , mieimplHsName2FldMp      = expNmFldMp
 %%[[(50 grin)
-                 , mieimplLamMp             = crsi ^. crsiCEnv ^. cenvLamMp -- Core2GrSem.lamMp_Inh_CodeAGItf $ _crsiCoreInh crsi
+                 , mieimplLamMp             = crsi ^. crsiCEnv ^. cenvLamMp
 %%]]
                  }
   
@@ -1216,11 +1180,10 @@ ecuIsHSNewerThanHI ecu
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts <- bcall $ EHCOptsOf modSearchKey
                crsi <- bcall $ CRSIOfNamePl bglob modSearchKey astplan
-               let  -- coreInh  = _crsiCoreInh crsi
-                    cenv     = crsi ^. crsiCEnv
+               let  cenv     = crsi ^. crsiCEnv
                     coreSem  = Core2GrSem.wrap_CodeAGItf
                                  (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
-                                 (Core2GrSem.Inh_CodeAGItf -- coreInh
+                                 (Core2GrSem.Inh_CodeAGItf
                                     { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID
                                     , Core2GrSem.opts_Inh_CodeAGItf                          = opts
                                     , Core2GrSem.dataGam_Inh_CodeAGItf                       = cenv ^. cenvDataGam

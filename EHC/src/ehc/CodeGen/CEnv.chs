@@ -36,6 +36,10 @@ data CEnv
       , _cenvLamMp         	 :: LamMp			-- info about functions
       											-- 20151009 AD: TBD, for now non strict field
 %%]]
+%%[[50
+      -- , _cenvOptim       	 :: !Optim			-- inter module optimisation info
+      											-- 20151009 AD: TBD, for now non strict field
+%%]]
       }
   deriving (Typeable)
 
@@ -43,6 +47,9 @@ emptyCEnv =
   CEnv emptyGam
 %%[[(8 core)
        emptyLamMp
+%%]]
+%%[[50
+       -- defaultOptim
 %%]]
 %%]
 

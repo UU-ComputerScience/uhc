@@ -262,12 +262,10 @@ cpTranslateCore2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCore    = _ecuMbCore ecu
-              -- coreInh  = crsi ^. crsiCoreInh
        ; when (isJust mbCore)
            $ cpUpdCU modNm
            $ ecuStoreJavaScript
            $ cmod2JavaScriptModule opts
-               -- (Core2GrSem.dataGam_Inh_CodeAGItf coreInh)
                (crsi ^. crsiCEnv ^. cenvDataGam)
            $ fromJust mbCore
        }
@@ -302,7 +300,6 @@ cpTranslateGrin2Cmm modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbGrin    = _ecuMbGrin ecu
-              -- coreInh   = crsi ^. crsiCoreInh
 %%[[50
        ; (lamMp, allImpNmL, impNmFldMpMp, expNmFldMp) <- cpGenGrinGenInfo modNm
 %%]]
@@ -310,7 +307,6 @@ cpTranslateGrin2Cmm modNm
            let (cmm,errs)
                  = grinMod2CmmMod
                      opts
-                     -- (Core2GrSem.dataGam_Inh_CodeAGItf coreInh)
                      (crsi ^. crsiCEnv ^. cenvDataGam)
 %%[[50
                      lamMp allImpNmL impNmFldMpMp expNmFldMp
@@ -327,14 +323,12 @@ cpTranslateCmm2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCmm    = _ecuMbCmm ecu
-              -- coreInh   = crsi ^. crsiCoreInh
        ; when (isJust mbCmm) $ do
            let (jsmod,errs) =
                  cmmMod2JavaScript opts
 %%[[50
                    (ecuImportUsedModules ecu)
 %%]]
-                   -- (Core2GrSem.dataGam_Inh_CodeAGItf coreInh)
                    (crsi ^. crsiCEnv ^. cenvDataGam)
                    (fromJust mbCmm)
            cpUpdCU modNm $ ecuStoreJavaScript jsmod
@@ -404,7 +398,6 @@ cpTranslateByteCode modNm
                grinbcCmm = Cmm.Module_Mod modNm cmmMod Nothing Const.emptyConstSt
 %%]]
 %%][50
-               -- coreInh  = crsi ^. crsiCoreInh
                ( grinbcPP
 %%[[(50 cmm cmmbc)
                  ,grinbcCmm
@@ -422,7 +415,7 @@ cpTranslateByteCode modNm
 %%]]
                                ,functionInfoExportMp)
                                 = gbmod2C opts lkup $ panicJust "cpTranslateByteCode2" mbBytecode
-                                where lkup n = do { li <- Map.lookup n (crsi ^. crsiCEnv ^. cenvLamMp) -- (Core2GrSem.lamMp_Inh_CodeAGItf coreInh)
+                                where lkup n = do { li <- Map.lookup n (crsi ^. crsiCEnv ^. cenvLamMp)
                                                   ; ex <- laminfoGrinByteCode li
                                                   ; return ex
                                                   }
