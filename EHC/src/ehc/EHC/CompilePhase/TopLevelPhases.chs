@@ -1135,7 +1135,7 @@ cpEhcCorePerModulePart2 modNm
        }
 %%]
 
-%%[(8 codegen corerunin)
+%%[(8888 codegen corerunin)
 -- | Part 2 CoreRun processing, part2 is done either for per individual module compilation or after full program analysis
 cpEhcCoreRunPerModulePart2 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreRunPerModulePart2 = cpProcessCoreRunRest
@@ -1298,9 +1298,11 @@ cpProcessCoreBasic modNm
 %%]]
                , cpProcessCoreFold modNm
 %%[[(50 corerun)
+{-
                , when (targetIsCoreVariation (ehcOptTarget opts)) $
                    void $ -- cpOutputCoreRun ASTFileContent_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
                           cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
+-}
 %%]]
                ]
         }
@@ -1404,6 +1406,9 @@ cpProcessCoreRunRest modNm
                     then [cpRunCoreRun  modNm]
                          -- [cpRunCoreRun2 modNm]
                          -- [cpRunCoreRun3 modNm]
+                    else [])
+                ++ (if targetIsCoreVariation (ehcOptTarget opts)
+                    then [void $ cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Binary "" Cfg.suffixDotlessInputOutputBinaryCoreRun modNm]
                     else [])
                )
        }

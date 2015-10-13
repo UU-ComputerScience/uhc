@@ -88,7 +88,7 @@ cpTransformCore optimScope modNm
          -- transform
        ; let  mbCore     = _ecuMbCore ecu
 %%[[(8 grin)
-              coreInh    = crsi ^. crsiCoreInh
+              -- coreInh    = crsi ^. crsiCoreInh
 %%]]
               trfcoreIn  = emptyTrfCore
                              { trfstMod             	= panicJust "cpTransformCore" mbCore

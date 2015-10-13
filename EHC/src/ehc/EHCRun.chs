@@ -36,26 +36,26 @@ main = do
 %%]]
         oo@(o,n,errs) = ehcrunCmdLineOptsApply args opts0
         opts          = maybe opts0 id o
+        exts          = [ "bcrr", "tcrr", "bcr", "tcr" ]
     
     case ehcOptImmQuit opts of
-      Just immq     -> handleImmQuitOption ehcrunCmdLineOpts ["rcr", "bcrr", "tcrr", "cr", "bcr", "tcr"] immq opts
+      Just immq     -> handleImmQuitOption ehcrunCmdLineOpts exts immq opts
       _             -> case (n,errs) of
         ([fname], []) -> do
           let (bname,ext) = splitExtension fname
           case ext of
-            -- ".tcrr" -> runRCR opts fname
-            ".crr"  -> runRCR opts fname
-            e | e `elem` [".cr", ".bcr", ".tcr", ".bcrr", ".tcrr"]
+            e | e `elem` map ('.':) exts
                    -> mainEHC $ opts
                         { ehcOptMbTarget = JustOk Target_None_Core_AsIs
                         , ehcOptCoreOpts = {- CoreOpt_RunTrace : -} CoreOpt_Run : CoreOpt_LoadOnly : ehcOptCoreOpts opts
 %%[[50
-                        , ehcOptOptimizationScope = OptimizationScope_WholeCore
+                        -- required only for original compiler driver
+                        -- , ehcOptOptimizationScope = OptimizationScope_WholeCore
 %%]]
                         , ehcOptVerbosity = VerboseQuiet
                         , ehcOptAltDriver = not $ ehcOptAltDriver opts
                         }
-            _      -> return ()
+            _      -> handleImmQuitOption ehcrunCmdLineOpts exts ImmediateQuitOption_Help opts
         (_      , es) -> do
           putStr (head errs)
           exitFailure

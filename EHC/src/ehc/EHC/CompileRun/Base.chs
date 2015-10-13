@@ -975,7 +975,7 @@ data EHCompileRunStateInfo (m :: * -> *)
       , _crsiCEnv		::  CEnv								-- globally required codegen info
       															-- 20151009 AD: TBD, for now non strict field
 %%[[(8 core grin)
-      , _crsiCoreInh    :: !AST_Core_Inh_ToGrin	                -- current inh attrs for Core2Grin sem
+      -- , _crsiCoreInh    :: !AST_Core_Inh_ToGrin	                -- current inh attrs for Core2Grin sem
 %%]]
 %%[[(8 corerun)
       , _crsiCoreRunState	:: !EHCompileRunCoreRunStateInfo	-- corerun compilation specific state
@@ -1013,7 +1013,7 @@ emptyEHCompileRunStateInfo
       , _crsiFileSuffMp =	emptyFileSuffMp
       , _crsiCEnv		=   emptyCEnv
 %%[[(8 core grin)
-      , _crsiCoreInh    =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
+      -- , _crsiCoreInh    =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
 %%]]
 %%[[(8 corerun)
       , _crsiCoreRunState	=   emptyEHCompileRunCoreRunStateInfo
@@ -1170,7 +1170,7 @@ mkLabel ''EHCompileRunStateInfo
 %%[8 export(crsiCEnv)
 %%]
 
-%%[(8 core grin) export(crsiCoreInh)
+%%[(8888 core grin) export(crsiCoreInh)
 %%]
 
 %%[(8888 corerun) export(crsiCore2RunInh)

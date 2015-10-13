@@ -106,7 +106,7 @@ initialEHSem opts fp
       }
 %%]
 
-%%[(8 codegen) export(initialCore2GrSem)
+%%[(8888 codegen) export(initialCore2GrSem)
 initialCore2GrSem :: EHCOpts -> Core2GrSem.Inh_CodeAGItf
 initialCore2GrSem opts
   = Core2GrSem.Inh_CodeAGItf

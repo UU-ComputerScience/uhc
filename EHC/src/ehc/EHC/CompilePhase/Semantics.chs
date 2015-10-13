@@ -79,15 +79,19 @@ cpFoldCore2Grin modNm
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbCore   = _ecuMbCore ecu
                  core     = panicJust "cpFoldCore2Grin" mbCore
-                 coreInh  = crsi ^. crsiCoreInh
+                 cenv     = crsi ^. crsiCEnv
+                 -- coreInh  = crsi ^. crsiCoreInh
                  coreSem  = Core2GrSem.wrap_CodeAGItf
                               (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
-                              (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID
-                                       , Core2GrSem.opts_Inh_CodeAGItf                          = opts
+                              (Core2GrSem.Inh_CodeAGItf -- coreInh
+                                { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID
+                                , Core2GrSem.opts_Inh_CodeAGItf                          = opts
+                                , Core2GrSem.dataGam_Inh_CodeAGItf                       = cenv ^. cenvDataGam
+                                , Core2GrSem.lamMp_Inh_CodeAGItf                         = cenv ^. cenvLamMp
 %%[[50
-                                       , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
+                                , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
 %%]]
-                                       })
+                                })
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem
                                 ))
