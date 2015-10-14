@@ -25,7 +25,7 @@ Assumptions (to be documented further)
 
 %%[(50 hmtyinfer || hmtyast) import(UHC.Util.Serialize)
 %%]
-%%[(50 hmtyinfer || hmtyast) import( Control.Monad)
+%%[(9 hmtyinfer || hmtyast) import(Control.Monad, Control.Monad.State.Strict)
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
@@ -38,54 +38,6 @@ Assumptions (to be documented further)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Choice of Trie structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9999 hmtyinfer || hmtyast)
-type CHRTrie k v = Trie.Trie k v
-type CHRTrieKey = [Trie.TrieKey Key]
-type CHRLookupHow = TrieLookup
-
-chrLookupHowExact      = TrieLookup_Normal
-chrLookupHowWildAtTrie = TrieLookup_Partial
-chrLookupHowWildAtKey  = TrieLookup_ExpandAtPartialKey
-
-emptyCHRTrie = Trie.empty
-
-ppCHRTrieKey :: CHRTrieKey -> PP_Doc
-ppCHRTrieKey = ppTrieKey
-
-chrTrieFromListByKeyWith :: (v -> v -> v) -> [(CHRTrieKey,v)] -> CHRTrie Key v
-chrTrieFromListByKeyWith = Trie.fromListByKeyWith
-
-chrTrieToListByKey :: CHRTrie Key v -> [(CHRTrieKey,v)]
-chrTrieToListByKey = Trie.toListByKey
-
-chrTrieUnionWith :: (v -> v -> v) -> CHRTrie Key v -> CHRTrie Key v -> CHRTrie Key v
-chrTrieUnionWith = Trie.unionWith
-
-chrTrieUnion :: CHRTrie Key v -> CHRTrie Key v -> CHRTrie Key v
-chrTrieUnion = Trie.union
-
-chrTrieElems :: CHRTrie Key v -> [v]
-chrTrieElems = Trie.elems
-
-chrTrieDeleteListByKey :: [CHRTrieKey] -> CHRTrie Key v -> CHRTrie Key v
-chrTrieDeleteListByKey = Trie.deleteListByKey
-
-chrTrieFromListPartialExactWith :: (v -> v -> v) -> [(CHRTrieKey,v)] -> CHRTrie Key v
-chrTrieFromListPartialExactWith = Trie.fromListPartialByKeyWith chrLookupHowExact
-
-chrTrieLookup' :: (CHRTrieKey -> v -> v') -> CHRLookupHow -> CHRTrieKey -> CHRTrie Key v -> ([v'],Maybe v')
-chrTrieLookup' = Trie.lookupPartialByKey'
-
-chrTrieLookup :: CHRLookupHow -> CHRTrieKey -> CHRTrie Key v -> ([v],Maybe v)
-chrTrieLookup = Trie.lookupPartialByKey
-
-chrToKey :: Keyable x => x -> CHRTrieKey
-chrToKey = toKey
-
-chrToWorkKey :: Keyable x => x -> CHRTrieKey
-chrToWorkKey = toKey
-%%]
 
 %%[(9 hmtyinfer || hmtyast)
 type CHRTrie k v = TreeTrie.TreeTrie k v
@@ -148,10 +100,10 @@ type UsedByKey = (CHRKey,Int)
 -- | A CHR as stored in a CHRStore, requiring additional info for efficiency
 data StoredCHR p i g s
   = StoredCHR
-      { storedChr       :: !(CHR (Constraint p i) g s)   	-- the CHR
-      , storedKeyedInx  :: !Int                          	-- index of constraint for which is keyed into store
-      , storedKeys      :: ![Maybe CHRKey]               	-- keys of all constraints; at storedKeyedInx: Nothing
-      , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
+      { storedChr       :: !(CHR (Constraint p i) g s)      -- the CHR
+      , storedKeyedInx  :: !Int                             -- index of constraint for which is keyed into store
+      , storedKeys      :: ![Maybe CHRKey]                  -- keys of all constraints; at storedKeyedInx: Nothing
+      , storedIdent     :: !UsedByKey                       -- the identification of a CHR, used for propagation rules (see remark at begin)
       }
 %%[[50
   deriving (Typeable, Data)
@@ -282,7 +234,7 @@ data Work p i
   = Work
       { workKey     :: WorkKey
       , workCnstr   :: !(Constraint p i)            -- the constraint to be reduced
-      , workTime	:: WorkTime						-- the history count at which the work was added
+      , workTime    :: WorkTime                     -- the history count at which the work was added
       -- , workUsedIn  :: Set.Set CHRKey              -- marked with the propagation rules already applied to it
       }
 
@@ -292,13 +244,13 @@ data Work p i
 data WorkList p i
   = WorkList
       { wlTrie      :: !(WorkTrie p i)
-      , wlDoneSet   :: !(Set.Set WorkKey)                  	-- accumulative store of all keys added, set semantics, thereby avoiding double entry
+      , wlDoneSet   :: !(Set.Set WorkKey)                   -- accumulative store of all keys added, set semantics, thereby avoiding double entry
       , wlQueue     :: !(AssocL WorkKey (Work p i))
-      , wlScanned   :: !(AssocL WorkKey (Work p i))     	-- tried but could not solve, so retry when other succeeds
-      , wlUsedIn    :: !WorkUsedInMap                    	-- which work items are used in which propagation constraints
+      , wlScanned   :: !(AssocL WorkKey (Work p i))         -- tried but could not solve, so retry when other succeeds
+      , wlUsedIn    :: !WorkUsedInMap                       -- which work items are used in which propagation constraints
       }
 
-emptyWorkList = WorkList emptyCHRTrie Set.empty [] {- Set.empty -} [] Map.empty
+emptyWorkList = WorkList emptyCHRTrie Set.empty [] [] Map.empty
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -352,16 +304,16 @@ wlInsert wtm = wlDeleteByKeyAndInsert wtm []
 %%[(9 hmtyinfer || hmtyast) export(SolveStep(..),SolveTrace)
 data SolveStep p i g s
   = SolveStep
-      { stepChr     	:: CHR (Constraint p i) g s
-      , stepSubst   	:: s
-      , stepNewTodo 	:: [Constraint p i]
-      , stepNewDone 	:: [Constraint p i]
+      { stepChr         :: CHR (Constraint p i) g s
+      , stepSubst       :: s
+      , stepNewTodo     :: [Constraint p i]
+      , stepNewDone     :: [Constraint p i]
       }
   | SolveStats
-      { stepStats    	:: Map.Map String PP_Doc
+      { stepStats       :: Map.Map String PP_Doc
       }
   | SolveDbg
-      { stepPP      	:: PP_Doc
+      { stepPP          :: PP_Doc
       }
 
 type SolveTrace p i g s = [SolveStep p i g s]
@@ -431,16 +383,6 @@ lqLookupC = Map.findWithDefault Map.empty
 lqLookupW :: WorkKey -> LastQueryW -> WorkTime
 lqLookupW = Map.findWithDefault initWorkTime
 %%]
-lqAdd :: CHRKey -> WorkKey -> WorkTime -> LastQuery -> LastQuery
-lqAdd ck wk wtm lq = Map.insertWithKey (\_ _ m -> Map.insert wk wtm m) ck (Map.singleton wk wtm) lq
-
-lqLookup :: CHRKey -> WorkKey -> LastQuery -> WorkTime
-lqLookup ck wk lq
-  = maybe initWorkTime id
-      (do m   <- Map.lookup ck lq
-          wtm <- Map.lookup wk m
-          return wtm
-      )
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Solve state
@@ -452,10 +394,10 @@ data SolveState p i g s
       { stWorkList      :: !(WorkList p i)
       , stDoneCnstrSet  :: !(Set.Set (Constraint p i))
       , stTrace         :: SolveTrace p i g s
-      , stCountCnstr	:: SolveCount WorkKey String
-      , stMatchCache	:: !(SolveMatchCache p i g s)
+      , stCountCnstr    :: SolveCount WorkKey String
+      , stMatchCache    :: !(SolveMatchCache p i g s)
       , stHistoryCount  :: WorkTime
-      , stLastQuery		:: LastQuery
+      , stLastQuery     :: LastQuery
       }
 
 stDoneCnstrs :: SolveState p i g s -> [Constraint p i]
@@ -549,103 +491,119 @@ chrSolve''
 chrSolve'' env chrStore cnstrs prevState
   = postState {stMatchCache = Map.empty}
   where postState
+          = 
 %%[[9
-          = addStats Map.empty [("workMatches",ppAssocLV [(ppCHRTrieKey k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
-%%][100
-          = st
-%%]]
-          where st = iter $ initState prevState
-        iter st@(SolveState {stWorkList = wl@(WorkList {wlQueue = (workHd@(workHdKey,_) : workTl)})})
-          = case matches of
-              (_:_)
-%%[[9
-                -> expandMatch
-                       (addStats Map.empty
-                            [ ("(0) yes work", ppCHRTrieKey workHdKey)
-                            ] stmatch)
-                       matches
-%%][100
-                -> expandMatch stmatch matches
-%%]]
-                where -- expandMatch :: SolveState p i g s -> [((StoredCHR p i g s, ([WorkKey], [Work p i])), s)] -> SolveState p i g s
-                      expandMatch st@(SolveState {stWorkList = wl, stHistoryCount = histCount})
-                                  ( ( ( schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})})
-                                      , (keys,works)
-                                      )
-                                    , subst
-                                    ) : tlMatch
-                                  )
-%%[[9
-                        = expandMatch (addStats Map.empty [ ("chr",pp chr')
-                                                          , ("leftover sz", pp (length tlMatchY))
-                                                          , ("filtered out sz", pp (length tlMatchN))
-                                                          , ("new done sz", pp (length bDone))
-                                                          , ("new todo sz", pp (length bTodo))
-                                                          , ("wl queue sz", pp (length (wlQueue wl')))
-                                                          , ("wl usedin sz", pp (Map.size (wlUsedIn wl')))
-                                                          , ("done sz", pp (Set.size (stDoneCnstrSet st')))
-                                                          , ("hist cnt", pp histCount)
-                                                          ]
-                                                st')
-                                      tlMatchY
-%%][100
-                        = expandMatch st' tlMatchY
-%%]]
-                        where (tlMatchY,tlMatchN) = partition (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || slvIsUsedByPropPart (wlUsedIn wl') r)) tlMatch
-                              (keysSimp,keysProp) = splitAt simpSz keys
-                              usedIn              = Map.singleton (Set.fromList keysProp) (Set.singleton chrId)
-                              (bTodo,bDone)       = splitDone $ map (varUpd subst) b
-                              bTodo'              = wlCnstrToIns wl bTodo
-                              wl' = wlDeleteByKeyAndInsert' histCount keysSimp bTodo'
-                                    $ wl { wlUsedIn  = usedIn `wlUsedInUnion` wlUsedIn wl
-                                         , wlScanned = []
-                                         , wlQueue   = wlQueue wl ++ wlScanned wl
-                                         }
-                              st' = st { stWorkList       = wl'
-%%[[9
-                                       , stTrace          = SolveStep chr' subst (assocLElts bTodo') bDone : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
+            addStats Map.empty
+                [ ("workMatches",ppAssocLV [(ppCHRTrieKey k,pp (fromJust l))
+                | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])
+                ]
 %%][100
 %%]]
-                                       , stDoneCnstrSet   = Set.unions [Set.fromList bDone, Set.fromList $ map workCnstr $ take simpSz works, stDoneCnstrSet st]
-                                       , stMatchCache     = if List.null bTodo' then stMatchCache st else Map.empty
-                                       , stHistoryCount   = histCount + 1
-                                       }
-%%[[9
-                              chr'= subst `varUpd` chr
-                              ppwork = "workkey" >#< ppCHRTrieKey workHdKey >#< ":" >#< (ppBracketsCommas (map (ppCHRTrieKey . fst) workTl) >-< ppBracketsCommas (map (ppCHRTrieKey . fst) $ wlScanned wl))
-                                         >-< "workkeys" >#< ppBracketsCommas (map ppCHRTrieKey keys)
-                                         >-< "worktrie" >#< wlTrie wl
-                                         >-< "schr" >#< schr
-                                         >-< "usedin" >#< (ppBracketsCommasBlock $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
-                                         >-< "usedin'" >#< (ppBracketsCommasBlock $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
-                                     where ppKs ks = ppBracketsCommas $ map ppCHRTrieKey $ Set.toList ks
-%%][100
-%%]]
-                      expandMatch st _ 
-                        = iter st
-                      
-%%[[9
-              _ -> iter (addStats Map.empty
-                             [ ("no match work", ppCHRTrieKey workHdKey)
-                             , ("wl queue sz", pp (length (wlQueue wl')))
-                             ] st')
-%%][100
-              _ -> iter st'
-%%]]
-                where wl' = wl { wlScanned = workHd : wlScanned wl, wlQueue = workTl }
-                      st' = stmatch { stWorkList = wl', stTrace = SolveDbg (ppdbg) : {- -} stTrace stmatch }
-          where (matches,lastQuery,ppdbg,stats) = workMatches st
-%%[[9
-                stmatch = addStats stats [("(a) workHd", ppCHRTrieKey workHdKey), ("(b) matches", ppBracketsCommasBlock [ s `varUpd` storedChr schr | ((schr,_),s) <- matches ])]
-%%][100
-                stmatch =
-%%]]
-                            (st { stCountCnstr = scntInc workHdKey "workMatched" $ stCountCnstr st
-                                , stMatchCache = Map.insert workHdKey [] (stMatchCache st)
-                                , stLastQuery  = lastQuery
-                                })
-        iter st
-          = st
+            st
+          where st = execState iter $ initState prevState
+        iter = do
+          st <- get
+          case st of
+            (SolveState {stWorkList = wl@(WorkList {wlQueue = (workHd@(workHdKey,_) : workTl)})}) ->
+                case matches of
+                  (_:_) -> do
+                      put 
+%%[[9    
+                          $ addStats Map.empty
+                                [ ("(0) yes work", ppCHRTrieKey workHdKey)
+                                ]
+                          $
+%%][100    
+%%]]    
+                          stmatch
+                      expandMatch matches
+                    where -- expandMatch :: SolveState p i g s -> [((StoredCHR p i g s, ([WorkKey], [Work p i])), s)] -> SolveState p i g s
+                          expandMatch ( ( ( schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})})
+                                          , (keys,works)
+                                          )
+                                        , subst
+                                        ) : tlMatch
+                                      ) = do
+                              st@(SolveState {stWorkList = wl, stHistoryCount = histCount}) <- get
+                              let (tlMatchY,tlMatchN) = partition (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || slvIsUsedByPropPart (wlUsedIn wl') r)) tlMatch
+                                  (keysSimp,keysProp) = splitAt simpSz keys
+                                  usedIn              = Map.singleton (Set.fromList keysProp) (Set.singleton chrId)
+                                  (bTodo,bDone)       = splitDone $ map (varUpd subst) b
+                                  bTodo'              = wlCnstrToIns wl bTodo
+                                  wl' = wlDeleteByKeyAndInsert' histCount keysSimp bTodo'
+                                        $ wl { wlUsedIn  = usedIn `wlUsedInUnion` wlUsedIn wl
+                                             , wlScanned = []
+                                             , wlQueue   = wlQueue wl ++ wlScanned wl
+                                             }
+                                  st' = st { stWorkList       = wl'
+%%[[9    
+                                           , stTrace          = SolveStep chr' subst (assocLElts bTodo') bDone : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
+%%][100    
+%%]]    
+                                           , stDoneCnstrSet   = Set.unions [Set.fromList bDone, Set.fromList $ map workCnstr $ take simpSz works, stDoneCnstrSet st]
+                                           , stMatchCache     = if List.null bTodo' then stMatchCache st else Map.empty
+                                           , stHistoryCount   = histCount + 1
+                                           }
+%%[[9    
+                                  chr'= subst `varUpd` chr
+                                  ppwork = "workkey" >#< ppCHRTrieKey workHdKey >#< ":" >#< (ppBracketsCommas (map (ppCHRTrieKey . fst) workTl) >-< ppBracketsCommas (map (ppCHRTrieKey . fst) $ wlScanned wl))
+                                             >-< "workkeys" >#< ppBracketsCommas (map ppCHRTrieKey keys)
+                                             >-< "worktrie" >#< wlTrie wl
+                                             >-< "schr" >#< schr
+                                             >-< "usedin" >#< (ppBracketsCommasBlock $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
+                                             >-< "usedin'" >#< (ppBracketsCommasBlock $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
+                                         where ppKs ks = ppBracketsCommas $ map ppCHRTrieKey $ Set.toList ks
+%%][100    
+%%]]    
+                              put
+%%[[9    
+                                  $ addStats Map.empty
+                                        [ ("chr",pp chr')
+                                        , ("leftover sz", pp (length tlMatchY))
+                                        , ("filtered out sz", pp (length tlMatchN))
+                                        , ("new done sz", pp (length bDone))
+                                        , ("new todo sz", pp (length bTodo))
+                                        , ("wl queue sz", pp (length (wlQueue wl')))
+                                        , ("wl usedin sz", pp (Map.size (wlUsedIn wl')))
+                                        , ("done sz", pp (Set.size (stDoneCnstrSet st')))
+                                        , ("hist cnt", pp histCount)
+                                        ]
+                                  $
+%%][100    
+%%]]    
+                                  st'
+                              expandMatch tlMatchY
+
+                          expandMatch _ 
+                            = iter
+                          
+                  _ -> do
+                      put
+%%[[9    
+                          $ addStats Map.empty
+                                [ ("no match work", ppCHRTrieKey workHdKey)
+                                , ("wl queue sz", pp (length (wlQueue wl')))
+                                ] st')
+                          $
+%%][100      
+%%]]    
+                          st'
+                      iter
+                    where wl' = wl { wlScanned = workHd : wlScanned wl, wlQueue = workTl }
+                          st' = stmatch { stWorkList = wl', stTrace = SolveDbg (ppdbg) : {- -} stTrace stmatch }
+              where (matches,lastQuery,ppdbg,stats) = workMatches st
+%%[[9    
+                    stmatch = addStats stats [("(a) workHd", ppCHRTrieKey workHdKey), ("(b) matches", ppBracketsCommasBlock [ s `varUpd` storedChr schr | ((schr,_),s) <- matches ])]
+%%][100    
+                    stmatch =
+%%]]    
+                                (st { stCountCnstr = scntInc workHdKey "workMatched" $ stCountCnstr st
+                                    , stMatchCache = Map.insert workHdKey [] (stMatchCache st)
+                                    , stLastQuery  = lastQuery
+                                    })
+            _ -> do
+                return ()
+
         mkStats  stats new    = stats `Map.union` Map.fromList (assocLMapKey showPP new)
 %%[[9
         addStats stats new st = st { stTrace = SolveStats (mkStats stats new) : stTrace st }
@@ -673,15 +631,15 @@ chrSolve'' env chrStore cnstrs prevState
                 
                 -- results, stepwise computed for later reference in debugging output
                 -- basic search result
-                r2 :: [StoredCHR p i g s]										-- CHRs matching workHdKey
-                r2  = concat													-- flatten
-                		$ TreeTrie.lookupResultToList									-- convert to list
-                		$ chrTrieLookup chrLookupHowWildAtTrie workHdKey		-- lookup the store, allowing too many results
-                		$ chrstoreTrie chrStore
+                r2 :: [StoredCHR p i g s]                                       -- CHRs matching workHdKey
+                r2  = concat                                                    -- flatten
+                        $ TreeTrie.lookupResultToList                                   -- convert to list
+                        $ chrTrieLookup chrLookupHowWildAtTrie workHdKey        -- lookup the store, allowing too many results
+                        $ chrstoreTrie chrStore
                 
                 -- lookup further info in wlTrie, in particular to find out what has been done already
-                r23 :: [( StoredCHR p i g s										-- the CHR
-                        , ( [( [(CHRKey, Work p i)]								-- for each CHR the list of constraints, all possible work matches
+                r23 :: [( StoredCHR p i g s                                     -- the CHR
+                        , ( [( [(CHRKey, Work p i)]                             -- for each CHR the list of constraints, all possible work matches
                              , [(CHRKey, Work p i)]
                              )]
                           , (CHRKey, Set.Set CHRKey)
@@ -690,8 +648,8 @@ chrSolve'' env chrStore cnstrs prevState
                 
                 -- possible matches
                 r3, r4
-                    :: [( StoredCHR p i g s										-- the matched CHR
-                        , ( [CHRKey]											-- possible matching constraints (matching with the CHR constraints), as Keys, as Works
+                    :: [( StoredCHR p i g s                                     -- the matched CHR
+                        , ( [CHRKey]                                            -- possible matching constraints (matching with the CHR constraints), as Keys, as Works
                           , [Work p i]
                         ) )]
                 r3  = concatMap (\(c,cands) -> zip (repeat c) (map unzip $ slvCombine cands)) $ r23
@@ -701,7 +659,7 @@ chrSolve'' env chrStore cnstrs prevState
                 
                 -- finally, the 'real' match of the 'real' constraint, yielding (by tupling) substitutions instantiating the found trie matches
                 r5  :: [( ( StoredCHR p i g s
-                          , ( [CHRKey]			
+                          , ( [CHRKey]          
                             , [Work p i]
                           ) )
                         , s
@@ -743,13 +701,6 @@ slvCandidate workHdKey lastQuery wlTrie (StoredCHR {storedIdent = (ck,_), stored
   where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ map (\w -> (workKey w,w)) $ TreeTrie.lookupResultToList $ chrTrieLookup how k wlTrie
                    where lastQueryTm = lqLookupW k $ lqLookupC ck lastQuery
 %%]
-slvCandidate workHdKey lastQuery wlTrie (StoredCHR {storedIdent = (ck,_), storedKeys = ks, storedChr = chr})
-  = ( map (maybe (lkup chrLookupHowExact workHdKey) (lkup chrLookupHowWildAtKey)) ks
-    , ( ck
-      , Set.fromList $ map (maybe workHdKey id) ks
-    ) )
-  where lkup how k = partition (\(_,w) -> workTime w < lastQueryTm) $ lookupResultToList $ chrTrieLookup' (,) how k wlTrie
-                   where lastQueryTm = lqLookupW k $ lqLookupC ck lastQuery
 
 %%[(9 hmtyinfer || hmtyast)
 slvCombine :: Eq k => ([([Assoc k v], [Assoc k v])], t) -> [AssocL k v]
