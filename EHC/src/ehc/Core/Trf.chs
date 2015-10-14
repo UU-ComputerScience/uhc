@@ -48,11 +48,11 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
 %%]
-%%[(8 codegen) import({%{EH}Core.Trf.AnaRelevance})
+%%[(8 codegenanalysis) import({%{EH}Core.Trf.AnaRelevance})
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.LetFlattenStrict})
 %%]
-%%[(8 codegen) import({%{EH}Core.Trf.OptimizeStrictness})
+%%[(8 codegenanalysis) import({%{EH}Core.Trf.OptimizeStrictness})
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
 %%]
@@ -254,11 +254,13 @@ trfCore opts optimScope dataGam modNm trfcore
                ; when (targetDoesHPTAnalysis (ehcOptTarget opts))
                       t_find_null
 %%]]
+%%[[(8 codegenanalysis)
                ; when (ehcOptOptimizes Optimize_StrictnessAnalysis opts)
                       (do { t_let_defbefuse
                           ; t_ana_relev
                           ; t_opt_strict
                           })
+%%]]
                ; when (ehcOptIsViaCoreJavaScript opts)
                       (do { {- t_let_flatstr
                           ; -} t_ren_uniq (emptyRenUniqOpts {renuniqOptResetOnlyInLam = True})
@@ -305,10 +307,12 @@ trfCore opts optimScope dataGam modNm trfcore
 %%[[(8 wholeprogAnal)
         t_find_null     = liftTrfModPlain  osm "find-null"          $ cmodTrfFindNullaries
 %%]]
+%%[[(8 codegenanalysis)
         t_ana_relev     = liftTrfModWithStateExtra osm "ana-relev" lamMpPropagate
                                                                $ \s -> cmodTrfAnaRelevance opts dataGam (trfcoreInhLamMp $ trfstExtra s)
         t_opt_strict    = liftTrfModWithStateExtra osm "optim-strict" lamMpPropagate
                                                                $ \s -> cmodTrfOptimizeStrictness opts (trfcoreInhLamMp $ trfstExtra s)
+%%]]
 %%[[(9 wholeprogAnal)
         t_fix_dictfld   = liftTrfModPlain  osm "fix-dictfld"        $ cmodTrfFixDictFields
 %%]]

@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.CHR} import({%{EH}CHR},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.CHR} import(UHC.Util.CHR,{%{EH}CHR.Key},{%{EH}CHR.Constraint})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR}) export(module {%{EH}Pred.CommonCHR})
@@ -94,7 +94,7 @@ instance PP Guard where
 instance VarExtractable CHRPredOccCnstrMp TyVarId where
   varFreeSet        x = Set.unions [ varFreeSet k | k <- Map.keys x ]
 
-instance VarUpdatable CHRPredOccCnstrMp VarMp where
+instance VarUpdatable CHRPredOccCnstrMp VarMp VarId VarMpInfo where
   varUpd s x = Map.mapKeysWith (++) (varUpd s) x
 
 instance VarExtractable Guard TyVarId where
@@ -112,7 +112,7 @@ instance VarExtractable Guard TyVarId where
   varFreeSet        (EqualModuloUnification t1 t2)    = Set.unions [varFreeSet t1, varFreeSet t2]
 %%]]
 
-instance VarUpdatable Guard VarMp where
+instance VarUpdatable Guard VarMp VarId VarMpInfo where
   varUpd s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s `varUpd` p1) (s `varUpd` p2) (s `varUpd` p3)
   varUpd s (IsStrictParentScope    p1 p2 p3) = IsStrictParentScope    (s `varUpd` p1) (s `varUpd` p2) (s `varUpd` p3)
   varUpd s (IsVisibleInScope       p1 p2   ) = IsVisibleInScope       (s `varUpd` p1) (s `varUpd` p2)
@@ -135,7 +135,7 @@ instance VarExtractable VarUIDHsName TyVarId where
   varFreeSet          _                 = Set.empty
 
 -- instance VarUpdatable VarUIDHsName VarMp where
-instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable VarUIDHsName m where
+instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable VarUIDHsName m ImplsVarId VarMpInfo where
   varUpd s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 
@@ -147,7 +147,7 @@ instance VarExtractable RedHowAnnotation TyVarId where
 %%]]
   varFreeSet        _                             = Set.empty
 
-instance VarUpdatable RedHowAnnotation VarMp where
+instance VarUpdatable RedHowAnnotation VarMp VarId VarMpInfo where
   varUpd s (RedHow_Assumption   vun sc)  = RedHow_Assumption (varUpd s vun) (varUpd s sc)
 %%[[10
   varUpd s (RedHow_ByLabel      l o sc)  = RedHow_ByLabel (varUpd s l) (varUpd s o) (varUpd s sc)
@@ -283,7 +283,7 @@ instance CHRCheckable FIIn Guard VarMp where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-instance CHRMatchable FIIn Pred VarMp where
+instance CHRMatchable FIIn Pred VarMp Key where
   chrMatchTo fi subst pr1 pr2
     = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst |+> fiVarMp fi}) pr1 pr2
          ; return subst'
@@ -291,10 +291,10 @@ instance CHRMatchable FIIn Pred VarMp where
 %%]
 
 %%[(9 hmtyinfer)
-instance CHRMatchable FIIn CHRPredOccCxt VarMp where
+instance CHRMatchable FIIn CHRPredOccCxt VarMp Key where
   chrMatchTo e subst (CHRPredOccCxt_Scope1 sc1) (CHRPredOccCxt_Scope1 sc2) = chrMatchTo e subst sc1 sc2
 
-instance CHRMatchable FIIn PredScope VarMp where
+instance CHRMatchable FIIn PredScope VarMp Key where
   chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
                                                                              where mbSc = varmpScopeLookup v1 subst
@@ -307,7 +307,7 @@ instance CHRMatchable FIIn PredScope VarMp where
 %%]
 
 %%[(9 hmtyinfer)
-instance CHRMatchable FIIn CHRPredOcc VarMp where
+instance CHRMatchable FIIn CHRPredOcc VarMp Key where
   chrMatchTo fi subst po1 po2
     = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
          ; subst2 <- chrMatchTo fi subst (cpoCxt po1) (cpoCxt po2)
@@ -316,7 +316,7 @@ instance CHRMatchable FIIn CHRPredOcc VarMp where
 %%]
 
 %%[(10 hmtyinfer)
-instance CHRMatchable FIIn Label VarMp where
+instance CHRMatchable FIIn Label VarMp Key where
   chrMatchTo _ subst (Label_Var v1) lb2@(Label_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (Label_Var v1) lb2                | isJust mbLb = chrMatchTo e subst (fromJust mbLb) lb2
                                                                      where mbLb = varmpLabelLookup v1 subst
@@ -329,7 +329,7 @@ instance CHRMatchable FIIn Label VarMp where
 %%]
 
 %%[(10 hmtyinfer)
-instance CHRMatchable FIIn LabelOffset VarMp where
+instance CHRMatchable FIIn LabelOffset VarMp Key where
   chrMatchTo _ subst (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo s subst (LabelOffset_Var v1) of2                      | isJust mbOf = chrMatchTo s subst (fromJust mbOf) of2
                                                                                  where mbOf = varmpOffsetLookup v1 subst

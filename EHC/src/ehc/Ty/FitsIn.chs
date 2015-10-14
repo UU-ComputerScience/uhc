@@ -89,7 +89,7 @@ For debug/trace:
 %%[[4
 fiAppVarMp :: FIIn -> Ty -> Ty
 %%][8
-fiAppVarMp :: VarUpdatable Ty gm => FIIn' gm -> Ty -> Ty
+fiAppVarMp :: VarUpdatable Ty gm TyVarId VarMpInfo => FIIn' gm -> Ty -> Ty
 %%]]
 fiAppVarMp fi x = fiVarMpLoc fi `varUpd` (fiVarMp fi `varUpd` x)
 %%]

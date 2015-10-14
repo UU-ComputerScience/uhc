@@ -19,7 +19,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 core) hs import({%{EH}AbstractCore}) export(module {%{EH}AbstractCore})
 %%]
 
-%%[(8 core) hs import({%{EH}AnaDomain}) export (module {%{EH}AnaDomain})
+%%[(8 codegenanalysis) hs import({%{EH}AnaDomain}) export (module {%{EH}AnaDomain})
 %%]
 
 %%[(8 core) hs import ({%{EH}Base.Target}(FFIWay(..),TargetFlavor(..))) export(module {%{EH}Base.Target})
@@ -897,13 +897,17 @@ instance Serialize CMetaVal where
 
 instance Serialize CExprAnn where
   sput (CExprAnn_Ty    a) = sputWord8 0 >> sput a
+%%[[(50 codegenanalysis)
   sput (CExprAnn_Coe   a) = sputWord8 1 >> sput a
+%%]]
   sput (CExprAnn_Debug _) = sputWord8 2
   sget
     = do t <- sgetWord8
          case t of
             0 -> liftM  CExprAnn_Ty         sget            
+%%[[(50 codegenanalysis)
             1 -> liftM  CExprAnn_Coe        sget            
+%%]]
             2 -> return (CExprAnn_Debug     "")
 
 instance Serialize CBindAnn where
@@ -919,7 +923,9 @@ instance Serialize CBound where
 %%[[90
   sput (CBound_FFE      a b c d  ) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d
 %%]]
+%%[[(50 codegenanalysis)
   sput (CBound_RelevTy a b      ) = sputWord8 3 >> sput a >> sput b
+%%]]
   sput (CBound_Meta    a b      ) = sputWord8 4 >> sput a >> sput b
   sput (CBound_Val     a b c d  ) = sputWord8 5 >> sput a >> sput b >> sput c >> sput d
   sput (CBound_Ty      a b      ) = sputWord8 6 >> sput a >> sput b
@@ -931,7 +937,9 @@ instance Serialize CBound where
 %%[[90           
             2 -> liftM4 CBound_FFE           sget sget sget sget
 %%]]
+%%[[(50 codegenanalysis)
             3 -> liftM2 CBound_RelevTy       sget sget
+%%]]
             4 -> liftM2 CBound_Meta          sget sget
             5 -> liftM4 CBound_Val           sget sget sget sget
             6 -> liftM2 CBound_Ty            sget sget

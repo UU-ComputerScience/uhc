@@ -6,7 +6,7 @@ Derived from work by Gerrit vd Geest.
 
 This file exists to avoid module circularities.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.CommonCHR} import({%{EH}CHR},{%{EH}CHR.Constraint}) export(module {%{EH}CHR},module {%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.CommonCHR} import(UHC.Util.CHR,{%{EH}CHR.Constraint}) export(module UHC.Util.CHR,module {%{EH}CHR.Constraint})
 %%]
 
 %%[(9 hmtyinfer) import(qualified Data.Map as Map,qualified Data.Set as Set)

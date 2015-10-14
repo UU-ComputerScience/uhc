@@ -18,6 +18,9 @@ In this way search via a TreeTrie proceeds breadth first top to bottom.
 %%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,UHC.Util.FastSeq as Seq,UHC.Util.TreeTrie,{%{EH}CHR.Key})
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs import(UHC.Util.CHR.Key)
+%%]
+
 %%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
@@ -32,31 +35,31 @@ tyTreeTrieKey opts ty
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
-instance TTKeyable Ty where
+instance TTKeyable Ty Key where
   toTTKey' o = tyTreeTrieKey o
 
-instance TTKeyable Pred where
+instance TTKeyable Pred Key where
   toTTKey' o pr = tyTreeTrieKey o $ mkTyPr pr
 
-instance TTKeyable PredScope where
+instance TTKeyable PredScope Key where
   toTTKey' o (PredScope_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
                                | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
   toTTKey' o (PredScope_Lev l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
 
-instance TTKeyable CHRPredOccCxt where
+instance TTKeyable CHRPredOccCxt Key where
   toTTKey' o (CHRPredOccCxt_Scope1 sc) = toTTKey' o sc -- for now
 
-instance TTKeyable PredOcc where
+instance TTKeyable PredOcc Key where
   toTTKey' o po = toTTKey' o (poPr po)
 
-instance TTKeyable CHRPredOcc where
+instance TTKeyable CHRPredOcc Key where
   -- toTTKey' o po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)]
   toTTKeyParentChildren' o po = (TT1K_One $ Key_Str "occ", ttkChildren [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)])
 
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
-instance TTKeyable PredOccId where
+instance TTKeyable PredOccId Key where
   toTTKey' o (PredOccId     i) = ttkSingleton $ TT1K_One $ Key_UID i
 %%]
 
@@ -74,12 +77,12 @@ labelTreeTrieKey opts label
 %%]
 
 %%[(10 hmtyinfer || hmtyast) hs
-instance TTKeyable LabelOffset where
+instance TTKeyable LabelOffset Key where
   toTTKey' o (LabelOffset_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
                                  | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
   toTTKey' o (LabelOffset_Off l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
 
-instance TTKeyable Label where
+instance TTKeyable Label Key where
   toTTKey' = labelTreeTrieKey
 %%]
 

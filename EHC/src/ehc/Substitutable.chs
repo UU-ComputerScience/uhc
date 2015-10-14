@@ -20,6 +20,9 @@
 %%[2 import(Data.List, {%{EH}Base.Common}, {%{EH}VarMp})
 %%]
 
+%%[2 import(UHC.Util.Substitutable) export(module UHC.Util.Substitutable)
+%%]
+
 %%[(2 hmtyinfer || hmtyast) import({%{EH}Ty}, {%{EH}Ty.Trf.Subst}, {%{EH}Ty.Ftv})
 %%]
 
@@ -41,35 +44,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[2.Substitutable
-infixr 6 {-- |=>, -} `varUpd`
-%%]
-
-%%[4
-infixr 6 {-- |==>, -} `varUpdCyc`
-%%]
-
-%%[2 export(VarUpdatable(..))
-class VarUpdatable vv subst where
-  varUpd         	::  subst -> vv -> vv
-%%[[4
-  varUpdCyc        ::  subst -> vv -> (vv,VarMp)
-%%]]
-%%[[4
-  s `varUpdCyc` x = (s `varUpd` x,emptyVarMp)
-%%]]
-%%]
-
-%%[2 export(VarExtractable(..))
-class Ord k => VarExtractable vv k | vv -> k where
-  varFree           ::  vv -> [k]
-  varFreeSet        ::  vv -> Set.Set k
-  
-  -- default
-  varFree           =   Set.toList . varFreeSet
-  varFreeSet        =   Set.fromList . varFree
-%%]
 
 %%[4 export(substLift)
 substLift :: (v' -> v) -> (v' -> v -> v') -> (subst -> v -> (v,r)) -> subst -> v' -> (v',r)
@@ -97,9 +71,9 @@ varmpinfoFtvMp i
 
 %%[(2 hmtyinfer || hmtyast).SubstitutableTy
 %%[[2
-instance VarUpdatable Ty VarMp where
+instance VarUpdatable Ty VarMp VarId Ty where
 %%][6
-instance VarLookup m TyVarId VarMpInfo => VarUpdatable Ty m where
+instance VarLookup m TyVarId VarMpInfo => VarUpdatable Ty m TyVarId VarMpInfo where
 %%]]
   varUpd     	= tyAppVarLookup
 %%[[4
@@ -112,7 +86,7 @@ instance VarExtractable Ty TyVarId where
 
 %%[(10 hmtyinfer || hmtyast)
 -- instance VarUpdatable Label VarMp where
-instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable Label m where
+instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable Label m ImplsVarId VarMpInfo where
   s `varUpd` lb          = maybe lb id $ varmpLabelLookupLabelCyc lb s
 
 instance VarExtractable Label TyVarId where
@@ -120,7 +94,7 @@ instance VarExtractable Label TyVarId where
   varFree _             = []
 
 -- instance VarUpdatable LabelOffset VarMp where
-instance VarLookup m UID VarMpInfo => VarUpdatable LabelOffset m where
+instance VarLookup m UID VarMpInfo => VarUpdatable LabelOffset m UID VarMpInfo where
   s `varUpd` o@(LabelOffset_Var v) = maybe o id $ varmpOffsetLookup v s
   s `varUpd` o                     = o
 
@@ -130,7 +104,8 @@ instance VarExtractable LabelOffset TyVarId where
 %%]
 
 %%[(2 hmtyinfer || hmtyast).SubstitutableList
-instance (VarUpdatable vv subst) => VarUpdatable [vv] subst where
+-- instance (VarUpdatable vv subst sk sv) => VarUpdatable [vv] subst sk sv where
+instance (VarUpdatable vv subst VarId VarMpInfo) => VarUpdatable [vv] subst VarId VarMpInfo where
   s      `varUpd`  l   =   map (varUpd s) l
 %%[[4
   s      `varUpdCyc` l   =   (l,varmpUnions m)
@@ -142,7 +117,7 @@ instance (VarExtractable vv k) => VarExtractable [vv] k where
 %%]
 
 %%[(2 hmtyinfer || hmtyast).SubstitutableVarMp
-instance Eq k => VarUpdatable (VarMp' k v) (VarMp' k v) where
+instance Eq k => VarUpdatable (VarMp' k v) (VarMp' k v) k v where
   s1@(VarMp sl1) `varUpd` s2@(VarMp sl2)
     = VarMp (sl1 ++ map (\(v,t) -> (v,s1 `varUpd` t)) sl2')
     where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
@@ -153,7 +128,7 @@ instance VarExtractable VarMp TyVarId where
 %%]
 
 %%[(4 hmtyinfer || hmtyast).SubstitutableVarMp -2.SubstitutableVarMp
-instance Ord k => VarUpdatable (VarMp' k v) (VarMp' k v) where
+instance Ord k => VarUpdatable (VarMp' k v) (VarMp' k v) k v where
   s1@(VarMp sl1) `varUpd` s2@(VarMp sl2)
     = s1 `varmpPlus` s2
 
@@ -163,17 +138,17 @@ instance VarExtractable VarMp TyVarId where
 %%]
 
 %%[(6 hmtyinfer || hmtyast).SubstitutableVarMp -4.SubstitutableVarMp
-instance VarLookupCmb m (VarMp' k v) => VarUpdatable (VarMp' k v) m where
+-- instance VarLookupCmb m (VarMp' k v) => VarUpdatable (VarMp' k v) m k v where
+instance VarLookupCmb (VarMp' k v) (VarMp' k v) => VarUpdatable (VarMp' k v) (VarMp' k v) k v where
   varUpd                                =   (|+>)
 
 instance VarExtractable VarMp TyVarId where
   varFreeSet               (VarMp _ sl)    =   Set.unions $ map (varFreeSet . Map.elems) sl
 %%]
-instance Ord k => VarUpdatable (VarMp' k v) (VarMp' k v) where
-  varUpd                                =   varmpPlus
 
 %%[(7 hmtyinfer || hmtyast)
-instance VarUpdatable vv subst => VarUpdatable (HsName,vv) subst where
+-- instance VarUpdatable vv subst sk sv => VarUpdatable (HsName,vv) subst sk sv where
+instance VarUpdatable vv subst VarId VarMpInfo => VarUpdatable (HsName,vv) subst VarId VarMpInfo where
   s `varUpd`  (k,v) =  (k,s `varUpd` v)
 
 instance VarExtractable vv k => VarExtractable (HsName,vv) k where
@@ -181,27 +156,27 @@ instance VarExtractable vv k => VarExtractable (HsName,vv) k where
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance VarUpdatable Pred VarMp where
+instance VarUpdatable Pred VarMp VarId VarMpInfo where
   s `varUpd`  p  =  (\(Ty_Pred p) -> p) (s `varUpd` (Ty_Pred p))
 
 instance VarExtractable Pred TyVarId where
   varFreeSet p  =  varFreeSet (Ty_Pred p)
 
 -- instance VarUpdatable PredScope VarMp where
-instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable PredScope m where
+instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable PredScope m ImplsVarId VarMpInfo where
   s `varUpd`  sc                   = maybe sc id $ varmpScopeLookupScopeCyc sc s
 
 instance VarExtractable PredScope TyVarId where
   varFree    (PredScope_Var v)    = [v]
   varFree    _                    = []
 
-instance VarUpdatable CHRPredOccCxt VarMp where
+instance VarUpdatable CHRPredOccCxt VarMp VarId VarMpInfo where
   s `varUpd`  (CHRPredOccCxt_Scope1 sc) = CHRPredOccCxt_Scope1 (s `varUpd` sc)
 
 instance VarExtractable CHRPredOccCxt TyVarId where
   varFree    (CHRPredOccCxt_Scope1 sc) = varFree sc
 
-instance VarUpdatable PredOcc VarMp where
+instance VarUpdatable PredOcc VarMp VarId VarMpInfo where
 %%[[9
   s `varUpd`  (PredOcc pr id sc)  = PredOcc (s `varUpd` pr) id (s `varUpd` sc)
 %%][99
@@ -215,7 +190,7 @@ instance VarExtractable PredOcc TyVarId where
   varFreeSet (PredOcc pr id sc _)  = varFreeSet pr `Set.union` varFreeSet sc
 %%]]
 
-instance VarUpdatable CHRPredOcc VarMp where
+instance VarUpdatable CHRPredOcc VarMp VarId VarMpInfo where
 %%[[9
   s `varUpd`  (CHRPredOcc pr sc)  = CHRPredOcc (s `varUpd` pr) (s `varUpd` sc)
 %%][99
@@ -229,7 +204,7 @@ instance VarExtractable CHRPredOcc TyVarId where
   varFreeSet (CHRPredOcc pr sc _)  = varFreeSet pr `Set.union` varFreeSet sc
 %%]]
 
-instance VarUpdatable Impls VarMp where
+instance VarUpdatable Impls VarMp VarId VarMpInfo where
   s `varUpd`  i  =  (\(Ty_Impls i) -> i) (s `varUpd` (Ty_Impls i))
 
 instance VarExtractable Impls TyVarId where
@@ -237,7 +212,7 @@ instance VarExtractable Impls TyVarId where
 %%]
 
 %%[(6 hmtyinfer || hmtyast)
-instance VarUpdatable VarMpInfo VarMp where
+instance VarUpdatable VarMpInfo VarMp VarId VarMpInfo where
   s `varUpd` vmi =  case vmi of
                  VMITy       t  -> VMITy (s `varUpd` t)
 %%[[9
@@ -289,7 +264,7 @@ instance Substitutable RowExts TyVarId VarMp where
 And this too...
 
 %%[(13 hmtyinfer || hmtyast)
-instance VarUpdatable PredSeq VarMp where
+instance VarUpdatable PredSeq VarMp VarId VarMpInfo where
   s `varUpd`  a@(PredSeq_Var  v  ) = maybe a id $ varmpPredSeqLookup v s
   s `varUpd`    (PredSeq_Cons h t) = PredSeq_Cons (s `varUpd` h) (s `varUpd` t)
   _ `varUpd`    x                  = x
@@ -364,7 +339,7 @@ varmpForward m1 m2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast) hs export(ppS)
-ppS :: VarUpdatable x m => (x -> PP_Doc) -> m -> x -> PP_Doc
+ppS :: VarUpdatable x m VarId VarMpInfo => (x -> PP_Doc) -> m -> x -> PP_Doc
 ppS pp c x = (pp $ c `varUpd` x) >#< ppParens (pp x)
 %%]
 

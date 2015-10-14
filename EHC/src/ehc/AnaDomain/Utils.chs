@@ -7,33 +7,33 @@
 %%% AnaDomain utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}AnaDomain.Utils} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(8 codegenanalysis) hs module {%{EH}AnaDomain.Utils} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(8 codegen) hs import({%{EH}AnaDomain},{%{EH}AnaDomain.Trf.Subst},{%{EH}AnaDomain.Ftv})
+%%[(8 codegenanalysis) hs import({%{EH}AnaDomain},{%{EH}AnaDomain.Trf.Subst},{%{EH}AnaDomain.Ftv})
 %%]
 
-%%[(8 codegen hmtyinfer) hs import({%{EH}Gam.DataGam})
+%%[(8 codegenanalysis hmtyinfer) hs import({%{EH}Gam.DataGam})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.Array, Data.Maybe, Data.List)
+%%[(8 codegenanalysis) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.Array, Data.Maybe, Data.List)
 %%]
 
-%%[(8 codegen) hs import(UHC.Util.Utils)
+%%[(8 codegenanalysis) hs import(UHC.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(Control.Monad.State, Control.Applicative)
+%%[(8 codegenanalysis) hs import(Control.Monad.State, Control.Applicative)
 %%]
 
 -- debug only
-%%[(8888 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
+%%[(8888 codegenanalysis) hs import({%{EH}Base.Debug},UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Quantification
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(RelevTyQuantHow(..))
+%%[(8 codegenanalysis) hs export(RelevTyQuantHow(..))
 -- | configuring quantification, for debugging
 data RelevTyQuantHow
   = RelevTyQuantHow_Solve				-- solve
@@ -44,7 +44,7 @@ data RelevTyQuantHow
   deriving Eq
 %%]
 
-%%[(8 codegen) hs export(relevtyQuant)
+%%[(8 codegenanalysis) hs export(relevtyQuant)
 relevtyQuant
   :: [RelevTyQuantHow]
      -> RVarMp -> RelevQualS -> RelevTy
@@ -94,7 +94,7 @@ relevtyQuant how m qs t
 %%% Removal of constraints which relate only to internal variables (free vars), and alternatives (which depend on constructor alternative)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(relevQualRemoveAmbig)
+%%[(8 codegenanalysis) hs export(relevQualRemoveAmbig)
 -- | Remove unresolvable constraints, and those referring to free vars
 relevQualRemoveAmbig :: UIDS -> RelevQualS -> (RelevQualS,RelevQualS)
 relevQualRemoveAmbig bound qualS
@@ -107,31 +107,31 @@ relevQualRemoveAmbig bound qualS
 %%% Substitutable instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
-instance VarUpdatable RelevTy RVarMp where
+%%[(8 codegenanalysis) hs
+instance VarUpdatable RelevTy RVarMp UID RVarMpInfo where
   varUpd = relevtyAppVarLookup
 
 instance VarExtractable RelevTy UID where
   varFreeSet = relevTyFtv
 %%]
 
-%%[(8 codegen) hs
-instance VarUpdatable RelevQual RVarMp where
+%%[(8 codegenanalysis) hs
+instance VarUpdatable RelevQual RVarMp UID RVarMpInfo where
   varUpd = relevqualAppVarLookup
 
 instance VarExtractable RelevQual UID where
   varFreeSet = relevQualFtv
 %%]
 
-%%[(8 codegen) hs
-instance VarUpdatable RelevCoe RVarMp where
+%%[(8 codegenanalysis) hs
+instance VarUpdatable RelevCoe RVarMp UID RVarMpInfo where
   varUpd = relevcoeAppVarLookup
 
 instance VarExtractable RelevCoe UID where
   varFreeSet = relevCoeFtv
 %%]
 
-%%[(8888 codegen) hs
+%%[(8888 codegenanalysis) hs
 instance Substitutable RelevTy UID RVarMp
 instance Substitutable RelevTyL UID RVarMp
 instance Substitutable RelevQual UID RVarMp
@@ -159,7 +159,7 @@ The solver uses the following heuristics:
 Both possibly yielding a substitution.
 %%]
 
-%%[(8 codegen) hs export(assSolve)
+%%[(8 codegenanalysis) hs export(assSolve)
 type WL = Map.Map UID (Set.Set Int)
 
 data ASS
@@ -385,7 +385,7 @@ assSolve bound qualS
 %%% Datatype/tuple related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(relevTyArgsFromCTag)
+%%[(8 codegenanalysis) hs export(relevTyArgsFromCTag)
 -- | relev ty for tuple/constructor. isJust mbResTy <=> not isInPat
 relevTyArgsFromCTag :: Bool -> CTag -> Maybe RelevTy -> Int -> DataGam -> UID -> Maybe ([RelevTy],RelevQualS)
 relevTyArgsFromCTag isInPat ct mbResTy arity dataGam u
@@ -409,7 +409,7 @@ relevTyArgsFromCTag isInPat ct mbResTy arity dataGam u
 %%]
 
 
-%%[(8 codegen) hs export(relevTyArgs)
+%%[(8 codegenanalysis) hs export(relevTyArgs)
 relevTyArgs :: (Bool -> UID -> RelevTy) -> (RelevTy -> RelevTy -> [RelevQual]) -> UID -> [Bool] -> RelevTy -> ([RelevTy],[RelevQual])
 relevTyArgs fresh constrain u relevForRes res
   = (as, concat qa)

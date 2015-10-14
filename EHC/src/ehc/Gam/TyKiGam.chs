@@ -220,7 +220,7 @@ initTyKiGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast).Substitutable.inst.TyKiGamInfo
-instance VarUpdatable TyKiGamInfo VarMp where
+instance VarUpdatable TyKiGamInfo VarMp VarId VarMpInfo where
   s `varUpd`  tkgi         =   tkgi { tkgiKi = s `varUpd` tkgiKi tkgi }
   s `varUpdCyc` tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) varUpdCyc s tkgi
 

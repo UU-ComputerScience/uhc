@@ -191,6 +191,14 @@ emptyPredOccId = mkPrId uidStart
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 hs export(VarPPMp)
+type VarPPMp = Map.Map UID PP_Doc
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[1.PP.ppAppTop export(ppAppTop)
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) argL dflt

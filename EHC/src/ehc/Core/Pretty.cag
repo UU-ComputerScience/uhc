@@ -16,7 +16,7 @@ Note (20120525): lamMp use removed because of cyclic module import
 %%[(8 coreout) hs import({%{EH}Ty.Pretty})
 %%]
 
-%%[(8 coreout) hs import({%{EH}AnaDomain.Pretty})
+%%[(8 coreout codegenanalysis) hs import({%{EH}AnaDomain.Pretty})
 %%]
 %%[(8888 coreout) hs import({%{EH}LamInfo})
 %%]
@@ -411,7 +411,9 @@ SEM CBind
 SEM CBound
   | Bind        loc         .   ppBound     =   whenMore @lhs.opts @bindMeta.pp >-< @expr.pp
   | Ty          loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
+%%[[(8 codegenanalysis)
   | RelevTy     loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
+%%]]
   | Meta        loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
   | Val         loc         .   (ppBound,lev,mustPar)
                                             =   let asp | Set.null @aspectKeyS || ACoreBindAspectKey_Default `Set.member` @aspectKeyS
@@ -491,11 +493,15 @@ SEM CExpr
 
 SEM CExprAnn
   | Ty          loc         .   pp          =   "::" >#< ppTyWithCfg' CfgPP_Plain @ty
+%%[[(8 codegenanalysis)
   | Coe         loc         .   pp          =   "~" >#< ppRelevCoe @lhs.varPPMp @coe
+%%]]
   | Debug       loc         .   pp          =   ppCmt $ pp @info
 
 SEM CBindAnn
+%%[[(8 codegenanalysis)
   | Coe         loc         .   pp          =   "~" >#< ppRelevCoe @lhs.varPPMp @coe
+%%]]
 %%]
 
 %%[(9 coreout)
@@ -529,7 +535,9 @@ SEM CBound
 SEM CBound
   | Bind        loc         .   sep         =   "="
   | Ty          loc         .   sep         =   "::"
+%%[[(8 codegenanalysis)
   | RelevTy     loc         .   sep         =   "::R"
+%%]]
   | Meta        loc         .   sep         =   "::M"
   | Val         loc         .   sep         =   (if @mlevHere == @lhs.minMetaLev then "=" else "::") ++ (if @mlevHere > @lhs.mlev then @lev else "")
 %%[[90
@@ -567,7 +575,9 @@ SEM CModule
 ATTR AllBound [ | | gathVarPPMp USE {`Map.union`} {Map.empty}: VarPPMp ]
 
 SEM CBound
+%%[[(8 codegenanalysis)
   | RelevTy     (loc.tyPP,lhs.gathVarPPMp)  =   ppRelevTy Map.empty @relevTy        -- circular when given desired @lhs.varPPMp
+%%]]
   | Ty          loc         .   tyPP        =   ppTyWithCfg' CfgPP_Core @ty
 
 SEM CBind

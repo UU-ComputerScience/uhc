@@ -4,7 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, {%{EH}CHR},{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, UHC.Util.CHR,{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Key},{%{EH}CHR.Constraint})
+%%]
+
+%%[(9 hmtyinfer) import({%{EH}Base.Common})
 %%]
 
 %%[(9 hmtyinfer) import(Data.List(nub, partition),Data.Maybe)
@@ -204,7 +207,7 @@ hasAlts _                = True
 This should not depend on emptyVarMp, but abstract away from it. Perhaps use chrEmptySubst
 
 %%[(9 hmtyinfer)
-cmpSpecificness :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> Pred -> Pred -> PartialOrdering
+cmpSpecificness :: CHRMatchable (FIIn' gm) Pred VarMp Key => FIIn' gm -> Pred -> Pred -> PartialOrdering
 cmpSpecificness env p q = 
   case  chrMatchTo env (emptyVarMp :: VarMp) p q of 
     Nothing  -> P_GT
@@ -218,7 +221,7 @@ cmpSpecificness env p q =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9999 hmtyinfer) export(heurHaskell98)
-anncmpHaskell98 :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
+anncmpHaskell98 :: CHRMatchable (FIIn' gm) Pred VarMp Key => FIIn' gm -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpHaskell98 env ann1 ann2
   = case (ann1,ann2) of
       (RedHow_ByInstance _ p   s, RedHow_ByInstance _ q   t)  ->  case pscpCmpByLen s t of
@@ -235,7 +238,7 @@ anncmpHaskell98 env ann1 ann2
       (RedHow_ProveObl       _ _, _                        )  ->  P_GT
 --      (_                        , RedHow_ProveObl       _ _)  ->  P_LT
 
-heurHaskell98 :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> Heuristic p RedHowAnnotation
+heurHaskell98 :: CHRMatchable (FIIn' gm) Pred VarMp Key => FIIn' gm -> Heuristic p RedHowAnnotation
 heurHaskell98 env = toHeuristic $ binChoice (anncmpHaskell98 env)
 %%]
 
@@ -304,7 +307,7 @@ cmpEqReds r1                            r2                              = panic 
 %%]
 
 %%[(9 hmtyinfer)
-anncmpEHCScoped :: CHRMatchable (FIIn' gm) Pred VarMp => Bool -> FIIn' gm -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
+anncmpEHCScoped :: CHRMatchable (FIIn' gm) Pred VarMp Key => Bool -> FIIn' gm -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
 anncmpEHCScoped preferInst env ann1 ann2
   = case (ann1,ann2) of
       (HeurRed (RedHow_Assumption     _ _) _    , _                                        )              ->  P_GT
@@ -350,7 +353,7 @@ ehcOnlySuperReduce _  reds = take 1 $ filter ehcAllowForGeneralization reds
 %%]
 
 %%[(9 hmtyinfer) export(heurScopedEHC)
-heurScopedEHC :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> Heuristic CHRPredOcc RedHowAnnotation
+heurScopedEHC :: CHRMatchable (FIIn' gm) Pred VarMp Key => FIIn' gm -> Heuristic CHRPredOcc RedHowAnnotation
 heurScopedEHC env
   = toHeuristic
     $ ifthenelseSHeuristic isEqHeuristic
