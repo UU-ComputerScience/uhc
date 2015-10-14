@@ -87,7 +87,7 @@
 %%[50 import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
-%%[9 import({%{EH}Base.RLList}) export(module {%{EH}Base.RLList})
+%%[9999 import(UHC.Util.RLList) export(module UHC.Util.RLList)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})

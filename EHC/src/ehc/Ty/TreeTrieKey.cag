@@ -15,7 +15,7 @@ In this way search via a TreeTrie proceeds breadth first top to bottom.
 %%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.TreeTrieKey} import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName},{%{EH}Base.HsName.Builtin},{%{EH}Ty})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,UHC.Util.FastSeq as Seq,{%{EH}Base.TreeTrie},{%{EH}CHR.Key})
+%%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,UHC.Util.FastSeq as Seq,UHC.Util.TreeTrie,{%{EH}CHR.Key})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG})

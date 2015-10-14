@@ -7,7 +7,7 @@ Derived from work by Gerrit vd Geest, but with searching structures for predicat
 to avoid explosion of search space during resolution.
 %%]
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR} import(qualified {%{EH}Base.TreeTrie} as TreeTrie, {%{EH}Base.Common},{%{EH}Substitutable},{%{EH}VarMp})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR} import(qualified UHC.Util.TreeTrie as TreeTrie, {%{EH}Base.Common},{%{EH}Substitutable},{%{EH}VarMp})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(Data.Monoid,qualified Data.Set as Set)

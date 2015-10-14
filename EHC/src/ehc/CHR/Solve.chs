@@ -14,7 +14,7 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import({%{EH}VarLookup})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.TreeTrie} as TreeTrie)
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},UHC.Util.TreeTrie as TreeTrie)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)

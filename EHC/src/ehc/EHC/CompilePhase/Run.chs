@@ -196,8 +196,8 @@ cpRunCoreRun5 bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_
     maybeM (bcall $ ASTPlMb bglob modSearchKey astplan) (return ()) $ \(ASTResult {_astresAST=(mod :: AST_CoreRun)}) -> do
 %%[[99
       -- debug
-      ecu <- bcall $ EcuOf modNm
-      cpOutputSomeModule (const mod) astHandler'_CoreRun ASTFileContent_Text "-cpRunCoreRun5" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
+      -- ecu <- bcall $ EcuOf modNm
+      -- cpOutputSomeModule (const mod) astHandler'_CoreRun ASTFileContent_Text "-cpRunCoreRun5" Cfg.suffixDotlessOutputTextualCoreRun (ecuModNm ecu)
 %%]]
       crsi <- bcall $ CRSIOfNamePl bglob modSearchKey astplan
       let impModNmL = (crsi ^. crsiCoreRunState ^. crcrsiReqdModules) \\ [modNm]

@@ -30,6 +30,9 @@
 %%[(9 hmtyinfer || hmtyast) hs export(ppTyPr)
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs import(qualified UHC.Util.RLList as RLL)
+%%]
+
 %%[(1 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
@@ -154,7 +157,7 @@ instance PP CHRPredOcc where
             ]
 
 instance PP PredScope where
-  pp (PredScope_Lev l) = ppListSep "<" ">" "," $ rllToList l
+  pp (PredScope_Lev l) = ppListSep "<" ">" "," $ RLL.toList l
   pp (PredScope_Var v) = "<sc_" >|< v >|< ">"
 
 instance PP ImplsProveOcc where
