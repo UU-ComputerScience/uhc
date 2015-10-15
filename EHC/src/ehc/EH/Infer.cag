@@ -680,7 +680,11 @@ SEM Expr
                             .   kiSigGam            =   @decls.gathKiSigGam
 
 SEM Decl
-  | KiSig       lhs         .   gathKiSigGam        =   gamAdd @nm (mkTGI (appCon @nm)) @lhs.gathKiSigGam
+  | KiSig       lhs         .   gathKiSigGam        =   gamAdd @nm (mkTGI (appCon @nm)
+%%[[(8 counting)
+                                                                            [] (CA.TyError "gathKiSigGam")
+%%]]
+                                                          ) @lhs.gathKiSigGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

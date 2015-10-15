@@ -17,6 +17,9 @@ SEM Decl
 %%[(6 hmtyinfer)
 SEM Decl
   | Data        loc         .   dataTgi             =   mkTGI (appCon @tyNm)
+%%[[(8 counting)
+                                                                            [] (CA.TyError "dataTgi")
+%%]]
                             .   dataTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
                             .   dataPatTyGam        =   if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
@@ -95,7 +98,7 @@ SEM AGItf
 
 {
 specialtrace :: DataGam -> DataGam
-specialtrace dg = dg --traceShow dgl dg
+specialtrace dg = traceShow dgl dg
   where dgl = map f $ gamToAssocL dg
         f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
 }
@@ -109,7 +112,7 @@ specialtrace dg = dg --traceShow dgl dg
 %%[(8 counting)
 
 ATTR AllNT [ caDataGam: {DataGam} | caFreshVar: {CA.Var} | ]
-ATTR AllNT [ | caLocalDataGam: {Map.Map HsName Int} | ]
+ATTR AllNT [ | caLocalDataGam: {Map.Map HsName Int} | caLocalDataGamGath USE {Map.union} {Map.empty} : {Map.Map HsName Int} ]
 ATTR AllNT [ caLocalDataNames: {Set.Set HsName} | | caLocalDataNamesGath USE {Set.union} {Set.empty} : {Set.Set HsName} ]
 ATTR AllNT [ caLocalAnnVars: {[CA.Var]} | | caLocalAnnVarsGath USE {++} {[]} : {[CA.Var]} ]
 
@@ -138,6 +141,7 @@ SEM Expr
      body.caLocalAnnVars = []
     decls.caLocalDataNames = @decls.caLocalDataNamesGath
     decls.caLocalAnnVars = @decls.caLocalAnnVarsGath
+    body.caLocalDataGam = Map.union @lhs.caLocalDataGam @decls.caLocalDataGamGath
 
 SEM DataFields TyExprs
   | Cons
@@ -159,9 +163,16 @@ SEM DataConstr
 SEM Decl
   | Data
     lhs.caLocalDataNamesGath = traceShow ("DataDecl: ", @tyNm) $ Set.singleton @tyNm
-    loc.caLocalAnnVarsGath = [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
-    lhs.caLocalAnnVarsGath = @loc.caLocalAnnVarsGath
-    lhs.caLocalDataGam = Map.insert @tyNm (length @loc.caLocalAnnVarsGath) @lhs.caLocalDataGam
+    lhs.caLocalAnnVarsGath = [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
+    -- lhs.caLocalAnnVarsGath = @loc.caLocalAnnVarsGath
+    lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
+    -- constrs.caLocalDataGam = @lhs.caLocalDataGam
+  | Type
+    lhs.caLocalDataNamesGath = traceShow ("TypeDecl: ", @tyNm) $ Set.singleton @tyNm
+    lhs.caLocalAnnVarsGath = [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
+    -- lhs.caLocalAnnVarsGath = @loc.caLocalAnnVarsGath
+    lhs.caLocalDataGamGath = traceShow ("TypeTy: ", @tyNm, @tyExpr.caAnnTy) $ Map.singleton @tyNm (length @lhs.caLocalAnnVars)
+    -- constrs.caLocalDataGam = @lhs.caLocalDataGam
 
 SEM TyExpr
   | *
@@ -179,15 +190,22 @@ SEM TyExpr
                     _ -> Nothing
     loc.isFunc = fromMaybe False @loc.ismFunc
     lhs.caFreshVar = if @lhs.caDeeper || @loc.isFunc then @lhs.caFreshVar else @lhs.caFreshVar + @loc.caNumAnn
-    loc.caNumAnn = fromJust $ @loc.caNumFunc <|> @loc.caNumLoc <|> @loc.caNumLdg <|> @loc.caNumIdg <|> @loc.caNumTy <|> @loc.caNumPanic
-       . caNumFunc = if @loc.isFunc then traceShow ("isFunc: ",@nm) (Just 0) else Nothing
-       . caNumLdg = Map.lookup @nm @lhs.caLocalDataGam
-       . caNumIdg = fmap (traceShow ("gam: ",@nm) . length . dgiAnnVars) $ @nm `dataGamLookup` @lhs.caDataGam
-       . caNumLoc = if @loc.localGroup then traceShow ("isFunc: ",@nm) (Just 0) else Nothing
-       . caNumTy = Just 0 -- @lhs.tyGam
+    loc. (caIsType, caNumAnn) = traceShow' @nm $ fromJust $ @loc.caNumFunc <|> @loc.caNumLoc <|> @loc.caNumLdg <|> @loc.caNumIdg <|> @loc.caNumTy <|> @loc.caNumPanic
+       . caNumFunc = if @loc.isFunc then traceShow ("isFunc: ",@nm) Just (False, 0) else Nothing
+       . caNumLdg = fmap (\x -> traceShow ("module: ",@nm) (False,x)) $ Map.lookup @nm @lhs.caLocalDataGam
+       . caNumIdg = fmap (traceShow ("gam: ",@nm) . (\x -> (False,x)) . length . dgiAnnVars) $ @nm `dataGamLookup` @lhs.caDataGam
+       . caNumLoc = if @loc.localGroup then traceShow ("local: ",@nm) (Just (False, 0)) else Nothing
+       . caNumTy = fmap (traceShow ("type: ",@nm) . (\x -> (True,x)) . length . tgiAnnVars) @loc.caTypeLookup
        . caNumPanic = panic $ "Could not find data type " ++ show @nm
-    lhs.caAnnTy = if @loc.localGroup then CA.DataTy @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
-                  else CA.DataTy @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
+    loc.caTypeLookup = @nm `tyGamLookup` @lhs.tyGam
+    -- lhs.caAnnTy = if @loc.localGroup then CA.DataTy @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
+    --               else CA.DataTy @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
+    lhs.caAnnTy = if @loc.localGroup then if @loc.caIsType then
+                      traceShow ("typeLoc: ", @nm, show @loc.caTypeLookup) (tgiAnnTy (fromJust @loc.caTypeLookup))
+                    else CA.DataTy @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
+                  else if @loc.caIsType then
+                      traceShow ("typeGlob: ", @nm, show @loc.caTypeLookup) (tgiAnnTy (fromJust @loc.caTypeLookup))
+                    else CA.DataTy @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
     loc.localGroup = Set.member @nm @lhs.caLocalDataNames 
   | App
     lhs.caIsFunc = case @func.caIsFunc of
@@ -250,7 +268,7 @@ SEM Decl
     -- tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedFFI"
   | Type
     tyExpr.caDeeper = False
-    lhs.caLocalDataNamesGath = traceShow ("TypeDecl: ", @tyNm) Set.empty
+    -- lhs.caLocalDataNamesGath = traceShow ("TypeDecl: ", @tyNm) Set.empty
     -- tyExpr.caBaseDataTypeName = hsnEmpty
     -- tyExpr.caBaseAnnDataType = CA.TyError "UnsupportedType"
 %%[[90
@@ -307,6 +325,9 @@ baseAnnTypes = Map.fromList [
     (mkHNm "Bool", 0),
     (mkHNm "Char", 0)
   ]
+
+traceShow' :: (Show a, Show b) => a -> b -> b
+traceShow' x y = traceShow (x,y) y
 }
 
 
@@ -470,6 +491,9 @@ SEM DataConstr
 SEM Decl
   | Data        loc         .   dataAltTy           =   recSum @constrs.dataAltTyL
                             .   dataTgi             :=  mkTGIData (appCon @tyNm) Ty_Any {- ([@dataTy] `appArr` @dataAltTy) -}
+%%[[(8 counting)
+                                                                            [] (CA.TyError "dataTgi")
+%%]]
 %%]
 
 %%[(90 hmtyinfer)

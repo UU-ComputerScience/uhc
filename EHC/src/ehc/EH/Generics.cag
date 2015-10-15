@@ -194,11 +194,19 @@ SEM Expr
                             .   generDataGam        =   gamFromAssocL [ (n, mkDGIPlain n (appCon n) kiStar [] Map.empty )
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
-                            .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (appCon n) (appDbg $ "Generics.Expr.Let.TyGam.DataTyAndCon: " ++ show n))
+                            .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (appCon n) (appDbg $ "Generics.Expr.Let.TyGam.DataTyAndCon: " ++ show n)
+%%[[(8 counting)
+                                                                            [] (CA.TyError "generTyGam1")
+%%]]
+                                                                          )
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
                                                         `gamUnion`
-                                                        gamFromAssocL [ ( tnm, mkTGIData syn (appDbg $ "Generics.Expr.Let.TyGam.TySyn: " ++ show tnm))
+                                                        gamFromAssocL [ ( tnm, mkTGIData syn (appDbg $ "Generics.Expr.Let.TyGam.TySyn: " ++ show tnm)
+%%[[(8 counting)
+                                                                            [] (CA.TyError "generTyGam1")
+%%]]
+                                                                          )
                                                                       | (_,_,_,ts) <- @generTySynProjL
                                                                       , (tnm,syn,_,_) <- ts
                                                                       ]
