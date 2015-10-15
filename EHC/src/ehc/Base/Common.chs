@@ -20,6 +20,9 @@
 %%[1 import(UHC.Util.Hashable) export (module UHC.Util.Hashable)
 %%]
 
+%%[8 import(GHC.Generics(Generic))
+%%]
+
 %%[1 import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
@@ -84,7 +87,7 @@
 %%[50 import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
-%%[9 import({%{EH}Base.RLList}) export(module {%{EH}Base.RLList})
+%%[9999 import(UHC.Util.RLList) export(module UHC.Util.RLList)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -182,6 +185,14 @@ mkPrIdCHR = mkPrId
 %%[9 export(emptyPredOccId)
 emptyPredOccId :: PredOccId
 emptyPredOccId = mkPrId uidStart
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(VarPPMp)
+type VarPPMp = Map.Map UID PP_Doc
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -454,7 +465,7 @@ strBlankPad :: Int -> String -> String
 strBlankPad n s = s ++ replicate (n - length s) ' '
 %%]
 
-%%[9 export(snd3,thd)
+%%[9999 export(snd3,thd)
 snd3 :: (a,b,c) -> b
 snd3 (a,b,c) = b
 
@@ -468,7 +479,11 @@ thd (a,b,c) = c
 
 %%[8 export(Verbosity(..))
 data Verbosity
-  = VerboseQuiet | VerboseMinimal | VerboseNormal | VerboseALot | VerboseDebug
+  = VerboseQuiet		-- nothing at all
+  | VerboseMinimal
+  | VerboseNormal		-- basic info
+  | VerboseALot
+  | VerboseDebug
   deriving (Eq,Ord,Enum)
 %%]
 
@@ -535,6 +550,9 @@ data InstVariant
   | InstDeriving InstDerivingFrom
 %%]]
   deriving (Eq,Ord,Show)
+
+instance PP InstVariant where
+  pp = pp . show
 %%]
 
 %%[91 export(InstDerivingFrom(..))
@@ -543,6 +561,9 @@ data InstDerivingFrom
   = InstDerivingFrom_Datatype
   | InstDerivingFrom_Standalone
   deriving (Eq,Ord,Show)
+
+instance PP InstDerivingFrom where
+  pp = pp . show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -773,7 +794,7 @@ General purpose info for which comparison always yields EQ.
 This is to fool 'deriving' when info is added for debugging purposes only.
 
 %%[1 export(AlwaysEq(..))
-data AlwaysEq a = AlwaysEq a
+data AlwaysEq a = AlwaysEq { unAlwaysEq :: a }
 
 instance Eq (AlwaysEq a) where
   _ == _ = True
@@ -786,6 +807,10 @@ instance Show a => Show (AlwaysEq a) where
 
 instance PP a => PP (AlwaysEq a) where
   pp (AlwaysEq x) = pp x
+
+instance Hashable (AlwaysEq a) where
+  hashWithSalt salt _ = hashWithSalt salt (12345 :: Int) -- arbitarry, but constant
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -802,7 +827,7 @@ emptyPkgName = ""
 %%% Linking style
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 export(LinkingStyle(..))
+%%[8 export(LinkingStyle(..))
 -- | How to do linking/packaging
 data LinkingStyle
   = LinkingStyle_None			-- ^ no linking (e.g. indicated by --compile-only flag)
@@ -904,10 +929,21 @@ fmap2Tuple snd = fmap (\x -> (x,snd))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Shorthands
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(if')
+-- | Shorthand for if
+if' :: Bool -> a -> a -> a
+if' c t e = if c then t else e
+{-# INLINE if' #-}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Monad abbreviations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(whenM, unlessM)
+%%[1 export(whenM, unlessM, ifM, ifM')
 -- | Variation of `when` where Boolean condition is computed in a monad
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM c m = do
@@ -921,6 +957,61 @@ unlessM c m = do
   c' <- c
   unless c' m
 {-# INLINE unlessM #-}
+
+-- | Variation of `if` where Boolean condition is computed in a monad
+ifM :: Monad m => m Bool -> m a -> m a -> m a
+ifM c mt me = do
+  c' <- c
+  if c' then mt else me
+{-# INLINE ifM #-}
+
+-- | Variation of `if` where Boolean condition is computed in a monad, with then and else part flipped
+ifM' :: Monad m => m Bool -> m a -> m a -> m a
+ifM' c = flip (ifM c)
+{-# INLINE ifM' #-}
+
+%%]
+
+%%[1 export(maybeM, maybeM', maybe2M, maybeGuardM, guardMaybeM, whenJustM, whenJustGuardM, unlessJustM)
+-- | Variation of `maybe` where the maybe is computed in a monad. See also `maybeM'`
+maybeM :: Monad m => m (Maybe a) -> m b -> (a -> m b) -> m b
+maybeM mmaybe mnothing mjust = mmaybe >>= maybe mnothing mjust
+{-# INLINE maybeM #-}
+
+-- | Variation of `maybe` where the maybe is computed in a monad. See also `maybeM'`
+maybe2M :: Monad m => m (Maybe a1) -> (a1 -> m (Maybe a2)) -> m b -> (a1 -> a2 -> m b) -> m b
+maybe2M mmaybe1 mmaybe2 mnothing mjust = do
+  mb1@(~(Just m1)) <- mmaybe1
+  if (isJust mb1)
+    then maybeM (mmaybe2 m1) mnothing (mjust m1)
+    else mnothing
+
+-- | Variation of `maybe` where the maybe is computed in a monad and a guard is involved. See also `maybeM'`
+maybeGuardM :: Monad m => m (Maybe a) -> (a -> m Bool) -> m b -> (a -> m b) -> m b
+maybeGuardM mmaybe mgrd mnothing mjust = mmaybe >>= maybe mnothing (\x -> ifM (mgrd x) (mjust x) mnothing)
+{-# INLINE maybeGuardM #-}
+
+-- | Variation of `maybe` where the maybe is computed in a guarded monad. See also `maybeGuardM'`
+guardMaybeM :: Monad m => (m Bool) -> m (Maybe a) -> m b -> (a -> m b) -> m b
+guardMaybeM mgrd mmaybe mnothing mjust = ifM' mgrd mnothing $ maybeM mmaybe mnothing mjust
+{-# INLINE guardMaybeM #-}
+
+-- | As 'maybeM' but with last 2 args flipped, allowing a continuation based style for case by case analysis based on Maybe
+maybeM' :: Monad m => m (Maybe a) -> (a -> m b) -> m b -> m b
+maybeM' mmaybe = flip (maybeM mmaybe)
+{-# INLINE maybeM' #-}
+
+-- | Variation of `maybe`, when, and ifJust where the maybe is computed in a monad
+whenJustM :: Monad m => m (Maybe a) -> (a -> m ()) -> m ()
+whenJustM mmaybe = maybeM mmaybe (return ())
+
+-- | Variation of `maybe`, when, and ifJust where the maybe is computed in a monad and a guard is involved
+whenJustGuardM :: Monad m => m (Maybe a) -> (a -> m Bool) -> (a -> m ()) -> m ()
+whenJustGuardM mmaybe mgrd mjust = maybeM mmaybe (return ()) $ \a -> whenM (mgrd a) $ mjust a
+
+-- | Variation of `maybe`, unless, and ifNothing where the maybe is computed in a monad
+unlessJustM :: Monad m => m (Maybe a) -> m () -> m ()
+unlessJustM mmaybe = maybeM' mmaybe (\_ -> return ())
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1065,9 +1156,15 @@ allKnownPrimMp
 %%% Mapping from String to something, provided enough meta info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(str2stMp, str2stMpWithOmit, showStr2stMp)
+%%[1 export(str2stMp, str2stMpWithOmit, str2stMpWithShow, showStr2stMp)
+str2stMpWithOmitShow :: (Enum opt, Bounded opt, Eq opt) => (opt -> String) -> [opt] -> Map.Map String opt
+str2stMpWithOmitShow shw omits = Map.fromList [ (shw o, o) | o <- [minBound .. maxBound] \\ omits ]
+
 str2stMpWithOmit :: (Show opt, Enum opt, Bounded opt, Eq opt) => [opt] -> Map.Map String opt
-str2stMpWithOmit omits = Map.fromList [ (show o, o) | o <- [minBound .. maxBound] \\ omits ]
+str2stMpWithOmit = str2stMpWithOmitShow show
+
+str2stMpWithShow :: (Enum opt, Bounded opt, Eq opt) => (opt -> String) -> Map.Map String opt
+str2stMpWithShow shw = str2stMpWithOmitShow shw []
 
 str2stMp :: (Show opt, Enum opt, Bounded opt, Eq opt) => Map.Map String opt
 str2stMp = str2stMpWithOmit []

@@ -11,21 +11,21 @@
 Substitution for AnaDomain.
 %%]
 
-%%[(8 codegen) hs module {%{EH}AnaDomain.Ftv} import({%{EH}Base.Common},{%{EH}AnaDomain})
+%%[(8 codegenanalysis) hs module {%{EH}AnaDomain.Ftv} import({%{EH}Base.Common},{%{EH}AnaDomain})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Set as Set)
+%%[(8 codegenanalysis) hs import(qualified Data.Set as Set)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) ag import({AnaDomain/AbsSyn})
+%%[(8 codegenanalysis) ag import({AnaDomain/AbsSyn})
 WRAPPER TyAGItf QualAGItf CoeAGItf
 %%]
 
-%%[(8 codegen) hs export(relevTyFtv)
+%%[(8 codegenanalysis) hs export(relevTyFtv)
 relevTyFtv :: RelevTy -> UIDS
 relevTyFtv ty
   = fvS_Syn_TyAGItf t
@@ -34,7 +34,7 @@ relevTyFtv ty
               (Inh_TyAGItf )
 %%]
 
-%%[(8 codegen) hs export(relevQualFtv)
+%%[(8 codegenanalysis) hs export(relevQualFtv)
 relevQualFtv :: RelevQual -> UIDS
 relevQualFtv qual
   = fvS_Syn_QualAGItf t
@@ -43,7 +43,7 @@ relevQualFtv qual
               (Inh_QualAGItf )
 %%]
 
-%%[(8 codegen) hs export(relevCoeFtv)
+%%[(8 codegenanalysis) hs export(relevCoeFtv)
 relevCoeFtv :: RelevCoe -> UIDS
 relevCoeFtv coe
   = fvS_Syn_CoeAGItf t
@@ -56,11 +56,11 @@ relevCoeFtv coe
 %%% Fv
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllNT TyAGItf QualAGItf CoeAGItf [ | | fvS USE {`Set.union`} {Set.empty} : UIDS ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM AnaEval
   | Var             lhs		.	fvS			=	Set.singleton @av
 %%]

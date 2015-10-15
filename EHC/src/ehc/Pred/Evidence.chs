@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.Evidence} import({%{EH}CHR},{%{EH}Pred.CHR},{%{EH}Substitutable})
+%%[(9 hmtyinfer) module {%{EH}Pred.Evidence} import(UHC.Util.CHR,{%{EH}Pred.CHR},{%{EH}Substitutable}, {%{EH}VarMp})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})
@@ -77,7 +77,7 @@ instance VarExtractable p v => VarExtractable (Evidence p info) v where
   varFreeSet            (Evid_Recurse     p     )    = varFreeSet p
   varFreeSet            (Evid_Ambig       p  ess)    = Set.unions $ varFreeSet p : map (Set.unions . map varFreeSet . snd) ess
 
-instance VarUpdatable p s => VarUpdatable (Evidence p info) s where
+instance VarUpdatable p s VarId VarMpInfo => VarUpdatable (Evidence p info) s VarId VarMpInfo where
   varUpd s     (Evid_Unresolved  p   u )    = Evid_Unresolved (varUpd s p) u
   varUpd s     (Evid_Proof       p i es)    = Evid_Proof      (varUpd s p) i (map (varUpd s) es)
   varUpd s     (Evid_Recurse     p     )    = Evid_Recurse    (varUpd s p)  

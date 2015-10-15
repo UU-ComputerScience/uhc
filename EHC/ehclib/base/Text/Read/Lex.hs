@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude, CPP #-}
+{-# LANGUAGE GenericDeriving #-}
 
 -----------------------------------------------------------------------------
 -- |

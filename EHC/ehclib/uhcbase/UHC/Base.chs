@@ -1,4 +1,5 @@
 %%[99
+-- {-# LANGUAGE NoGenericDeriving #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -144,6 +145,9 @@ module UHC.Base   -- adapted from the Hugs prelude
   -- * Representable type classes
   , Representable0(..), Representable1(..)
 
+  -- * Dummy class
+  , Generic
+
 ) where
 
 -- import UHC.Generics
@@ -231,6 +235,7 @@ throw e = primThrowException e
 ----------------------------------------------------------------
 
 data PackedString
+  deriving Generic
 
 -- foreign import prim "primCStringToString"  packedStringToString  :: PackedString -> [Char]
 foreign import prim "primPackedStringNull" packedStringNull :: PackedString -> Bool
@@ -248,6 +253,7 @@ packedStringToString p = if packedStringNull p
 ----------------------------------------------------------------
 
 data ByteArray
+  deriving Generic
 
 foreign import prim primByteArrayLength   :: ByteArray -> Int
 #if defined(__UHC_TARGET_JS__)
@@ -658,7 +664,7 @@ f =<< x           = x >>= f
 
 data Bool    = False | True
                -- deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
-               deriving (Eq, Ord, Enum, Show, Read)
+               deriving (Eq, Ord, Enum, Show, Read, Generic)
 
 (&&), (||)  :: Bool -> Bool -> Bool
 False && x   = False
@@ -764,7 +770,7 @@ chr = toEnum
 --------------------------------------------------------------
 
 data Maybe a = Nothing | Just a
-               deriving (Eq, Ord, Show, Read)  -- TODO: Read
+               deriving (Eq, Ord, Show, Read, Generic)  -- TODO: Read
 
 {-
 -- done via generic deriving
@@ -788,7 +794,7 @@ maybe n f (Just x) = f x
 --------------------------------------------------------------
 
 data Either a b = Left a | Right b
-                  deriving (Eq, Ord, Show) -- TODO: Read
+                  deriving (Eq, Ord, Show, Generic) -- TODO: Read
 
 either              :: (a -> c) -> (b -> c) -> Either a b -> c
 either l r (Left x)  = l x
@@ -799,13 +805,14 @@ either l r (Right y) = r y
 --------------------------------------------------------------
 
 data Ordering = LT | EQ | GT
-                deriving (Eq, Ord, Enum, Show) -- TODO: Ix, Read, Bounded
+                deriving (Eq, Ord, Enum, Show, Generic) -- TODO: Ix, Read, Bounded
 
 --------------------------------------------------------------
 -- Lists
 --------------------------------------------------------------
 
 data [] a = ''[]'' | a : [a]
+            deriving Generic
 
 {-
 instance Eq a => Eq [a] where
@@ -1087,7 +1094,10 @@ instance Read Integer where
 --------------------------------------------------------------
 
 data Float     -- opaque datatype of 32bit IEEE floating point numbers
+  deriving Generic
+
 data Double    -- opaque datatype of 64bit IEEE floating point numbers
+  deriving Generic
 
 #if defined(__UHC_TARGET_JS__)
 foreign import prim "primEqInt"          	primEqFloat             :: Float -> Float -> Bool
@@ -1395,6 +1405,7 @@ instance RealFrac Float where
 instance RealFrac Double where
     properFraction = floatProperFraction
 
+floatProperFraction :: (RealFloat a, Integral b) => a -> (b,a)
 floatProperFraction x
    | n >= 0      = (fromInteger m * fromInteger b ^ n, 0)
    | otherwise   = (fromInteger w, encodeFloat r n)
@@ -1489,7 +1500,7 @@ instance Show Double where
 -- Ratio and Rational type
 --------------------------------------------------------------
 
-data Ratio a = !a :% !a deriving (Eq)
+data Ratio a = !a :% !a deriving (Eq, Generic)
 
 type Rational              = Ratio Integer
 
@@ -2071,7 +2082,7 @@ readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
 ----------------------------------------------------------------
 
 data ExitCode = ExitSuccess | ExitFailure Int
-                deriving (Eq, Ord, Show)  -- TODO: Read
+                deriving (Eq, Ord, Show, Generic)  -- TODO: Read
 
 data SomeException' x                          -- alphabetical order of constructors required, assumed Int encoding in comment
   = ArithException      ArithException      -- 0
@@ -2090,6 +2101,7 @@ data SomeException' x                          -- alphabetical order of construc
   | RecConError         String              -- 12
   | RecSelError         String              -- 13
   | RecUpdError         String              -- 14
+  deriving (Generic)
 
 data ArithException
   = Overflow
@@ -2097,18 +2109,18 @@ data ArithException
   | LossOfPrecision
   | DivideByZero
   | Denormal
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 data ArrayException
   = IndexOutOfBounds    String
   | UndefinedElement    String
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 data AsyncException
   = HeapOverflow							-- 0
   | StackOverflow		String				-- 1
   | ThreadKilled							-- 2
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 
 ----------------------------------------------------------------
@@ -2117,6 +2129,7 @@ data AsyncException
 
 newtype State s = State s
 data RealWorld = RealWorld			-- known to compiler
+  deriving Generic
 type IOWorld = State RealWorld
 
 -- newtype IO a = IO (IOWorld -> IOResult a)
@@ -2238,6 +2251,12 @@ default RealFloat Double
 -- They must be in the first module containing datatypes, because for every datatype these defs are used.
 -- However (1): fields may be added with a default, but those will not be known to the compiler.
 -- However (2): arguments types of fields are not used, change is therefore also allowed.
+
+--------------------------------------------------------------------------------
+-- Placeholder/dummy class only used for signalling deriving of Generics
+--------------------------------------------------------------------------------
+
+class Generic a
 
 --------------------------------------------------------------------------------
 -- Representation types

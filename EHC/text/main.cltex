@@ -68,6 +68,10 @@
 %%@main.articleDocumentClass
 %%]
 
+%%[32
+%%@main.articleDocumentClass
+%%]
+
 %%[30
 \documentclass[%
                headinclude,% new for typearea
@@ -520,6 +524,10 @@
 \usepackage{mathabx}
 %%]
 
+%%[4
+\usepackage{txfonts}
+%%]
+
 %%[22
 \usepackage{txfonts}
 %%]
@@ -534,6 +542,12 @@
 
 %%[37
 \usepackage{amsmath}
+%%]
+
+%%[72
+\usepackage{txfonts}
+\usepackage{wasysym}
+\usepackage{color}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -640,6 +654,10 @@
 %%]
 
 %%[26
+\SetSectionsForArticle
+%%]
+
+%%[32
 \SetSectionsForArticle
 %%]
 
@@ -793,8 +811,8 @@
 %endif %% useSigplanconfSty
 %else
 %endif
+%if False %% llncs
 \date{\today}
-%if llncs
 \institute{Department of Information and Computing Sciences,\\
 Universiteit Utrecht,\\
 P.O.Box 80.089, \\
@@ -1122,6 +1140,21 @@ version
 \date{November 14, 2011}
 %%]
 
+%%[72
+%\title{Explicit parameter passing for implicit class dictionary parameter passing (work title)}
+\title{Making Type-Class Dictionaries Explicit}
+\author{Atze Dijkstra \and S. Doaitse Swierstra}
+\date{\today}
+\institute{Department of Information and Computing Sciences,\\
+Universiteit Utrecht,\\
+P.O.Box 80.089, \\
+Padualaan 14, Utrecht, Netherlands,\\
+\email{@atze@@uu.nl@}, \email{@doaitse@@uu.nl@},\\
+WWW home page:
+\texttt{http://www.cs.uu.nl}
+}
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
@@ -1393,6 +1426,10 @@ WWW home page:
 
 
 %%[26
+\maketitle
+%%]
+
+%%[32
 \maketitle
 %%]
 
@@ -1690,6 +1727,12 @@ Haskell, compiler architecture, attribute grammar, aspect orientation
 %\keywords
 %Haskell, compiler architecture, attribute grammar, aspect orientation
 
+%%]
+
+%%[72
+\begin{abstract}
+%%@TopicExplImpl2015.abstractFlops2016
+\end{abstract}
 %%]
 
 
@@ -2090,16 +2133,45 @@ this has been moved to \chapterRef{ehc-partial-sig-quant-guess}.
 
 %%@TopicExplImpl.open
 %%@TopicExplImpl.abstract
-%%@TopicExplImpl.body
+%%@TopicExplImpl.bodyFull
 %%@TopicExplImpl.conclusion
 %%@TopicExplImpl.close
 %%]
 
 %%[4
 %%@TopicExplImpl.open
-%%@TopicExplImpl.body
+%%@TopicExplImpl.bodyFull
 %%@TopicExplImpl.conclusion
 %%@TopicExplImpl.close
+%%]
+
+%%[72
+%if not onlyAbstract
+
+%%@TopicExplImpl2015.open
+
+\section{Introduction}
+%%@TopicExplImpl2015.bodyIntro1
+%%@TopicExplImpl2015.bodyIntro2
+
+%% \section{Preliminaries}
+%% %%@TopicExplImpl2015.bodyPreliminaries
+
+\section{Implicit parameters}
+%%@TopicExplImpl2015.bodyImplicitParams
+
+%% \section{Implementation}
+%% %%@TopicExplImpl2015.bodyImplementation
+
+\section{Discussion and related work}
+%%@TopicExplImpl2015.bodyDiscussionRelatedWork
+
+\section{Conclusion}
+%%@TopicExplImpl2015.conclusionConclusion
+
+%%@TopicExplImpl2015.close
+
+%endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3385,8 +3457,9 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%]
 
 %%[1
+%if not onlyAbstract
 %if not asSlides && not storyPoster && not storyUniqueness
-%if not entcs
+%if not entcs && not llncs
 \AddContentsLine{References}
 %endif
 %if refToPDF
@@ -3410,6 +3483,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \bibliography{\jobname}
 }
 %endif %% not asSlides
+%endif %% not onlyAbstract
 %%]
 
 

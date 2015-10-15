@@ -38,8 +38,9 @@
 data ClGamInfo
   =  ClGamInfo
 %%[[(9 hmtyinfer)
-       { clgiPrToEvidTy         :: !Ty                  -- mapping from predicate type -> dictionary structure record, encoded as function
-       , clgiRuleTy             :: !Ty              
+       { clgiPrToEvidRecTy      :: !Ty                  -- mapping from predicate type -> dictionary structure record, encoded as function
+       , clgiPrToEvidDataTy     :: !Ty              	-- mapping from predicate type -> datatype, encoded as function
+       , clgiRuleTy             :: !Ty              	-- predicate context + class head as function type
        , clgiDfltDictNm         :: !HsName              -- dictionary name of default instance fields constructing function
        , clgiDictTag            :: !CTag                -- tag of dictionary
 %%[[92
@@ -54,7 +55,7 @@ type ClGam     = Gam HsName ClGamInfo
 emptyCLGI
   = ClGamInfo
 %%[[(9 hmtyinfer)
-      Ty_Any Ty_Any hsnUnknown CTagRec
+      Ty_Any Ty_Any Ty_Any hsnUnknown CTagRec
 %%[[92
       []
 %%]]
@@ -72,7 +73,14 @@ deriving instance Data ClGamInfo
 
 %%[(9 hmtyinfer)
 instance PP ClGamInfo where
-  pp clgi = pp (clgiDfltDictNm clgi) >#< "::" >#< ppTy (clgiRuleTy clgi) >#< "::" >#< ppTy (clgiPrToEvidTy clgi)
+  pp clgi = "dictnm=" >#< pp (clgiDfltDictNm clgi) >-< indent 2 (
+        "rule=" >#< ppTy (clgiRuleTy clgi)
+    >-< "eviddataty=" >#< ppTy (clgiPrToEvidDataTy clgi)
+    >-< "evidrecty=" >#< ppTy (clgiPrToEvidRecTy clgi)
+%%[[92
+    >-< "clgiGenerDerivableL=" >#< ppAssocL (clgiGenerDerivableL clgi)
+%%]]
+    )
 %%]
 
 %%[9 export(initClGam)

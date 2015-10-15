@@ -510,8 +510,11 @@ pSel            =    pVar <|> pCon <|> mkHNmPos <$> pInt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+pPrExprClass'   ::   EHCParser (HsName,PrExpr)
+pPrExprClass'   =    (\c t -> (c, mkEH PrExpr_Class c t))  <$> pCon <*> pTyExprs
+
 pPrExprClass    ::   EHCParser PrExpr
-pPrExprClass    =    mkEH PrExpr_Class  <$> pCon <*> pTyExprs
+pPrExprClass    =    snd <$> pPrExprClass'
 %%]
 
 %%[9
@@ -555,17 +558,18 @@ pPrExprBase     =    pPrExprClass
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-pClassHead      ::   EHCParser TyExpr
-pClassHead      =    pTyPrExprPrefix <*> pHd <|> pHd
-                where pHd = mkEH TyExpr_Pred <$> pPrExprClass
+pClassHead      ::   EHCParser (HsName,TyExpr)
+pClassHead      =    (\pre (n,hd) -> (n, pre hd)) <$> pTyPrExprPrefix <*> pHd
+                <|>  pHd
+  where pHd = (\(n,p) -> (n, mkEH TyExpr_Pred p)) <$> pPrExprClass'
 
 pDeclClass      ::   EHCParser Decl
 %%[[9
-pDeclClass      =    (\h d -> mkEH Decl_Class h Nothing d)
+pDeclClass      =    (\(n,h) d -> mkEH Decl_Class n h Nothing d)
 %%][15
-pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d)
+pDeclClass      =    (\(n,h) deps d -> mkEH Decl_Class n h deps Nothing d)
 %%][92
-pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d [])
+pDeclClass      =    (\(n,h) deps d -> mkEH Decl_Class n h deps Nothing d [])
 %%]]
                      <$   pKey "class"
                      <*>  pClassHead
@@ -578,7 +582,7 @@ pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d [])
 
 pDeclInstance   ::   EHCParser Decl
 pDeclInstance   =    pKey "instance"
-                     *>   (    (\n h d -> mkEH Decl_Instance n InstNormal h d)
+                     *>   (    (\n (_,h) d -> mkEH Decl_Instance n InstNormal h d)
                                <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
                                <*>  pClassHead
                                <*   pKey "where" <*> pDecls

@@ -18,10 +18,16 @@
 %%[(8 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Gam},{%{EH}Gam.DataGam})
 %%]
 
+%%[(8 corerun) hs import({%{EH}Base.Trace})
+%%]
+
 %%[(8 corerun) hs import({%{EH}CoreRun}, {%{EH}CoreRun.Run}, {%{EH}CoreRun.Run.Val}, {%{EH}CoreRun.Run.Val.Prim})
 %%]
 
 %%[(8 corerun) hs import({%{EH}CoreRun.Pretty}, UHC.Util.Pretty)
+%%]
+
+%%[(8 corerun) hs import(UHC.Util.Utils)
 %%]
 
 %%[(8 corerun) hs import(qualified Data.Vector as V, qualified Data.Vector.Mutable as MV)
@@ -96,7 +102,7 @@ cmodRun opts (Mod_Mod {mbbody_Mod_Mod = Just e}) = do
   -- dumpEnvM True
   v <- mustReturn $ rsemExp e
 %%[[8
-  dumpEnvM False
+  dumpEnvM' -- False
 %%][100
 %%]]
   return v
@@ -162,7 +168,7 @@ rvalImplStkExp :: RunSem RValCxt RValEnv RVal m RVal => Exp -> RValT m RVal
 {-# INLINE rvalImplStkExp #-}
 rvalImplStkExp e = do
 %%[[8
-  rsemTr $ ">E:" >#< e
+  rsemTr'' TraceOn_RunEval $ ">E:" >#< e
   e' <- case e of
 %%][100
   case e of
@@ -220,7 +226,7 @@ rvalImplStkExp e = do
     -- e -> err $ "CoreRun.Run.Val.RunExplStk.rvalImplStkExp:" >#< e
 
 %%[[8
-  rsemTr $ "<E:" >#< e -- (e >-< e')
+  rsemTr'' TraceOn_RunEval $ "<E:" >#< e -- (e >-< e')
   return e'
 %%][100
 %%]]
@@ -240,9 +246,10 @@ instance
     rsemSetup opts modImpL mod = {- local (const emptyRValCxt) $ -} do
         -- (liftIO $ newRValEnv 100000) >>= put
         let modAllL = mod : modImpL
-        ms <- liftIO $ MV.new (maximum (map moduleNr_Mod_Mod modAllL) + 1)
+        ms <- liftIO $ MV.new (maximum (map (panicJust "CoreRun.Run.Val.rsemSetup.moduleNr_Mod_Mod(1)" . moduleNr_Mod_Mod) modAllL) + 1)
         modify $ \env -> env {renvGlobalsMV = ms}
-        forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=nr, binds_Mod_Mod=bs}) -> do
+        forM_ modAllL $ \(Mod_Mod {ref2nm_Mod_Mod=r2n, moduleNr_Mod_Mod=mbnr, binds_Mod_Mod=bs}) -> do
+          let nr = panicJust "CoreRun.Run.Val.rsemSetup.moduleNr_Mod_Mod(2)" mbnr
           bs' <- (liftIO . V.thaw) =<< V.forM bs rsemExp
           p <- implStkAllocFrameM r2n nullPtr {- 0 -} (MV.length bs') bs'
           liftIO $ MV.write ms nr p

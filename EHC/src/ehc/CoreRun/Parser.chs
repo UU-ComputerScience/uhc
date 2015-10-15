@@ -62,16 +62,22 @@ pAST opts = ASTParser $ pMod opts
 -- | Parse module 'Mod'
 pMod :: EHCOpts -> CRParser Mod
 pMod _
-  = (\nm nr sz main is ms bs -> mkModWithImportsMetas nm nr sz is ms (crarrayFromList bs) main)
-    <$  pMODULE <*> pMaybe (mkHNm "Main") id pDollNm <*> pInt <* pCOMMA <*> pInt <*> pMb (pRARROW *> pExp) <* pSEMI
+  = (\nm {- nr -} sz main is es ms bs -> mkModWithImportsExportsMetas nm Nothing {- nr -} sz is es ms (crarrayFromList bs) main)
+    <$  pMODULE <*> pMaybe (mkHNm "Main") id pDollNm <*> {- pMb (pInt <* pCOMMA) <*> -} pInt <*> pMb (pRARROW *> pExp) <* pSEMI
     <*> pList (pImport <* pSEMI)
+    <*> pList (pExport <* pSEMI)
     <*> pList (pMeta <* pSEMI)
     <*> pList (pExp <* pSEMI)
 
 -- | Parse 'Import'
 pImport :: CRParser Import
 pImport
-  = Import_Import <$ pIMPORT <*> pDollNm
+  = Import_Import <$ pIMPORT <*> pDifficultNm
+
+-- | Parse 'Export'
+pExport :: CRParser Export
+pExport
+  = Export_Export <$ pEXPORT <*> pDifficultNm <* pEQUAL <*> pInt
 
 -- | Parse 'Meta'
 pMeta :: CRParser Meta
@@ -89,6 +95,7 @@ pSExp
   <|> (mkChar' . head) <$> pChar
   <|> mkString' <$> pString
   <|> mkVar' <$> pRRef
+  <|> mkDbg' <$ pKeyTk "dbg" <*> pString
 
 -- | Parse expression 'Exp'
 pExp :: CRParser Exp
@@ -102,7 +109,6 @@ pExp = pE
                <|> mkTup <$ pKeyTk "alloc" <*> pInt 
                <|> mkFFI <$ pKeyTk "ffi"   <*> pString 
                ) <*> pParens (pListSep pCOMMA pSExp)
-           <|> dbg <$ pKeyTk "dbg" <*> pString
            <|> mkCase <$ pCASE <*> pSExp <* pOF <*> pList1 (pRARROW *> pE <* pSEMI)
            <|> mkLet  <$ pLET  <*> pInt  <* pRARROW <*> pList1 (pE <* pSEMI) <* pIN <*> pE
            <|> mkLam  <$ pLAM  <*> pInt  <* pCOMMA <*> pInt <* pRARROW <*> pE
@@ -118,6 +124,10 @@ pRRef
                  ) <* pDOT <*> pInt <* pDOT <*> pInt
                )
            <|> ( mkModRef <$ pKeyTk "m" <* pDOT <*> pInt
+               )
+           <|> ( mkExpRef <$ pKeyTk "e" <* pDOT <*> pDifficultNm <* pDOT <*> pInt
+               )
+           <|> ( RRef_Unr <$ pKeyTk "u" <* pDOT <*> pDifficultNm
                )
         pS = pDOT
               *> (   RRef_Tag <$ pKeyTk "tag"

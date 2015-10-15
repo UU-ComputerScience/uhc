@@ -3,7 +3,7 @@
 
 %%[(8 codegen grin wholeprogAnal) import(System.IO, System.CPUTime, Numeric)
 %%]
-%%[(8 codegen grin wholeprogAnal) import(Control.Monad.Error, Control.Monad.State, Control.Exception)
+%%[(8 codegen grin wholeprogAnal) import(UHC.Util.Error, Control.Monad.State, Control.Exception)
 %%]
 %%[(8 codegen grin wholeprogAnal) import(Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
@@ -11,7 +11,7 @@
 %%]
 %%[(8 codegen grin wholeprogAnal) import(UU.Parsing)
 %%]
-%%[(8 codegen grin wholeprogAnal) import(UHC.Util.Pretty, UHC.Util.CompileRun2, UHC.Util.FPath)
+%%[(8 codegen grin wholeprogAnal) import(UHC.Util.Pretty, {%{EH}EHC.Common}, UHC.Util.FPath)
 %%]
 %%[(8 codegen grin wholeprogAnal) import({%{EH}Base.Common}, {%{EH}Base.Target}, {%{EH}Base.HsName.Builtin}, {%{EH}Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]

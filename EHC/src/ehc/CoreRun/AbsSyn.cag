@@ -31,11 +31,12 @@ DATA AGItf
 
 %%[(8 corerun)
 DATA Mod
-  | Mod         ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's
+  | Mod         ref2nm			: {Ref2Nm}		-- inverse lookup of locally introduced binding RRef's, 20150817 TBD: to be replaced with exports (see below)
                 moduleNm        : {HsName}
-                moduleNr        : {Int}			-- sequence nr, index later into global table of modules
+                moduleNr        : {Maybe Int}	-- sequence nr, index later into global table of modules; 20150902 TBD: remove, the Expl run variant does not depend on it anymore, the Impl variant still does
                 stkDepth        : {Int}			-- max depth of stack for setting up globals
                 imports         : ImportL
+                exports         : ExportL
                 metas           : MetaL
                 binds           : {CRArray Bind}
                 mbbody			: MbExp
@@ -52,6 +53,20 @@ DATA Import
 TYPE ImportL		= [Import]
 
 SET AllImport		= Import ImportL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exports
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun)
+DATA Export
+  | Export		nm				: {HsName}
+             	offset			: {Int}
+
+TYPE ExportL		= [Export]
+
+SET AllExport		= Export ExportL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,5 +190,5 @@ SET AllCodeNT
   = Mod SExp AllExp Alt Pat
 
 SET AllNT
-  = AllCodeNT AllImport AllMetaNT
+  = AllCodeNT AllExport AllImport AllMetaNT
 %%]

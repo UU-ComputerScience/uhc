@@ -2,6 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_HADDOCK hide #-}
 {-# EXCLUDE_IF_TARGET js #-}
+{-# LANGUAGE GenericDeriving #-}
 
 #undef DEBUG_DUMP
 

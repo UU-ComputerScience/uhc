@@ -1,3 +1,7 @@
+%%[0 hs
+{-# LANGUAGE ExistentialQuantification #-}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PP configuration and varieties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,8 +50,9 @@ ppScanoptsNm copts n = fst $ ppHsnEscapeWith '$' (hsnOkChars '$' $ copts) (hsnNo
 %%% CfgPP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(CfgPP(..))
-class CfgPP x where
+%%[8 export(CfgPP'(..), CfgPP(..))
+-- | API for PP config
+class CfgPP' x where
   cfgppHsName 		:: x -> HsName -> PP_Doc
   cfgppConHsName 	:: x -> HsName -> PP_Doc
   cfgppUID    		:: x -> UID    -> PP_Doc
@@ -67,6 +72,8 @@ class CfgPP x where
   cfgppVarHsNameFallback x _ (Just u) _ _ 	= cfgppUID x u
   cfgppFollowAST _              			= False
   cfgppTyPPVarDflt							= \x pre tv mbpp -> cfgppVarHsName x (Just $ mkHNm $ pre ++ "_" ++ show tv) (Just tv) Nothing mbpp
+
+data CfgPP = forall x . CfgPP' x => CfgPP x
 %%]
 
 %%[8 export(CfgPP_Plain(..),CfgPP_Core(..),CfgPP_Grin(..),CfgPP_TyCore(..))
@@ -77,11 +84,11 @@ data CfgPP_Grin    = CfgPP_Grin
 %%]
 
 %%[8
-instance CfgPP CfgPP_Plain
+instance CfgPP' CfgPP_Plain
 %%]
 
 %%[8
-instance CfgPP CfgPP_Core where
+instance CfgPP' CfgPP_Core where
   {-
   cfgppHsName    _ n 				= fst $ ppHsnEscapeWith '$' (hsnOkChars '$' $ copts) (hsnNotOkStrs copts) (`Set.member` leaveAsIs) n
     where copts = coreScanOpts emptyEHCOpts
@@ -98,12 +105,12 @@ instance CfgPP CfgPP_Core where
 %%[8
 ppNmTyCore = ppHsnEscaped (Right $ Set.fromList ['0'..'9']) '$' (hsnEscapeeChars '$' tycoreScanOpts)
 
-instance CfgPP CfgPP_TyCore where
+instance CfgPP' CfgPP_TyCore where
   cfgppHsName    _ = ppNmTyCore
 %%]
 
 %%[8
-instance CfgPP CfgPP_Grin where
+instance CfgPP' CfgPP_Grin where
   cfgppHsName    _ = ppHsnNonAlpha grinScanOpts
 %%]
 
@@ -137,7 +144,7 @@ tnUniqRepr
 
 %%[8.ppCTag export(ppCTag', ppCTagExtensive')
 -- intended for parsing
-ppCTag' :: CfgPP x => x -> CTag -> PP_Doc
+ppCTag' :: CfgPP' x => x -> CTag -> PP_Doc
 ppCTag' x t
   = case t of
       CTagRec                      -> ppCurly "Rec"
@@ -145,7 +152,7 @@ ppCTag' x t
   where ppNm n = cfgppHsName x n
 
 -- intended for parsing
-ppCTagExtensive' :: CfgPP x => x -> CTag -> PP_Doc
+ppCTagExtensive' :: CfgPP' x => x -> CTag -> PP_Doc
 ppCTagExtensive' x t
   = case t of
       CTagRec                      -> ppCurly "Rec"
@@ -154,7 +161,7 @@ ppCTagExtensive' x t
 %%]
 
 %%[8 export(ppCTagsMp)
-ppCTagsMp :: CfgPP x => x -> CTagsMp -> PP_Doc
+ppCTagsMp :: CfgPP' x => x -> CTagsMp -> PP_Doc
 ppCTagsMp x
   = mkl (mkl (ppCTag' x))
   where mkl pe = ppCurlysSemisBlock . map (\(n,e) -> cfgppHsName x n >-< indent 1 ("=" >#< pe e))

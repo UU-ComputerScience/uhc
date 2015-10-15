@@ -66,7 +66,8 @@ text-variant-popl07-explimpl-tst:
 	  text-variant-dflt-once
 
 text-variant-popl07-explimpl:
-	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes \
+	$(MAKE) \
+	  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl07 --set=acm --set=kscode --set=shortStory --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-bib
@@ -434,5 +435,12 @@ text-variant-icfp2012-js:
 	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp2012 --set=kscode --set=acm --set=blockstyle --set=asArticle --set=dictaat" \
 	  TEXT_SHUFFLE_VARIANT=69 \
+	  text-variant-dflt-bib
+
+text-variant-flops2016-explimpl:
+	$(MAKE) \
+	  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops2016 --set=llncs --set=kscode --set=shortStory --set=storyExplImplRevised --unset=onlyAbstract --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=72 \
 	  text-variant-dflt-bib
 

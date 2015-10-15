@@ -12,7 +12,7 @@
 
 %%[(8 javascript) hs import(Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Char, Data.Maybe, Data.List)
 %%]
-%%[(8 javascript) hs import(UHC.Util.Utils, qualified UHC.Util.FastSeq as Seq)
+%%[(8 javascript) hs import(UHC.Util.Utils,UHC.Util.Pretty, qualified UHC.Util.FastSeq as Seq)
 %%]
 
 %%[(8 javascript) hs import({%{EH}Base.HsName.Builtin},{%{EH}CodeGen.BuiltinSizeInfo},{%{EH}CodeGen.BuiltinPrims},{%{EH}CodeGen.BasicAnnot},{%{EH}CodeGen.GenJavaLike})
@@ -30,7 +30,7 @@
 %%]
 
 -- debug
-%%[(8 javascript) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(8888 javascript) hs import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,6 +39,10 @@
 
 %%[(8 javascript).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonBindNm},{Core/CommonJavaLike},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
 WRAPPER CodeAGItf
+%%]
+
+%%[(8 javascript) hs
+deriving instance Typeable Syn_CodeAGItf
 %%]
 
 %%[(8 javascript) hs export(cmod2JavaScriptModule)

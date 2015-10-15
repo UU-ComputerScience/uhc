@@ -40,15 +40,17 @@ Currently the following is maintained:
 %%]
 
 -- Analyses
-%%[(8 codegen) import({%{EH}AnaDomain})
+%%[(8 codegenanalysis) import({%{EH}AnaDomain})
 %%]
 %%[(8 codegen) import(UHC.Util.Utils)
 %%]
 
 -- PP
-%%[(8 codegen) import(UHC.Util.Pretty,{%{EH}AnaDomain.Pretty})
+%%[(8 codegen) import(UHC.Util.Pretty)
 %%]
-%%[(8 hmtyast) import({%{EH}Ty.Pretty})
+%%[(8 codegenanalysis) import({%{EH}AnaDomain.Pretty})
+%%]
+%%[(8 codegen) import({%{EH}Ty.Pretty})
 %%]
 
 -- Haskell stuff
@@ -94,15 +96,17 @@ instance PP FusionRole where
 %%[(8 codegen) hs export(LamInfoBindAsp(..))
 -- | per aspect info
 data LamInfoBindAsp
-  = LamInfoBindAsp_RelevTy							-- relevance typing
-      { libindaspRelevTy 		:: !RelevTy
-      }
-  | LamInfoBindAsp_Ty								-- plain good old type
+  = LamInfoBindAsp_Ty								-- plain good old type
       { libindaspTy 			:: !Ty
       }
 %%[[(8888 coresysf)
   | LamInfoBindAsp_SysfTy							-- system F type
       { libindaspSysfTy 		:: !SysF.Ty
+      }
+%%]]
+%%[[(8 codegenanalysis)
+  | LamInfoBindAsp_RelevTy							-- relevance typing
+      { libindaspRelevTy 		:: !RelevTy
       }
 %%]]
   | LamInfoBindAsp_Core								-- actual Core, should go paired with Ty (?? maybe pair them directly)
@@ -125,8 +129,10 @@ type LamInfoBindAspMp = Map.Map ACoreBindAspectKeyS LamInfoBindAsp
 
 %%[(8 codegen)
 instance PP LamInfoBindAsp where
+  pp (LamInfoBindAsp_Ty      	t) = "Ty"   >#< ppTy t
+%%[[(8 codegenanalysis)
   pp (LamInfoBindAsp_RelevTy 	t) = "RTy"  >#< pp t
-  pp (LamInfoBindAsp_Ty      	t) = "Ty"   >#< pp t
+%%]]
   pp (LamInfoBindAsp_Core    ml	c) = pp "Core" -- >#< pp c -- Core.Pretty uses LamInfo, so module cycle...
 %%[[93
   pp (LamInfoBindAsp_FusionRole	r) = "Fuse" >#< pp r

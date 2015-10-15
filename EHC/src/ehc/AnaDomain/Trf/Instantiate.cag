@@ -7,13 +7,13 @@
 %%% Haskell importable interface to RelevTy instantiate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}AnaDomain.Trf.Instantiate}
+%%[(8 codegenanalysis) hs module {%{EH}AnaDomain.Trf.Instantiate}
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}AnaDomain},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(8 codegenanalysis) hs import({%{EH}Base.Common},{%{EH}AnaDomain},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegenanalysis) hs import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 %%[doesWhat
@@ -24,11 +24,11 @@ Instantiation replaces quantification with fresh type vars.
 %%% relevtyInst interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) ag import({AnaDomain/AbsSyn})
+%%[(8 codegenanalysis) ag import({AnaDomain/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[(8 codegen) hs export(relevtyInst)
+%%[(8 codegenanalysis) hs export(relevtyInst)
 relevtyInst :: UID -> RelevTy -> (RelevTy,RelevQualS)
 relevtyInst uniq ty
   = (ty', extraQualS `Set.union` qualS_Syn_TyAGItf t)
@@ -50,7 +50,7 @@ relevtyInst uniq ty
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllNT [ | gUniq: UID | ]
 ATTR TyAGItf QualAGItf CoeAGItf [ gUniq: UID | | ]
 
@@ -62,12 +62,12 @@ SEM RelevTy
 %%% Fresh vars, and their use
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM RelevTy
   | Fun             loc         .   freshTvL    =   mkNewLevUIDL (length @quants) @lUniq
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllNT [ freshMp: {Map.Map UID UID} | | ]
 
 SEM TyAGItf QualAGItf CoeAGItf
@@ -81,11 +81,11 @@ SEM RelevTy
 %%% Per domain constraint generation for recursive quantification
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen) hs
+%%[(8888 codegenanalysis) hs
 type GenQualMp = Map.Map UID (UID -> RelevQualS)
 %%]
 
-%%[(8888 codegen)
+%%[(8888 codegenanalysis)
 ATTR AllNT [ | | genQualMp USE {`Map.union`} {Map.empty} : GenQualMp ]
 
 SEM AnaEval
@@ -96,26 +96,26 @@ SEM AnaEval
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllNT [ | | repl: SELF ]
 ATTR TyAGItf [ | | repl: RelevTy ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM RelevTy
   | Fun             lhs         .   repl        =   RelevTy_Fun RQuant_None [] [] @args.repl @res.repl
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM AnaEval
   | Var             lhs         .   repl        =   AnaEval_Var $ Map.findWithDefault @av @av @lhs.freshMp
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllNT TyAGItf [ | | qualS USE {`Set.union`} {Set.empty} : RelevQualS ]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM RelevTy
   | Fun             lhs         .   qualS       =   Set.unions [ Set.fromList @quals.repl, @args.qualS, @res.qualS ]
 %%]

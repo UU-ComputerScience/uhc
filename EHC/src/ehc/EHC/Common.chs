@@ -21,6 +21,9 @@ Used by all compiler driver code
 %%[8 import(GHC.Generics)
 %%]
 
+%%[8 import({%{EH}EHC.ASTPipeline}) export(module {%{EH}EHC.ASTPipeline})
+%%]
+
 %%[8 import({%{EH}Gam.Full}) export(module {%{EH}Gam.Full})
 %%]
 
@@ -137,7 +140,7 @@ data CRState
 %%[(8 corerunin) export(CRRState(..))
 data CRRState
   = CRRStartBinary
-  -- | CRRStartText
+  | CRRStartText
   | CRROnlyImports
   | CRRAllSem
   deriving (Show,Eq)
@@ -231,85 +234,57 @@ ecuStateToKind s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ASTType & file variation
+%%% Overriding of FPath
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ASTType(..))
--- | An 'Enum' of all types of ast we can deal with
-data ASTType
-  = ASTType_HS
-  | ASTType_EH
-%%[[50
-  | ASTType_HI
-%%]]
-%%[[(8 core)
-  | ASTType_Core
-%%]]
-%%[[(8 corerun)
-  | ASTType_CoreRun
-%%]]
-%%[[(8 grin)
-  | ASTType_Grin
-%%]]
-%%[[(8 cmm)
-  | ASTType_Cmm
-%%]]
-%%[[(8 javascript)
-  | ASTType_JavaScript
-%%]]
-%%[[(8 codegen)
-  | ASTType_C
-  | ASTType_O
-%%]]
-  | ASTType_Unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+%%[8 export(ASTFileNameOverride(..), astFileNameOverrideMbFPath)
+-- | Overriding an automatically chosen name (based on module name)
+data ASTFileNameOverride
+  = ASTFileNameOverride_AsIs					-- ^ fully as is
+  | ASTFileNameOverride_FPath	 		FPath	-- ^ with FPath as replacement
+  | ASTFileNameOverride_FPathAsTop	 	FPath	-- ^ with FPath as top level module path
+  deriving (Eq, Ord, Typeable, Generic)
 
-instance Hashable ASTType
+instance Show ASTFileNameOverride where
+  show (ASTFileNameOverride_AsIs         ) = "AsIs"
+  show (ASTFileNameOverride_FPath      fp) = fpathToStr fp ++ "(Overr)"
+  show (ASTFileNameOverride_FPathAsTop fp) = fpathToStr fp ++ "(^Overr)"
+
+instance PP ASTFileNameOverride where
+  pp = pp . show
+
+instance Hashable ASTFileNameOverride
+
+-- | Possibly extract FPath
+astFileNameOverrideMbFPath :: ASTFileNameOverride -> Maybe (FPath,Bool)
+astFileNameOverrideMbFPath (ASTFileNameOverride_FPath 		fp) = Just (fp,False)
+astFileNameOverrideMbFPath (ASTFileNameOverride_FPathAsTop 	fp) = Just (fp,True)
+astFileNameOverrideMbFPath  _									= Nothing
 %%]
 
-%%[8 export(ASTFileContent(..))
--- | File content variations of ast we can deal with (in principle)
-data ASTFileContent
-  = ASTFileContent_Text
-  | ASTFileContent_LitText
-  | ASTFileContent_Binary
-  | ASTFileContent_Unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+%%[8 export(ASTFileSuffOverride(..))
+-- | Overriding an automatically chosen name (based on module name)
+data ASTFileSuffOverride
+  = ASTFileSuffOverride_AsIs							-- ^ fully as is
+  | ASTFileSuffOverride_Suff	 		ASTSuffixKey	-- ^ with suff from key as replacement
+  deriving (Eq, Ord, Typeable, Generic, Show)
 
-instance Hashable ASTFileContent
+instance Hashable ASTFileSuffOverride
 %%]
 
-%%[8 export(ASTHandlerKey)
--- | Combination of 'ASTType' and 'ASTFileContent' as key into map of handlers
-type ASTHandlerKey = (ASTType, ASTFileContent)
-%%]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dealing with timestamp of file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ASTFileUse(..))
--- | File usage variations of ast
-data ASTFileUse
-  = ASTFileUse_Cache		-- ^ internal use cache on file
-  | ASTFileUse_Dump			-- ^ output: dumped, possibly usable as src later on
-  | ASTFileUse_Target		-- ^ output: as target of compilation
-  | ASTFileUse_Src			-- ^ input: src file
-  | ASTFileUse_Unknown		-- ^ unknown
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
+%%[8 export(ASTFileTimeHandleHow(..))
+-- | How to handle possibly previously timing info of file
+data ASTFileTimeHandleHow
+  = ASTFileTimeHandleHow_Ignore			-- ^ just don't do anything with it
+  | ASTFileTimeHandleHow_AbsenceIsError	-- ^ if not there, file is not there, error
+  | ASTFileTimeHandleHow_AbsenceIgnore	-- ^ if not there, file is not there, ignore
+  deriving (Eq, Ord, Typeable, Generic, Show)
 
-instance Hashable ASTFileUse
-%%]
-
-%%[8 export(ASTSuffixKey)
--- | Key for allowed suffixes, multiples allowed to cater for different suffixes
-type ASTSuffixKey = (ASTFileContent, ASTFileUse)
-%%]
-
-%%[8 export(ASTFileTiming(..))
--- | File timing variations of ast
-data ASTFileTiming
-  = ASTFileTiming_Prev		-- ^ previously generated
-  | ASTFileTiming_Current	-- ^ current one
-  deriving (Eq, Ord, Enum, Typeable, Generic, Bounded, Show)
-
-instance Hashable ASTFileTiming
+instance Hashable ASTFileTimeHandleHow
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -331,6 +306,7 @@ type FileSuffInitState =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(PrevSearchInfo)
+-- | Info returned from first module/import analysis required for imports done from that module
 type PrevSearchInfo = (HsName,(FPath,FileLoc))
 %%]
 
@@ -348,6 +324,67 @@ prevSearchInfoAdaptedSearchPath (Just (prevNm,(prevFp,prevLoc))) searchPath
 prevSearchInfoAdaptedSearchPath _ searchPath = searchPath
 %%]
 
+%%[8 export(FileSearchKey(..))
+-- | Search key for a file to be compiled
+data FileSearchKey =
+  FileSearchKey
+    { _fsrchNm			:: HsName						-- ^ module name
+    , _fsrchOverr		:: ASTFileNameOverride			-- ^ possibly an alternate/overriding file path
+    }
+  deriving (Eq, Ord, Typeable, Generic)
+
+instance Hashable FileSearchKey
+
+{-
+instance Eq FileSearchKey where
+  k1 == k2
+    | 
+    where mbfp1@(~(Just fp)) = astFileNameOverrideMbFPath $ _fsrchOverr k1
+-}
+
+instance Show FileSearchKey where
+  show (FileSearchKey n ov) = case ov of
+    ASTFileNameOverride_AsIs -> show n
+    _                        -> show ov
+
+instance PP FileSearchKey where
+  pp = pp . show
+%%]
+
+%%[8 export(PrevFileSearchKey(..), updPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithName, mkPrevFileSearchKeyWithNameMbPrev, mkPrevFileSearchKeyWithNamePrev)
+-- | Full search key for a file to be compiled, possibly including (previous search) context in which search is done
+data PrevFileSearchKey =
+  PrevFileSearchKey
+    { _pfsrchKey			:: FileSearchKey			-- ^ module and possible file name info
+    , _pfsrchMbCxtInfo		:: Maybe PrevSearchInfo		-- ^ previous search context
+    }
+  deriving (Eq, Ord, Typeable, Generic)
+
+instance Hashable PrevFileSearchKey
+
+instance Show PrevFileSearchKey where
+  show (PrevFileSearchKey k mc) = show k ++ maybe "" (\c -> "(" ++ show c ++ ")") mc
+
+instance PP PrevFileSearchKey where
+  pp = pp . show
+
+updPrevFileSearchKeyWithName :: HsName -> PrevFileSearchKey -> PrevFileSearchKey
+updPrevFileSearchKeyWithName n (PrevFileSearchKey (FileSearchKey _ f) p) = PrevFileSearchKey (FileSearchKey n f) p
+
+mkPrevFileSearchKeyWithName :: HsName -> PrevFileSearchKey
+mkPrevFileSearchKeyWithName n = mkPrevFileSearchKeyWithNameMbPrev n Nothing
+
+mkPrevFileSearchKeyWithNameMbPrev :: HsName -> Maybe PrevSearchInfo -> PrevFileSearchKey
+mkPrevFileSearchKeyWithNameMbPrev n mp = PrevFileSearchKey (FileSearchKey n ASTFileNameOverride_AsIs) mp
+
+mkPrevFileSearchKeyWithNamePrev :: HsName -> PrevSearchInfo -> PrevFileSearchKey
+mkPrevFileSearchKeyWithNamePrev n p = mkPrevFileSearchKeyWithNameMbPrev n (Just p)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Info & Adaption of search path
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% How to compile the final step for a target
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -356,6 +393,39 @@ prevSearchInfoAdaptedSearchPath _ searchPath = searchPath
 data FinalCompileHow
   = FinalCompile_Module
   | FinalCompile_Exec
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Get info for module analysis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[50 export(GetMeta(..),allGetMeta)
+data GetMeta
+  = GetMeta_Src
+  | GetMeta_HI
+  | GetMeta_Core
+%%[[(50 corerun)
+  | GetMeta_CoreRun
+%%]]
+%%[[(50 grin)
+  | GetMeta_Grin
+%%]]
+  | GetMeta_Dir
+  deriving (Eq,Ord)
+
+allGetMeta
+  = [ GetMeta_Src
+    , GetMeta_HI
+    , GetMeta_Core
+%%[[(50 corerun)
+    , GetMeta_CoreRun
+%%]]
+%%[[(50 grin)
+    , GetMeta_Grin
+%%]]
+    , GetMeta_Dir
+    ]
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

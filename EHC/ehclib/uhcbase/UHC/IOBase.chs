@@ -4,6 +4,7 @@
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
+{-# LANGUAGE GenericDeriving #-}
 
 module UHC.IOBase
   ( -- traceBuf,

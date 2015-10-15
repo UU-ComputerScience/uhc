@@ -163,18 +163,18 @@ SEM Declaration
 %%]]
         loc         .   eh          =   rngLift @range EH.Decl_Data False @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) @constructors.eh
 %%[[92
-                                                (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
+                                                (if ehcOptGenGenerics @lhs.opts || @derivings.hasGenericDeriving then Just @generMaxRemArity else Nothing)
 %%]]
         lhs         .   eh          =   [@eh]
     | Newtype
         loc         .   eh          =   rngLift @range EH.Decl_Data True @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) [@constructors.eh]
 %%[[92
-                                                (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
+                                                (if ehcOptGenGenerics @lhs.opts || @derivings.hasGenericDeriving then Just @generMaxRemArity else Nothing)
 %%]]
         lhs         .   eh          =   [@eh]
 %%[[92
     | Data Newtype GADT
-        loc         .   ehGener     =   rngLift @range EH.Decl_GenerRep @generMaxRemArity @typerefname @constructors.conrefnames @constructors.conAndFldrefnames
+        loc         .   mkEhGener   =   \arity -> rngLift @range EH.Decl_GenerRep @generMaxRemArity arity @typerefname @constructors.conrefnames @constructors.conAndFldrefnames
 %%]]
 %%[[93
     | FusionDeclaration
@@ -202,7 +202,7 @@ SEM Declaration
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
                                             a = appArr c h
                                             (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
-                                        in  ( rngLift @range EH.Decl_Class a
+                                        in  ( rngLift @range EH.Decl_Class @classrefname a
 %%[[15
                                                       @dependencies.eh
 %%]]
@@ -210,7 +210,7 @@ SEM Declaration
 %%[[92
                                                       []
 %%][99
-                                                      @generDerivInfoL
+                                                      @generderivrefnames
 %%]]
                                             , rngLift @range EH.Decl_Instance (Just (@instancerefname,False)) InstDefault a vals
                                             )
@@ -222,7 +222,8 @@ SEM Declaration
                                         in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) @instVariant (appArr c h) (concat @ehReorderedDecls)
         lhs         .   eh          =   [@eh]
     | InstanceUseImplicitly
-        loc         .   eh          =   let h = rngLift @range EH.PrExpr_Class @classrefname @types.eh
+        loc         .   eh          =   let -- h = rngLift @range EH.PrExpr_Class @classrefname @types.eh
+                                            h = {- rngLift @range EH.TyExpr_Pred $ -} panicJust "HS.ToEH.InstanceUseImplicitly.eh.type.ehMbAsPr" @type.ehMbAsPr
                                         in  rngLift @range EH.Decl_InstanceIntro (Just @instancerefname) @expression.eh h
         lhs         .   eh          =   [@eh]
     | Default
@@ -271,7 +272,7 @@ SEM Declaration
 SEM Deriving
     | Deriving
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
-                                                $ rngLift @range EH.PrExpr_Class @refname [rngLift @range EH.TyExpr_Parens @lhs.ehDataTyExpr]
+                                                $ rngLift @range EH.PrExpr_Class @classrefname [rngLift @range EH.TyExpr_Parens @lhs.ehDataTyExpr]
                                         in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) (InstDeriving InstDerivingFrom_Datatype) h []
 %%]
 

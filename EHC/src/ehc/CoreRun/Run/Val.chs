@@ -1,6 +1,6 @@
 %%[0 hs
 {-# LANGUAGE MagicHash #-}
-{-# LANGUAGE DefaultSignatures, TypeOperators, KindSignatures #-}
+{-# LANGUAGE DefaultSignatures, TypeOperators, KindSignatures, TemplateHaskell #-}
 -- {-# OPTIONS_GHC -O3 #-}
 %%]
 
@@ -19,13 +19,16 @@
 %%[(8 corerun) hs import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Error})
 %%]
 
+%%[(8 corerun) import({%{EH}Base.Trace})
+%%]
+
 %%[(8 corerun) hs import({%{EH}CoreRun}, {%{EH}CoreRun.Run})
 %%]
 
 %%[(8 corerun) hs import({%{EH}CoreRun.Pretty}, UHC.Util.Pretty as PP)
 %%]
 
-%%[(8 corerun) hs import(UHC.Util.Utils)
+%%[(8 corerun) hs import(UHC.Util.Utils, UHC.Util.Lens)
 %%]
 
 %%[(8 corerun) hs import(Control.Monad.Primitive)
@@ -53,7 +56,7 @@
 %%]
 %%[(8 corerun) hs import(Control.Applicative)
 %%]
-%%[(8 corerun) hs import(qualified Data.Map as Map, Data.Maybe)
+%%[(8 corerun) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe)
 %%]
 
 -- old
@@ -271,11 +274,12 @@ data RValCxt
       { rcxtInRet		:: !Bool						-- ^ in returning context, True by default
       , rcxtCallCxt		:: [Maybe HsName]				-- ^ calling context stack, for debugging only
       , rcxtDatatypeMp	:: RValDatatypeMp				-- ^ dataype info for ffi
+      , _rcxtTraceOnS	:: !(Set.Set TraceOn)			-- ^ on what to trace
       }
-      deriving Show
+      deriving (Show, Typeable)
 
 emptyRValCxt :: RValCxt
-emptyRValCxt = RValCxt True [] m
+emptyRValCxt = RValCxt True [] m Set.empty
   where m = rvalDatatypeMpUnions1
               [ Map.singleton n (emptyRValDataconstrInfo {rdciNm2Tg = Map.singleton n 0, rdciTg2Nm = crarrayFromList [n]})
               | tuparity <- [2..15], let n = "(" ++ replicate (tuparity-1) ',' ++ ")"
@@ -620,12 +624,17 @@ newRValEnv hpSz = do
 
 %%[(8 corerun) hs export(renvResolveModNames)
 -- | Resolve module names into indirection/re-indexing table
-renvResolveModNames :: (RunSem RValCxt RValEnv RVal m x) => [HsName] -> RValT m [Int]
-renvResolveModNames nms = do
+renvResolveModNames :: (RunSem RValCxt RValEnv RVal m x) => Int -> [HsName] -> RValT m [Int]
+renvResolveModNames upb nms = do
     env@(RValEnv {renvModulesMV=ms, renvHeap=hp}) <- get
-    let lkup 0 nm = err $ "No module entry for: " ++ show nm
-        lkup n nm = (liftIO $ MV.read ms n >>= heapGetM'' hp) >>= \(RVal_Module {rvalModNm=nm'}) -> if nm == nm' then return n else lkup (n-1) nm
-    forM nms $ lkup (MV.length ms - 1)
+    let lkup n nm | n > upb   = err $ "No module entry for: " ++ show nm
+                  | otherwise = (liftIO $ MV.read ms n >>= heapGetM'' hp) >>= \(RVal_Module {rvalModNm=nm'}) -> if nm == nm' then return n else lkup (n+1) nm
+    forM nms $ \nm -> do
+      -- liftIO $ putStrLn $ "renvResolveModNames 1 " ++ show nm ++ " upb=" ++ show upb ++ " len=" ++ show (MV.length ms)
+      i <- lkup 0 nm
+      -- liftIO $ putStrLn $ "renvResolveModNames 2 " ++ show nm ++ " fnd=" ++ show i
+      rsemTr'' TraceOn_RunMod $ "renvResolveModNames" >#< nm >#< "->" >#< i
+      return i
 %%]
 
 %%[(8 corerun) hs export(renvTopFramePtrM, renvTopFramePtrAndFrameM, renvTopFrameM)
@@ -668,6 +677,57 @@ renvAllFrameM = do
 
 %%[(8 corerun) hs
 -- | Dump environment
+dumpPpEnvM' :: (RunSem RValCxt RValEnv RVal m x) => (TraceOn -> Bool) -> RValT m [PP_Doc]
+dumpPpEnvM' onTr = do
+    stkfrs <- renvAllFrameM
+    env <- get
+    callcxt <- asks rcxtCallCxt
+    let hp = renvHeap env
+    stkfrspp <- forM stkfrs $ dumpFrameMinimal hp
+    hpfr <- liftIO $ readIORef (hpFree hp)
+    needRet <- asks rcxtInRet
+    let dash    = "===================="
+        header1 = dash >-< "rcxtInRet=" >|< needRet
+        header2 = ppCurly $ "Heap =" >|< hpfr >|< "/" >|< MV.length (hpVals hp) >|< ", CallCxt=" >|< ppBracketsCommas callcxt >|< ", Stack=" >|< ppBracketsCommas stkfrspp
+        footer1 = dash
+    hpPP <- if onTr TraceOn_RunHeap then dumpHeap hp hpfr else return []
+    mdPP <- if onTr TraceOn_RunMod then dumpModulesMV hp (renvModulesMV env) else return []
+    glPP <- if onTr TraceOn_RunGlobals then dumpGlobalsMV hp (renvGlobalsMV env) else return []
+    frPP <- if onTr TraceOn_RunFrames then ((forM stkfrs $ dumpFrame hp) >>= \fs -> return [pp "====== Frames ======", indent 2 $ vlist fs]) else return []
+    let extensivePP    = hpPP ++ glPP ++ mdPP ++ frPP
+        headerOrFooter = if null extensivePP then [] else [pp dash]
+    return $
+      headerOrFooter ++
+      (if onTr TraceOn_RunFrame then [header2] else []) ++
+      extensivePP ++
+      headerOrFooter
+  where
+    dumpFrameMinimal hp fp = do
+      fr@(RVal_Frame {rvalFrVals=vs, rvalFrSP=spref}) <- heapGetM fp
+      sp  <- liftIO $ readIORef spref
+      return [fp >|< (ppParens $ sp >|< "/" >|< MV.length vs)]
+    dumpModule hp fp = do
+      md <- heapGetM fp
+      liftIO $ ppRValWithHp hp md
+    dumpFrame hp fp = do
+      fr@(RVal_Frame {rvalFrVals=vs, rvalFrSP=spref}) <- heapGetM fp
+      sp  <- liftIO $ readIORef spref
+      -- pps <- ppa 0 hp sp vs
+      (liftIO $ ppRValWithHp hp fr) >>= \frpp -> return $ "Frame ptr=" >|< fp >|< " sp=" >|< sp >-< (indent 2 $ frpp) --  >-< (indent 2 $ vlist pps))
+    dumpModulesMV hp mods = do
+      pps <- liftIO (mvecToList mods) >>= \l -> forM l $ dumpModule hp
+      return [pp "====== Modules ======", indent 2 (vlist pps)]
+    dumpGlobalsMV hp glbls = do
+      pps <- liftIO (mvecToList glbls) >>= \l -> forM l $ dumpFrame hp
+      return [pp "====== Globals ======", indent 2 (vlist pps)]
+    dumpHeap hp@(Heap {hpFirst=off}) hpfr = do
+      pps <- ppa off hp hpfr (hpVals hp)
+      return [pp "======= Heap =======", indent 2 (vlist pps)]
+    ppb hp k v = (liftIO $ ppRValWithHp hp v) >>= \vpp -> return $ k >|< ":" >#< vpp
+    ppa off hp sz vs = forM [0 .. sz - 1] $ \i -> liftIO (MV.read vs i) >>= ppb hp (i + off)
+
+{-
+-- | Dump environment
 dumpPpEnvM :: (RunSem RValCxt RValEnv RVal m x) => Bool -> RValT m PP_Doc
 dumpPpEnvM extensive = do
     stkfrs <- renvAllFrameM
@@ -705,9 +765,18 @@ dumpPpEnvM extensive = do
       return $ "======= Heap =======" >-< indent 2 (vlist pps)
     ppb hp k v = (liftIO $ ppRValWithHp hp v) >>= \vpp -> return $ k >|< ":" >#< vpp
     ppa off hp sz vs = forM [0 .. sz - 1] $ \i -> liftIO (MV.read vs i) >>= ppb hp (i + off)
+-}
 %%]
 
-%%[(8 corerun) hs export(dumpEnvM)
+%%[(8 corerun) hs export(dumpEnvM')
+-- | Dump environment
+dumpEnvM' :: (RunSem RValCxt RValEnv RVal m x) => RValT m ()
+dumpEnvM' = do
+    tons <- rsemTraceOnS
+    dumpPpEnvM' (`Set.member` tons) >>= \ps -> liftIO $ forM_ ps putPPLn >> hFlush stdout
+%%]
+
+%%[(8888 corerun) hs export(dumpEnvM)
 -- | Dump environment
 dumpEnvM :: (RunSem RValCxt RValEnv RVal m x) => Bool -> RValT m ()
 dumpEnvM extensive = dumpPpEnvM extensive >>= \p -> liftIO $ putPPLn p >> hFlush stdout
@@ -1195,9 +1264,9 @@ ptr2valM v = case v of
 -- | Dereference a RRef
 ref2valM :: (RunSem RValCxt RValEnv RVal m x) => RRef -> RValT m RVal
 ref2valM r = do
-  -- rsemTr $ "R: " ++ show (pp r)
+  -- rsemTr'' TraceOn_RunRef $ ">R:" >#< r
   env@(RValEnv {renvHeap=hp, renvModulesMV=mods}) <- get
-  case r of
+  v <- case r of
     RRef_Glb m e -> do
         RVal_Frame {rvalFrVals=frvals} <- heapGetM =<< liftIO (MV.read (renvGlobalsMV env) m)
         liftIO $ MV.read frvals e
@@ -1205,8 +1274,16 @@ ref2valM r = do
         RVal_Frame {rvalCx=RCxt {rcxtMdRef=mdref}} <- renvTopFrameM
         liftIO $ do
           RVal_Module {rvalModImpsV=imps} <- heapGetM'' hp =<< readIORef mdref
-          RVal_Frame {rvalFrVals=frvals} <- heapGetM'' hp =<< MV.read mods (imps V.! m)
+          RVal_Module {rvalFrRef=frref} <- heapGetM'' hp =<< MV.read mods (imps V.! m)
+          RVal_Frame {rvalFrVals=frvals} <- heapGetM'' hp =<< readIORef frref
           MV.read frvals e
+{-
+        liftIO (readIORef mdref >>= heapGetM'' hp) >>= \mval -> case mval of
+          RVal_Module {rvalModImpsV=imps} -> liftIO (MV.read mods (imps V.! m) >>= heapGetM'' hp) >>= \fval -> case fval of
+            RVal_Frame {rvalFrVals=frvals} -> liftIO $ MV.read frvals e
+            _ -> err $ "CoreRun.Run.Val.ref2valM.RRef_Imp, is not RVal_Frame: (" >|< r >|< "):" >#< fval
+          _ -> err $ "CoreRun.Run.Val.ref2valM.RRef_Imp, is not RVal_Module: (" >|< r >|< "):" >#< mval
+-}
     RRef_Mod e -> do
         RVal_Frame {rvalCx=RCxt {rcxtMdRef=mdref}} <- renvTopFrameM
         liftIO $ do
@@ -1252,6 +1329,9 @@ ref2valM r = do
           RVal_NodeMV t _ -> return $ RVal_Int t
           _               -> err $ "CoreRun.Run.Val.ref2valM.RRef_Tag:" >#< v
     _ -> err $ "CoreRun.Run.Val.ref2valM.r:" >#< r
+
+  -- rsemTr'' TraceOn_RunRef $ "<R:" >#< r >#< "->" >#< v
+  return v
 {-# INLINE ref2valM #-}
 %%]
 
@@ -1358,7 +1438,15 @@ renvFrStkReversePopMV sz = (liftIO $ mvecAlloc sz) >>= \vs -> renvFrStkReversePo
 %%% Tracing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(rsemTr', rsemTr)
+%%[(8 corerun) hs export(rsemTr'')
+-- | Trace
+rsemTr'' :: (PP msg, RunSem RValCxt RValEnv RVal m x) => TraceOn -> msg -> RValT m ()
+rsemTr'' ton msg = do
+    tons <- rsemTraceOnS
+    dump <- dumpPpEnvM' (`Set.member` tons)
+    trOnPP (\t -> t `Set.member` tons) ton $ [pp msg] ++ dump
+
+%%]
 -- | Trace
 rsemTr' :: (PP msg, RunSem RValCxt RValEnv RVal m x) => Bool -> msg -> RValT m ()
 rsemTr' dumpExtensive msg = do
@@ -1373,5 +1461,11 @@ rsemTr' dumpExtensive msg = do
 rsemTr :: (PP msg, RunSem RValCxt RValEnv RVal m x) => msg -> RValT m ()
 rsemTr = rsemTr' False
 {- INLINE rsemTr #-}
-%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Template stuff
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerun) export(rcxtTraceOnS)
+mkLabel ''RValCxt
+%%]

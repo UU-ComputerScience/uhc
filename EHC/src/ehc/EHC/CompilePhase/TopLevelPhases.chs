@@ -32,6 +32,14 @@ level 2..6 : with prefix 'cpEhc'
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
 
+-- Language syntax: HS, EH, Core, TyCore, Grin, ...
+%%[8 import({%{EH}EHC.ASTTypes})
+%%]
+
+-- build call
+%%[8 import({%{EH}EHC.BuildFunction.Run})
+%%]
+
 -- trace, debug
 %%[8 import(System.IO.Unsafe, Debug.Trace)
 %%]
@@ -88,8 +96,6 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 
 -- Language syntax: Core
-%%[(50 codegen) import(qualified {%{EH}Core} as Core(cModMergeByConcat))
-%%]
 %%[(50 codegen) import(qualified {%{EH}Core.Merge} as CMerge (cModMerge))
 %%]
 %%[(50 codegen corein) import(qualified {%{EH}Core.Check} as Core2ChkSem)
@@ -98,9 +104,6 @@ level 2..6 : with prefix 'cpEhc'
 %%[(8 corerun) import({%{EH}EHC.CompilePhase.Run})
 %%]
 %%[(50 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
-%%]
--- Language syntax: TyCore
-%%[(8 codegen tycore) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 -- Language syntax: Grin
 %%[(50 codegen grin) import(qualified {%{EH}GrinCode} as Grin(grModMerge))
@@ -319,6 +322,7 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
        ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              needsCompile = crModNeedsCompile modNm cr
              canCompile   = ecuCanCompile ecu
+       -- ; canCompile <- bcall $ CanCompile $ mkPrevFileSearchKeyWithName modNm
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (liftIO $ putStrLn
                 (  show modNm
@@ -329,7 +333,7 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
                 ++ ", can use HI instead of HS: " ++ show (ecuCanUseHIInsteadOfHS ecu)
                 ++ ", has main: " ++ show (ecuHasMain ecu)
                 ++ ", is main: " ++ show (ecuIsMainMod ecu)
-                ++ ", is top: " ++ show (ecuIsTopMod ecu)
+                ++ ", is top: " ++ show (_ecuIsTopMod ecu)
                 ++ ", valid HI: " ++ show (ecuIsValidHIInfo ecu)
                 ++ ", HS newer: " ++ show (ecuIsHSNewerThanHI ecu)
                 ))
@@ -425,11 +429,14 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSStart
 %%]]
              -> do { cpEhcHaskellModulePrepareSrc modNm
+{-
+-}
                    ; modNm2 <- cpEhcHaskellImport stnext
 %%[[99
                                                   (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
                                                   modNm
+                   -- ; (modNm2, _, _, _) <- bcall $ HsModnameAndImports modNm
                    ; cpEhcHaskellModulePrepareHS2 modNm2
                    ; cpMsg modNm2 VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
@@ -466,7 +473,8 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSOnlyImports
 %%]]
              -> do { cpMsg modNm VerboseMinimal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
-                   ; cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts st
+                   -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+                   ; cpEhcHaskellModuleAfterImport {- isTopMod -} (_ecuIsTopMod ecu) opts st
 %%[[99
                                                    (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
@@ -521,19 +529,21 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Haskell HMOnlyMinimal))
                    ; return defaultResult
                    }
-%%[[(50 corerunin)
+%%[[(5050 corerunin)
            (ECUS_CoreRun cst, Just (ECUS_Haskell HSOnlyImports))
              | {- cst == CRRStartText || -} isBinary
              -> do { cpMsg modNm VerboseNormal $ "Reading CoreRun (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    ; cpEhcHaskellModulePrepareSrc modNm
                    ; modNm2 <- cpEhcCoreRunImport isBinary modNm
+                   -- ; (modNm2, _, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_CoreRun
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_CoreRun CRROnlyImports))
                    ; return modNm2
                    }
              where isBinary = cst == CRRStartBinary
            (ECUS_CoreRun CRROnlyImports,Just (ECUS_CoreRun CRRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling CoreRun"
-                   ; cpEhcCoreRunModuleAfterImport (ecuIsTopMod ecu) opts modNm
+                   -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+                   ; cpEhcCoreRunModuleAfterImport {- isTopMod -} (_ecuIsTopMod ecu) opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_CoreRun CRRAllSem))
                    ; return defaultResult
                    }
@@ -544,13 +554,15 @@ cpEhcModuleCompile1 targHSState modNm
              -> do { cpMsg modNm VerboseNormal $ "Reading Core (" ++ (if isBinary then "binary" else "textual") ++ ")"
                    ; cpEhcHaskellModulePrepareSrc modNm
                    ; modNm2 <- cpEhcCoreImport isBinary modNm
+                   -- ; (modNm2, _, _, _) <- bcall $ ModnameAndImports (mkPrevFileSearchKeyWithName modNm) ASTType_Core
                    ; cpUpdCU modNm2 (ecuStoreState (ECUS_Core CROnlyImports))
                    ; return modNm2
                    }
              where isBinary = cst == CRStartBinary
            (ECUS_Core CROnlyImports,Just (ECUS_Core CRAllSem))
              -> do { cpMsg modNm VerboseMinimal "Compiling Core"
-                   ; cpEhcCoreModuleAfterImport (ecuIsTopMod ecu) opts modNm
+                   -- ; isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+                   ; cpEhcCoreModuleAfterImport {- isTopMod -} (_ecuIsTopMod ecu) opts modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUS_Core CRAllSem))
                    ; return defaultResult
                    }
@@ -561,7 +573,9 @@ cpEhcModuleCompile1 targHSState modNm
            (ECUS_Eh EHStart,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling EH"
                    ; cpUpdOpts (\o -> o {ehcOptHsChecksInEH = True})
-                   ; cpEhcEhParse modNm
+                   ; (_ :: AST_EH) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_EH (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+                   ; cpStopAt CompilePoint_Parse
+                   -- ; cpEhcEhParse modNm
 %%[[50   
                    ; cpGetDummyCheckSrcMod modNm
 %%]]   
@@ -758,8 +772,8 @@ cpEhcHaskellModulePrepareSrc modNm
   = cpGetMetaInfo [GetMeta_Src,GetMeta_Dir] modNm
 
 cpEhcHaskellModulePrepareHS2 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpEhcHaskellModulePrepareHS2 modNm
-  = cpSeq [ cpGetMetaInfo
+cpEhcHaskellModulePrepareHS2 modNm = do
+          cpGetMetaInfo
               [ GetMeta_Src, GetMeta_HI, GetMeta_Core
 %%[[(50 grin)
               , GetMeta_Grin
@@ -769,14 +783,13 @@ cpEhcHaskellModulePrepareHS2 modNm
 %%]]
               , GetMeta_Dir
               ] modNm
-          , cpGetPrevHI modNm
-          -- , cpFoldHI modNm
-          , cpFoldHIInfo modNm
-          ]
+          cpGetPrevHI modNm
+          cpFoldHIInfo modNm
+          -- void $ bcall $ FoldHIInfo modNm
 
 cpEhcHaskellModulePrepareHI :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpEhcHaskellModulePrepareHI modNm
-  = cpSeq [ cpGetMetaInfo
+cpEhcHaskellModulePrepareHI modNm = do
+          cpGetMetaInfo
               [ GetMeta_HI, GetMeta_Core
 %%[[(50 grin)
               , GetMeta_Grin
@@ -785,10 +798,9 @@ cpEhcHaskellModulePrepareHI modNm
               , GetMeta_CoreRun
 %%]]
               ] modNm
-          , cpGetPrevHI modNm
-          -- , cpFoldHI modNm
-          , cpFoldHIInfo modNm
-          ]
+          cpGetPrevHI modNm
+          cpFoldHIInfo modNm
+          -- void $ bcall $ FoldHIInfo modNm
 
 cpEhcHaskellModulePrepare :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcHaskellModulePrepare modNm
@@ -863,14 +875,17 @@ cpEhcHaskellImport
                   ]
 %%][99
           doCPP
-          = cpSeq [ when doCPP (cpPreprocessWithCPP pkgKeyDirL modNm)
+          = cpSeq [ -- when doCPP (void $ bcall $ FPathPreprocessedWithCPP pkgKeyDirL (mkPrevFileSearchKeyWithName modNm))
+                    when doCPP (void $ cpPreprocessWithCPP pkgKeyDirL modNm)
                   , cpParseHsImport (hsstateIsLiteral hsst) modNm
+                  -- , bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (ASTFileContent_Text, ASTFileUse_SrcImport) ASTFileTiming_Current
                   ]
 %%]]
         foldAndImport modNm
-          = do { cpFoldHsMod modNm
-               ; cpGetHsModnameAndImports modNm
-               }
+          = do cpFoldHsMod modNm
+               -- bcall $ FoldHsMod (mkPrevFileSearchKeyWithName modNm)
+               cpGetHsModnameAndImports modNm
+               
 %%]
 
 %%[8
@@ -888,33 +903,41 @@ cpEhcHaskellParse
      pkgKeyDirL
 %%]]
      modNm
-  = cpSeq (
+  = do ecu <- bcall $ EcuOf modNm
 %%[[8
-             [ cpParseHs modNm ]
+       cpParseHs modNm
 %%][99
-             (if doCPP then [cpPreprocessWithCPP pkgKeyDirL modNm] else [])
-          ++ [ cpParseHs litmode modNm ]
+       if doCPP 
+         then do	-- 20150721 AD: this alternative should be done by else branch too
+           -- bcall $ FPathPreprocessedWithCPP pkgKeyDirL modNm
+           cpPreprocessWithCPP pkgKeyDirL modNm
+           cpParseHs litmode modNm
+         else do
+           -- (_ :: AST_HS) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIsError) ASTType_HS (_ecuASTFileContent ecu, ASTFileUse_Src) ASTFileTiming_Current
+           cpParseHs litmode modNm
+           return ()
 %%]]
-          ++ [ cpMsg modNm VerboseALot "Parsing done"
-             , cpStopAt CompilePoint_Parse
-             ]
-          )
+       cpMsg modNm VerboseALot "Parsing done"
+       cpStopAt CompilePoint_Parse
 %%]
 
-%%[8
-cpEhcEhParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpEhcEhParse modNm
-  = cpSeq [ cpParseEH modNm
-          , cpStopAt CompilePoint_Parse
-          ]
+%%[8888
+cpEhcEhParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_EH
+cpEhcEhParse modNm = do
+  -- cpParseEH modNm
+  (res :: AST_EH) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_EH (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+  cpStopAt CompilePoint_Parse
+  return res
 %%]
 
-%%[(8 corein)
-cpEhcCoreParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpEhcCoreParse modNm
-  = cpSeq [ cpParseCoreWithFPath Nothing modNm
-          , cpStopAt CompilePoint_Parse
-          ]
+%%[(8888 corein)
+cpEhcCoreParse :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_CoreRun
+cpEhcCoreParse modNm = do
+  -- cpParseCoreWithFPath Nothing modNm
+  res <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_Core (ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+  cpStopAt CompilePoint_Parse
+  return res
+  
 %%]
 
 %%[50
@@ -1028,32 +1051,43 @@ cpEhcCoreImport
   :: EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m HsName
 cpEhcCoreImport
      isBinary modNm
-  = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
-       
-       ; if isBinary
-         then cpDecodeCore Nothing modNm
-         else cpParseCoreWithFPath Nothing modNm
-       ; cpFoldCoreMod modNm
-       ; cpGetCoreModnameAndImports modNm
-       }
+  = do 
+{-     
+       cr <- get
+       let (_,opts) = crBaseInfo' cr
+
+       if isBinary
+       then cpDecodeCore Nothing modNm
+       else cpParseCoreWithFPath Nothing modNm
+-}
+{-     
+-}
+       (_ :: AST_Core) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_Core (if isBinary then ASTFileContent_Binary else ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+
+       cpFoldCoreMod modNm
+       cpGetCoreModnameAndImports modNm
 %%]
 
-%%[(50 codegen corerunin)
+%%[(5050 codegen corerunin)
 -- | Get import information from CoreRun module source text/binary.
 cpEhcCoreRunImport
   :: EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m HsName
 cpEhcCoreRunImport
      isBinary modNm
-  = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+  = do 
+{-
+       cr <- get
+       let (_,opts) = crBaseInfo' cr
        
-       ; {- if isBinary
-         then -} cpDecodeCoreRun Nothing modNm
-         {- else cpParseCoreWithFPath Nothing modNm -}
-       ; cpFoldCoreRunMod modNm
-       ; cpGetCoreRunModnameAndImports modNm
-       }
+       {- if isBinary
+       then -} cpDecodeCoreRun Nothing modNm
+       {- else cpParseCoreWithFPath Nothing modNm -}
+-}
+       (_ :: AST_CoreRun) <- bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_Ignore) ASTType_CoreRun (if isBinary then ASTFileContent_Binary else ASTFileContent_Text, ASTFileUse_Src) ASTFileTiming_Current
+
+       cpFoldCoreRunMod modNm
+       cpGetCoreRunModnameAndImports modNm
+       
 %%]
 
 %%[(50 codegen corein)
@@ -1101,7 +1135,7 @@ cpEhcCorePerModulePart2 modNm
        }
 %%]
 
-%%[(8 codegen corerunin)
+%%[(8888 codegen corerunin)
 -- | Part 2 CoreRun processing, part2 is done either for per individual module compilation or after full program analysis
 cpEhcCoreRunPerModulePart2 :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpEhcCoreRunPerModulePart2 = cpProcessCoreRunRest
@@ -1118,8 +1152,8 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
 %%]]
 %%[[(99 grin)
              , cpCleanupGrin [modNm]
-             , cpProcessAfterGrin modNm
 %%]]
+             , cpProcessAfterGrin modNm
              ]
           ++ (if not isMainMod || doMkExec
               then let how = if doMkExec then FinalCompile_Exec else FinalCompile_Module
@@ -1171,16 +1205,21 @@ cpEhcExecutablePerModule how impModNmL modNm
 
 %%[8
 cpProcessHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpProcessHs modNm 
-  = cpSeq [ cpFoldHs modNm
+cpProcessHs modNm = do
+    cpFoldHs modNm
+    -- bcall $ FoldHs (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%[[50
-          , cpFlowHsSem1 modNm
+    cpFlowHsSem1 modNm
+    -- bcall $ CRSIOfName (mkPrevFileSearchKeyWithName modNm) ASTType_HS
+    -- bcall $ CRSIOfNameP (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%]]
-          , cpTranslateHs2EH modNm
+    cpTranslateHs2EH modNm
+    -- (_ :: AST_EH) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_EH
+    -- (_ :: AST_EH) <- bcall $ ASTP (mkPrevFileSearchKeyWithName modNm) astpipe_EH_from_HS
 %%[[99
-          , cpCleanupHS modNm
+    cpCleanupHS modNm
 %%]]
-          ]
+    return ()
 %%]
 
 %%[8
@@ -1202,25 +1241,25 @@ cpProcessEH modNm
        ; cpUpdCU modNm (ecuStoreOpts optsTr)
        -}
 %%]]
-       ; cpSeq [ cpFoldEH modNm
+       ; cpFoldEH modNm
+       -- ; void $ bcall $ FoldEH (mkPrevFileSearchKeyWithName modNm)
 %%[[99
-               , cpCleanupFoldEH modNm
+       ; cpCleanupFoldEH modNm
 %%]]
-               , cpFlowEHSem1 modNm
-               , cpTranslateEH2Output modNm
+       ; cpFlowEHSem1 modNm
+       ; cpTranslateEH2Output modNm
 %%[[(8 codegen)
-               ,
-%%[[(8 tycore)
-                 if ehcOptTyCore optsTr
-                 then cpTranslateEH2TyCore modNm
-                 else 
-%%]]
-                      cpTranslateEH2Core modNm
+{- -- %%[[(8 tycore)
+       ; if ehcOptTyCore optsTr
+         then cpTranslateEH2TyCore modNm
+         else 
+-} -- %%]]
+       ; cpTranslateEH2Core modNm
+       -- ; (_ :: AST_Core) <- bcall $ AST (mkPrevFileSearchKeyWithName modNm) ASTType_Core
 %%]]
 %%[[99
-               , cpCleanupEH modNm
+       ; cpCleanupEH modNm
 %%]]
-               ]
        }
 %%]
 
@@ -1259,33 +1298,40 @@ cpProcessCoreBasic modNm
 %%]]
                , cpProcessCoreFold modNm
 %%[[(50 corerun)
+{-
                , when (targetIsCoreVariation (ehcOptTarget opts)) $
                    void $ -- cpOutputCoreRun ASTFileContent_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
                           cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Binary "" Cfg.suffixDotlessBinaryCoreRun modNm
+-}
 %%]]
                ]
         }
 %%]
 
-%%[(8 codegen)
+%%[(8 core)
 -- unfolded core -> folded core
 -- (called on merged core, and on core directly generated from cached grin)
 cpProcessCoreFold :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessCoreFold modNm
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; cpSeq $ [] ++
+       -- ; cpSeq $ [] ++
 %%[[50
-		  [ cpFlowCoreSemBeforeFold modNm ] ++
+       ; cpFlowCoreSemBeforeFold modNm
 %%]]
-		  (if targetIsViaGrin (ehcOptTarget opts) then [ cpFoldCore2Grin modNm ] else []) ++
+%%[[(50 grin)
+       ; when (targetIsViaGrin (ehcOptTarget opts)) $
+           cpFoldCore2Grin modNm
+           -- void $ bcall $ FoldCore2Grin (mkPrevFileSearchKeyWithName modNm)
+%%]]
 %%[[(50 corerun)
-		  (if targetIsCoreVariation (ehcOptTarget opts) then [ cpFoldCore2CoreRun modNm ] else []) ++
+       ; when (targetIsCoreVariation (ehcOptTarget opts)) $
+           cpFoldCore2CoreRun modNm
 %%]]
-%%[[50
-		  [ cpFlowCoreSemAfterFold modNm ] ++
+%%[[(8 core grin)
+       ; cpFlowCoreSemAfterFold modNm
 %%]]
-          []
+       ; return ()
        }
 %%]
 
@@ -1354,12 +1400,15 @@ cpProcessCoreRunRest modNm
        ; cpSeq (   []
                 ++ (if CoreOpt_RunDump `elem` ehcOptCoreOpts opts
                     then -- [void $ cpOutputCore CPOutputCoreHow_CoreRun_Text {-[]-} "" Cfg.suffixDotlessInputOutputCoreRun modNm]
-                         [void $ cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Text "" Cfg.suffixDotlessInputOutputCoreRun modNm]
+                         [void $ cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Text "" Cfg.suffixDotlessOutputTextualCoreRun modNm]
                     else [])
                 ++ (if CoreOpt_Run `elem` ehcOptCoreOpts opts		-- TBD: only when right backend? For now, just do it
                     then [cpRunCoreRun  modNm]
                          -- [cpRunCoreRun2 modNm]
                          -- [cpRunCoreRun3 modNm]
+                    else [])
+                ++ (if targetIsCoreVariation (ehcOptTarget opts)
+                    then [void $ cpOutputSomeModule (^. ecuCoreRun) astHandler'_CoreRun ASTFileContent_Binary "" Cfg.suffixDotlessInputOutputBinaryCoreRun modNm]
                     else [])
                )
        }

@@ -266,13 +266,19 @@ DATA CExpr
 %%[(8 core)
 -- | ann for CExpr
 DATA CExprAnn
-  | Ty      ty        : {Ty}
-  | Coe     coe       : {RelevCoe}
-  | Debug   info      : {String}
+  | Ty			ty				: {Ty}
+%%[[(8 codegenanalysis)
+  | Coe			coe				: {RelevCoe}
+%%]]
+  | Debug		info			: {String}
 
 -- | ann for name intro
 DATA CBindAnn
-  | Coe     coe       : {RelevCoe}
+%%[[(8 codegenanalysis)
+  | Coe			coe				: {RelevCoe}
+%%][8
+  | Coe			coe				: {()}	-- dummy
+%%]]
 %%]
 
 %%[(8 core)
@@ -304,10 +310,12 @@ DATA CBound
   | Meta    aspectKeyS    : {ACoreBindAspectKeyS}
           cmetas      : CMetas
   
+%%[[(8 codegenanalysis)
   -- a (keyed) RelevTy
-  | RelevTy   aspectKeyS    : {ACoreBindAspectKeyS}
-          relevTy     : {RelevTy}
-  
+  | RelevTy		aspectKeyS		: {ACoreBindAspectKeyS}
+  				relevTy			: {RelevTy}
+%%]]
+
   -- a (keyed) CExpr
   | Val       aspectKeyS    : {ACoreBindAspectKeyS}
           mlev      : {MetaLev}

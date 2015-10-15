@@ -17,7 +17,7 @@
 %%[50 hs export(ImportUsedModules(..), emptyImportUsedModules)
 data ImportUsedModules
   = ImportUsedModules
-      { iumHSDeclModules		:: !HsNameS			-- ^ imported modules as declared in src .hs
+      { iumSrcDeclModules		:: !HsNameS			-- ^ imported modules as declared in src .hs
       , iumHIDeclModules		:: !HsNameS			-- ^ imported modules as declared, either in .hs or .hi
       , iumHIUsedModules		:: !HsNameS			-- ^ imported modules as actually used
       , iumIntrodModules		:: !HsNameS			-- ^ module names for which a introduction/def is made

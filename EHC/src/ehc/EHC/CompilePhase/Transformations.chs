@@ -60,6 +60,10 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[8 import({%{EH}EHC.CompilePhase.Output})
 %%]
 
+-- EH semantics
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
+%%]
+
 -- HI syntax and semantics
 %%[50 import(qualified {%{EH}HI} as HI)
 %%]
@@ -83,7 +87,6 @@ cpTransformCore optimScope modNm
        
          -- transform
        ; let  mbCore     = _ecuMbCore ecu
-              coreInh    = crsiCoreInh crsi
               trfcoreIn  = emptyTrfCore
                              { trfstMod             	= panicJust "cpTransformCore" mbCore
                              , trfstUniq            	= crsi ^. crsiNextUID
@@ -100,11 +103,15 @@ cpTransformCore optimScope modNm
 %%]]
 %%[[50
                                  , trfcoreExpNmOffMp    = crsiExpNmOffMpDbg "cpTransformCore" modNm crsi
-								 , trfcoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+%%]]
+%%[[(50 grin)
+								 , trfcoreInhLamMp      = crsi ^. crsiCEnv ^. cenvLamMp
 %%]]
                                  }
                              }
-              trfcoreOut = trfCore opts optimScope (Core2GrSem.dataGam_Inh_CodeAGItf $ crsiCoreInh crsi) modNm trfcoreIn
+              trfcoreOut = trfCore opts optimScope
+                                   (crsi ^. crsiCEnv ^. cenvDataGam)
+                                   modNm trfcoreIn
        
 %%[[(50 corein)
        -- ; liftIO $ putStrLn $ "cpTransformCore trfcoreNotYetTransformed: " ++ show (trfcoreNotYetTransformed $ trfstExtra trfcoreIn)
@@ -133,7 +140,7 @@ cpTransformCore optimScope modNm
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcoreOut
        -- ; cpOutputCoreModules CPOutputCoreHow_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler'_Core ASTFileContent_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules (Just $ opts {ehcOptCoreOpts= CoreOpt_Readable : ehcOptCoreOpts opts}) astHandler'_Core ASTFileContent_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
 %%]
@@ -155,7 +162,7 @@ cpTransformTyCore modNm
                               , trftycoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 %%]]
 %%[[99
-                              , trftycoreInhLamMp      = Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
+                              , trftycoreInhLamMp      = crsi ^. crsiCEnv ^. cenvLamMp
 %%]]
                               }
               trftycoreOut = trfTyCore opts modNm trftycoreIn
@@ -212,7 +219,7 @@ cpTransformJavaScript optimScope modNm
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfjsOut
        -- ; cpOutputJavaScriptModules ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler'_JavaScript ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules Nothing astHandler'_JavaScript ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixJavaScriptLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("JavaScript errors: " ++ nm) err) nms errs
        }
 %%]
@@ -241,7 +248,7 @@ cpTransformCmm optimScope modNm
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcmmOut
        -- ; cpOutputCmmModules ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules astHandler'_Cmm ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules Nothing astHandler'_Cmm ASTFileContent_Text (\n nm -> "-" ++ show n ++ "-" ++ nm) Cfg.suffixCmmLib modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Cmm errors: " ++ nm) err) nms errs
        }
 %%]

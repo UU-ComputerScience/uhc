@@ -140,6 +140,11 @@ ifeq (@ENABLE_CORE_ASINPOUTP@,yes)
 ENABLE_CORE_ASINPOUTP		:= yes
 endif
 
+# include use of CoreRun as source
+ifeq (@ENABLE_CORERUN_ASINPOUTP@,yes)
+ENABLE_CORERUN_ASINPOUTP	:= yes
+endif
+
 # include System F Ty generation for Core
 ifeq (@ENABLE_CORESYSF@,yes)
 ENABLE_CORESYSF				:= yes

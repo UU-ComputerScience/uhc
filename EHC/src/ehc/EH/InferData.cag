@@ -363,7 +363,8 @@ SEM Decl
                 lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 
 SEM Expr
-  | Let         loc         .   gathBodyDataGam     =   @extraDataGam `gamUnion` @decls.gathDeclDataGam `gamUnion` @decls.gathDataGam
+  | Let         loc         .   gathNewDataGam      =   @extraDataGam `gamUnion` @decls.gathDeclDataGam
+                            .   gathBodyDataGam     =   @gathNewDataGam `gamUnion` @decls.gathDataGam
                 body        .   gathDataGam         =   @gathBodyDataGam
 %%]
 
@@ -425,37 +426,63 @@ SEM DataConstr
 %%% Type of data constructors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(5 hmtyinfer) hs
+-- | Construct type representations for constructing and deconstructing a constructor
+mkDataConstrTys1 :: (TyL,FldTyL) -> Ty -> (Ty, Ty)
+mkDataConstrTys1 (dataConTyL,dataConFldTyL) dataTy = (dataConTy, dataConProdTy)
+  where dataConTy       = dataConTyL `appArr` dataTy
+%%[[5
+        dataConProdTy   = appProdApp $ assocLElts dataConFldTyL
+%%][7
+        dataConProdTy   = recRec $ assocLMapKey fromJust $ fldTyLEnsureLabels dataConFldTyL
+%%]]
+
+-- | Construct type representations for constructing and deconstructing a constructor
+mkDataConstrTys2 :: (TyVarId -> Ty) -> Ty -> Ty -> Ty
+mkDataConstrTys2 (mkMetaTy) dataConProdTy dataTy = dataQuUnConTy
+  where dataConTyFv     = varFree dataTy
+        dataConProdTyFv = varFree dataConProdTy
+        dataQuUnConTy   = [dataTy] `appArr` mkTyQu tyQu_Exists (mkk (dataConProdTyFv \\ dataConTyFv)) dataConProdTy
+          where 
+%%[[5
+            mkk = id
+%%][6
+            mkk tvs = [ (v, mkMetaTy v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
+%%]]
+
+mkDataConstrValGam :: HsName -> Ty -> Ty -> ValGam
+mkDataConstrValGam conNm dataConTy dataQuUnConTy = assocLToGam [ (conNm, ValGamInfo dataConTy), (hsnUn conNm, ValGamInfo dataQuUnConTy) ]
+%%]
+
+%%[(7 hmtyinfer) hs
+-- | Construct a kind type for a existentially quantified tyvar in the deconstructor of a datatype
+-- mkDataConstrTyVarKi :: TyKiGam -> TyKiGam -> VarMp -> TyVarId -> Ty
+-- mkDataConstrTyVarKi finTyKiGam intlTyKiGam tvKiVarMp = tvarKi finTyKiGam intlTyKiGam tvKiVarMp emptyVarMp
+%%]
+
 %%[(5 hmtyinfer)
 ATTR AllData [ dataTy: Ty | | ]
 ATTR AllDataConstr [ | patValGam: ValGam | ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConTy           =   @dataConTyL `appArr` @lhs.dataTy
-                            .   dataConGadtTy       =   @gadtTyVarMp `varUpd` @dataConTy
-                            .   dataConTyFv         =   varFree @lhs.dataTy
-                            .   dataConProdTy       =   appProdApp @dataConGadtFldTyL
-                            .   dataConProdTyFv     =   varFree @dataConProdTy
-                loc         .   dataQuUnConTy       =   let fvD = @dataConTyFv
-                                                            fvU = @dataConProdTyFv
+  | Constr      loc         .   (dataConTy, dataConProdTy)
+                                                    =   mkDataConstrTys1 (@dataConTyL, @dataConGadtFldTyL) @lhs.dataTy
+                            .   dataQuUnConTy       =   let 
 %%[[5
-                                                            mkk = id
+                                                            mkKi = const $ panic "DataConstr.Constr.mkKi: should not happen"
 %%][6
-                                                            tkg = gamUnion @lhs.finTyKiGam @fields.intlTyKiGam
-                                                            mkk tvs = [ (v,tvarKi tkg @lhs.tvKiVarMp emptyVarMp v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
+                                                            mkKi = tvarKi @lhs.finTyKiGam @fields.intlTyKiGam @lhs.tvKiVarMp emptyVarMp
 %%]]
-                                                        in  ({- mkTyQu tyQu_Forall (mkk fvD) -} ([@lhs.dataTy] `appArr` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
+                                                        in  mkDataConstrTys2 mkKi @dataConProdTy @lhs.dataTy
                 loc         .   dataConTyVar        =   @lUniq_con
                             .   dataConTyAsVar      =   mkNewTyVar @lUniq_con
                             .   dataUnConTyVar      =   @lUniq_uncon
                             .   dataUnConTyAsVar    =   mkNewTyVar @lUniq_uncon
-                lhs         .   patValGam           =   gamUnions
-                                                          [ assocLToGam
-                                                              [ (@conNm, ValGamInfo @dataConTyAsVar)
-                                                              , (hsnUn @conNm, ValGamInfo @dataUnConTyAsVar)
-                                                              ]
-                                                          , @lhs.patValGam
-                                                          ]
-                            .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar,@dataConGadtTy),(@dataUnConTyVar,@dataQuUnConTy)] `varUpd` @lhs.patTyVarMp
+                lhs         .   patValGam           =   mkDataConstrValGam @conNm @dataConTyAsVar @dataUnConTyAsVar `gamUnion` @lhs.patValGam
+                            .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar, @gadtTyVarMp `varUpd` @dataConTy),(@dataUnConTyVar,@dataQuUnConTy)] `varUpd` @lhs.patTyVarMp
+                -- Following causes cycles
+                -- lhs         .   gathTySigGam        =   mkDataConstrValGam @conNm @dataConTyAsVar @dataUnConTyAsVar `-- gamUnion` @lhs.gathTySigGam
+                --             .   gathTySigVarMp      =   assocTyLToVarMp [(@dataConTyVar, @gadtTyVarMp `varUpd` @dataConTy),(@dataUnConTyVar,@dataQuUnConTy)] -- `varUpd` @lhs.gathTySigVarMp
                 loc         .   lUniq_con           :   UNIQUEREF gUniq
                 loc         .   lUniq_uncon         :   UNIQUEREF gUniq
 %%]
@@ -479,14 +506,7 @@ SEM Decl
 ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConTy2          =   @dataConTyL `appArr` @lhs.dataTy 
-                            .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @dataConGadtFldTyL
-                                                        in   recRec (zipWith (\l (_,t) -> (l,t)) lbls @dataConGadtFldTyL) 
-
-                            .   dataConTy           :=  @dataConTy1
-                            .   dataConProdTy       :=  @dataConProdTy1
-
-                            .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
+  | Constr      loc         .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   recSum @constrs.dataAltTyL
@@ -495,6 +515,13 @@ SEM Decl
                                                                             [] (CA.TyError "dataTgi")
 %%]]
 %%]
+  | Constr      loc         -- .   dataConTy2          =   @dataConTyL `appArr` @lhs.dataTy 
+                            -- .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @dataConGadtFldTyL
+                            --                             in   recRec (zipWith (\l (_,t) -> (l,t)) lbls @dataConGadtFldTyL) 
+-- 
+                            -- .   dataConTy           :=  @dataConTy1
+                            -- .   dataConProdTy       :=  @dataConProdTy1
+
 
 %%[(90 hmtyinfer)
 ATTR AllDataConstr [ | | dataAltForNewType USE {`const`} {Ty_Any}: Ty ]
@@ -503,13 +530,13 @@ SEM DataConstr
   | Constr      loc         .   dataAltForNewType   =   maybeHd Ty_Any snd @dataConGadtFldTyL       -- should be only one
 %%]
 
-%%[(7 hmtyinfer).dataConXTy
+%%[(7777 hmtyinfer).dataConXTy
 SEM DataConstr
   | Constr      loc         .   dataConTy1          =   @loc.dataConTy2
                             .   dataConProdTy1      =   @loc.dataConProdTy2
 %%]
 
-%%[(41 hmtyinfer).dataConXTy -7.dataConXTy
+%%[(41 hmtyinfer).dataConXTy -7777.dataConXTy
 SEM DataConstr
   | Constr
       (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp `tyAppVarLookup2_RhsOfEqOnly` @loc.dataConTy2
@@ -554,20 +581,17 @@ SEM Decl
 
 %%[(7 hmtyinfer)
 SEM DataConstr
-%%[[7
-  | Constr      loc         .   fldMp               =   let mk = emptyDataFldInfo
-                                                            mkfs = foldl (\m (ml,_) -> maybe m (\l -> (l,mk):m) ml) []
-                                                        in  Map.fromList $ mkfs $ @dataConGadtFldTyL
-%%][8
-  | Constr      loc         .   fldRefL             =   refGen 0 1 $ zipWith (\pn (ml,_) -> maybe pn id ml) positionalFldNames @dataConGadtFldTyL
-                            .   fldMp               =   Map.fromList $ catMaybes $ zipWith (\(_,r) (ml,_) -> fmap (\l -> (l,emptyDataFldInfo {dfiOffset = r})) ml) @fldRefL @dataConGadtFldTyL
+  | Constr      loc			.	(fldMp, _, fldRefL)	=   mkFldRefAndMp @dataConGadtFldTyL
+%%]
 {-
-                            .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
+  | Constr      loc			-- older
+  				            .	fldRefL				=	refGen 0 1 $ zipWith (\pn (ml,_) -> maybe pn id ml) positionalFldNames @dataConGadtFldTyL
+  				            .   fldMp               =   Map.fromList $ catMaybes $ zipWith (\(_,r) (ml,_) -> fmap (\l -> (l,emptyDataFldInfo {dfiOffset = r})) ml) @fldRefL @dataConGadtFldTyL
+  				            -- even older
+  				            .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
                                                             mkfs = fst . foldl (\(m,o) (ml,_) -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
                                                         in  Map.fromList $ mkfs $ @dataConGadtFldTyL
 -}
-%%]]
-%%]
 
 %%[(7 hmtyinfer)
 ATTR

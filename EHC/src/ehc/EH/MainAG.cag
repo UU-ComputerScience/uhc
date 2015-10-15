@@ -25,6 +25,12 @@
 %%[1 hs import(qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils)
 %%]
 
+%%[1 hs import ({%{EH}Base.Trace})
+%%]
+
+%%[1 hs import({%{EH}Base.UnderDev})
+%%]
+
 %%[(2 hmtyinfer) hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils1})
 %%]
 
@@ -37,7 +43,7 @@
 %%[(3 hmtyinfer) hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})
 %%]
 
-%%[4 hs import({%{EH}Base.Debug} as Debug,Debug.Trace)
+%%[4444 hs import({%{EH}Base.Debug} as Debug,Debug.Trace)
 %%]
 
 %%[(4 hmtyinfer) hs import({%{EH}Ty.FitsInCommon2})
@@ -104,7 +110,7 @@
 %%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
@@ -155,6 +161,7 @@
 WRAPPER AGItf
 %%]
 
+
 %%[(1 hmtyinfer) ag import({EH/InferUtils},{EH/Infer},{EH/InferExpr},{EH/InferTyUpDown},{EH/InferPatExpr},{EH/InferTyExpr},{EH/InferInit})
 %%]
 %%[(2 hmtyinfer) ag import({EH/FinalInfo})
@@ -164,6 +171,11 @@ WRAPPER AGItf
 %%[(4 hmtyinfer) ag import({EH/FIEnv})
 %%]
 %%[(6 hmtyinfer) ag import({EH/TvKiVarMp})
+%%]
+
+%%[8 ag import({EH/GatherMisc})
+%%]
+%%[8 ag import({EH/Trace})
 %%]
 
 %%[(1 hmtyinfer).EHRulerRules ag import(EHRulerRules)
@@ -216,8 +228,6 @@ WRAPPER AGItf
 %%[(8 hmtyinfer codegen) ag import({EH/SysfTy},{EH/SysfEnv})
 %%]
 %%[(8 codegen tycore) ag import({EH/ToTyCore})
-%%]
-%%[8 ag import({EH/GatherMisc})
 %%]
 
 %%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})

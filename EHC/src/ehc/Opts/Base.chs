@@ -20,6 +20,9 @@
 %%[1 import(Data.Typeable, Data.Maybe, qualified Data.Map as Map)
 %%]
 
+%%[1 import({%{EH}Base.UnderDev})
+%%]
+
 %%[4 import(UHC.Util.Pretty)
 %%]
 
@@ -39,6 +42,9 @@
 %%]
 
 %%[8 import({%{EH}Base.Target})
+%%]
+
+%%[8 import({%{EH}Base.Trace})
 %%]
 
 %%[8 import({%{EH}Base.Optimize})
@@ -114,20 +120,29 @@ emptyPkgOption = PkgOption emptyPkgName [] []
 %%% Option specific options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1 export(EhOpt(..))
+-- | EH specific options
+data EhOpt
+  = EhOpt_NONE				-- no-op option
+  | EhOpt_Dump 				-- dump textual EH output
+  | EhOpt_DumpAST 			-- dump textual EH output, as annotated AST
+  deriving (Eq, Ord, Enum, Bounded)
+%%]
+
 %%[(8 codegen) export(CoreOpt(..))
--- | Core options
+-- | Core specific options
 data CoreOpt
   = CoreOpt_NONE				-- no-op option
 %%[[(8 coreout)
 --  | CoreOpt_PPParseable			-- pretty print parseable, negation means just make it readable
-  | CoreOpt_Dump 				-- dump textual core output
-%%[[50
-  | CoreOpt_DumpBinary			-- dump binary core output
+  | CoreOpt_Readable			-- when there is a choice, make it more readable
 %%]]
+  | CoreOpt_Dump
+  | CoreOpt_DumpBinary
   | CoreOpt_DumpAlsoNonParseable-- dump also the parts which are not parseable
-%%]]
 %%[[(8 corerun)
   | CoreOpt_Run					-- run after compilation
+  | CoreOpt_LoadOnly			-- only load what is available, to be used only (for now) by alternate compiler driver
   | CoreOpt_RunDump				-- dump CoreRun
   | CoreOpt_RunDumpVerbose		-- dump CoreRun, more verbose
   | CoreOpt_RunTrace			-- trace during running CoreRun
@@ -210,9 +225,11 @@ data EHCOpts
       ,  ehcOptAspects        ::  String            -- which aspects are included in this compiler
       ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
+      ,  ehcOptEhOpts         ::  [EhOpt]  	    	-- EH options
 %%[[(8 codegen tycore)
       ,  ehcOptShowTyCore     ::  Bool              -- show TyCore ast on stout
 %%]]
+      ,  ehcOptUnderDev		  ::  Set.Set UnderDev  -- turning on something under development (available options change according to whim and weather)
       ,  ehcOptPriv           ::  Bool              -- privately used (in general during switch between 2 impls of 1 feature)
       ,  ehcOptHsChecksInEH   ::  Bool              -- do checks in EH which already have been done in HS (usually related to name absence/duplication). This is used for EH compilation only.
 %%[[1
@@ -292,6 +309,7 @@ data EHCOpts
       ,  ehcOptImportFileLocPath
                               ::  FileLocPath
       ,  ehcOptVerbosity      ::  Verbosity         -- verbosity level
+      ,  ehcOptTraceOn        ::  !(Set.Set TraceOn)         -- on what to trace
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptEnvironment    ::  EHCEnvironment    -- runtime environment
@@ -384,10 +402,17 @@ emptyEHCOpts
       {  ehcOptTrace            =   \_ x -> x
       ,  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
       ,  ehcOptShowHS           =   False
+      ,  ehcOptEhOpts           =   []
 %%[[(8 codegen tycore)
       ,  ehcOptShowTyCore       =   False
 %%]]
       ,  ehcOptPriv             =   False
+      ,  ehcOptUnderDev         =   Set.fromList
+      									[ UnderDev_NameAnalysis		-- 20150924
+%%[[9
+      									, UnderDev_NamedInst		-- 20150925
+%%]]
+      									]
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
       ,  ehcOptShowEH           =   True
@@ -468,6 +493,9 @@ emptyEHCOpts
       ,  ehcOptVerbosity        =   VerboseNormal
 %%][100
       ,  ehcOptVerbosity        =   VerboseMinimal
+%%]]
+%%[[8
+      ,  ehcOptTraceOn          =   Set.empty
 %%]]
 %%[[8
       ,  ehcOptEmitHS           =   False
@@ -551,6 +579,27 @@ emptyEHCOpts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Derived accessors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(ehcOptEhAstPP, ehcOptEhAstPPExtensive)
+-- | PP EH AST, with annotations
+ehcOptEhAstPP :: EHCOpts -> Bool
+ehcOptEhAstPP opts =
+%%[[1
+  ehcOptShowAst opts ||
+%%][100
+%%]]
+     EhOpt_DumpAST `elem` ehcOptEhOpts opts
+
+-- | PP EH AST, with annotations
+ehcOptEhAstPPExtensive :: EHCOpts -> Bool
+ehcOptEhAstPPExtensive opts = (ehcOptEhAstPP opts && ehcOptDebug opts) || EhOpt_DumpAST `elem` ehcOptEhOpts opts
+%%]
+
+%%[8 export(ehcOptEhPP)
+-- | Do some plain PP on EH
+ehcOptEhPP :: EHCOpts -> Bool
+ehcOptEhPP opts = ehcOptShowEH opts || ehcOptEmitEH opts || EhOpt_Dump `elem` ehcOptEhOpts opts
+%%]
 
 %%[8 export(ehcOptTarget,ehcOptTargetFlavor)
 ehcOptTarget :: EHCOpts -> Target
@@ -726,6 +775,16 @@ ehcOptFromJust opts panicMsg n m
 -- | Do linking into executable?
 ehcOptDoExecLinking :: EHCOpts -> Bool
 ehcOptDoExecLinking opts = ehcOptLinkingStyle opts == LinkingStyle_Exec
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Under development?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(ehcOptIsUnderDev)
+-- | Is something under development turned on?
+ehcOptIsUnderDev :: UnderDev -> EHCOpts -> Bool
+ehcOptIsUnderDev ud opts = ud `Set.member` ehcOptUnderDev opts
 %%]
 
 

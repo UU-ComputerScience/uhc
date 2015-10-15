@@ -21,6 +21,8 @@
 
 %%[(6 hmtyinfer || hmtyast) import(qualified Data.Set as Set)
 %%]
+%%[(6 hmtyinfer || hmtyast) import(Control.Applicative((<|>)))
+%%]
 
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
@@ -146,9 +148,9 @@ possibly using varmpMapTyVarKey.
 Defaults to * (kiStar).
 
 %%[(6 hmtyinfer || hmtyast) export(tvarKi)
-tvarKi :: TyKiGam -> VarMp -> VarMp -> TyVarId -> Ty
-tvarKi tyKiGam tvKiVarMp _ tv
-  = case tyKiGamLookup tv' tyKiGam of
+tvarKi :: TyKiGam -> TyKiGam -> VarMp -> VarMp -> TyVarId -> Ty
+tvarKi tyKiGam1 tyKiGam2 tvKiVarMp _ tv
+  = case tyKiGamLookup tv' tyKiGam1 <|> tyKiGamLookup tv' tyKiGam2 of
       Just tkgi -> tvKiVarMp `varUpd` tkgiKi tkgi
       _         -> tvKiVarMp `varUpd` tv'
   where tv' = {- tyVarMp `varUpd` -} mkTyVar tv
@@ -218,7 +220,7 @@ initTyKiGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast).Substitutable.inst.TyKiGamInfo
-instance VarUpdatable TyKiGamInfo VarMp where
+instance VarUpdatable TyKiGamInfo VarMp VarId VarMpInfo where
   s `varUpd`  tkgi         =   tkgi { tkgiKi = s `varUpd` tkgiKi tkgi }
   s `varUpdCyc` tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) varUpdCyc s tkgi
 

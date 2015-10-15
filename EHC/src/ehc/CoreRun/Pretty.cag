@@ -61,7 +61,9 @@ letoffUpd upd i@(InhPP {letoffInhPP=o}) = i {letoffInhPP = upd o}
 
 -- | PP using InhPP
 ppRRef :: InhPP -> RRef -> PP_Doc
-ppRRef inhpp r = ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) r
+-- ppRRef inhpp r = ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) r
+-- ppRRef inhpp r = {- ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) -} pp r
+ppRRef inhpp r = ppCmtExtra inhpp (maybe (pp "?") pp $ ref2nmLookup r $ r2nInhPP inhpp) $ pp r
 %%]
 
 %%[(8 corerun) hs
@@ -141,7 +143,8 @@ instance PP Alt where
 instance PP RRef where
   pp (RRef_Glb m e) = ppDots [pp "g", pp m, pp e]
   pp (RRef_Imp m e) = ppDots [pp "i", pp m, pp e]
-  pp (RRef_Exp m e) = ppDots [pp m, pp e]
+  pp (RRef_Exp m e) = ppDots [pp "e", ppDifficultNm m, pp e]
+  pp (RRef_Unr n  ) = ppDots [pp "u", ppDifficultNm n]
   pp (RRef_Mod e  ) = ppDots [pp "m", pp e]
   pp (RRef_Loc l e) = ppDots [pp "l", pp l, pp e]
   pp (RRef_LDf l e) = ppDots [pp "d", pp l, pp e]
@@ -187,20 +190,21 @@ ppBindItems :: [PP_Doc] -> PP_Doc
 ppBindItems bs = vlist [ ppSemi b | b <- bs ]
 
 ppBinds''' :: InhPP -> (Int -> PP_Doc) -> Int -> AssocL Int PP_Doc -> PP_Doc
-ppBinds''' inhpp mkr off bs = ppBindItems [ ppCmtExtra inhpp ((mkr $ off+i)) e | (i,e) <- bs ]
+ppBinds''' inhpp mkr off bs = ppBindItems [ ppCmtExtra inhpp (mkr $ off+i) e | (i,e) <- bs ]
 
 ppBinds'' :: InhPP -> (Int -> RRef) -> Int -> CRArray Bind -> PP_Doc
 ppBinds'' inhpp mkr off bs = ppBinds''' inhpp (ppRRef inhpp . mkr) off [ (i, ppExp'' inhpp e) | (i,e) <- craAssocs bs ]
 %%]
 
 %%[(8 corerun)
-ATTR AllNT AllMetaNT AllImport [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR AllNT AllMetaNT AllImport AllExport [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Mod
-  | Mod         lhs         .   pp          =   (ppSemi $ "module" >#< ppCoreNm @moduleNm >#< ppCommas [@moduleNr, @stkDepth] >|< maybe empty (" ->" >#<) @mbbody.ppMb)
+  | Mod         lhs         .   pp          =   (ppSemi $ "module" >#< ppCoreNm @moduleNm >#< {- maybe empty (>|< ",") @moduleNr >#< -} @stkDepth >|< maybe empty (" ->" >#<) @mbbody.ppMb)
                                                 >-< ppBindItems @imports.ppL
+                                                >-< ppBindItems @exports.ppL
                                                 >-< ppBindItems @metas.ppL
-                                                >-< ppBinds'' @inhpp (RRef_Glb @moduleNr) 0 @binds
+                                                >-< ppBinds'' @inhpp RRef_Mod 0 @binds
 
 SEM SExp
   | Int         lhs         .   pp          =   pp @int
@@ -235,13 +239,16 @@ SEM DataCon
   | Con			lhs			.	pp			=	ppDifficultNm @conNm >#< "->" >#< @tagNr
 
 SEM Import
-  | Import		lhs			.	pp			=	"import" >#< ppCoreNm @nm
+  | Import		lhs			.	pp			=	"import" >#< ppDifficultNm @nm
+
+SEM Export
+  | Export		lhs			.	pp			=	"export" >#< ppDifficultNm @nm >#< "=" >#< @offset
 %%]
 
 %%[(8 corerun)
-ATTR ImportL MetaL DataConL [ | | ppL: {[PP_Doc]} ]
+ATTR ImportL MetaL DataConL ExportL [ | | ppL: {[PP_Doc]} ]
 
-SEM MetaL DataConL ImportL
+SEM MetaL DataConL ImportL ExportL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 

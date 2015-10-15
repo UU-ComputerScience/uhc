@@ -21,7 +21,7 @@ CompilePhase building blocks: parsers
 %%[8 import(UHC.Util.Lens)
 %%]
 
-%%[8 import(Control.Monad.Error, Control.Monad.State)
+%%[8 import(UHC.Util.Error, Control.Monad.State)
 %%]
 
 %%[8 import(qualified Data.Map as Map)
@@ -61,16 +61,18 @@ CompilePhase building blocks: parsers
 %%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 -- Grin parser
-%%[(8 codegen grinparser) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinCode.Parser} as GrinParser)
+%%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin)
+%%]
+%%[(8 codegen grinparser) import(qualified {%{EH}GrinCode.Parser} as GrinParser)
 %%]
 
 -- serialization
 %%[50 import(qualified UHC.Util.Binary as Bin, UHC.Util.Serialize)
 %%]
 -- config
-%%[50 import(qualified {%{EH}Config} as Cfg)
+%%[5050 import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%[5050 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,12 +100,12 @@ cpParseWithFPath
           Just (ASTParser p) -> do
                (res,errs) <- parseWithFPath sopts popts p (maybe (ecuFilePath (crCU modNm cr)) id mbFp)
                cpUpdCU modNm (_asthdlrEcuStore astHdlr res)
-               unless (ehpoptsStopAtErr popts) $ seterrs errs
+               unless (ehpoptsOkToStopAtErr popts) $ seterrs errs
           _ -> seterrs [strMsg $ "No parser for " ++ _asthdlrName astHdlr]
       }
 %%]
       
-%%[8 export(cpParseEH)
+%%[8888 export(cpParseEH)
 cpParseEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpParseEH modNm
   = cpParseWithFPath astHandler'_EH defaultEHParseOpts Nothing modNm
@@ -133,20 +135,20 @@ cpParseHs litmode = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpopts
 
 %%[50.cpParseHsImport export(cpParseHsImport)
 cpParseHsImport :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpParseHsImport = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpoptsStopAtErr=True, ehpoptsForImport=True}) Nothing
+cpParseHsImport = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpoptsOkToStopAtErr=True, ehpoptsForImport=True}) Nothing
 %%]
 
 %%[99 -50.cpParseHsImport export(cpParseHsImport)
 cpParseHsImport :: EHCCompileRunner m => Bool -> HsName -> EHCompilePhaseT m ()
-cpParseHsImport litmode = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpoptsStopAtErr=True, ehpoptsLitMode=litmode, ehpoptsForImport=True}) Nothing
+cpParseHsImport litmode = cpParseWithFPath astHandler'_HS (defaultEHParseOpts {ehpoptsOkToStopAtErr=True, ehpoptsLitMode=litmode, ehpoptsForImport=True}) Nothing
 %%]
 
-%%[(8 corein) export(cpParseCoreWithFPath)
+%%[(8888 corein) export(cpParseCoreWithFPath)
 cpParseCoreWithFPath :: EHCCompileRunner m => Maybe FPath -> HsName -> EHCompilePhaseT m ()
 cpParseCoreWithFPath = cpParseWithFPath astHandler'_Core (defaultEHParseOpts)
 %%]
 
-%%[(8 corerun) export(cpParseCoreRunWithFPath)
+%%[(8888 corerun) export(cpParseCoreRunWithFPath)
 cpParseCoreRunWithFPath :: EHCCompileRunner m => Maybe FPath -> HsName -> EHCompilePhaseT m ()
 cpParseCoreRunWithFPath = cpParseWithFPath astHandler'_CoreRun (defaultEHParseOpts)
 %%]
@@ -155,7 +157,7 @@ cpParseCoreRunWithFPath = cpParseWithFPath astHandler'_CoreRun (defaultEHParseOp
 %%% Compile actions: Binary reading
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50
+%%[5050
 cpDecodeHIInfo :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpDecodeHIInfo modNm
   = do { cr <- get
@@ -214,7 +216,7 @@ cpDecode'' astHdlr skey tkey modNm
              mbi@(~(Just info)) = astsuffixLookup skey $ _asthdlrSuffixRel astHdlr
              mbl@(~(Just lens)) = Map.lookup tkey $ _astsuffinfoASTLensMp info
              -- fpC                = fpathSetSuff (_astsuffinfoSuff info) fp
-             fpC                = asthdlrMkInputFPath astHdlr opts ecu skey modNm fp
+             fpC                = asthdlrMkInputFPath astHdlr opts ecu (ASTFileSuffOverride_Suff skey) modNm fp
        ; if isJust mbi && isJust mbl
          then do
            cpMsg' modNm VerboseALot "Decoding" Nothing fpC
@@ -240,18 +242,18 @@ cpDecode' astHdlr skey tkey modNm = do
     unless okDecode $ cpSetLimitErrsWhen 1 ("Decode " ++ _asthdlrName astHdlr) [strMsg $ "No decoder/lens for " ++ _asthdlrName astHdlr ++ " (" ++ show skey ++ "/" ++ show tkey ++ ")"]
 %%]
 
-%%[(50 codegen grin) export(cpDecodeGrin)
+%%[(5050 codegen grin) export(cpDecodeGrin)
 cpDecodeGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpDecodeGrin = cpDecode (Just "grin") ecuStoreGrin
 %%]
 
-%%[(50 codegen) export(cpDecodeCore)
+%%[(5050 codegen) export(cpDecodeCore)
 cpDecodeCore :: EHCCompileRunner m => Maybe String -> HsName -> EHCompilePhaseT m ()
 -- cpDecodeCore = cpDecode' astHdlr skey timing
 cpDecodeCore suff = cpDecode suff ecuStoreCore
 %%]
 
-%%[(50 corerun) export(cpDecodeCoreRun)
+%%[(5050 corerun) export(cpDecodeCoreRun)
 cpDecodeCoreRun :: EHCCompileRunner m => Maybe String -> HsName -> EHCompilePhaseT m ()
 cpDecodeCoreRun suff = cpDecode suff ecuStoreCore
 %%]
@@ -261,53 +263,64 @@ cpDecodeCoreRun suff = cpDecode suff ecuStoreCore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 export(cpGetPrevHI)
-cpGetPrevHI :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
+cpGetPrevHI :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_HI
 cpGetPrevHI modNm
-  = do { cr <- get
-       ; cpMsg modNm VerboseDebug "cpGetPrevHI"
+  = do { cpMsg modNm VerboseDebug "cpGetPrevHI"
+{-
+       ; cr <- get
        ; let  ecu        = crCU modNm cr
        -- ; when (isJust (ecuMbHITime ecu))
        --        (cpParseHI modNm)
        ; when (isJust (_ecuMbHIInfoTime ecu)) $
               -- cpDecodeHIInfo modNm
               cpDecode' astHandler'_HI (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev modNm
+-}
+       ; bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_HI (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 
 %%[(50 codegen) export(cpGetPrevCore)
-cpGetPrevCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m Core.CModule
+cpGetPrevCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_Core
 cpGetPrevCore modNm
-  = do { cr <- get
-       ; cpMsg modNm VerboseDebug "cpGetPrevCore"
-       -- ; let  ecu    = crCU modNm cr
-       -- ; when (isJust (_ecuMbCoreTime ecu) && isNothing (_ecuMbCore ecu)) $
-              -- cpDecodeCore (Just Cfg.suffixDotlessBinaryCore) modNm
-              -- cpDecode' astHandler'_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev modNm
-       -- ; fmap (fromJust . _ecuMbCore) $ gets (crCU modNm)
-       ; bcall $ ASTFromFile (modNm,Nothing) ASTType_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
+  = do { cpMsg modNm VerboseDebug "cpGetPrevCore"
+{-
+       ; cr <- get
+       ; let  ecu    = crCU modNm cr
+       ; when (isJust (_ecuMbCoreTime ecu) && isNothing (_ecuMbCore ecu)) $
+           -- cpDecodeCore (Just Cfg.suffixDotlessBinaryCore) modNm
+           -- cpDecode' astHandler'_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev modNm
+       ; fmap (fromJust . _ecuMbCore) $ gets (crCU modNm)
+-}
+       ; bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_Core (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 
 %%[(50 corerun) export(cpGetPrevCoreRun)
-cpGetPrevCoreRun :: EHCCompileRunner m => HsName -> EHCompilePhaseT m CoreRun.Mod
+cpGetPrevCoreRun :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_CoreRun
 cpGetPrevCoreRun modNm
-  = do { cr <- get
-       ; cpMsg modNm VerboseDebug "cpGetPrevCoreRun"
+  = do { cpMsg modNm VerboseDebug "cpGetPrevCoreRun"
+{-
+       ; cr <- get
        ; let  ecu    = crCU modNm cr
        ; when (isJust (_ecuMbCoreRunTime ecu) && isNothing (_ecuMbCoreRun ecu))
               (cpDecodeCoreRun (Just Cfg.suffixDotlessBinaryCoreRun) modNm)
        ; fmap (fromJust . _ecuMbCoreRun) $ gets (crCU modNm)
+-}
+       ; bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_CoreRun (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 
 %%[(50 codegen grin) export(cpGetPrevGrin)
-cpGetPrevGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
+cpGetPrevGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_Grin
 cpGetPrevGrin modNm
-  = do { cr <- get
-       ; cpMsg modNm VerboseDebug "cpGetPrevGrin"
+  = do { cpMsg modNm VerboseDebug "cpGetPrevGrin"
+{-
+       ; cr <- get
        ; let  ecu    = crCU modNm cr
        ; when (isJust (_ecuMbGrinTime ecu) && isNothing (_ecuMbGrin ecu))
               (cpDecodeGrin modNm) -- (cpParseGrin modNm)
+-}
+       ; bcall $ ASTFromFile (mkPrevFileSearchKeyWithName modNm) (AlwaysEq ASTFileTimeHandleHow_AbsenceIgnore) ASTType_Grin (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
        }
 %%]
 

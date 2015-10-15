@@ -19,9 +19,10 @@ ATTR AllFuncDep [ | tyGam: TyGam  tyKiGam: TyKiGam | ]
 SEM Decl
   | Class       decls           .   patTyKiGam      =   emptyGam
                                 .   patKiVarMp      =   emptyVarMp
-                lhs             .   patTyKiGam      =   tyKiGamNameSingleton (hsnClass2Kind @clsNm) (TyKiGamInfo $ mkNewTyVar @lUniq) `gamUnion` @lhs.patTyKiGam
+                lhs             .   patTyKiGam      =   tyKiGamNameSingleton (hsnClass2Kind @clNm) (TyKiGamInfo @clsKiVar) `gamUnion` @lhs.patTyKiGam
                                 .   patKiVarMp      =   @lhs.patKiVarMp
                 loc         	.   lUniq		  	:   UNIQUEREF gUniq
+                loc				.	clsKiVar		=	mkNewTyVar @lUniq
 %%]
   | Class       tyPrExpr        .   tyKiGam         =   gamPushNew @lhs.patTyKiGam
                                 .   kiVarMp         =   @lhs.patKiVarMp
@@ -39,8 +40,16 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) hs
+-- | Get the superclass fields names
 tyPrLToSupNmL :: TyL -> [HsName]
 tyPrLToSupNmL = zipWith (\i p -> hsnUniqifyInt HsNameUniqifier_SuperClass i (tyPredNm p)) [1..]
+
+-- | Get dictionary type of predicate
+tyDict :: Ty -> Ty
+tyDict t = appConApp (hsnClass2Dict n) as
+  where t'  = predTy $ tyPred t
+        n   = tyAppFunConNm t'
+        as  = appUnAppArgs t'
 %%]
 
 %%[(9 hmtyinfer)
@@ -50,43 +59,57 @@ SEM Decl
                                                                   , clgiGenerDerivableL = @generDerivs
 %%]]
                                                                   }
-                                .   (clsNm,clsArgTyL)
+                                .   dataDictNm      =   hsnClass2Dict @clNm                                -- only used when `not ehcCfgClassViaRec'
+                                .   (ctxtPrTyL,hdPrTy)
+                                                    =   appUnArr @tyPrExpr.ty
+                                .   (prClsNm,prClsArgTyL)
                                                     =   tyPredMatchNmArgs @hdPrTy
-                lhs             .   patClGam1       =   gamAdd @clsNm @clgi1 @lhs.patClGam1
+                lhs             .   patClGam1       =   gamAdd @clNm @clgi1 @lhs.patClGam1
                 tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                                 .   clGam           =   @lhs.patClGam2
                 decls           .   clGam           =   @lhs.patClGam2
-                loc             .   (ctxtPrTyL,hdPrTy)
-                                                    =   appUnArr @tyPrExpr.ty
-                                .   lSigGam         =   @decls.gathTySigVarMp `varUpd` @decls.gathTySigGam
+                loc             .   lSigGam         =   @decls.gathTySigVarMp `varUpd` @decls.gathTySigGam
                                 .   clsTySigGam     =   valGamMapTy (\t -> [@hdPrTy] `appArr` t) @lSigGam
                                 .   clsTySigDictGam =   if ehcCfgInstFldHaveSelf @lhs.opts then @clsTySigGam else @lSigGam
-                                .   supClsFldNmL    =   tyPrLToSupNmL @ctxtPrTyL
-                                .   clsFldL         =   assocLMapElt vgiTy (gamToAssocL @clsTySigDictGam)
-                                .   clsAllFldL      =   @clsFldL ++ zip @supClsFldNmL (repeat Ty_Any)
-                                .   clsTyRec        =   recRec @clsAllFldL
-                                .   dataDictNm      =   hsnClass2Dict @clsNm                                -- only used when `not ehcCfgClassViaRec'
-                                .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldL)        -- only used when `not ehcCfgClassViaRec'
-                                .   dataDictTy      =   appConApp @dataDictNm @clsArgTyL
+                                .   supClsFldTyL    =   zipWith (\t n -> (Just n, tyDict t)) @ctxtPrTyL $ tyPrLToSupNmL @ctxtPrTyL 
+                                .   supClsFldNmL    =   [ n | (Just n, _) <- @supClsFldTyL ]
+                                .   clsFldTyL       =   [ (Just n, vgiTy vgi) | (n,vgi) <- gamToAssocL @clsTySigDictGam ]
+                                .   clsAllFldTyL    =   @clsFldTyL ++ @supClsFldTyL
+                                .   clsTyRec        =   recRec $ assocLMapKey fromJust @clsAllFldTyL
+                                .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldTyL)        -- only used when `not ehcCfgClassViaRec'
+                                .   dataDictTy      =   tyDict @hdPrTy -- appConApp @dataDictNm @prClsArgTyL
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
-                                .   clgi2           =   @clgi1 { clgiPrToEvidTy     = tyQuantifyClosed $ [@hdPrTy] `appArr` @clsTyRec
+                                .   clgiUpd         =   \clgi -> clgi
+                                                               { clgiPrToEvidRecTy	= tyQuantifyClosed $ [@hdPrTy] `appArr` @clsTyRec
+                                                               , clgiPrToEvidDataTy = tyQuantifyClosed $ [@hdPrTy] `appArr` @dataDictTy
                                                                , clgiRuleTy         = tyQuantifyClosed @tyPrExpr.ty
                                                                , clgiDictTag        = @dictTag
                                                                -- , clgiSupClsFldNmL   = @supClsFldNmL
                                                                }
-                            	.	vgi				=	ValGamInfo (assocLElts @clsAllFldL `appArr` @dataDictTy)
-                lhs             .   patTyGam        =   @lhs.patTyGam
+                                .   clgi2           =   @clgiUpd @clgi1
+                                .   (dataDictConTy, dataDictConProdTy)
+                                                    =   mkDataConstrTys1 (assocLElts @clsAllFldTyL, @clsAllFldTyL) @dataDictTy
+                                .   dataDictQuUnConTy
+                                                    =   mkDataConstrTys2 (tvarKi @lhs.finTyKiGam @tyPrExpr.intlTyKiGam @lhs.tvKiVarMp emptyVarMp) @dataDictConProdTy @dataDictTy
+                lhs             .   patTyGam        =   gamAdd @dataDictNm (TyGamInfo (appCon @dataDictNm)) @lhs.patTyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
-                                .   patClGam2       =   gamAdd @clsNm @clgi2 @lhs.patClGam2
-                                .	patValGam		=	gamAdd @dataDictNm @vgi @lhs.patValGam
+                                .   patClGam2       =   gamTopUpdate @clgiUpd @clNm @lhs.patClGam2
+                                .	patValGam		=	mkDataConstrValGam @dataDictNm @dataDictConTy @dataDictQuUnConTy `gamUnion` @lhs.patValGam
                 decls           .   gathDataGam     =   emptyGam
                 lhs             .   gathDeclDataGam =   if ehcCfgClassViaRec @lhs.opts
                                                         then emptyGam
-                                                        else let dgi = mkDGIPlain @dataDictNm @clsTyRec (appDbg $ "Decl.Class.dgi: " ++ show @dataDictNm) [@dataDictNm] (@dataDictNm `Map.singleton` dti)
+                                                        else let dgi = mkDGIPlain @dataDictNm dty @clsKiVar [@dataDictNm] (@dataDictNm `Map.singleton` dti)
+                                                                 dty = [@dataDictTy] `appArr` recSum [(@dataDictNm,@clsTyRec)]
+                                                                 fldTyL = @clsAllFldTyL -- assocLMapKey Just @clsAllFldL
+                                                                 (fldMp, _, fldRefL) = mkFldRefAndMp fldTyL
                                                                  dti = emptyDataTagInfo
                                                                          { dtiCTag = @dataDictTag
                                                                          , dtiConNm = @dataDictNm
-                                                                         , dtiConFldAnnL = replicate (length @clsAllFldL) emptyDataConFldAnnInfo
+                                                                         , dtiFldTyL = fldTyL
+                                                                         , dtiFldRefL = assocLElts fldRefL
+                                                                         , dtiFldMp = fldMp
+                                                                         , dtiConTy = @dataDictConTy
+                                                                         , dtiConFldAnnL = replicate (length @clsAllFldTyL) emptyDataConFldAnnInfo
                                                                          }
                                                              in  gamSingleton @dataDictNm dgi
                                 .   gathDataGam     =   @lhs.gathDataGam
@@ -226,7 +249,7 @@ SEM Decl
                                                                   (hd',derivTruncTailArity)
                                                                                 = case instFrom of
                                                                                     InstDerivingFrom_Datatype   -> (mkTyPr $ Pred_Class $ appTopApp [predTyCon, appTopApp (dataTyCon : dataTyArgs')], derivArity)
-                                                                                    InstDerivingFrom_Standalone -> (hd                                                                       , 0         )
+                                                                                    InstDerivingFrom_Standalone -> (hd                                                                              , 0         )
 %%]]
                                                                   (cxDt,_,errs2)= case instFrom of
                                                                                     InstDerivingFrom_Datatype
@@ -248,7 +271,11 @@ SEM Decl
                                                     =   maybe (poiHNm @instId,True) id @mbNmElim
                                 .   (dictBuildNm,dictSelfNm)
                                                     =   mkInstanceBuildNms @dictNm
-                                .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
+                                -- .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
+                                .   (clgi,clgiNmErrs)
+                                                    =   case gamLookup @instClsNm @lhs.clGam of
+                                                          Nothing    ->  (emptyCLGI,[rngLift @range mkErr_NamesNotIntrod "class" [@instClsNm]])
+                                                          Just clgi  ->  (clgi,[])
                                 .   supPrTyL        =   let  t      =  clgiRuleTy @clgi
                                                              st     =  mkNewTyVarL (length $ appUnArrArgs $ tyQuant t) @lUniq4 `appArr` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts @fe2 @lUniq3 (emptyVarMp :: VarMp) t st
@@ -263,17 +290,19 @@ SEM Decl
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTy      =   appConApp @dataDictNm @instArgTyL
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
-                                .   vgi             =   ValGamInfo ((case @instVariant of
-                                                                       InstDefault -> [@dataDictTy]
-                                                                       _           -> map pred2DataTy @ctxtPrFixL
-                                                                     ) `appArr` @dataDictTy)
+                                .   vgi             =   ValGamInfo
+                                                          (tyQuantifyClosed $ varUpd @unfixPrTyVarMp $
+                                                            (case @instVariant of
+                                                              InstDefault -> [@dataDictTy]
+                                                              _           -> map pred2DataTy @ctxtPrFixL
+                                                            ) `appArr` @dataDictTy)
                                 .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo @recTyExts
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 				.	patTyVarMp		=	@fixPrTyVarMp `varUpd` @lhs.tyVarMp
                 				.	tyVarMp			=	@decls.patTyVarMp
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
-                                .   patValGam       =   gamAdd @dictNm @vgi @lhs.patValGam
+                                .   patValGam       =   gamTopUpdate (const @vgi) @dictNm @lhs.patValGam
                                 .	patTyVarMp		=	@lhs.patTyVarMp
                 loc         	.   lUniq3		  	:   UNIQUEREF gUniq
                 loc         	.   lUniq4		  	:   UNIQUEREF gUniq
@@ -281,7 +310,7 @@ SEM Decl
   | InstanceIntro
                 loc             .   (instClsNm,_)   =   tyPredMatchNmArgs @prExpr.ty
                                 .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
-                loc             .   foPr            =   fitPredToEvid @lUniq emptyVarMp @prExpr.ty @lhs.clGam
+                loc             .   foPr            =   fitPredToEvid'' clgiPrToEvidDataTy @lUniq emptyVarMp @prExpr.ty (Right @lhs.clGam)
                 expr            .   knTy            =   foTy @foPr
                                 .   tyVarMp         =   foVarMp @foPr `varUpd` @lhs.tyVarMp
 %%]
@@ -293,6 +322,32 @@ SEM Decl
 %%[(91 codegen hmtyinfer)
 SEM Decl
   | Instance    loc             .   derivMp         =   mkDerivClsMp @fe @lhs.valGam @lhs.dataGam
+                                .   mbDerivDCL      =   Map.lookup @instClsNm @derivMp
+                                .   mbDerivDataCTags=   dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
+                                .   derivCanBeDoneBuiltin
+                                                    =   isJust @mbDerivDCL && not (dgiIsRec @derivDataDGI)
+                                                        && (not ((@derivIsEnum || @derivIsIx) && @derivDataHasFlds))
+                                                        && (not (@derivIsBounded && @derivDataHasGt1Constrs && @derivDataHasFlds))
+                                .   derivDataHasFlds
+                                                    =   isJust @mbDerivDataCTags
+                                                        && (any (\t -> ctagArity t > 0) $ fromJust @mbDerivDataCTags)
+                                .   derivDataHasGt1Constrs
+                                                    =   isJust @mbDerivDataCTags
+                                                        && (length (fromJust @mbDerivDataCTags) > 1)
+                                .   derivIsEnum     =   @instClsNm == (ehbnClassEnum $ ehcOptBuiltinNames @lhs.opts)
+                                .   derivIsBounded  =   @instClsNm == (ehbnClassBounded $ ehcOptBuiltinNames @lhs.opts)
+                                .   derivIsIx
+%%[[91
+                                                    =   False
+%%][99
+                                                    =   @instClsNm == (ehbnClassIx $ ehcOptBuiltinNames @lhs.opts)
+%%]]
+                                .   derivCanBeDoneGeneric
+%%[[91
+                                                    =   False
+%%][92
+                                                    =   not $ null @generForFitsInL
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,7 +376,7 @@ ATTR TyExpr PrExpr [ | | evTy: Ty ]
 
 SEM PrExpr
   | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = varFreeSet @ty}) @fe2 @lUniq3 (emptyVarMp :: VarMp)
-                                                                          (clgiPrToEvidTy @clgi) ([@ty] `appArr` mkNewTyVar @lUniq2)
+                                                                          (clgiPrToEvidRecTy @clgi) ([@ty] `appArr` mkNewTyVar @lUniq2)
                                                         in   appUnArrRes $ foVarMp fo `varUpd` foTy fo
                 loc         	.   lUniq2	 		:   UNIQUEREF gUniq
                 loc         	.   lUniq3		  	:   UNIQUEREF gUniq

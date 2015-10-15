@@ -11,25 +11,25 @@ Analysis domains
 %%% Haskell importable interface to AnaDomain
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}AnaDomain} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts.Base},{%{EH}VarMp})
+%%[(8 codegenanalysis) hs module {%{EH}AnaDomain} import({%{EH}Base.HsName.Builtin},{%{EH}Base.Common},{%{EH}Opts.Base},{%{EH}VarMp})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.List, Data.Maybe)
+%%[(8 codegenanalysis) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.List, Data.Maybe)
 %%]
-%%[(8 codegen) hs import(Control.Monad.State, Control.Applicative)
+%%[(8 codegenanalysis) hs import(Control.Monad.State, Control.Applicative)
 %%]
-%%[(8 codegen) hs import(UHC.Util.Utils)
-%%]
-
-%%[(8 codegen) hs export(QualAGItf(..), TyAGItf(..), CoeAGItf(..)) 
-%%]
-%%[(8 codegen) hs export(AnaEval(..), AnaEvalL, RelevTy(..), RelevTyL, MbRelevTy, RelevQual(..), RelevQualL, RelevCoe(..), RelevCoeL) 
+%%[(8 codegenanalysis) hs import(UHC.Util.Utils)
 %%]
 
-%%[(50 codegen) hs import(Control.Monad hiding(join), UHC.Util.Serialize, UHC.Util.Control.Monad(liftM6))
+%%[(8 codegenanalysis) hs export(QualAGItf(..), TyAGItf(..), CoeAGItf(..)) 
+%%]
+%%[(8 codegenanalysis) hs export(AnaEval(..), AnaEvalL, RelevTy(..), RelevTyL, MbRelevTy, RelevQual(..), RelevQualL, RelevCoe(..), RelevCoeL) 
 %%]
 
-%%[(8 codegen) ag import({AnaDomain/AbsSyn})
+%%[(50 codegenanalysis) hs import(Control.Monad hiding(join), UHC.Util.Serialize, UHC.Util.Control.Monad(liftM6))
+%%]
+
+%%[(8 codegenanalysis) ag import({AnaDomain/AbsSyn})
 DERIVING *
   : Show
 %%[[50
@@ -41,14 +41,14 @@ DERIVING *
 %%]
 
 -- debug only
-%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(8888 codegenanalysis) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(RQuant(..))
+%%[(8 codegenanalysis) hs export(RQuant(..))
 -- | quantifier for RelevTy_Fun
 data RQuant
   = RQuant_Forall		-- the usual universal instantiation
@@ -62,7 +62,7 @@ data RQuant
     )
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegenanalysis) hs
 instance Show RQuant where
   show RQuant_Forall 	= "A"
   show RQuant_Rec 		= "R"
@@ -73,11 +73,11 @@ instance Show RQuant where
 %%% Derived types, functions, ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(RelevQualS)
+%%[(8 codegenanalysis) hs export(RelevQualS)
 type RelevQualS = Set.Set RelevQual
 %%]
 
-%%[(8 codegen) hs export((<.>))
+%%[(8 codegenanalysis) hs export((<.>))
 infixl 3 `RelevCoe_Comp`
 infixl 3 <.>
 
@@ -99,7 +99,7 @@ l                     <.> r                   = RelevCoe_Comp l r
 %%% Extraction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(relevtyAnaEval)
+%%[(8 codegenanalysis) hs export(relevtyAnaEval)
 relevtyAnaEval (RelevTy_Ana e) = e
 relevtyAnaEval _               = panic "AnaDomain.relevtyAnaEval"
 %%]
@@ -108,7 +108,7 @@ relevtyAnaEval _               = panic "AnaDomain.relevtyAnaEval"
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8888 codegen) hs
+%%[(8888 codegenanalysis) hs
 data AnaEnv
   = AnaEnv
       { aenvBoundS  :: !UIDS
@@ -122,7 +122,7 @@ emptyAnaEnv = AnaEnv Set.empty
 %%% Lattices (should be in separate module)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(AnaLattice(..))
+%%[(8 codegenanalysis) hs export(AnaLattice(..))
 class AnaLattice a where
   top   :: a
   bot   :: a
@@ -151,7 +151,7 @@ class AnaLattice a where
   leBF b fa fr = leBB b fr
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegenanalysis) hs
 -- | wrap action inside var looking up
 anaVar
   :: AnaLattice x
@@ -350,7 +350,7 @@ instance AnaLattice RelevTy where
 %%% Special values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(freshStrict,freshLazy)
+%%[(8 codegenanalysis) hs export(freshStrict,freshLazy)
 -- | bottom only for AnaEval lattice, otherwise fresh
 freshStrict :: UID -> RelevTy
 freshStrict u
@@ -364,7 +364,7 @@ freshLazy u
       RelevTy_Ana _ -> RelevTy_Ana top
 %%]
 
-%%[(8888 codegen) hs export(freshFromAnn)
+%%[(8888 codegenanalysis) hs export(freshFromAnn)
 -- | convert from Strictness
 freshFromAnn :: UID -> Strictness -> RelevTy
 freshFromAnn u s
@@ -377,13 +377,13 @@ freshFromAnn u s
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(anaMkBotFun)
+%%[(8 codegenanalysis) hs export(anaMkBotFun)
 -- | construct 'worst case' assuming function signature, where we assume function assumes nothing and we cannot assume anything about result, except for the result being bottom (i.e. strict)
 anaMkBotFun :: Int -> RelevTy
 anaMkBotFun arity = RelevTy_Fun RQuant_None [] [] (replicate arity top) bot
 %%]
 
-%%[(8 codegen) hs export(relevCoeUnCompose)
+%%[(8 codegenanalysis) hs export(relevCoeUnCompose)
 -- | decompose RelevCoe composition in top and below
 relevCoeUnCompose :: RelevCoe -> (RelevCoe,[RelevCoe])
 relevCoeUnCompose (RelevCoe_Comp l r)
@@ -393,7 +393,7 @@ relevCoeUnCompose (RelevCoe_Comp l r)
 relevCoeUnCompose c = (c, [])
 %%]
 
-%%[(8 codegen) hs export(relevCoeToComposeList)
+%%[(8 codegenanalysis) hs export(relevCoeToComposeList)
 -- | decompose RelevCoe composition in list of subsequently applied coe's
 relevCoeToComposeList :: RelevCoe -> [RelevCoe]
 relevCoeToComposeList c
@@ -406,33 +406,33 @@ relevCoeToComposeList c
 %%% Utils: subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(RVarMpInfo(..))
+%%[(8 codegenanalysis) hs export(RVarMpInfo(..))
 data RVarMpInfo             -- for all types of Var alternatives an alternative here
   = RVMIEval    AnaEval
 %%]
 
-%%[(8 codegen) hs export(rvmiMbEval)
+%%[(8 codegenanalysis) hs export(rvmiMbEval)
 rvmiMbEval :: RVarMpInfo -> Maybe AnaEval
 rvmiMbEval (RVMIEval x) = Just x
 -- for now, until more alternatives are in it
 -- rvmiMbEval _            = Nothing
 %%]
 
-%%[(8 codegen) hs export(RVarMp, emptyRVarMp)
+%%[(8 codegenanalysis) hs export(RVarMp, emptyRVarMp)
 type RVarMp  = VarMpStk' UID RVarMpInfo
 
 emptyRVarMp :: RVarMp
 emptyRVarMp = emptyVarMpStk
 %%]
 
-%%[(8 codegen) hs export(rvarmpEvalUnit)
+%%[(8 codegenanalysis) hs export(rvarmpEvalUnit)
 rvarmpEvalUnit :: UID -> AnaEval -> RVarMp
 -- poor mens occurcheck...
 -- rvarmpEvalUnit v (AnaEval_Var v2) | v == v2  = emptyRVarMp
 rvarmpEvalUnit v i                           = varmpstkUnit v (RVMIEval i)  -- [mkVarMp (Map.fromList [(v,RVMIEval i)])]
 %%]
 
-%%[(8 codegen) hs export(rvarmpKeysSet, rvarmpUnions)
+%%[(8 codegenanalysis) hs export(rvarmpKeysSet, rvarmpUnions)
 -- | renaming
 rvarmpKeysSet :: RVarMp -> Set.Set UID
 rvarmpKeysSet = varmpstkKeysSet
@@ -445,7 +445,7 @@ rvarmpUnions = varmpstkUnions
 %%% Utils: matching
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(AnaMatchState(..), AMS, emptyAnaMatchState)
+%%[(8 codegenanalysis) hs export(AnaMatchState(..), AMS, emptyAnaMatchState)
 -- | state maintained during matching
 data AnaMatchState
   = AnaMatchState
@@ -465,7 +465,7 @@ instance Show AnaMatchState where
     where s m = show (assocLMapElt rvmiMbEval $ varmpstkToAssocL m)
 %%]
 
-%%[(8 codegen) hs export(AMSOut(..),emptyAMSOut,amsoMkOk)
+%%[(8 codegenanalysis) hs export(AMSOut(..),emptyAMSOut,amsoMkOk)
 -- | direct (non state) output of matching
 data AMSOut a
   = AMSOut
@@ -491,7 +491,7 @@ instance Show a => Show (AMSOut a) where
   show x = "AMSOut (" ++ show (amsoLo x) ++ " <= " ++ show (amsoHi x) ++ ")"
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegenanalysis) hs
 amsBind :: (x -> RVarMp) -> x -> AnaMatchState -> AnaMatchState
 amsBind b a s = s {amsLocalVarMp = b a |+> amsLocalVarMp s}
 
@@ -499,7 +499,7 @@ amsQual :: RelevQual -> AnaMatchState -> AnaMatchState
 amsQual q s = s {amsGathQual = Set.insert q (amsGathQual s)}
 %%]
 
-%%[(8 codegen) hs export(amsLE,amsRunMb)
+%%[(8 codegenanalysis) hs export(amsLE,amsRunMb)
 -- | run leBB
 amsLE :: AnaLattice x => RVarMp -> x -> x -> (AMSOut x,AnaMatchState)
 amsLE m x1 x2 = runState (leBB x1 x2) (emptyAnaMatchState {amsOuterVarMp = m})
@@ -512,7 +512,7 @@ amsRunMb s ams
       _           -> Nothing
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegenanalysis) hs
 -- | Lookup in VarMp's of AnaMatchState
 amsLookup :: UID -> AnaMatchState -> Maybe RVarMpInfo
 amsLookup i s = varmpLookup i (amsOuterVarMp s) <|> varmpLookup i (amsLocalVarMp s)
@@ -526,7 +526,7 @@ amsLookupEval i s = do { i <- amsLookup i s ; rvmiMbEval i }
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(50 codegen) hs
+%%[(50 codegenanalysis) hs
 instance Serialize RQuant where
   sput = sputEnum8
   sget = sgetEnum8

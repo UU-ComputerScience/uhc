@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.9.1 - 20151013
+
+- [guarantees] This is a pre-release as far as below extensions is concerned.
+- [backend] Core/CoreRun backend now better supported (e.g. via uhcl/uhcr) to allow CoreRun modules to be run, without requiring -Operwholecore (Core whole program linking). For a "hello world" only...
+- [extension] Local instances have been resurrected, paper submitted to flops2016 describes what can be done. Still bugs and design issues to be sorted out.
+- [extension] Generic deriving now by default off, can be turned on via deriving Generic addition to datatype def.
+- [compatibility] Compatibility with ghc <7.10 versions no longer guaranteed.
+- [name analysis] Name analysis & dependency analysis more fine-grained, required by local instances.
+
 ## 1.1.9.0 - 20150430
 
 - [compatibility] ghc 7.10 compat, name clash of 'Alt' apparently now globally visible

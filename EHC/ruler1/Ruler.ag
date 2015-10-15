@@ -8,10 +8,10 @@ import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import EH.Util.FPath
-import EH.Util.Utils
-import EH.Util.Pretty
-import EH.Util.PrettyUtils
+import UHC.Util.FPath
+import UHC.Util.Utils
+import UHC.Util.Pretty
+import UHC.Util.PrettyUtils
 import UU.Parsing
 import UU.Scanner
 import UU.Scanner.Position( initPos, Pos )

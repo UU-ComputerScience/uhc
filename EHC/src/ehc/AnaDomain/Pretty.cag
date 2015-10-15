@@ -7,21 +7,21 @@
 %%% AnaDomain Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}AnaDomain.Pretty} import(UHC.Util.Pretty,{%{EH}AnaDomain})
+%%[(8 codegenanalysis) hs module {%{EH}AnaDomain.Pretty} import(UHC.Util.Pretty,{%{EH}AnaDomain})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common})
+%%[(8 codegenanalysis) hs import({%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Char)
+%%[(8 codegenanalysis) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Char)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({AnaDomain/AbsSyn})
+%%[(8 codegenanalysis).WRAPPER ag import({AnaDomain/AbsSyn})
 WRAPPER
   RelevTy RelevQual RelevCoe AnaEval
 %%]
 
-%%[(8 codegen) hs export(ppRelevTy)
+%%[(8 codegenanalysis) hs export(ppRelevTy)
 ppRelevTy :: VarPPMp -> RelevTy -> (PP_Doc,VarPPMp)
 ppRelevTy vm x
   =  let  t = wrap_RelevTy (sem_RelevTy x)
@@ -34,7 +34,7 @@ instance PP RelevTy where
   pp x = fst $ ppRelevTy Map.empty x
 %%]
 
-%%[(8 codegen) hs export(ppRelevQual)
+%%[(8 codegenanalysis) hs export(ppRelevQual)
 ppRelevQual :: RelevQual -> PP_Doc
 ppRelevQual x
   =  let  t = wrap_RelevQual (sem_RelevQual x)
@@ -47,7 +47,7 @@ instance PP RelevQual where
   pp x = ppRelevQual x
 %%]
 
-%%[(8 codegen) hs export(ppAnaEval)
+%%[(8 codegenanalysis) hs export(ppAnaEval)
 ppAnaEval :: AnaEval -> PP_Doc
 ppAnaEval x
   =  let  t = wrap_AnaEval (sem_AnaEval x)
@@ -60,7 +60,7 @@ instance PP AnaEval where
   pp x = ppAnaEval x
 %%]
 
-%%[(8 codegen) hs export(ppRelevCoe)
+%%[(8 codegenanalysis) hs export(ppRelevCoe)
 ppRelevCoe :: VarPPMp -> RelevCoe -> PP_Doc
 ppRelevCoe vm x
   =  let  t = wrap_RelevCoe (sem_RelevCoe x)
@@ -73,7 +73,7 @@ instance PP RelevCoe where
   pp x = ppRelevCoe Map.empty x
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegenanalysis) hs
 instance Show RVarMpInfo where
   show _ = "RVarMpInfo"
 
@@ -81,7 +81,7 @@ instance PP RVarMpInfo where
   pp (RVMIEval a) = pp a
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegenanalysis) hs
 instance PP AnaMatchState where
   pp x = ppParens (amsOuterVarMp x) >#< amsLocalVarMp x >#< "~>" >#< ppCommas (Set.toList $ amsGathQual x)
 
@@ -93,7 +93,7 @@ instance PP a => PP (AMSOut a) where
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM RelevTy
@@ -126,7 +126,7 @@ SEM AnaEval
 
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM RelevTyL RelevQualL AnaEvalL RelevCoeL [ | | ppL: {[PP_Doc]} ]
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
@@ -137,11 +137,7 @@ SEM RelevTyL RelevQualL AnaEvalL RelevCoeL [ | | ppL: {[PP_Doc]} ]
 %%% Var map
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(VarPPMp)
-type VarPPMp = Map.Map UID PP_Doc
-%%]
-
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllNT [ varMp: VarPPMp | | ]
 
 SEM QualAGItf TyAGItf CoeAGItf
@@ -152,7 +148,7 @@ SEM RelevTy
                                             =   genNmMap pp @quants @lhs.varMp
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR TyAGItf RelevTy [ | | quantVarMp: VarPPMp ]
 
 SEM RelevTy

@@ -48,14 +48,18 @@ mkFileSuffMpHs opts
     -- , ( Just "grin", ECUS_Grin, True )
 %%]]
 %%[[(50 corerunin)
-    , ( Just Cfg.suffixDotlessBinaryCoreRun , (ECUS_CoreRun CRRStartBinary, ASTType_CoreRun, ASTFileContent_Binary, ASTFileUse_Src), True )
+    , ( Just Cfg.suffixDotlessInputOutputBinaryCoreRun , (ECUS_CoreRun CRRStartBinary, ASTType_CoreRun, ASTFileContent_Binary, ASTFileUse_Src), True )
+    , ( Just Cfg.suffixDotlessOutputTextualCoreRun, (ECUS_CoreRun CRRStartText, ASTType_CoreRun, ASTFileContent_Text, ASTFileUse_Src), True )
 %%]]
 %%[[(50 corein)
     , ( Just Cfg.suffixDotlessInputOutputTextualCore, (ECUS_Core CRStartText, ASTType_Core, ASTFileContent_Text, ASTFileUse_Src), True   )
     , ( Just Cfg.suffixDotlessInputOutputBinaryCore , (ECUS_Core CRStartBinary, ASTType_Core, ASTFileContent_Binary, ASTFileUse_Src), True )
 %%]]
 %%[[(50 corebackend)
-    , ( Just Cfg.suffixDotlessBinaryCore , (ECUS_Core CRStartBinary, ASTType_Core, ASTFileContent_Binary, ASTFileUse_Src), False )
+    , ( Just Cfg.suffixDotlessBinaryCore , (ECUS_Core CRStartBinary, ASTType_Core, ASTFileContent_Binary, ASTFileUse_Cache), False )
+%%]]
+%%[[(50 corebackend corerun)
+    , ( Just Cfg.suffixDotlessBinaryCoreRun , (ECUS_CoreRun CRRStartBinary, ASTType_CoreRun, ASTFileContent_Binary, ASTFileUse_Cache), False )
 %%]]
     ]
 %%[[(90 codegen)

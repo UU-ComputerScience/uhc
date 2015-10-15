@@ -25,7 +25,7 @@ Output generation, on stdout or file
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
-%%[8 import({%{EH}EHC.CompileRun})
+%%[8 import({%{EH}EHC.CompileRun.Base})
 %%]
 
 %%[8 import(qualified {%{EH}Config} as Cfg)
@@ -39,7 +39,7 @@ Output generation, on stdout or file
 %%]
 
 -- EH semantics
-%%[99 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[99 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 
 -- HI syntax and semantics
@@ -107,14 +107,15 @@ cpOutputSomeModules' write mkfp mknmsuff suff modNm mods = do
 -- | Abstraction for writing some module to output with variation in suffices
 cpOutputSomeModules
   :: EHCCompileRunner m
-     => ASTHandler' mod -- (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO Bool)
+     => Maybe EHCOpts
+     -> ASTHandler' mod -- (EHCOpts -> EHCompileUnit -> FPath -> FilePath -> mod -> IO Bool)
      -> ASTFileContent
      -> (Int -> String -> String)
      -> String
      -> HsName
      -> [(String,mod)]
      -> EHCompilePhaseT m [Maybe FPath]
-cpOutputSomeModules astHdlr how mknmsuff suff modNm mods = do
+cpOutputSomeModules mbOpts astHdlr how mknmsuff suff modNm mods = do
     cr <- get
     let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
     forM (zip [1..] mods) $ \(nr,(nmsuff,mod)) -> do
@@ -144,7 +145,7 @@ cpOutputSomeModule getMod astHdlr how nmsuff suff modNm
          ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
                  mod    = getMod ecu
          ;  cpMsg modNm VerboseALot $ "Emit " ++ _asthdlrName astHdlr
-         ;  fmap head $ cpOutputSomeModules astHdlr how (\_ nm -> nm) suff modNm [(nmsuff,mod)]
+         ;  fmap head $ cpOutputSomeModules Nothing astHdlr how (\_ nm -> nm) suff modNm [(nmsuff,mod)]
          }
 %%]
 
@@ -204,7 +205,7 @@ cpOutputCmmModules
         ASTFileContent
      -> (Int -> String -> String)
      -> String -> HsName
-     -> [(String,Cmm.Module)]
+     -> [(String,AST_Cmm)]
      -> EHCompilePhaseT m [FPath]
 cpOutputCmmModules _ mknmsuff suff modNm mods
   = cpOutputSomeModules' write mkOutputFPath mknmsuff suff modNm mods

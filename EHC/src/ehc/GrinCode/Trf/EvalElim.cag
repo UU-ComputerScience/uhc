@@ -103,7 +103,7 @@ Note: when HPT analysis is done, in apply the name f is used instead of f'.
 -- for debugging:
 %%[(8 codegen grin) hs import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Debug})
+%%[(8888 codegen grin) hs import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

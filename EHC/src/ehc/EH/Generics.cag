@@ -30,6 +30,8 @@ type GenerDataInfo
     , Int               -- max kind arity over which genericity abstracts, currently \in {0,1}
     )
 
+type GenerDataInfoMp = Map.Map HsName GenerDataInfo
+
 -- | what kind of instance should be generated
 data GenerInstKind
   = GenerInstKind_Datatype
@@ -149,20 +151,37 @@ mkGenerRepresentableTypeSynonymPol polGam tyNm = maybe (appDbg $ "Generics.mkGen
 %%]
 
 %%[(92 hmtyinfer)
+-- 20150924 AD
+-- Generic info is threaded to the location where it actually is going to be used (i.e. stuff generated). This is dictated by placeholders 'GenerRep' for inserting the derived stuff.
 ATTR AllDecl [ | | generDataInfoL USE {++} {[]} : {[GenerDataInfo]} ]
+ATTR AllDecl AllExpr AllPatExpr AllCase [ | generDataInfoMp: GenerDataInfoMp | ]
+
+SEM AGItf
+  | AGItf		expr		.	generDataInfoMp		=	Map.empty
 
 SEM Decl
-  | Data        lhs         -- all gathered info, required higher up in the AST to generate type and instance defs
-                            .   generDataInfoL      =   if isJust @mbGenerInfo -- ehcOptGenGenerics @lhs.opts
-                                                        then [( (@tyNm, @dataTyVarIdL, @dataKi)
-                                                              , [ ( dtiCTag dti, dtiFldTyL dti )
-                                                                | (c,cty) <- snd $ tyRecExts @dataAltTy
-                                                                , let dti = panicJust "Generics.Decl.Data.dataConstrTagMp" $ Map.lookup c @constrs.dataConstrTagMp
-                                                                ]
-                                                              , @lhs.predScope
-                                                              , fromJust @mbGenerInfo
-                                                              )]
-                                                        else []
+  | Data        loc         -- all gathered info, required higher up in the AST to generate type and instance defs
+                            .   (generDataInfoL, generDataInfoMpNew)
+                                                    =   if isJust @mbGenerInfo -- ehcOptGenGenerics @lhs.opts
+                                                        then let i = ( (@tyNm, @dataTyVarIdL, @dataKi)
+                                                                     , [ ( dtiCTag dti, dtiFldTyL dti )
+                                                                       | (c,cty) <- snd $ tyRecExts @dataAltTy
+                                                                       , let dti = panicJust "Generics.Decl.Data.dataConstrTagMp" $ Map.lookup c @constrs.dataConstrTagMp
+                                                                       ]
+                                                                     , @lhs.predScope
+                                                                     , fromJust @mbGenerInfo
+                                                                     )
+                                                             in  if ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts
+                                                                 then ([] , Map.singleton @tyNm i)
+                                                                 else ([i], Map.empty            )
+                                                        else ([], Map.empty)
+                lhs         .   generDataInfoMp     =   @generDataInfoMpNew `Map.union` @lhs.generDataInfoMp
+  | GenerRep    loc         .   (generDataInfoL, errsNoIntroNm)
+                                                    =   case Map.lookup @tyNm @lhs.generDataInfoMp of
+                                                            Just i  | @arity == @maxArity                              -> ([i], [])
+                                                            Nothing | ehcOptIsUnderDev UnderDev_NameAnalysis @lhs.opts -> ([], [rngLift @range mkErr_NamesNotIntrod "datatype" [@tyNm]])
+                                                            _                                                          -> ([], [])
+  																						
 
 SEM Expr
   | Let         loc         -- names for introduced datatypes
@@ -286,7 +305,7 @@ type GenerForFitsIn
 SEM Decl
   | Instance    loc         -- the set of fld + default names, their types, to be used ...
                             .   generForFitsInL     =   case @instVariant of
-                                                          InstDeriving _ | not $ null generDerivFlds
+                                                          InstDeriving _ | not @derivCanBeDoneBuiltin && not (null generDerivFlds)
                                                             -> [ ( fldNm, dfltvalNm
                                                                  , -- (\v -> tr "Decl.Instance.mbFSig" (ppTy v >-< ppTy (vgiTy (fromJust mbDSig))) v) $
                                                                    repTy `app1Arr` vgiTy (fromJust mbFSig)

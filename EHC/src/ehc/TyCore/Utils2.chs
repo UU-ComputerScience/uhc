@@ -24,7 +24,7 @@
 %%]
 
 -- debug
-%%[(8 codegen tycore) import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(8888 codegen tycore) import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

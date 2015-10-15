@@ -33,6 +33,9 @@ module UHC.Generics
   -- * Representable type classes
   , Representable0(..), Representable1(..)
 
+  -- * Dummy class
+  , Generic
+
   -- * Tuples
   , module UHC.Generics.Tuple
 

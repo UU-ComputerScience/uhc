@@ -28,7 +28,7 @@
 %%]
 
 -- debug
-%%[(8 jazy) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(8888 jazy) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,6 +37,10 @@
 
 %%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonBindNm},{Core/CommonJavaLike},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
 WRAPPER CodeAGItf
+%%]
+
+%%[(8 jazy) hs
+deriving instance Typeable Syn_CodeAGItf
 %%]
 
 %%[(8 jazy) hs export(cmod2JazyJVMModule)

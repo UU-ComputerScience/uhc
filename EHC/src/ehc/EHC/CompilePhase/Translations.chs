@@ -19,6 +19,16 @@ Translation to another AST
 %%]
 %%[(50 codegen) import({%{EH}EHC.CompilePhase.Module})
 %%]
+%%[8 import({%{EH}EHC.CompilePhase.Output})
+%%]
+%%[8 import({%{EH}EHC.ASTHandler.Instances})
+%%]
+
+%%[8 import(qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[8 import({%{EH}Base.Trace})
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -32,9 +42,15 @@ Translation to another AST
 %%]
 %%[(8 codegen cmm) hs import({%{EH}CodeGen.Const} as Const (emptyConstSt))
 %%]
+%%[(50 codegen) hs import({%{EH}EHC.CompilePhase.Common})
+%%]
+
+-- build call
+%%[8888 import({%{EH}EHC.BuildFunction.Run})
+%%]
 
 -- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 
 -- HS semantics
@@ -88,7 +104,7 @@ Translation to another AST
 %%[(50 codegen grin) import({%{EH}LamInfo})
 %%]
 -- ModuleImportExportImpl
-%%[(50 codegen) import({%{EH}EHC.CompilePhase.Common}, {%{EH}CodeGen.ModuleImportExportImpl})
+%%[(50 codegen) import({%{EH}CodeGen.ModuleImportExportImpl})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,6 +122,8 @@ cpTranslateHs2EH modNm
                  errs   = Seq.toList $ HSSem.errSq_Syn_AGItf hsSem
          ;  when (isJust mbHsSem)
                  (do { cpUpdCU modNm (ecuStoreEH eh)
+                     ; let trpp = HSSem.trpp_Syn_AGItf hsSem
+                     ; when (not $ trppIsEmpty trpp) $ trPPOnIO trpp
                      ; cpSetLimitErrsWhen 5 "Dependency/name analysis" errs
                      ; when (ehcOptEmitHS opts)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "hs2") (HSSem.pp_Syn_AGItf hsSem) 1000)
@@ -119,6 +137,9 @@ cpTranslateHs2EH modNm
 cpTranslateEH2Output :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateEH2Output modNm
   =  do  {  cr <- get
+%%[[50
+         -- ;  isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+%%]]
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbEHSem= _ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Output" mbEHSem
@@ -134,10 +155,14 @@ cpTranslateEH2Output modNm
                  errs   = []
 %%]]
          ;  when (isJust mbEHSem)
-                 (do { cpSetLimitErrsWhen 5 about errs
+                 (do { let trpp = EHSem.trpp_Syn_AGItf ehSem
+                     ; when (not $ trppIsEmpty trpp) $ trPPOnIO trpp
 %%[[8
                      ; when (ehcOptEmitEH opts)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
+                     ; when (EhOpt_Dump `elem` ehcOptEhOpts opts) $
+                            -- void $ cpOutputSomeModule (^. ecuEH) astHandler'_EH ASTFileContent_Text "" Cfg.suffixDotlessOutputTextualEh (ecuModNm ecu)
+                            liftIO $ putPPFPath (mkOutputFPath opts modNm fp Cfg.suffixDotlessOutputTextualEh) (EHSem.pp_Syn_AGItf ehSem) 1000
                      ; when (ehcOptShowEH opts)
                             (liftIO $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
 %%][102
@@ -146,12 +171,15 @@ cpTranslateEH2Output modNm
                      ; when (ehcOptShowAst opts)
                             (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][99
-                     ; when (ecuIsTopMod ecu && ehcOptShowAst opts)
+                     ; when (_ecuIsTopMod ecu && ehcOptShowAst opts)
                             (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+                     ; when (_ecuIsTopMod ecu && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+                            liftIO $ putPPFPath (mkOutputFPath opts modNm fp Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 %%][100
 %%]]
+                     ; cpSetLimitErrsWhen 5 about errs
 %%[[(99 hmtyinfer tyderivtree)
-                     ; when (ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
+                     ; when (_ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
                             (liftIO $ putPPFPath (mkOutputFPath opts modNm fp "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)
 %%][100
 %%]]
@@ -190,7 +218,7 @@ cpTranslateEH2TyCore modNm
          }
 %%]
 
-%%[(8 codegen grin) export(cpTranslateCore2Grin)
+%%[(8 core grin) export(cpTranslateCore2Grin)
 cpTranslateCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCore2Grin modNm
   =  do  {  cr <- get
@@ -234,9 +262,12 @@ cpTranslateCore2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCore    = _ecuMbCore ecu
-              coreInh  = crsiCoreInh crsi
        ; when (isJust mbCore)
-              (cpUpdCU modNm $ ecuStoreJavaScript $ cmod2JavaScriptModule opts (Core2GrSem.dataGam_Inh_CodeAGItf coreInh) $ fromJust mbCore)
+           $ cpUpdCU modNm
+           $ ecuStoreJavaScript
+           $ cmod2JavaScriptModule opts
+               (crsi ^. crsiCEnv ^. cenvDataGam)
+           $ fromJust mbCore
        }
 %%]
 
@@ -253,7 +284,12 @@ cpGenGrinGenInfo
        , HsName2FldMp
        )
 cpGenGrinGenInfo modNm
-  = do mieimpl <- cpGenModuleImportExportImpl modNm
+  = do cr <- get
+       let  (_,_,opts,_) = crBaseInfo modNm cr
+       -- let modSearchKey = mkPrevFileSearchKeyWithName modNm
+       -- opts <- bcall $ EHCOptsOf modSearchKey
+       mieimpl <- cpGenModuleImportExportImpl modNm
+       -- mieimpl <- bcall $ ImportExportImpl modSearchKey (ehcOptOptimizationScope opts)
        return (mieimplLamMp mieimpl, mieimplUsedModNmL mieimpl, mieimplHsName2FldMpMp mieimpl, mieimplHsName2FldMp mieimpl)
 %%]
 
@@ -264,7 +300,6 @@ cpTranslateGrin2Cmm modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbGrin    = _ecuMbGrin ecu
-              coreInh   = crsiCoreInh crsi
 %%[[50
        ; (lamMp, allImpNmL, impNmFldMpMp, expNmFldMp) <- cpGenGrinGenInfo modNm
 %%]]
@@ -272,7 +307,7 @@ cpTranslateGrin2Cmm modNm
            let (cmm,errs)
                  = grinMod2CmmMod
                      opts
-                     (Core2GrSem.dataGam_Inh_CodeAGItf coreInh)
+                     (crsi ^. crsiCEnv ^. cenvDataGam)
 %%[[50
                      lamMp allImpNmL impNmFldMpMp expNmFldMp
 %%]]
@@ -288,14 +323,13 @@ cpTranslateCmm2JavaScript modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCmm    = _ecuMbCmm ecu
-              coreInh   = crsiCoreInh crsi
        ; when (isJust mbCmm) $ do
            let (jsmod,errs) =
                  cmmMod2JavaScript opts
 %%[[50
                    (ecuImportUsedModules ecu)
 %%]]
-                   (Core2GrSem.dataGam_Inh_CodeAGItf coreInh)
+                   (crsi ^. crsiCEnv ^. cenvDataGam)
                    (fromJust mbCmm)
            cpUpdCU modNm $ ecuStoreJavaScript jsmod
        }
@@ -364,7 +398,6 @@ cpTranslateByteCode modNm
                grinbcCmm = Cmm.Module_Mod modNm cmmMod Nothing Const.emptyConstSt
 %%]]
 %%][50
-               coreInh  = crsiCoreInh crsi
                ( grinbcPP
 %%[[(50 cmm cmmbc)
                  ,grinbcCmm
@@ -382,7 +415,7 @@ cpTranslateByteCode modNm
 %%]]
                                ,functionInfoExportMp)
                                 = gbmod2C opts lkup $ panicJust "cpTranslateByteCode2" mbBytecode
-                                where lkup n = do { li <- Map.lookup n (Core2GrSem.lamMp_Inh_CodeAGItf coreInh)
+                                where lkup n = do { li <- Map.lookup n (crsi ^. crsiCEnv ^. cenvLamMp)
                                                   ; ex <- laminfoGrinByteCode li
                                                   ; return ex
                                                   }

@@ -46,7 +46,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%]
 %%[(8 corerun) hs export(Mod(..), SExp(..), Exp(..), MbExp, Alt(..), Pat(..))
 %%]
-%%[(8 corerun) hs export(Meta(..), MetaL, DataCon(..), DataConL, Import(..), ImportL)
+%%[(8 corerun) hs export(Meta(..), MetaL, DataCon(..), DataConL, Import(..), ImportL, Export(..), ExportL)
 %%]
 
 %%[(50 corerun) hs import (Control.Monad)
@@ -160,7 +160,7 @@ exp2sexp = maybe (dbgs "CoreRun.exp2sexp") id . mbSExpr
 %%[(8 corerun) hs export(RRef(..), noRRef)
 -- | Identifier references for use during running CoreRun
 data RRef
-  -- | global reference to module and its entry, will become obsolete, to be replaced by 'RRef_Mod' and 'RRef_Glb'
+  -- | global reference to module and its entry, will become obsolete, to be replaced by 'RRef_Mod', 'RRef_Exp', and RRef_Imp
   = RRef_Glb
       { rrefMod         :: !Int     -- ^ module
       , rrefEntry       :: !Int     -- ^ entry inside module
@@ -168,6 +168,10 @@ data RRef
   -- | entry of current module reference
   | RRef_Mod
       { rrefEntry       :: !Int     -- ^ entry inside module, in its frame
+      }
+  -- | Unresolved entry, to be resolved to a RRef_Imp (most likely)
+  | RRef_Unr
+      { rrefNm       	:: !HsName	-- ^ module name, to be looked up in a module specific import list for an index
       }
   -- | exported entry of module reference, only used internally to be later resolved to a 'RRef_Imp'
   | RRef_Exp
@@ -216,17 +220,37 @@ mapRRef f r@(RRef_Tag {rrefRef=r'}) = r {rrefRef = mapRRef f r'}
 mapRRef f r                         = f r
 %%]
 
-%%[(50 corerun) hs export(rrefToImp, rrefToExp)
+%%[(8 corerun) hs export(rrefResolve)
+-- | Resolve as far as possible
+rrefResolve :: Maybe Int -> Maybe (HsName -> Maybe Int) -> Nm2RefMp -> HsName -> RRef
+rrefResolve mbLev mbImpNmLkup nm2ref nm = maybe
+  (RRef_Unr nm)
+  ( maybe id rrefToDif mbLev
+%%[[50
+  . maybe id rrefToImp mbImpNmLkup
+%%]]
+  )
+  $ nm2refLookup nm nm2ref
+%%]
+
+%%[(50 corerun) hs export(rrefToImp, rrefToExp, rrefResolveUnr)
 -- | Convert to RRef_Exp to RRef_Imp, i.e. named module to indexed module ref
 rrefToImp :: (HsName -> Maybe Int) -> RRef -> RRef
 rrefToImp lkup = mapRRef f
-  where f r@(RRef_Exp n o) = maybe (RRef_Dbg n) (flip RRef_Imp o) $ lkup $ panicJust "rrefToImp" $ hsnQualifier n
+  where f r@(RRef_Exp n o) = fromMaybe r $ {- hsnQualifier n >>= -} lkup n >>= (return . flip RRef_Imp o)
+                             -- maybe r (flip RRef_Imp o) $ lkup $ panicJust "CoreRun.rrefToImp" $ hsnQualifier n
         f r                = r
 
 -- | Convert to RRef_Mod to RRef_Exp, i.e. local module ref to exported
 rrefToExp :: HsName -> RRef -> RRef
 rrefToExp nm = mapRRef f
   where f r@(RRef_Mod o) = RRef_Exp nm o
+        f r              = r
+
+-- | Resolve RRef_Unr
+rrefResolveUnr :: Maybe (HsName -> Maybe Int) -> Nm2RefMp -> RRef -> RRef
+rrefResolveUnr mbImpNmLkup nm2ref = mapRRef f
+  where f r@(RRef_Unr n) = rrefResolve Nothing mbImpNmLkup nm2ref n
         f r              = r
 %%]
 
@@ -302,8 +326,8 @@ ref2nmUnion = Rel.union -- m1 m2 = \r -> m1 r <|> m2 r
 
 %%[(50 corerun) hs
 instance Binary Mod where
-  put (Mod_Mod a b c d e f g h) = put a >> put b >> put c >> put d >> put e >> put f >> put g >> put h
-  get = liftM8 Mod_Mod get get get get get get get get
+  put (Mod_Mod a b c d e f g h i) = put a >> put b >> put c >> put d >> put e >> put f >> put g >> put h >> put i
+  get = liftM9 Mod_Mod get get get get get get get get get
 
 instance Serialize Mod where
   sput = sputPlain
@@ -320,6 +344,12 @@ instance Binary Import where
   get = {- do t <- getWord8
            case t of
              0 -> -} liftM  Import_Import get
+
+instance Binary Export where
+  put (Export_Export a b) = {- putWord8 0 >> -} put a >> put b
+  get = {- do t <- getWord8
+           case t of
+             0 -> -} liftM2 Export_Export get get
 
 instance Binary DataCon where
   put (DataCon_Con a b) = {- putWord8 0 >> -} put a >> put b
@@ -395,6 +425,7 @@ instance Binary RRef where
   put (RRef_Mod 		a  			) = putWord8 6 >> put a
   put (RRef_Imp 		a b			) = putWord8 7 >> put a >> put b
   put (RRef_Exp 		a b			) = putWord8 8 >> put a >> put b
+  put (RRef_Unr 		a  			) = putWord8 9 >> put a
   get = do t <- getWord8
            case t of
              0 -> liftM2 RRef_Glb 		get get
@@ -406,6 +437,7 @@ instance Binary RRef where
              6 -> liftM  RRef_Mod 		get
              7 -> liftM2 RRef_Imp 		get get
              8 -> liftM2 RRef_Exp 		get get
+             9 -> liftM  RRef_Unr 		get
 
 instance Binary a => Binary (CRArray a) where
   put = put . crarrayToList 
@@ -416,7 +448,7 @@ instance Binary a => Binary (CRArray a) where
 %%% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(mkLocLevRef, mkLocDifRef, mkGlobRef, mkImpRef, mkModRef)
+%%[(8 corerun) hs export(mkLocLevRef, mkLocDifRef, mkGlobRef, mkImpRef, mkExpRef, mkModRef)
 -- **************************************
 -- Construction: references
 -- **************************************
@@ -436,6 +468,10 @@ mkGlobRef = RRef_Glb
 -- | 'RRef' to global from module, using module nr and offset
 mkImpRef :: Int -> Int -> RRef
 mkImpRef = RRef_Imp
+
+-- | 'RRef' to global from module, using module name and offset
+mkExpRef :: HsName -> Int -> RRef
+mkExpRef = RRef_Exp
 
 -- | 'RRef' to global from current module, using offset
 mkModRef :: Int -> RRef
@@ -623,27 +659,40 @@ mkMetaDataType = Meta_Data
 %%]
 
 
-%%[(8 corerun) hs export(mkMod, mkMod', mkModWithMetas, mkModWithImportsMetas)
+%%[(8 corerun) hs export(mkMod, mkMod', mkModWithMetas, mkModWithImportsMetas, mkModWithImportsExportsMetas)
 -- **************************************
 -- Construction: Top level module
 -- **************************************
 
 -- | Module, with imports, with meta info
+mkModWithImportsExportsMetas
+  :: HsName				-- ^ module name
+     -> Maybe Int		-- ^ module number, possibly (to become obsolete)
+     -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
+     -> [Import]		-- ^ imports
+     -> [Export]		-- ^ exports
+     -> [Meta]			-- ^ meta info
+     -> CRArray Bind	-- ^ bound expressions
+     -> Maybe Exp		-- ^ body of main, absence of main indicated by Nothing
+     -> Mod
+mkModWithImportsExportsMetas modNm modNr stkDepth imports exports metas binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth imports exports metas binds body
+
+-- | Module, with imports, with meta info
 mkModWithImportsMetas
   :: HsName				-- ^ module name
-     -> Int				-- ^ module number
+     -> Maybe Int		-- ^ module number, possibly (to become obsolete)
      -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
      -> [Import]		-- ^ imports
      -> [Meta]			-- ^ meta info
      -> CRArray Bind	-- ^ bound expressions
      -> Maybe Exp		-- ^ body of main, absence of main indicated by Nothing
      -> Mod
-mkModWithImportsMetas modNm modNr stkDepth imports metas binds body = Mod_Mod ref2nmEmpty modNm modNr stkDepth imports metas binds body
+mkModWithImportsMetas modNm modNr stkDepth imports metas binds body = mkModWithImportsExportsMetas modNm modNr stkDepth imports [] metas binds body
 
 -- | Module, with meta info
 mkModWithMetas
   :: HsName				-- ^ module name
-     -> Int				-- ^ module number
+     -> Maybe Int		-- ^ module number, possibly (to become obsolete)
      -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
      -> [Meta]			-- ^ meta info
      -> CRArray Bind	-- ^ bound expressions
@@ -654,7 +703,7 @@ mkModWithMetas modNm modNr stkDepth metas binds body = mkModWithImportsMetas mod
 -- | Module
 mkMod'
   :: HsName				-- ^ module name
-     -> Int				-- ^ module number
+     -> Maybe Int		-- ^ module number, possibly (to become obsolete)
      -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
      -> CRArray Bind	-- ^ bound expressions
      -> Exp				-- ^ body of main
@@ -664,7 +713,7 @@ mkMod' modNm modNr stkDepth binds body = mkModWithMetas modNm modNr stkDepth [] 
 -- | Module
 mkMod
   :: HsName				-- ^ module name
-     -> Int				-- ^ module number
+     -> Maybe Int		-- ^ module number, possibly (to become obsolete)
      -> Int				-- ^ total stack size, including globals of module, their setup (see semantics), and the main startup part kicking of evaluation
      -> [Bind]			-- ^ bound expressions
      -> Exp				-- ^ body of main

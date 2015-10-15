@@ -97,6 +97,7 @@ mkDerivClsMp fe valGam dataGam
     $ [
       -- Eq
       {-
+      -}
          mkc ehbnClassEq []
            [
            -- Eq((==))
@@ -114,10 +115,9 @@ mkDerivClsMp fe valGam dataGam
                 false false
                 nowrap
            ]
-      -}
    
       -- Ord
-         mkc ehbnClassOrd []
+      ,  mkc ehbnClassOrd []
            [
            -- Ord(compare)
              mkf ehbnClassOrdFldCompare
@@ -253,6 +253,7 @@ mkDerivClsMp fe valGam dataGam
            
       -- Bounded
       {-
+      -}
       ,  mkc ehbnClassBounded []
            [
            -- Bounded(maxBound)
@@ -284,7 +285,6 @@ mkDerivClsMp fe valGam dataGam
                 undef undef
                 nowrap
            ]
-      -}
       
       -- Show
       ,  mkc ehbnClassShow []

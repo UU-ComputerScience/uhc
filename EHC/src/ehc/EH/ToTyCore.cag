@@ -1286,7 +1286,7 @@ SEM Decl
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
                                                      ++ [ C.mkValBind1 n $ mkExprLam1Meta x CMetaVal_Dict $ mkApp $ mkSel n
-                                                        | (n,_) <- @clsFldL
+                                                        | (Just n,_) <- @clsFldTyL
                                                         ]
 %%]
 

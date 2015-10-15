@@ -14,6 +14,7 @@
 %%]
 
 %%[1
+\makeatletter
 % list environments
 \def\@@ListSetupA{%
 %if storyPHD || storyEhcBook || storyRulerDoc
@@ -43,6 +44,8 @@
 }{%
   \end{enumerate}
 }
+
+\makeatother
 
 % xfig figure
 \newcommand{\FigCenterXFigTex}[1]{%

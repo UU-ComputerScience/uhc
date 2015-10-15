@@ -43,7 +43,7 @@ ruler1: $(RULER1)
 $(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(LIB_EH_UTIL_INS_FLAG)
 	cd $(RULER1_DIR) && \
 	$(AGC) -csdfr --module=Main `basename $<` && \
-	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) $(RULER1_HS) -o ../$@ && \
+	$(GHC) -XFlexibleContexts --make $(GHC_OPTS) $(RULER1_HS) -o ../$@ && \
 	$(STRIP) ../$@
 ### END of Ruler1
 

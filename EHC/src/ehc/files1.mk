@@ -62,8 +62,9 @@ EHCRUN_HS_MAIN_SRC_CHS					:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHCRUN_MAIN)
 EHCRUN_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCRUN_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics NameAspect DerivationTree CHR Pred HI LamInfo AbstractCore \
+													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics NameAspect DerivationTree Pred HI LamInfo AbstractCore \
 													Config ConfigInternalVersions ConfigCabal Paths_uhc_light \
+													$(addprefix EH/,Main) \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \
@@ -71,14 +72,14 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,Range RLList TermLike UID Parser Parser2 Pragma Strictness Target Fld Common HsName Debug TreeTrie CfgPP LaTeX HtmlCommon FileSearchLocation PackageDatabase ParseUtils Optimize) \
+													$(addprefix Base/,UnderDev Trace Range TermLike UID Parser Parser2 Pragma Strictness Target Fld Common HsName Debug CfgPP LaTeX HtmlCommon FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Base/HsName/,Builtin) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Core CoreRun Foreign GrinCode) \
 													$(addsuffix /Trf,Core TyCore JavaScript Cmm) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
-													$(addprefix CodeGen/,BuiltinPrims BasicAnnot Bits BuiltinSizeInfo GenC Tag CVar ValAccess Const RefGenerator GenJavaLike ModuleImportExportImpl ImportUsedModules TrfUtils) \
+													$(addprefix CodeGen/,CEnv BuiltinPrims BasicAnnot Bits BuiltinSizeInfo GenC Tag CVar ValAccess Const RefGenerator GenJavaLike ModuleImportExportImpl ImportUsedModules TrfUtils) \
 													$(addprefix Module/,Merge ImportExport) \
 													$(addprefix Foreign/,Boxing) \
 													$(addprefix CoreRun/,Run Prim) \
@@ -90,11 +91,12 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
 													$(addprefix TyCore/Trf/,Common) \
 													$(addprefix GrinCode/,Common SolveEqs) \
-													$(addprefix EHC/,Main Common FileSuffMp Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup ASTHandler BuildFunction \
+													$(addprefix EHC/,Main Common FileSuffMp Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup ASTHandler ASTPipeline ASTTypes BuildFunction \
 														$(addprefix Main/,Utils Compile) \
 														$(addprefix BuildFunction/,Run) \
 														$(addprefix ASTHandler/,Instances) \
-														$(addprefix CompilePhase/,Common Run Parsers Output Translations Transformations \
+														$(addprefix CompileRun/,Base) \
+														$(addprefix CompilePhase/,Run Parsers Output Translations Transformations Common \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM CompileJavaScript Link \
 															Cleanup Module TopLevelPhases \
@@ -348,7 +350,7 @@ EHC_ALL_DPDS_NOPREPROC					:= $(subst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefi
 ###########################################################################################
 
 CABAL_EHCLIB_DEPENDS_ON					:= binary syb bytestring uulib>=0.9.12 old-locale
-CABAL_EHCLIB_EXTENSIONS					:= $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable OverlappingInstances LiberalTypeSynonyms StandaloneDeriving DeriveGeneric FlexibleContexts FlexibleInstances TypeSynonymInstances ScopedTypeVariables
+CABAL_EHCLIB_EXTENSIONS					:= $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable LiberalTypeSynonyms StandaloneDeriving DeriveGeneric FlexibleContexts FlexibleInstances TypeSynonymInstances ScopedTypeVariables
 
 ###########################################################################################
 # variant dispatch rules
@@ -464,9 +466,11 @@ $(EHC_HS_UTIL_DRV_C): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.c: $(SRC_EHC_PREFIX)%.cc
 	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
+#ifeq($(RULER_EXISTS),yes)
 $(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2) $(EHC_MKF)
 	mkdir -p $(@D)
 	$(RULER2) $(RULER2_OPTS) --ag --wrapshuffle --preamble=no --selrule="$(EHC_VARIANT_RULER_SEL)" --base=$(*F) $< > $@
+#endif
 
 $(EHC_HS_UTILCPP_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)

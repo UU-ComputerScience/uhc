@@ -22,6 +22,9 @@
 %%[(8 codegen) import ({%{EH}Base.Target})
 %%]
 
+%%[9 import ({%{EH}Base.UnderDev})
+%%]
+
 %%[99 import (qualified UHC.Util.FastSeq as Seq)
 %%]
 
@@ -261,6 +264,14 @@ pBody' opts addDecl
 %%]]
   <?> "pBody"
   where
+        -- config
+        {-
+        altInstIf :: a -> a -> a
+        altInstIf | ehcOptIsUnderDev UnderDev_NamedInst opts = \t _ -> t
+                  | otherwise                                = \_ e -> e
+        -}
+
+        -- utils
 %%[[50
         cmbid ([i],_) (is,ds) = (i:is,ds)
         cmbid (_,[d]) (_ ,ds) = ([],d:ds)
@@ -321,14 +332,14 @@ pBody' opts addDecl
 %%]
 
 %%[1
-        pWhere'' :: HSParser d -> HSParser [d]
-        pWhere'' pD = pWHERE *> pLayoutList pD
+        pWhere :: HSParser d -> HSParser [d]
+        pWhere pD = pWHERE *> pLayoutList pD
 
-        pWhere' :: HSParser d -> HSParser (Maybe [d])
-        pWhere' pD = pMb (pWhere'' pD)
+        pWhereMb :: HSParser d -> HSParser (Maybe [d])
+        pWhereMb pD = pMb (pWhere pD)
 
-        pWhere :: HSParser MaybeDeclarations
-        pWhere = pWhere' pDeclaration
+        pWhereMbDecls :: HSParser MaybeDeclarations
+        pWhereMbDecls = pWhereMb pDeclaration
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -418,11 +429,11 @@ pBody' opts addDecl
 %%[1
         pRhs :: HSParser Token -> HSParser RightHandSide
         pRhs pSep
-          =   (RightHandSide_Expression . mkRange1) <$> pSep <*> pExpression <*> pWhere
+          =   (RightHandSide_Expression . mkRange1) <$> pSep <*> pExpression <*> pWhereMbDecls
 %%[[5
           <|> RightHandSide_Guarded emptyRange
               <$> pList1 ((GuardedExpression_GuardedExpression . mkRange1) <$> pVBAR <*> pExpression <* pSep <*> pExpression)
-              <*> pWhere
+              <*> pWhereMbDecls
 %%]]
           <?> "pRhs"
 %%]
@@ -449,9 +460,10 @@ pBody' opts addDecl
                          <$> (pEQUAL *> pListSep pVBAR pDCon) <*> pDer
 %%[[31
                      <|> (\cs der lhs cx k -> mk Declaration_Data k cx lhs cs der)
-                         <$> pWhere'' (pGADTConstructor) <*> pDer
+                         <$> pWhere (pGADTConstructor) <*> pDer
 %%]]
-                     <|> pSucceed (\lhs cx k -> mk Declaration_Data k cx lhs [] [])
+                     <|> (\der lhs cx k -> mk Declaration_Data k cx lhs [] der)
+                         <$> pDer
                    )))
           <|> pNEWTYPE
               <**> (   (\cx lhs c der k -> mk Declaration_Newtype k cx lhs c der)
@@ -494,7 +506,7 @@ pBody' opts addDecl
 %%[91
         pDeriving :: HSParser Deriving
         pDeriving
-          = (\(n,u) t -> Deriving_Deriving (mkRange1 t) n u (tokMkQName t)) <$> pInstanceName <*> qconid
+          = (\(n,u) t -> Deriving_Deriving (mkRange1 t) n u (tokMkQName t)) <$> pInstanceNameMb <*> qconid
 %%]
 
 %%[5.pConstructor
@@ -567,7 +579,7 @@ pBody' opts addDecl
                 `opt` []
                 )
 %%]]
-            <*> pWhere' (pDeclarationValue <|> pDeclarationTypeSignature)
+            <*> pWhereMb (pDeclarationValue <|> pDeclarationTypeSignature)
 %%[[15
           where pFunctionalDependency :: HSParser FunctionalDependency
                 pFunctionalDependency
@@ -579,7 +591,14 @@ pBody' opts addDecl
 %%[9
         pInstanceName :: HSParser (Maybe HsName,Bool)
         pInstanceName
-          =   (\n e -> (Just (tokMkQName n),e)) <$> varid <*> (True <$ pLTCOLON <|> False <$ pDCOLON)
+          =   (if ehcOptIsUnderDev UnderDev_NamedInst opts
+               then (\n e -> (Just (tokMkQName n),e)) <$> varid <*> (                     False <$ pEQUAL )
+               else (\n e -> (Just (tokMkQName n),e)) <$> varid <*> (True <$ pLTCOLON <|> False <$ pDCOLON)
+              )
+
+        pInstanceNameMb :: HSParser (Maybe HsName,Bool)
+        pInstanceNameMb
+          =   pInstanceName
           <|> pSucceed (Nothing,True)
 %%]
 
@@ -587,20 +606,39 @@ pBody' opts addDecl
         pDeclarationInstance :: HSParser Declaration
         pDeclarationInstance
           =   pINSTANCE
-              <**> (   -- (\((n,u),c,cl,ts) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c (tokMkQName cl) ts d)
-                       (\((n,u),c,h) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c h d)
+              <**> (if ehcOptIsUnderDev UnderDev_NamedInst opts
+                    then -- new one
+                      (   pInstanceName
+                          <**> ( (\c h md (n,u) t -> Declaration_Instance (mkRange1 t) InstNormal n u c h md)
+                                 <$> pContextItemsPrefixOpt <*> pHeaderTy <*> pWhereMb pDeclarationValue
+                               )
+                      <|> (\c h md t -> Declaration_Instance (mkRange1 t) InstNormal Nothing True c h md)
+                          <$> pContextItemsPrefixOpt <*> pHeaderTy <*> pWhereMb pDeclarationValue
+                      <|> (\hty e t -> Declaration_InstanceUseImplicitly (mkRange1 t) e hty)
+                          <$> pHeaderTy <* pEQUAL <*> pExpression
+                      )
+                    else -- old one
+                      (   (\((n,u),c,h) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c h d)
+                          <$> pHeader
+                          <*> pWhereMb pDeclarationValue
+                      <|> (\e hty t -> Declaration_InstanceUseImplicitly (mkRange1 t) e hty)
+                          <$> pExpression <* pLTCOLON <*> pHeaderTy
+                   )  )
+{-
+          =   pINSTANCE
+              <**> (   (\((n,u),c,h) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c h d)
                        <$> pHeader
-                       <*> pWhere' pDeclarationValue
-                   <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
-                       <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pTypeBase
+                       <*> pWhereMb pDeclarationValue
+                   <|> (\e hty t -> Declaration_InstanceUseImplicitly (mkRange1 t) e hty)
+                       <$> pExpression <* pLTCOLON <*> pHeaderTy
                    )
+-}
 %%[[91
-          <|> -- (\t ((n,u),c,cl,ts) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c (tokMkQName cl) ts Nothing)
-              (\t ((n,u),c,h) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c h Nothing)
-              <$> pDERIVING <* pINSTANCE <*> pHeader
+          <|> (\t (n,u) c h -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c h Nothing)
+              <$> pDERIVING <* pINSTANCE <*> pInstanceNameMb <*> pContextItemsPrefixOpt <*> pHeaderTy
 %%]]
-          -- where pHeader = (,,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
-          where pHeader = (,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> pType' pTypeOpBase (\_ p -> p)
+          where pHeader = (,,) <$> pInstanceNameMb <*> pContextItemsPrefixOpt <*> pHeaderTy
+                pHeaderTy = pType' pTypeOpBase (\_ p -> p)
 %%]
 
 %%[9
@@ -1304,7 +1342,9 @@ pBody' opts addDecl
 %%]]
 %%[[12
                    <|> (\es e -> Expression_ImplicitApplication emptyRange e es) <$> pList1 (pImpls' pContextedExpression)
-                   where pContextedExpression = (\e c r -> ContextedExpression_Contexted r e c) <$> pExpression <* pLTCOLON <*> pContextItem
+                   where pContextedExpression = if ehcOptIsUnderDev UnderDev_NamedInst opts
+                           then (\c e r -> ContextedExpression_Contexted r e c) <$> pContextItem <* pEQUAL   <*> pExpression
+                           else (\e c r -> ContextedExpression_Contexted r e c) <$> pExpression  <* pLTCOLON <*> pContextItem
                          pContextedExpression :: HSParser (Range -> ContextedExpression)
 %%]]
 %%]
@@ -1435,7 +1475,9 @@ pBody' opts addDecl
                       <*> pLamArgs
                   <|> (\_ e -> e) <$ pRARROW
 %%[[12
-                pContextedPattern = (\p c r -> ContextedPattern_Contexted r p c) <$> pPattern <* pLTCOLON <*> pContextItem
+                pContextedPattern = if ehcOptIsUnderDev UnderDev_NamedInst opts
+                  then (\c p r -> ContextedPattern_Contexted r p c) <$> pContextItem <* pEQUAL   <*> pPattern
+                  else (\p c r -> ContextedPattern_Contexted r p c) <$> pPattern     <* pLTCOLON <*> pContextItem
                 pContextedPattern :: HSParser (Range -> ContextedPattern)
 %%]]
 %%]

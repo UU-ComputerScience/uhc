@@ -5,6 +5,9 @@
 %%[8 module {%{EH}Base.Optimize}
 %%]
 
+%%[8 import(GHC.Generics)
+%%]
+
 %%[8 import({%{EH}Base.Common})
 %%]
 
@@ -34,8 +37,10 @@ data Optimize
 %%][8
   = Optimize_NONE								-- nada
 %%]]
-  deriving (Eq,Ord,Enum,Show,Bounded)
+  deriving (Eq,Ord,Enum,Show,Bounded,Generic,Typeable)
 %%]]
+
+instance Hashable Optimize
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -76,7 +81,9 @@ data OptimizeOption
 %%][8
   = OptimizeOption_NONE								-- nada
 %%]]
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Generic,Typeable)
+
+instance Hashable OptimizeOption
 %%]
 
 %%[8 export(OptimizeOptionValue(..))
@@ -89,7 +96,9 @@ data OptimizeOptionValue
 %%][8
   = OptimizeOptionValue_NONE								-- nada
 %%]]
-  deriving (Eq,Ord,Show,Enum)
+  deriving (Eq,Ord,Show,Enum,Generic,Typeable)
+
+instance Hashable OptimizeOptionValue
 %%]
 
 %%[8 export(OptimizeOptionMp)
@@ -191,7 +200,9 @@ data OptimizationScope
 %%[[(50 codegen core)
   | OptimizationScope_WholeCore			-- whole program, starting with Core
 %%]]
-  deriving (Eq,Ord,Enum,Bounded)
+  deriving (Eq,Ord,Enum,Bounded,Typeable,Generic)
+
+instance Hashable OptimizationScope
 
 instance Show OptimizationScope where
   show OptimizationScope_PerModule = "permodule"

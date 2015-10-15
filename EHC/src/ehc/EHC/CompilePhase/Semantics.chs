@@ -26,8 +26,12 @@ Folding over AST to compute semantics
 %%[(50 codegen) import({%{EH}EHC.CompilePhase.Common})
 %%]
 
+-- build call
+%%[8888 import({%{EH}EHC.BuildFunction.Run})
+%%]
+
 -- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 -- HS semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
@@ -61,29 +65,32 @@ Folding over AST to compute semantics
 %%]
 
 -- for debug
-%%[50 hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[5050 hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: computing semantics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(cpFoldCore2Grin)
+%%[(8 core grin) export(cpFoldCore2Grin)
 cpFoldCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCore2Grin modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbCore   = _ecuMbCore ecu
                  core     = panicJust "cpFoldCore2Grin" mbCore
-                 coreInh  = crsiCoreInh crsi
+                 cenv     = crsi ^. crsiCEnv
                  coreSem  = Core2GrSem.wrap_CodeAGItf
                               (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
-                              (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID
-                                       , Core2GrSem.opts_Inh_CodeAGItf                          = opts
+                              (Core2GrSem.Inh_CodeAGItf
+                                { Core2GrSem.gUniq_Inh_CodeAGItf                         = crsi ^. crsiHereUID
+                                , Core2GrSem.opts_Inh_CodeAGItf                          = opts
+                                , Core2GrSem.dataGam_Inh_CodeAGItf                       = cenv ^. cenvDataGam
+                                , Core2GrSem.lamMp_Inh_CodeAGItf                         = cenv ^. cenvLamMp
 %%[[50
-                                       , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
+                                , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
 %%]]
-                                       })
+                                })
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem
                                 ))
@@ -102,12 +109,14 @@ cpFoldCore2CoreRun modNm
                  hasMain  				= ecuHasMain ecu
 %%]]
                  core     				= panicJust "cpFoldCore2CoreRun" mbCore
-                 core2RunInh			= crsiCore2RunInh crsi
-                 (corerun,nm2ref,sem)	= Core2CoreRunSem.cmod2CoreRun' opts hasMain 0 core2RunInh core
+                 inhLbl                 = crsiCoreRunState ^* crcrsiNm2RefMp
+                 core2RunInh			= crsi ^. inhLbl
+                 (corerun,nm2ref,sem)	= Core2CoreRunSem.cmod2CoreRun' opts hasMain Nothing core2RunInh core
                  core2RunInh'			= nm2ref `CoreRun.nm2refUnion` core2RunInh
          ;  when (isJust mbCore) $ do
                  -- between module flow part
-                 cpUpdSI (\crsi -> crsi {crsiCore2RunInh = core2RunInh'})
+                 cpUpdSI $ inhLbl ^= core2RunInh'
+                 -- cpUpdSI (\crsi -> crsi {_crsiCore2RunInh = core2RunInh'})
                  -- per module part
                  cpUpdCU modNm ( ecuStoreCoreRun corerun
                                . ecuStoreCore2CoreRunSem sem
@@ -115,7 +124,7 @@ cpFoldCore2CoreRun modNm
          }
 %%]
 
-%%[(50 codegen corerunin) export(cpFoldCoreRunMod)
+%%[(5050 codegen corerunin) export(cpFoldCoreRunMod)
 cpFoldCoreRunMod :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldCoreRunMod modNm
   =  do  {  cr <- get
@@ -125,7 +134,6 @@ cpFoldCoreRunMod modNm
                  inh      = CoreRun2ChkSem.Inh_AGItf
                                 { CoreRun2ChkSem.opts_Inh_AGItf = opts
                                 , CoreRun2ChkSem.moduleNm_Inh_AGItf = modNm
-                                -- , CoreRun2ChkSem.dataGam_Inh_AGItf = EHSem.dataGam_Inh_AGItf $ _crsiEHInh crsi
                                 }
                  crrSem   = CoreRun2ChkSem.crmodCheck' inh core
                  hasMain  = CoreRun2ChkSem.hasMain_Syn_AGItf crrSem
@@ -149,7 +157,6 @@ cpFoldCoreMod modNm
                  inh      = Core2ChkSem.Inh_CodeAGItf
                                 { Core2ChkSem.opts_Inh_CodeAGItf = opts
                                 , Core2ChkSem.moduleNm_Inh_CodeAGItf = modNm
-                                , Core2ChkSem.dataGam_Inh_CodeAGItf = EHSem.dataGam_Inh_AGItf $ crsi ^. crsiEHInh
                                 }
                  coreSem  = Core2ChkSem.cmodCheck' inh core
                  hasMain  = Core2ChkSem.hasMain_Syn_CodeAGItf coreSem
@@ -167,11 +174,12 @@ cpFoldCoreMod modNm
 cpFoldEH :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldEH modNm
   =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
 %%[[(50 codegen)
          ;  mieimpl <- cpGenModuleImportExportImpl modNm
+         -- ;  mieimpl <- bcall $ ImportExportImpl (mkPrevFileSearchKeyWithName modNm) (ehcOptOptimizationScope opts)
 %%]]
-         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbEH   = _ecuMbEH ecu
+         ;  let  mbEH   = _ecuMbEH ecu
                  ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf $ panicJust "cpFoldEH" mbEH)
                                            ((crsi ^. crsiEHInh)
                                                   { EHSem.moduleNm_Inh_AGItf         		= ecuModNm ecu
@@ -194,6 +202,9 @@ cpFoldEH modNm
 cpFoldHs :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpFoldHs modNm
   =  do  {  cr <- get
+%%[[50
+         -- ;  isTopMod <- bcall $ IsTopMod $ mkPrevFileSearchKeyWithName modNm
+%%]]
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbHS   = _ecuMbHS ecu
                  inh    = crsi ^. crsiHSInh
@@ -202,7 +213,7 @@ cpFoldHs modNm
                                                 , HSSem.gUniq_Inh_AGItf            = crsi ^. crsiHereUID
 %%[[50
                                                 , HSSem.moduleNm_Inh_AGItf         = modNm
-                                                , HSSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
+                                                , HSSem.isTopMod_Inh_AGItf         = {- isTopMod -- -} _ecuIsTopMod ecu
                                                 , HSSem.modInScope_Inh_AGItf       = inscps
                                                 , HSSem.modEntToOrig_Inh_AGItf     = exps
                                                 , HSSem.topInstanceNmL_Inh_AGItf   = modInstNmL (ecuMod ecu)
@@ -224,7 +235,7 @@ cpFoldHs modNm
                  (do { cpUpdCU modNm ( ecuStoreHSSem hsSem
 %%[[50
                                      . ecuStoreHIDeclImpS ( -- (\v -> tr "YY" (pp $ Set.toList v) v) $
-                                                           ecuHSDeclImpNmS ecu)
+                                                           ecuSrcDeclImpNmS ecu)
                                      -- . ecuSetHasMain hasMain
 %%]]
                                      )

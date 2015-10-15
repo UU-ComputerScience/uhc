@@ -82,7 +82,7 @@ SEM AGItf
                                                         (   [ CExport_ExportData (hsnQualified tn) (Just [ hsnQualified cn | (cn,_) <- cs ]) | (tn,cs) <- alldata ]
                                                          ++ [ CExport_Export (hsnQualified n) | n <- Map.keys $ mieimplHsName2FldMp @lhs.moduleImportExportImpl, n `Set.notMember` allConNmS ]
                                                         )
-                                                        (map CImport_Import $ Set.toList $ iumHSDeclModules @lhs.importUsedModules)
+                                                        (map CImport_Import $ Set.toList $ iumSrcDeclModules @lhs.importUsedModules)
 %%]]
                                                         [ CDeclMeta_Data tn [ CDataCon_Con cn (ctagTag ctag) (ctagArity ctag) | (cn,ctag) <- cs ]
                                                         | (tn,cs) <- alldata
@@ -109,7 +109,7 @@ SEM AGItf
 
 %%[(9 codegen)
 SEM AGItf
-  | AGItf       loc         .   extraCBindL :=  [(CBindCateg_Rec,@chrScopeMainBindL)]
+  | AGItf       loc         .   extraCBindL :=  [(CBindCateg_Rec, @chrSolveMainEvidCBindL ++ @chrScopeMainBindL)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -195,7 +195,7 @@ ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
   | Ann         loc         .   cexpr       =   @expr.cexpr
-  | Let         loc         .   frontCBindL =   [(if True {- ehcOptPriv @lhs.opts -} then CBindCateg_Plain else CBindCateg_FFI,@decls.ffiCBindL)]
+  | Let         loc         .   frontCBindL =   [(CBindCateg_Plain,@decls.ffiCBindL)]
 %%[[90
                             .   backCBindL  =   [(CBindCateg_FFE,@decls.ffeCBindL)]
 %%]]
@@ -206,6 +206,9 @@ SEM Expr
                                                  )]
                             .   letValCBindL=   [( @howToBind
                                                  , @dataValCBindL
+%%[[9
+                                                   ++ @chrSolve2EvidCBindL
+%%]]
 %%[[92
                                                    ++ @cDataGenerBindL
 %%]]
@@ -731,14 +734,18 @@ SEM PatExpr
 %%[(8 codegen)
 SEM PatExpr
   | AppTop Con  loc         .   tyConNm     =   tyConNm $ fst $ appUnApp @finKnPatTy -- $ tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
-                            .   dgi         =   panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm)
+                            .   dgi         =   ehcOptFromJust @lhs.opts ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm ++ (showPP $ ppParens @finKnPatTy)) emptyDataGamInfo
                                                     $ dataGamLookup @tyConNm $ @lhs.dataGam
-                            .   dti         =   panicJust ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm)
+                            .   dti         =   ehcOptFromJust @lhs.opts ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm) emptyDataTagInfo
                                                     $ Map.lookup @appFunNm $ dgiConstrTagMp @dgi
 %%]
                             .   dgi         =   ehcOptFromJust @lhs.opts ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm ++ (showPP $ ppParens @finKnPatTy)) emptyDataGamInfo
                                                     $ dataGamLookup @tyConNm $ @lhs.dataGam
                             .   dti         =   ehcOptFromJust @lhs.opts ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm) emptyDataTagInfo
+                                                    $ Map.lookup @appFunNm $ dgiConstrTagMp @dgi
+                            .   dgi         =   panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm)
+                                                    $ dataGamLookup @tyConNm $ @lhs.dataGam
+                            .   dti         =   panicJust ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm)
                                                     $ Map.lookup @appFunNm $ dgiConstrTagMp @dgi
 
 %%[(8 codegen)
@@ -1105,7 +1112,7 @@ SEM Decl
                                                           $ acoreLam1Ty x (acoreTyErr "EH.ToCore.Decl.Class.valCBindL")
                                                           $ mkApp
                                                           $ mkSel n
-                                                        | (n,t) <- @clsFldL
+                                                        | (Just n,t) <- @clsFldTyL
                                                         ]
 %%]
 
@@ -1454,7 +1461,7 @@ SEM Decl
 %%[[91               
                                                              InstDeriving _
 %%[[92
-                                                               | not $ null @generForFitsInL
+                                                               | @derivCanBeDoneGeneric
                                                                           -> unzip
                                                                                [ (acoreBind1 fld $ acore1App f $ acoreBuiltinUndefined @lhs.opts,s)
                                                                                | ((fld,dflt,_,_),fo,u) <- zip3 @generForFitsInL @foGenerDerivL (mkNewLevUIDL (length @generForFitsInL) @lUniq_bind)
@@ -1470,8 +1477,8 @@ SEM Decl
                                                         @finalTy @recTy
                                                         (@supClsFldNmL,@chrSuperProveNmL,@chrCtxtArgNmL)
                                                         bindL
-                                                        ( @chrAssumeDeclsInstBindL ++ @chrScopeDeclsBindL
-                                                        , @chrScopeSuperBindL
+                                                        ( @chrAssumeDeclsInstBindL ++ @chrSolveDeclsEvidCBindL ++ @chrScopeDeclsBindL
+                                                        , @chrSolveSuperEvidCBindL ++ @chrScopeSuperBindL
                                                         , @chrAssumeSuperBindL ++ @chrAssumeDeclsCtxtBindL
                                                         )
                                                       , foldr cSubstApp emptyCSubst cSubstInstL
@@ -1591,7 +1598,7 @@ mkDataGenerBinds
             , foErrL evFO
             )
           where (_,u1,u2) = mkNewLevUID2 uniq
-                clgi  = panicJust ("mkDataGenerBinds.clGam: " ++ show dictNm ++ ": " ++ show clNm) $ gamLookup clNm clGam
+                clgi  = panicJust ("mkDataGenerBinds.clGam: " ++ show dictNm ++ " :: class " ++ show clNm) $ gamLookup clNm clGam
                 
                 -- derived names required for building
                 (dictSelfNm,dictBuildNm) = mkInstanceBuildNms dictNm

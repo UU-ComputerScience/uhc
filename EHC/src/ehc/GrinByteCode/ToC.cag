@@ -1283,7 +1283,7 @@ SEM Module
                                                                               ++ @includeL
 %%]]
                                                                            )  )
-                                                    cfuns | ehcOptPriv @lhs.opts  = [ gencFunDef "void" n [] b | (n,b) <- Map.toList $ Map.delete (show hsnMain) $ @instrs.fun2CMp ]
+                                                    cfuns | False {- ehcOptPriv @lhs.opts -} = [ gencFunDef "void" n [] b | (n,b) <- Map.toList $ Map.delete (show hsnMain) $ @instrs.fun2CMp ]
                                                           | otherwise             = []
                                                     callinfos
                                                             = ppTbl' "CallInfo" @ppNmCallInfoTbl

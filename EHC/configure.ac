@@ -54,6 +54,11 @@ AC_SUBST(EH_VERSION_MEDIUM,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINOR
 AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_VERSION_MINORMINORMINOR)
 AC_SUBST(EH_VERSION_ASNUMBER,$EH_VERSION_MAJOR$EH_VERSION_MINOR_ZEROPAD$EH_VERSION_MINORMINOR_ZEROPAD$EH_VERSION_MINORMINORMINOR_ZEROPAD)
 
+### global settings, variables, defaults
+# command/msg to run when tool is absent
+cmdForExitIfAbsentLibOrTool='echo "**** ERROR **** A tool or library is missing. Check ./configure summary." ; exit 1'
+
+
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
 [
@@ -180,6 +185,10 @@ AC_SUBST(ENABLE_TYCORE,$enableTyCore)
 ### enable options: core-asinpoutp (Untyped Core), default is no
 AC_ARG_ENABLE(core-asinpoutp, AS_HELP_STRING([--enable-core-asinpoutp],[allow use of Core untyped intermediate language as a backend and source language]), [enableCoreAsInpOutp=yes], [enableCoreAsInpOutp=no])
 AC_SUBST(ENABLE_CORE_ASINPOUTP,$enableCoreAsInpOutp)
+
+### enable options: corerun-asinpoutp (CoreRun variation of Core), default is no
+AC_ARG_ENABLE(corerun-asinpoutp, AS_HELP_STRING([--enable-corerun-asinpoutp],[allow use of CoreRun untyped intermediate language as a backend and source language]), [enableCoreRunAsInpOutp=yes], [enableCoreRunAsInpOutp=no])
+AC_SUBST(ENABLE_CORERUN_ASINPOUTP,$enableCoreRunAsInpOutp)
 
 ### enable options: core + system F (Core variation of Typed Core, picking from Typed Core), default is no
 AC_ARG_ENABLE(coresysf, AS_HELP_STRING([--enable-coresysf],[include System F type generation for Core]), [enableCoreSysF=yes], [enableCoreSysF=no])
@@ -503,7 +512,7 @@ then
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           uhc-util)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.5.5&&<0.1.6"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.3&&<0.1.7"
             ;;
           uulib)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"
@@ -623,10 +632,11 @@ if test "$rulerCmd" != "no" -a -x "$rulerCmd" ; then
   rulerVersion=`$rulerCmd --version`
   buildOptionalToolDependenciesUnchecked="ruler>=0.4.0.1 ${buildOptionalToolDependenciesUnchecked}"
 else
-  rulerCmd=""
+  rulerCmd="${cmdForExitIfAbsentLibOrTool}"
   rulerExists="no"
 fi
 AC_SUBST(RULER_CMD,$rulerCmd)
+AC_SUBST(RULER_EXISTS,$rulerExists)
 
 # gcc
 AC_ARG_WITH(gcc,
@@ -1269,7 +1279,7 @@ if test "x$uuagcExists" = "xyes" \
 then
   exitIfAbsentLibOrTool=""
 else
-  exitIfAbsentLibOrTool='echo "**** ERROR **** : A tool or library is missing. Check ./configure summary." ; exit 1'
+  exitIfAbsentLibOrTool="${cmdForExitIfAbsentLibOrTool}"
 fi
 AC_SUBST(EXIT_IF_ABSENT_LIB_OR_TOOL, $exitIfAbsentLibOrTool)
 
@@ -1393,6 +1403,11 @@ echo "  haddock is available?         : $haddockExists"
 if test "x$haddockExists" = "xyes" ;then
 echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
+fi
+echo "  ruler is available?           : $rulerExists"
+if test "x$rulerExists" = "xyes" ;then
+echo "    version                     : $rulerVersion"
+echo "    command for ruler           : $rulerCmd"
 fi
 
 echo "Absolute location of directories:"

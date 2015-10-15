@@ -12,7 +12,7 @@ Conversion from Pred to CHR.
 %%[(9 hmtyinfer) import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) import(UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}CHR.Solve},{%{EH}CHR.Key})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Pred.CHR},{%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
@@ -457,9 +457,9 @@ patchUnresolvedWithAssumption env unres redGraph evidMp
 %%[(9 hmtyinfer) export(chrSimplifySolveToRedGraph)
 chrSimplifySolveToRedGraph
   :: ( Ord p, Ord i
-     , CHRMatchable FIIn p s, CHRCheckable FIIn g s
+     , CHRMatchable FIIn p s Key, CHRCheckable FIIn g s
      , VarLookupCmb s s
-     , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
+     , VarUpdatable s s VarId VarMpInfo, VarUpdatable g s VarId VarMpInfo, VarUpdatable i s VarId VarMpInfo, VarUpdatable p s VarId VarMpInfo
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      ) => FIIn -> CHRStore p i g s -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i

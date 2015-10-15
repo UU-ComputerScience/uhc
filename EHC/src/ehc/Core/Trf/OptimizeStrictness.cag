@@ -20,28 +20,28 @@ Specific transformations:
 20101127: under construction, currently just a placeholder.
 %%]
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.OptimizeStrictness} import(Data.Maybe,{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
+%%[(8 codegenanalysis) hs module {%{EH}Core.Trf.OptimizeStrictness} import(Data.Maybe,{%{EH}Base.Common},{%{EH}Opts},{%{EH}Core},{%{EH}Ty})
 %%]
 
-%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%[(8 codegenanalysis) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.List, Data.Maybe)
+%%[(8 codegenanalysis) hs import(qualified Data.Map as Map,qualified Data.Set as Set, Data.List, Data.Maybe)
 %%]
-%%[(8 codegen) hs import(UHC.Util.Utils)
-%%]
-
-%%[(8 codegen) hs import({%{EH}LamInfo})
+%%[(8 codegenanalysis) hs import(UHC.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Debug},{%{EH}Base.HsName.Builtin})
+%%[(8 codegenanalysis) hs import({%{EH}LamInfo})
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/CommonBindNm},{Core/CommonPred})
+%%[(8888 codegenanalysis) hs import({%{EH}Base.Debug},{%{EH}Base.HsName.Builtin})
+%%]
+
+%%[(8 codegenanalysis).WRAPPER ag import({Core/AbsSyn},{Core/CommonLamInfo},{Core/CommonGathLamInfo},{Core/CommonBindNm},{Core/CommonPred})
 WRAPPER CodeAGItf
 %%]
 
-%%[(99 codegen)
+%%[(99 codegenanalysis)
 PRAGMA nocycle novisit
 %%]
 
@@ -49,7 +49,7 @@ PRAGMA nocycle novisit
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(cmodTrfOptimizeStrictness)
+%%[(8 codegenanalysis) hs export(cmodTrfOptimizeStrictness)
 cmodTrfOptimizeStrictness
   :: EHCOpts
      -> LamMp
@@ -75,7 +75,7 @@ cmodTrfOptimizeStrictness
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
@@ -83,7 +83,7 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%% Transformation/replica
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
@@ -92,13 +92,13 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%% Gathering LamInfo, providing hook for Core/CommonLamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM CodeAGItf
   | AGItf       loc         .   howUnionGathLamInfo
                                                 =   Map.union @gathLamMp
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM CodeAGItf
   | AGItf       loc         .   howMergeLamInfo =   (\(LamInfo {laminfoBindAspMp=m}) i -> i {laminfoBindAspMp = m `Map.union` laminfoBindAspMp i})
 %%]
@@ -107,7 +107,7 @@ SEM CodeAGItf
 %%% Newly bound LamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
+%%[(8 codegenanalysis grin)
 SEM CBind
   | Bind        lhs         .   bindLamMp       =   case @mbStrictArgsRes of
                                                       Just (t,_,_) -> Map.singleton @nm (emptyLamInfo {laminfoBindAspMp = Map.fromList l})
@@ -119,7 +119,7 @@ SEM CBind
 %%% Evaluation context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR CExpr CBound AllAlt -- MbCExpr
   [ anaEvalCtxt: AnaEval | | ]
 
@@ -143,7 +143,7 @@ SEM *
 %%% Worker/wrapper: get the strictness info at the right place for lambda defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllBound [ | | gathStrictTyL USE {++} {[]}: {[RelevTy]} ]
 
 SEM CBound
@@ -152,7 +152,7 @@ SEM CBound
                                                     else []
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllBound [ mbStrictArgsRes: {Maybe (RelevTy,[AnaEval],AnaEval)} | | ]
 
 SEM CBind
@@ -165,12 +165,12 @@ SEM CExpr
   | App			arg			.	mbStrictArgsRes	=	Nothing
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM CBound
   | Bind        loc         .   doWorkerWrapper =   isJust @lhs.mbStrictArgsRes
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR CExpr [ lamArgAnaEvalL: {[AnaEval]} | | ]
 
 SEM CBound
@@ -191,7 +191,7 @@ SEM CExpr
 %%% Worker/wrapper: the wrapper & worker
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR AllBound [ | | cTrfBoundL USE {++} {[]} : {[CBound]} ]
 
 SEM CBound
@@ -221,7 +221,7 @@ SEM CBound
                 lhs         .   cTrfBoundL      =   []
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM CBind
   | Bind        lhs         .   cTrf            =   CBind_Bind @nm @bindAspects.cTrfBoundL
 %%]
@@ -230,7 +230,7 @@ SEM CBind
 %%% Worker/wrapper: use of worker directly, the variable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM CExpr
   | Var         loc         .   strictRef       =   acbrefAspAnd acbaspkeyStrict @ref
                             .   mbStrict        =   case fmap libindaspRelevTy $ lamMpLookupAsp2 @strictRef @lhs.lamMp of
@@ -239,7 +239,7 @@ SEM CExpr
                                                       _ -> Nothing
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM CExpr
   | Var         lhs         .   cTrf            =   CExpr_Var $ maybe @ref (const @strictRef) @mbStrict
 %%]
@@ -248,7 +248,7 @@ SEM CExpr
 %%% Worker/wrapper: use of worker directly, the application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR CExpr [ | | appArgAnaEvalL: {[AnaEval]} ]
 ATTR CExpr [ | | appResAnaEval :   AnaEval   ]
 

@@ -25,6 +25,8 @@ Grin transformation
 %%]
 
 -- Language syntax: Grin
+%%[8 import({%{EH}EHC.ASTTypes})
+%%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin)
 %%]
 -- Language syntax: Grin bytecode
@@ -54,7 +56,7 @@ cpMsgGrinTrf modNm m
        ; cpMsg' modNm VerboseALot "Local GRIN optim" (Just m) fp     -- '
        }
 
-cpFromGrinTrf :: EHCCompileRunner m => HsName -> (Grin.GrModule -> Grin.GrModule) -> String -> EHCompilePhaseT m ()
+cpFromGrinTrf :: EHCCompileRunner m => HsName -> (AST_Grin -> AST_Grin) -> String -> EHCompilePhaseT m ()
 cpFromGrinTrf modNm trf m
   = do { cr <- get
        ; let (ecu,_,_,fp) = crBaseInfo modNm cr

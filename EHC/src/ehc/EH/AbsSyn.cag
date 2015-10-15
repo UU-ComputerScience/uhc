@@ -90,10 +90,11 @@ Representation types + instances for generic deriving
 
 %%[92
 DATA Decl
-  | GenerRep        maxArity        : {Int}                     -- max required unsaturated type arguments
-                    tyNm            : {HsName}                  -- type name
-                    conNmL          : {[HsName]}        -- constructors + field names
-                    recFldNmL       : {[(HsName,[HsName])]}     -- record constructors + field names
+  | GenerRep        maxArity		: {Int}						-- max required unsaturated type arguments
+  					arity		    : {Int}						-- arity of this decl
+  					tyNm            : {HsName}					-- type name
+  					conNmL			: {[HsName]}				-- constructors + field names
+  					recFldNmL		: {[(HsName,[HsName])]}		-- record constructors + field names
 %%]
 
 %%[93
@@ -565,7 +566,8 @@ SET AllData         = AllDataField AllDataConstr AllDataConstrEq
 
 %%[9
 DATA Decl
-  | Class           tyPrExpr        : TyExpr
+  | Class           clNm			: HsName
+                    tyPrExpr        : TyExpr
 %%[[15
                     funcDeps        : FuncDeps
 %%]]

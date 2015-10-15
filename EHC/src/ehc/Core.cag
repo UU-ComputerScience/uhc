@@ -19,7 +19,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 core) hs import({%{EH}AbstractCore}) export(module {%{EH}AbstractCore})
 %%]
 
-%%[(8 core) hs import({%{EH}AnaDomain}) export (module {%{EH}AnaDomain})
+%%[(8 codegenanalysis) hs import({%{EH}AnaDomain}) export (module {%{EH}AnaDomain})
 %%]
 
 %%[(8 core) hs import ({%{EH}Base.Target}(FFIWay(..),TargetFlavor(..))) export(module {%{EH}Base.Target})
@@ -124,7 +124,7 @@ DERIVING CMetaBind
 %%]
 
 -- for debug only
-%%[(8 core) hs import({%{EH}Base.Debug})
+%%[(8888 core) hs import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

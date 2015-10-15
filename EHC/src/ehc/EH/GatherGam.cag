@@ -74,8 +74,10 @@ SEM Expr
                                                         @body.gathClDfGam `gamUnion` @decls.gathClDfGam
   | * - Let     lhs         .   gathClDfGam         =   emptyGam
 
+%%[[50
 SEM AGItf
   | AGItf       lhs         .   gathClDfGam         =   ehcOptTrace @lhs.opts "AGItf.lhs.gathClDfGam" @expr.gathClDfGam
+%%]]
 %%]
 
 %%[(50 hmtyinfer)

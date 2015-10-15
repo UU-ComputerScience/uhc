@@ -1,0 +1,136 @@
+%%[0 lhs2tex
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Check core module when provided as source
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin) hs module {%{EH}CoreRun.ModImpExp}
+%%]
+
+%%[(8 corerunin) hs import({%{EH}Base.Common},{%{EH}Opts},{%{EH}Error})
+%%]
+
+%%[(8 corerunin) hs import({%{EH}CoreRun})
+%%]
+
+%%[(8 corerunin) hs import(qualified UHC.Util.Rel as Rel, qualified UHC.Util.RelMap as RelMap)
+%%]
+
+%%[(50 corerunin) hs import(qualified {%{EH}Module.ImportExport} as ModImpExp)
+%%]
+
+%%[(8 corerunin).WRAPPER ag import({CoreRun/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 corerunin) hs
+deriving instance Typeable Syn_AGItf
+%%]
+
+%%[(99 corerunin)
+-- Enforce laziness as invocation assumes this...
+-- PRAGMA nocycle
+-- PRAGMA nostrictwrap
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin) hs export(crmodImpExp', Inh_AGItf(..), Syn_AGItf(..))
+crmodImpExp'
+  :: Inh_AGItf
+     -> Mod
+     -> Syn_AGItf
+crmodImpExp' inh crmod
+  = t
+  where t = wrap_AGItf
+              (sem_AGItf (AGItf_AGItf crmod))
+              inh
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR
+  AGItf Mod AllExport
+    [ moduleNm: HsName
+    | | ]
+
+SEM Mod
+  | Mod         exports     .   moduleNm        	=   @realModuleNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AGItf Mod [ | | realModuleNm: HsName ]
+
+SEM Mod
+  | Mod         loc         .   realModuleNm        =   @moduleNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Imported modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AGItf Mod AllImport [ | | impModNmL USE {++} {[]} : {[HsName]} ]
+
+SEM Import
+  | Import		lhs         .   impModNmL        	=   [@nm]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Export info, similar to the extracted info from .hs source modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(50 corerunin)
+ATTR AllImport [ | | modImpL USE {++} {[]} : {[ModImpExp.ModImp]} ]
+
+SEM Import
+  | Import		lhs			.   modImpL				=   [ModImpExp.ModImp True @nm @nm False [] emptyRange]
+%%]
+
+%%[(50 corerunin)
+ATTR AGItf Mod [ | | mod: {ModImpExp.Mod} ]
+
+SEM Mod
+  | Mod         lhs         .   mod                 =   ModImpExp.Mod
+                                                            @realModuleNm (Just @realModuleNm) Nothing @imports.modImpL
+                                                            Rel.empty
+                                                            Rel.empty
+                                                            []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module has 'main'?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AGItf Mod [ | | hasMain USE {||} {False} : Bool ]
+
+SEM Mod
+  | Mod			lhs			.	hasMain				=	@mbbody.isJust
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR MbExp [ | | isJust: Bool ]
+
+SEM MbExp
+  | Nothing		lhs			.	isJust				=	False
+  | Just		lhs			.	isJust				=	True
+%%]
+

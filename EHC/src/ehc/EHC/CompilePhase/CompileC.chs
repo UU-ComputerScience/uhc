@@ -22,7 +22,7 @@ C + CPP compilation
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
-%%[8 import({%{EH}EHC.CompileRun})
+%%[8 import({%{EH}EHC.CompileRun.Base})
 %%]
 %%[8 import({%{EH}Opts.CommandLine})
 %%]
@@ -46,7 +46,7 @@ C + CPP compilation
 %%% Compile actions: C compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(gccDefs)
 gccDefs :: EHCOpts -> [String] -> CmdLineOpts
 gccDefs opts builds
   = map (\(d,mbval) -> cppOpt $ CmdFlag_Define ("__UHC" ++ d ++ "__") mbval)
@@ -60,7 +60,7 @@ gccDefs opts builds
 
 %%]
 
-%%[(99 codegen)
+%%[(99 codegen) export(gccInclDirs)
 gccInclDirs :: EHCOpts -> [PkgModulePartition] -> [FilePath]
 gccInclDirs opts pkgKeyDirL = ds ++ (map fst $ Map.elems pdmp)
   where (ds,pdmp) = pkgPartInclDirs opts pkgKeyDirL
@@ -193,11 +193,12 @@ cpCompileWithGCC how othModNmL modNm
 %%]
 
 %%[99 export(cpPreprocessWithCPP)
-cpPreprocessWithCPP :: EHCCompileRunner m => [PkgModulePartition] -> HsName -> EHCompilePhaseT m ()
+cpPreprocessWithCPP :: EHCCompileRunner m => [PkgModulePartition] -> HsName -> EHCompilePhaseT m FPath
 cpPreprocessWithCPP pkgKeyDirL modNm 
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               fpCPP = fpathSetSuff {- mkOutputFPath opts modNm fp -} (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
+              -- fpCPP = fpathSetBase {- mkOutputFPath opts modNm fp -} (fpathBase fp ++ "-cpp") fp
        ; {- when (  ehcOptCPP opts
               || modNm == hsnModIntlBase      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               ) -}
@@ -229,6 +230,7 @@ cpPreprocessWithCPP pkgKeyDirL modNm
                              })
                   -- ; cpUpdCU modNm (ecuStoreSrcFilePath fpCPP)
                   ; cpUpdCU modNm (ecuStoreCppFilePath fpCPP)
+                  ; return fpCPP
                   })
        }
 %%]

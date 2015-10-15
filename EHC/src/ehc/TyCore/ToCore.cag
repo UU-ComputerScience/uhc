@@ -33,7 +33,7 @@ TBD:
 %%]
 
 -- for debug
-%%[(8 codegen tycore) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(8888 codegen tycore) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 

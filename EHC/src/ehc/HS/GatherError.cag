@@ -146,6 +146,7 @@ SEM Declaration
                                                    , @derivings.errSq
 %%]]
 %%[[92
+                                                   , Seq.fromList @errIdUseGener
                                                    , Seq.fromList @errIdUseClass
 %%]]
                                                    ]
@@ -207,14 +208,15 @@ SEM Declaration
                                                    , @dependencies.errSq
 %%]]
 %%[[99
-                                                   , Seq.fromList @errIdUseExtra
+                                                   , Seq.fromList @errIdUseGenerDeriv
+                                                   -- , Seq.fromList @errIdUseExtra
 %%]]
                                                    , @where.errSq
                                                    ]
     | Instance
         loc         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errIdUse, @context.errSq, @type.errSq, {- @types.errSq, -} @where.errSq, Seq.fromList @errReorder]
     | InstanceUseImplicitly
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq, @types.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq, @type.errSq]
     | Default
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @types.errSq]
 %%]

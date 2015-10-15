@@ -248,6 +248,8 @@ DATA Err
                         inHI       : {[String]}
   | WrongMagic          modNm      : String
                         file       : String
+  | CannotCreateFile    modNm      : String
+                        file       : String
 %%]
 
 

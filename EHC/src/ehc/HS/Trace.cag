@@ -1,0 +1,78 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 ag
+ATTR AGItf AllNT [ | | trpp USE {><} {trppEmpty} : TrPP ]
+%%]
+
+%%[8 ag
+ATTR AllNT [ tr : {TraceOn -> [PP_Doc] -> TrPP} | | ]
+
+SEM AGItf
+    | AGItf
+        loc             .   tr          =   trPP (`Set.member` ehcOptTraceOn @lhs.opts)
+%%]
+
+%%[8 ag
+SEM Body
+    | Body
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsDpd $ [pp "Body: sccOrderDpdMp"] ++ [ fr >|< ":" >#< vlist to | (fr,to) <- Map.toList @sccOrderDpdMp ])
+                                            >< (@lhs.tr TraceOn_HsScc $ [pp "Body: sccOrder"] ++ map (ppBracketsCommas) @sccOrder)
+%%[[50
+                                            >< @importdeclarations.trpp
+%%]]
+                                            >< @declarations.trpp
+
+%%]
+
+%%[1 ag
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< " = FunctionBinding"] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @lefthandside.trpp >< @righthandside.trpp
+%%]
+
+%%[1 ag
+SEM Declaration
+    | PatternBinding
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< " = PatternBinding"] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @pattern.trpp >< @righthandside.trpp
+%%[[9
+    | Class
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= Class" >#< @classrefname] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @context.trpp >< @typelefthandside.trpp
+%%[[15
+                                            >< @dependencies.trpp
+%%]]
+                                            >< @where.trpp
+    | Instance
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= Instance" >#< @classrefname]
+        									++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL
+%%[[99
+        									   , "generRequiresReprTypes=" >#< @generRequiresReprTypes
+        									   , "idUseOccGamGenerRepr=" >#< ppGam @idUseOccGamGenerRepr
+        									   , "idUseHereGenerReprOccL=" >#< ppBracketsCommas @idUseHereGenerReprOccL
+%%]]
+        									   ])
+                                            >< @context.trpp >< @type.trpp >< @where.trpp
+    | InstanceUseImplicitly
+        loc             .   trpp        =   (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= InstanceUseImplicitly" >#< @classrefname] ++ [ "idUseHereOccL=" >#< ppBracketsCommas @idUseHereOccL ])
+                                            >< @expression.trpp >< @type.trpp
+%%]]
+%%[[5
+    | Data
+        loc             .   trpp        =   trppEmpty
+%%[[91
+                                            >< (@lhs.tr TraceOn_HsOcc $ [@idOccDef >#< "= Data"] ++ [ "idOccDefs=" >#< ppBracketsCommas @idOccDefs, "idOccDefsGener=" >#< ppBracketsCommas @idOccDefsGener {- , "generArities=" >#< @generArities , "idUseOccGamGener=" >#< ppGam @idUseOccGamGener -} ])
+%%]]
+%%[[9
+                                            >< @context.trpp
+%%]]
+                                            >< @typelefthandside.trpp >< @constructors.trpp
+%%[[91
+                                            >< @derivings.trpp
+%%]]
+%%]]
+%%]
+

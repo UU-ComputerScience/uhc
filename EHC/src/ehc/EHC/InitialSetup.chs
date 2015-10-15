@@ -14,11 +14,14 @@ Initial values
 %%[8 import({%{EH}EHC.Common})
 %%]
 
+%%[8 import({%{EH}EHC.CompileRun.Base})
+%%]
+
 -- HS semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- EH semantics
-%%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[8 import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 -- Core semantics
 %%[(8 core) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
@@ -36,6 +39,9 @@ Initial values
 %%]
 -- LamMp, SysF
 %%[(8 codegen) import({%{EH}LamInfo})
+%%]
+-- CEnv
+%%[(8 core) import({%{EH}CodeGen.CEnv})
 %%]
 
 %%[9 import(qualified {%{EH}Gam.ClGam} as Pr(initClGam))
@@ -100,7 +106,7 @@ initialEHSem opts fp
       }
 %%]
 
-%%[(8 codegen) export(initialCore2GrSem)
+%%[(8888 codegen) export(initialCore2GrSem)
 initialCore2GrSem :: EHCOpts -> Core2GrSem.Inh_CodeAGItf
 initialCore2GrSem opts
   = Core2GrSem.Inh_CodeAGItf
@@ -114,9 +120,24 @@ initialCore2GrSem opts
       }
 %%]
 
-%%[(8 corerun) export(initialCore2CoreRunSem)
+%%[8 export(initialCEnv)
+initialCEnv :: CEnv
+initialCEnv
+  = emptyCEnv
+%%[[(8 core)
+      { _cenvLamMp           		= initLamMp
+      }
+%%]]
+%%]
+
+%%[(8888 corerun) export(initialCore2CoreRunSem)
 initialCore2CoreRunSem :: CoreRun.Nm2RefMp
 initialCore2CoreRunSem = CoreRun.emptyNm2RefMp
+%%]
+
+%%[(8 corerun) export(initialCoreRunState)
+initialCoreRunState :: EHCompileRunCoreRunStateInfo
+initialCoreRunState = emptyEHCompileRunCoreRunStateInfo
 %%]
 
 %%[50 export(initialHSSemMod)

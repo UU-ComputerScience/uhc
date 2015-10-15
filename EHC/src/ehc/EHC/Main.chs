@@ -34,7 +34,7 @@
 %%[1.HSSem import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- EH semantics
-%%[1.EHSem import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[1.EHSem import(qualified {%{EH}EH.Main} as EHSem)
 %%]
 
 -- parsing later put in {%{EH}EHC.CompilePhase.Parsers}
@@ -63,9 +63,11 @@
 %%]
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[8 import(Control.Monad.State, Control.Monad.Error)
+%%[8 import(Control.Monad.State, UHC.Util.Error)
 %%]
 %%[8 import(UHC.Util.Lens)
+%%]
+%%[92 import({%{EH}Base.UnderDev})
 %%]
 
 -- Build function state
@@ -128,11 +130,16 @@ mainEHC opts0
 %%][103
                                 where p = mkFPath "uhcl"     -- hardbaked name
 %%]]
-%%[[1
-                 oo@(o,n,errs)  = ehcCmdLineOptsApply [] args opts1
-%%][103
-                 oo@(o,n,errs)  = ehcCmdLineOptsApply (maybe [] (\d -> [\o -> o {ehcOptCfgInstallRoot = Just d}]) mbDataDir) args opts1
+                 oo@(o,n,errs)  = ehcCmdLineOptsApply
+                                    ([]
+%%[[92
+                                    ++ [\o -> if ehcOptIsUnderDev UnderDev_NameAnalysis o then o {ehcOptGenGenerics=False} else o]
 %%]]
+%%[[103
+                                    ++ (maybe [] (\d -> [\o -> o {ehcOptCfgInstallRoot = Just d}]) mbDataDir)
+%%]]
+                                    )
+                                    args opts1
                  opts2          = maybe opts1 id o
 %%[[(8 codegen)
          ;  case opts2 of
@@ -206,7 +213,7 @@ defaultEHCEnvironment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(102 codegen)
-showSizeCore :: Core.CModule -> String
+showSizeCore :: AST_Core -> String
 showSizeCore x = fevShow "Core" x
 
 %%]
@@ -274,7 +281,7 @@ doCompileRun filename opts
 %%]
 
 %%[8.doCompile -1.doCompile
-doCompilePrepare :: [String] -> EHCOpts -> IO (Maybe (EHCOpts,[FPath],[HsName],EHCompileRun))
+doCompilePrepare :: [String] -> EHCOpts -> IO (Maybe (EHCOpts,[FPath],[HsName],EHCompileRun m))
 doCompilePrepare fnL@(fn:_) opts
   = do { let fpL@(fp:_)             = map (mkTopLevelFPath "hs") fnL
              topModNmL@(topModNm:_) = map (mkHNm . fpathBase) fpL
@@ -339,9 +346,6 @@ doCompilePrepare fnL@(fn:_) opts
                                 { _crsiOpts       =   opts3
                                 , _crsiHSInh      =   initialHSSem opts3
                                 , _crsiEHInh      =   initialEHSem opts3 fp
-%%[[(8 codegen)
-                                , crsiCoreInh    =   initialCore2GrSem opts3
-%%]]
 %%[[50
                                 -- , crsiHIInh      =   initialHISem opts3
                                 , crsiHSModInh   =   initialHSSemMod opts3
@@ -349,15 +353,15 @@ doCompilePrepare fnL@(fn:_) opts
                                 }
 -}
              crsi           =   (EHCompileRunStateInfo opts3
+                                                       (astpipeForEHCOpts opts3)
                                                        uidStart uidStart
                                                        (initialHSSem opts3)
                                                        (initialEHSem opts3 fp)
                                                        (mkFileSuffMpHs opts3)
-%%[[(8 codegen)
-                                                       (initialCore2GrSem opts3)
-%%]]
+                                                       (initialCEnv)
 %%[[(8 corerun)
-                                                       initialCore2CoreRunSem
+                                                       initialCoreRunState
+                                                       -- initialCore2CoreRunSem
 %%]]
 %%[[50
                                                        Nothing

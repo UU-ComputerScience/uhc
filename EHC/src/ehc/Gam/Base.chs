@@ -124,6 +124,13 @@ gamTop                              = sgamTop
 {-# INLINE gamTop #-}
 %%]
 
+%%[8 export(gamTopUpdate)
+-- | Update top entries, all duplicates
+gamTopUpdate :: Ord k => (v -> v) -> k -> Gam k v -> Gam k v
+gamTopUpdate upd = sgamAlterDupOnTop $ maybe Nothing (Just . upd)
+{-# INLINE gamTopUpdate #-}
+%%]
+
 %%[8 export(gamMetaLevSingleton)
 gamMetaLevSingleton                        = sgamMetaLevSingleton
 {-# INLINE gamMetaLevSingleton #-}

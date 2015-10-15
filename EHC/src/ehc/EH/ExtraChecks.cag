@@ -200,34 +200,24 @@ SEM Expr
 %%[(91 hmtyinfer codegen)
 SEM Decl
   | Instance    loc         .   derivErrs           =   let mke m = [rngLift @range Err_NoDerivForData @derivHdDataTy @instClsNm m]
-                                                            hasFlds = any (\t -> ctagArity t > 0)
-                                                            builtinNms = ehcOptBuiltinNames @lhs.opts
-                                                        in  case ( Map.lookup @instClsNm @derivMp
+                                                            -- hasFlds = any (\t -> ctagArity t > 0)
+                                                            -- builtinNms = ehcOptBuiltinNames @lhs.opts
+                                                        in  case ( @derivCanBeDoneBuiltin
                                                                  , @instVariant
-                                                                 , panicJust "Decl.Instance.dataGamTagsOfTy" $ dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
+                                                                 , @mbDerivDataCTags -- panicJust "Decl.Instance.dataGamTagsOfTy" $ dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
                                                                  )
                                                             of
-                                                              (Nothing,InstDeriving _,_)
-%%[[92
-                                                                | null @generForFitsInL
-%%]]
-                                                                -> [rngLift @range Err_NoDerivFor @tyPrExpr.pp]
-                                                              (Just _,InstDeriving _,[])
-                                                                -> mke "has no constructors"
-                                                              (Just _,InstDeriving _,ctags)
-                                                                | @instClsNm `elem`
-                                                                     [ ehbnClassEnum builtinNms
-%%[[99
-                                                                     , ehbnClassIx   builtinNms
-%%]]
-                                                                     ]
-                                                                  && hasFlds ctags
-                                                                  -> mke "has a constructor with >0 fields"
-                                                              (Just _,InstDeriving _,ctags@(_:_:_))
-                                                                | @instClsNm == ehbnClassBounded builtinNms
-                                                                  && hasFlds ctags
-                                                                  -> mke "has >1 constructors, of which >0 with fields"
-                                                              _ -> []
+                                                              (False,InstDeriving _,_)
+                                                                | @derivCanBeDoneGeneric -> []
+                                                                | otherwise              -> [rngLift @range Err_NoDerivFor @tyPrExpr.pp]
+                                                              (True,InstDeriving _,Just [])   -> mke "has no constructors"
+                                                              (True,InstDeriving _,Just _)
+                                                                | (@derivIsEnum || @derivIsIx) && @derivDataHasFlds
+                                                                                         -> mke "has a constructor with >0 fields"
+                                                              (True,InstDeriving _,Just ctags@(_:_:_))
+                                                                | @derivIsBounded && @derivDataHasGt1Constrs && @derivDataHasFlds
+                                                                                         -> mke "has >1 constructors, of which >0 with fields"
+                                                              _                          -> []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -162,13 +162,13 @@ dtVarMpL vm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer tyderivtree) hs export(dtEltTy,dtEltTy')
-dtEltTy' :: (VarUpdatable x VarMp, VarUpdatable x m) => (x -> TvCatMp) -> (x -> res) -> m -> VarMp -> x -> (res,VarMp)
+dtEltTy' :: (VarUpdatable x VarMp VarId VarMpInfo, VarUpdatable x m VarId VarMpInfo) => (x -> TvCatMp) -> (x -> res) -> m -> VarMp -> x -> (res,VarMp)
 dtEltTy' ftvmp mkres m dm t
   = (mkres (dm' `varUpd` t'), dm')
   where t'  = m `varUpd` t
         dm' = dtVmExtend (ftvmp t') dm
 
-dtEltTy :: (VarUpdatable Ty m) => m -> VarMp -> Ty -> (PP_Doc,VarMp)
+dtEltTy :: (VarUpdatable Ty m sk sv) => m -> VarMp -> Ty -> (PP_Doc,VarMp)
 dtEltTy = dtEltTy' tyFtvMp ppTyDt
 %%]
 
@@ -181,7 +181,7 @@ dtEltGam m dm g
 dtEltFoVarMp :: VarMp -> FIOut -> PP_Doc
 dtEltFoVarMp dm fo = ppVarMp ppCurlysCommas' (foVarMp fo)
 
-dtEltVarMp :: (VarLookup m TyVarId VarMpInfo, VarUpdatable VarMpInfo m) => m -> VarMp -> VarMp -> (PP_Doc,VarMp)
+dtEltVarMp :: (VarLookup m TyVarId VarMpInfo, VarUpdatable VarMpInfo m TyVarId VarMpInfo) => m -> VarMp -> VarMp -> (PP_Doc,VarMp)
 dtEltVarMp m dm vm
   = (ppAssocL' ppBracketsCommas' ":->" [ (ppTyDt $ dm' `varUpd` varmpinfoMkVar tv i,ppVarMpInfoDt i) | (tv,i) <- varmpToAssocL vm'], dm')
   where (vm',dm')

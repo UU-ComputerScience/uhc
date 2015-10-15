@@ -11,21 +11,21 @@
 Substitution for AnaDomain.
 %%]
 
-%%[(8 codegen) hs module {%{EH}AnaDomain.Trf.Subst} import({%{EH}Base.Common},{%{EH}AnaDomain},{%{EH}VarMp})
+%%[(8 codegenanalysis) hs module {%{EH}AnaDomain.Trf.Subst} import({%{EH}Base.Common},{%{EH}AnaDomain},{%{EH}VarMp})
 %%]
 
-%%[(8 codegen) hs import(UHC.Util.Utils)
+%%[(8 codegenanalysis) hs import(UHC.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) ag import({AnaDomain/AbsSyn})
+%%[(8 codegenanalysis) ag import({AnaDomain/AbsSyn})
 WRAPPER TyAGItf QualAGItf CoeAGItf
 %%]
 
-%%[(8 codegen) hs export(relevtyAppVarLookup)
+%%[(8 codegenanalysis) hs export(relevtyAppVarLookup)
 relevtyAppVarLookup :: VarLookup m UID RVarMpInfo => m -> RelevTy -> RelevTy
 relevtyAppVarLookup varmp ty
   = repl_Syn_TyAGItf t
@@ -35,7 +35,7 @@ relevtyAppVarLookup varmp ty
 %%]
 relevtyAppVarLookup :: RVarMp -> RelevTy -> RelevTy
 
-%%[(8 codegen) hs export(relevqualAppVarLookup)
+%%[(8 codegenanalysis) hs export(relevqualAppVarLookup)
 relevqualAppVarLookup :: VarLookup m UID RVarMpInfo => m -> RelevQual -> RelevQual
 relevqualAppVarLookup varmp qual
   = repl_Syn_QualAGItf t
@@ -45,7 +45,7 @@ relevqualAppVarLookup varmp qual
 %%]
 relevqualAppVarLookup :: RVarMp -> RelevQual -> RelevQual
 
-%%[(8 codegen) hs export(relevcoeAppVarLookup)
+%%[(8 codegenanalysis) hs export(relevcoeAppVarLookup)
 relevcoeAppVarLookup :: VarLookup m UID RVarMpInfo => m -> RelevCoe -> RelevCoe
 relevcoeAppVarLookup varmp coe
   = repl_Syn_CoeAGItf t
@@ -59,7 +59,7 @@ relevcoeAppVarLookup :: RVarMp -> RelevCoe -> RelevCoe
 %%% VarMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 ATTR TyAGItf QualAGItf CoeAGItf AllNT [ rvarLookup: {VarLookupFix UID RVarMpInfo} | | ]
 %%]
 ATTR TyAGItf QualAGItf CoeAGItf AllNT [ rvarMp: RVarMp | | ]
@@ -68,7 +68,7 @@ ATTR TyAGItf QualAGItf CoeAGItf AllNT [ rvarMp: RVarMp | | ]
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM AnaEval
   | Var             inst    .   repl'       :   AnaEval
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ rvmiMbEval $? @lhs.rvarLookup @av
@@ -79,14 +79,14 @@ SEM AnaEval
 %%% Apply substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen).TySubst
+%%[(8 codegenanalysis).TySubst
 ATTR AllNT     [ | | repl: SELF  		]
 ATTR TyAGItf   [ | | repl: RelevTy    	]
 ATTR QualAGItf [ | | repl: RelevQual   	]
 ATTR CoeAGItf  [ | | repl: RelevCoe   	]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SEM RelevTy
   | Fun				loc		.	rvarLookup	=	varlookupFixDel @quants @lhs.rvarLookup
 

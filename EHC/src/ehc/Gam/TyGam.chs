@@ -351,7 +351,7 @@ initTyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.inst.TyGamInfo
-instance VarUpdatable TyGamInfo VarMp where
+instance VarUpdatable TyGamInfo VarMp VarId VarMpInfo  where
   s `varUpd`  tgi         =   tgi { tgiTy = s `varUpd` tgiTy tgi }
 %%[[4
   s `varUpdCyc` tgi         =   substLift tgiTy (\i x -> i {tgiTy = x}) varUpdCyc s tgi

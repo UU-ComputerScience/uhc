@@ -340,6 +340,16 @@ suffixDotlessInputOutputTextualCore = suffixDotlessOutputTextualCore
 
 %%]
 
+%%[8 export(suffixDotlessOutputTextualEh, suffixDotlessOutputTextualEhAST)
+-- | Suffix (dotless) for textually dumped/output EH files
+suffixDotlessOutputTextualEh :: String
+suffixDotlessOutputTextualEh = "teh"
+
+-- | Suffix (dotless) for textually dumped/output EH AST files
+suffixDotlessOutputTextualEhAST :: String
+suffixDotlessOutputTextualEhAST = "asteh"
+%%]
+
 %%[(8 corerun) export(suffixDotlessInputOutputCoreRun)
 -- | Suffix (dotless) for CoreRun files
 suffixDotlessInputOutputCoreRun :: String

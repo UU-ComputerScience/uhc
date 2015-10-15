@@ -2,7 +2,7 @@
 %%% Just run an intermediate format, very simplistical wrapper around library running, to be beefed up later
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) module Main
+%%[1 module Main
 %%]
 
 %%[(8 corerun) import({%{EH}EHC.Main}, {%{EH}EHC.Main.Utils})
@@ -21,10 +21,11 @@
 %%% Main, compiling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun).main
+%%[1
 -- | Top level main. TBD: hooks & customization
 main :: IO ()
 main = do
+%%[[(8 corerun)
     args <- getArgs
 %%[[99
     progName <- getProgName
@@ -35,24 +36,26 @@ main = do
 %%]]
         oo@(o,n,errs) = ehcrunCmdLineOptsApply args opts0
         opts          = maybe opts0 id o
+        exts          = [ "bcrr", "tcrr", "bcr", "tcr" ]
     
     case ehcOptImmQuit opts of
-      Just immq     -> handleImmQuitOption ehcrunCmdLineOpts ["rcr", "crr", "cr"] immq opts
+      Just immq     -> handleImmQuitOption ehcrunCmdLineOpts exts immq opts
       _             -> case (n,errs) of
         ([fname], []) -> do
           let (bname,ext) = splitExtension fname
           case ext of
-            ".rcr" -> runRCR opts fname
-            ".crr" -> runRCR opts fname
-            ".cr"  -> mainEHC $ opts
+            e | e `elem` map ('.':) exts
+                   -> mainEHC $ opts
                         { ehcOptMbTarget = JustOk Target_None_Core_AsIs
-                        , ehcOptCoreOpts = CoreOpt_Run : ehcOptCoreOpts opts
+                        , ehcOptCoreOpts = {- CoreOpt_RunTrace : -} CoreOpt_Run : CoreOpt_LoadOnly : ehcOptCoreOpts opts
 %%[[50
-                        , ehcOptOptimizationScope = OptimizationScope_WholeCore
+                        -- required only for original compiler driver
+                        -- , ehcOptOptimizationScope = OptimizationScope_WholeCore
 %%]]
                         , ehcOptVerbosity = VerboseQuiet
+                        , ehcOptAltDriver = not $ ehcOptAltDriver opts
                         }
-            _      -> return ()
+            _      -> handleImmQuitOption ehcrunCmdLineOpts exts ImmediateQuitOption_Help opts
         (_      , es) -> do
           putStr (head errs)
           exitFailure
@@ -66,5 +69,10 @@ main = do
                 case res of
                   Left  e   -> putStrLn $ show $ pp e
                   Right val -> putStrLn $ show $ pp val
+%%][1
+    putStrLn "Not installed, CoreRun must be enabled"
+%%]]
 %%]
+
+
 

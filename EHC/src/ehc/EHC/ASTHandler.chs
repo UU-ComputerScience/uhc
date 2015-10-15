@@ -14,7 +14,7 @@ Abstraction for dealing with AST formats
 %%]
 
 -- general imports
-%%[8 import ({%{EH}EHC.Common}, {%{EH}EHC.CompileUnit}, {%{EH}EHC.CompileRun})
+%%[8 import ({%{EH}EHC.Common}, {%{EH}EHC.CompileUnit}, {%{EH}EHC.CompileRun.Base})
 %%]
 
 %%[8 import (Data.Typeable, GHC.Generics)
@@ -48,6 +48,14 @@ data ASTParser ast
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST lens
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ASTLens)
+type ASTLens ast = Lens EHCompileUnit (Maybe ast)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AST Handler, type parameterized
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -64,6 +72,11 @@ data ASTHandler' ast
 		  --- | Meta info: name of ast
 			_asthdlrName				:: !String
 
+		  --- * AST
+		  
+		  --- | Lens into AST, if any
+		  , _asthdlrASTLens 			:: Maybe (ASTLens ast)
+	  
 		  --- * File
 	  
 		  --- | Construct output FPath from module name, path, suffix
@@ -105,9 +118,6 @@ data ASTHandler' ast
 	  
 		  --- * Input, parsing
 
-		  --- | Input an ast
-		  , _asthdlrInput				:: forall m . EHCCompileRunner m => ASTFileContent -> HsName -> EHCompilePhaseT m (Maybe ast)
-
 %%[[50
 		  --- | Read/decode from serialized binary version on file
 		  , _asthdlrGetSerializeFileIO 	:: EHCOpts -> FPath -> IO (Maybe ast)
@@ -116,6 +126,18 @@ data ASTHandler' ast
 		  , _asthdlrPostInputCheck 		:: EHCOpts -> EHCompileUnit -> HsName -> FPath -> ast -> [Err]
 %%]]
 	  
+		  --- * AST info extraction
+
+%%[[50
+		  --- | Module name and imports
+		  , _asthdlrModnameImports 		:: forall m . EHCCompileRunner m => PrevFileSearchKey -> EHCompilePhaseT m (Maybe (HsName,[HsName]))
+%%]]
+
+		  --- * AST predicates
+
+		  --- | Is valid?
+		  , _asthdlrASTIsValid 		:: ast -> Bool
+
 		  }
 		  deriving Typeable
 %%]
@@ -125,6 +147,7 @@ emptyASTHandler' :: forall ast . ASTHandler' ast
 emptyASTHandler'
   = ASTHandler'
       { _asthdlrName 				= "Unknown AST"
+      , _asthdlrASTLens             = Nothing
       , _asthdlrSuffixRel 			= (emptyASTSuffixRel :: ASTSuffixRel ast)
       
       , _asthdlrMkInputFPath		= \_ _ _ fp s -> fpathSetSuff s fp
@@ -138,13 +161,16 @@ emptyASTHandler'
 %%]]
       , _asthdlrOutputIO 			= \_ _ _ _ _ _ _ -> return False
 
-      , _asthdlrInput 				= \_ _ -> return Nothing
       , _asthdlrParseScanOpts		= \_ _ -> ScanUtils.defaultScanOpts
       , _asthdlrParser				= \_ _ -> (Nothing :: Maybe (ASTParser ast))
 %%[[50
       , _asthdlrGetSerializeFileIO	= \_ _ -> return Nothing
       , _asthdlrPostInputCheck		= \_ _ _ _ _ -> []
 %%]]
+%%[[50
+      , _asthdlrModnameImports		= \_ -> return Nothing
+%%]]
+      , _asthdlrASTIsValid          = const True
       }
 %%]
 
@@ -172,9 +198,10 @@ type ASTHandlerMp = Map.Map ASTType ASTHandler
 data ASTSuffixInfo ast
   = ASTSuffixInfo
       { _astsuffinfoSuff		:: String
-      , _astsuffinfoASTLensMp	:: Map.Map ASTFileTiming (Lens EHCompileUnit (Maybe ast))
+      , _astsuffinfoASTLensMp	:: Map.Map ASTFileTiming (ASTLens ast)
 %%[[50
       , _astsuffinfoModfTimeMp	:: Map.Map ASTFileTiming (Lens EHCompileUnit (Maybe ClockTime))
+      , _astsuffinfoUpdParseOpts:: EHParseOpts -> EHParseOpts
 %%]]
       }
   deriving (Typeable, Generic)
@@ -196,12 +223,13 @@ mkASTSuffixRel'
   :: AssocL
        ASTSuffixKey
        ( String
-       , AssocL ASTFileTiming (Lens EHCompileUnit (Maybe ast))
+       , AssocL ASTFileTiming (ASTLens ast)
 %%[[8
        , AssocL ASTFileTiming (Maybe ())
 %%][50
        , AssocL ASTFileTiming (Lens EHCompileUnit (Maybe ClockTime))
 %%]]
+       , EHParseOpts -> EHParseOpts
        )
      -> ASTSuffixRel ast
 mkASTSuffixRel' l = Rel.fromList
@@ -211,16 +239,17 @@ mkASTSuffixRel' l = Rel.fromList
         (Map.fromList il)
 %%[[50
         (Map.fromList cl)
+        updopts
 %%]]
     )
-  | (sk,(s,il,cl)) <- l
+  | (sk,(s,il,cl,updopts)) <- l
   ]
 
 mkASTSuffixRel
   :: AssocL
        ASTSuffixKey
        ( String
-       , Lens EHCompileUnit (Maybe ast)
+       , ASTLens ast
 %%[[8
        , Maybe ()
 %%][50
@@ -237,6 +266,7 @@ mkASTSuffixRel l = mkASTSuffixRel' $
 %%][50
       , maybe [] (\c -> [(ASTFileTiming_Current,c)]) mc
 %%]]
+      , id
     ) )
   | (sk,(s,i,mc)) <- l
   ]
@@ -250,7 +280,7 @@ astsuffixLookupSuff :: ASTSuffixKey -> ASTSuffixRel ast -> Maybe String
 astsuffixLookupSuff k r = fmap _astsuffinfoSuff $ astsuffixLookup k r
 
 -- | Lookup lens
-astsuffixLookupLens :: ASTSuffixKey -> ASTFileTiming -> ASTSuffixRel ast -> Maybe (Lens EHCompileUnit (Maybe ast))
+astsuffixLookupLens :: ASTSuffixKey -> ASTFileTiming -> ASTSuffixRel ast -> Maybe (ASTLens ast)
 astsuffixLookupLens sk tk r = do
   i <- astsuffixLookup sk r
   Map.lookup tk $ _astsuffinfoASTLensMp i
@@ -289,7 +319,9 @@ asthdlrOutputIO hdlr how opts ecu modNm fpC fnC ast = do
 
 %%[8 export(asthdlrMkInputFPath)
 -- | Construct a FPath given a handler
-asthdlrMkInputFPath :: ASTHandler' ast -> EHCOpts -> EHCompileUnit -> ASTSuffixKey -> HsName -> FPath -> FPath
-asthdlrMkInputFPath hdlr opts ecu skey modNm fp = _asthdlrMkInputFPath hdlr opts ecu modNm fp suff
-  where suff = maybe "" id $ astsuffixLookupSuff skey $ _asthdlrSuffixRel hdlr
+asthdlrMkInputFPath :: ASTHandler' ast -> EHCOpts -> EHCompileUnit -> ASTFileSuffOverride -> HsName -> FPath -> FPath
+asthdlrMkInputFPath hdlr opts ecu overr modNm fp = _asthdlrMkInputFPath hdlr opts ecu modNm fp suff
+  where suff = case overr of
+          ASTFileSuffOverride_Suff skey -> maybe "" id $ astsuffixLookupSuff skey $ _asthdlrSuffixRel hdlr
+          ASTFileSuffOverride_AsIs      -> fpathSuff fp
 %%]

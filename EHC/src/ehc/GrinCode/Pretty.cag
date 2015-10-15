@@ -39,7 +39,7 @@ ppGrTag tg
                              })
      in   (pp_Syn_GrTag t)
 
-ppGrExpr2 :: CfgPP x => x -> GrExpr -> PP_Doc
+ppGrExpr2 :: CfgPP' x => x -> GrExpr -> PP_Doc
 ppGrExpr2 x tg
   =  let  t = wrap_GrExpr  (sem_GrExpr tg)
                            (Inh_GrExpr

@@ -16,13 +16,15 @@
 %%]
 %%[99 import(System.Directory)
 %%]
-%%[8 import(qualified {%{EH}Config} as Cfg)
+%%[8888 import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[50 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%[5050 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.Environment})
+%%]
+%%[8 import (UHC.Util.Lens)
 %%]
 
 -- compiler driver modules
@@ -44,7 +46,7 @@
 %%]
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[8 import(Control.Monad.State, Control.Monad.Error)
+%%[8 import(Control.Monad.State, UHC.Util.Error)
 %%]
 
 -- module
@@ -55,6 +57,10 @@
 %%[99 import({%{EH}Base.PackageDatabase},{%{EH}Base.Parser2})
 %%]
 
+-- CoreRun running
+%%[(8 corerun) import({%{EH}EHC.CompilePhase.Run})
+%%]
+
 -- Misc
 %%[8 import({%{EH}Base.Target}, {%{EH}Base.Optimize}(allOptimizeMp))
 %%]
@@ -62,11 +68,15 @@
 %%]
 
 -- Config
-%%[103 import(qualified {%{EH}ConfigCabal} as Cfg (getDataDir))
+%%[103103 import(qualified {%{EH}ConfigCabal} as Cfg (getDataDir))
 %%]
 
 -- Utils
 %%[8 import({%{EH}EHC.Main.Utils})
+%%]
+
+-- debugging
+%%[8 import({%{EH}Base.Trace})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,13 +93,33 @@ compile1 opts fileSuffMpHs searchPath mbFp nm
 %%]
 
 %%[8 export(compileN_Alternate)
+-- | Alternate compiler driver using (20150806 under construction) new build system
 compileN_Alternate :: EHCCompileRunner m => [FPath] -> [HsName] -> EHCompilePhaseT m ()
 compileN_Alternate fpL topModNmL@(modNm:_) = do
     cpMsg modNm VerboseDebug $ "compileN_Alternate topModNmL: " ++ show topModNmL
-    zipWithM (\fp topModNm -> bcall $ EcuOfNameAndPath Nothing (topModNm, Just fp)) fpL topModNmL
-    return ()
+    crsi <- bcall $ CRSI
+    let opts    = crsi ^. crsiOpts
+        astpipe = astpipeForEHCOpts opts
+        bglob   = BuildGlobal astpipe
+    case (ehcOptTarget opts, fpL, topModNmL) of
+%%[[(8 corerun)
+{-
+      (Target_None_Core_AsIs, (fp:_), (modNm:_)) | CoreOpt_Run `elem` ehcOptCoreOpts opts -> do
+          (_ :: AST_Core) <- bcall $ ASTP ((modNm, ASTFileNameOverride_FPathAsTop fp), Nothing) astpipe
+          -- cr <- get
+          -- cpTr TraceOn_BldResult ["compileN_Alternate", show $ Map.keys $ cr ^. crCUCache, show $ cr ^. crNmForward]
+          (bcall $ ActualModNm modNm) >>= cpRunCoreRun
+-}
+      (Target_None_Core_AsIs, (fp:_), (modNm:_)) | CoreOpt_Run `elem` ehcOptCoreOpts opts -> do
+          let modSearchKey = PrevFileSearchKey (FileSearchKey modNm $ ASTFileNameOverride_FPathAsTop fp) Nothing
+          maybeM (bcall $ BuildPlanPMb bglob modSearchKey astpipe) (return ()) $ \astplan -> do
+            -- cpRunCoreRun4 bglob modSearchKey astplan
+            cpRunCoreRun5 bglob modSearchKey astplan
+%%]]
+      (_, fpL, topModNmL) -> do
+          zipWithM (\fp topModNm -> bcall $ EcuOfPrevNameAndPath (PrevFileSearchKey (FileSearchKey topModNm $ ASTFileNameOverride_FPathAsTop fp) Nothing)) fpL topModNmL
+          return ()
 %%]
-
 
 %%[50 -8.compile1 export(compileN)
 compileN :: EHCCompileRunner m => EHCOpts -> FileSuffMp -> FileLocPath -> [FPath] -> [HsName] -> EHCompilePhaseT m ()
@@ -104,16 +134,18 @@ compileN opts fileSuffMpHs searchPath fpL topModNmL@(modNm:_)
        
        -- follow the import relation to chase modules which have to be analysed
        ; cpImportGatherFromModsWithImp
-           (if ehcOptPriv opts
+           ({- if ehcOptPriv opts
             then \ecu -> case ecuState ecu of
                            -- ECUS_Haskell HIStart -> Set.toList $ ecuTransClosedOrphanModS ecu
                            ECUS_Haskell HIOnlyImports -> [] -- Set.toList $ ecuTransClosedOrphanModS ecu
                            _ -> ecuImpNmL ecu
-            else ecuImpNmL
+            else -} ecuImpNmL
            )
-           (imp (ECUS_Haskell HSOnlyImports) Nothing) (map fst topModNmL')
+           (imp (ECUS_Haskell HSOnlyImports) Nothing)
+           (map fst topModNmL')
        
        -- import orphans
+       {-
        ; when (ehcOptPriv opts)
               (do { 
                   -- import orphans
@@ -122,7 +154,8 @@ compileN opts fileSuffMpHs searchPath fpL topModNmL@(modNm:_)
                   -- import used remaining modules, but just minimally                          
                   ; importAlso (ECUS_Haskell HMOnlyMinimal) (Set.unions . Map.elems . ecuTransClosedUsedModMp)
                   })
-
+       -}
+       
        -- inhibit mutual recursiveness
        ; cpEhcCheckAbsenceOfMutRecModules
        
@@ -137,6 +170,7 @@ compileN opts fileSuffMpHs searchPath fpL topModNmL@(modNm:_)
         imp = import1 opts fileSuffMpHs searchPath
         
         -- import others, but then in a (slightly) different way
+        {-
         importAlso how getNms
           = do { cr <- get
                ; let allAnalysedModS = Map.keysSet $ _crCUCache cr
@@ -145,6 +179,7 @@ compileN opts fileSuffMpHs searchPath fpL topModNmL@(modNm:_)
                    (const [])
                    (imp how Nothing) (Set.toList allNewS)
                }
+        -}
 %%]
 
 
@@ -166,7 +201,7 @@ import1 opts fileSuffMpHs searchPath desiredState mbFp mbPrev nm
        ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
 %%][99
        ; let searchPath' = prevSearchInfoAdaptedSearchPath mbPrev searchPath
-       ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) (\(x,_,_) -> x) False fileSuffMpHs' searchPath' (Just nm) mbFp
+       ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) tup1234to1 False fileSuffMpHs' searchPath' (Just nm) mbFp
 %%]]
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (do { liftIO $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)
@@ -184,7 +219,9 @@ import1 opts fileSuffMpHs searchPath desiredState mbFp mbPrev nm
              -> do { nm' <- cpEhcModuleCompile1 (Just desiredState) nm
                    ; cr <- get
                    ; let (ecu,_,_,_) = crBaseInfo nm' cr
-                   ; return (nm',Just (nm',(fp, ecuFileLocation ecu)))
+                         newPrev = Just (nm',(fp, ecuFileLocation ecu))
+                   ; cpUpdCU nm' $ ecuMbPrevSearchInfo ^= newPrev
+                   ; return (nm', newPrev)
                    }
            _ -> return (nm,Nothing)
        }

@@ -1,4 +1,4 @@
-%%[(0 codegen)
+%%[(0 codegenanalysis)
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -7,22 +7,22 @@
 %%% Abstract syntax analysis domains
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 DATA TyAGItf
   | AGItf       relevTy         : RelevTy
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 DATA QualAGItf
   | AGItf       relevQual       : RelevQual
 %%]
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 DATA CoeAGItf
   | AGItf       relevCoe        : RelevCoe
 %%]
 
-%%[(8888 codegen)
+%%[(8888 codegenanalysis)
 DATA AnaEvalAGItf
   | AGItf       anaEval         : AnaEval
 %%]
@@ -31,7 +31,7 @@ DATA AnaEvalAGItf
 %%% Evaluation state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 DATA AnaEval
   -- variable, for propagation
   | Var         av				: {UID}
@@ -55,7 +55,7 @@ SET AllAna 		= 	AnaEval AnaEvalL
 %%% Coercion between Ana's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 DATA RelevCoe
   -- no coercion
   | Id
@@ -91,7 +91,7 @@ SET AllCoe		=	RelevCoe RelevCoeL
 %%% Type for relevance analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 DATA RelevQual
   -- less than or equal in AnaEval lattice
   | SubEval		l				: AnaEval
@@ -105,7 +105,7 @@ DATA RelevQual
   				altMbTag		: {Maybe CTag}			-- tag to which this alt belongs
   				altMbScrutTy	: MbRelevTy				-- the ty for which this tag is taken/chosen
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 TYPE RelevQualL	=	[RelevQual]
 
 DATA RelevTy
@@ -135,7 +135,7 @@ SET AllRelevTy	=	RelevTy RelevTyL MbRelevTy RelevQual RelevQualL
 %%% SET
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegenanalysis)
 SET AllNT = AllRelevTy AllAna AllCoe
 %%]
 

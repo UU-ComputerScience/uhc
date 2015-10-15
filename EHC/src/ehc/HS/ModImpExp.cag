@@ -17,10 +17,13 @@
 %%[50 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
+%%[50 hs import({%{EH}Base.UnderDev})
+%%]
+
 %%[50 hs import(qualified UHC.Util.Rel as Rel,{%{EH}Module.ImportExport})
 %%]
 
-%%[97 hs import({%{EH}Base.Debug} as Debug, UHC.Util.Pretty)
+%%[9797 hs import({%{EH}Base.Debug} as Debug, UHC.Util.Pretty)
 %%]
 
 %%[99 hs import ({%{EH}Base.Target})
@@ -34,6 +37,10 @@
 
 %%[50 ag import({HS/AbsSyn},{HS/NameLevel},{HS/NameDef},{HS/Module},{HS/Uniq})
 WRAPPER AGItf
+%%]
+
+%%[50 hs
+deriving instance Typeable Syn_AGItf
 %%]
 
 %%[99 ag import({HS/Pragmas})
@@ -121,6 +128,6 @@ SEM Pattern
 %%[99
 SEM Declaration
     | Class
-        loc             .   generDerivInfoL
+        loc             .   generderivnames
                                         =   []
 %%]

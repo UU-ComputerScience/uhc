@@ -67,7 +67,7 @@
 %%[8.ScopeMapGam import(UHC.Util.ScopeMapGam)
 %%]
 
-%%[9 import({%{EH}Base.Debug})
+%%[9999 import({%{EH}Base.Debug})
 %%]
 
 %%[(9 codegen) import({%{EH}Core.Subst})
@@ -220,7 +220,7 @@ idQualGamReplacement g k n = maybe n id $ gamLookup (IdOcc n k) g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.Gam
-instance (Eq tk,VarUpdatable vv subst) => VarUpdatable (Gam tk vv) subst where
+instance (Eq tk,VarUpdatable vv subst VarId VarMpInfo) => VarUpdatable (Gam tk vv) subst VarId VarMpInfo where
   s `varUpd`  (Gam ll)    =   Gam (map (assocLMapElt (s `varUpd`)) ll)
 %%[[4
   s `varUpdCyc` (Gam ll)    =   (Gam ll',varmpUnions $ map (varmpUnions . assocLElts) m)
@@ -232,7 +232,7 @@ instance (Eq k,Eq tk,VarExtractable vv k) => VarExtractable (Gam tk vv) k where
 %%]
 
 %%[(8 hmtyinfer || hmtyast).Substitutable.SGam -2.Substitutable.Gam
-instance (Ord tk,VarUpdatable vv subst) => VarUpdatable (SGam tk vv) subst where
+instance (Ord tk,VarUpdatable vv subst VarId VarMpInfo) => VarUpdatable (SGam tk vv) subst VarId VarMpInfo where
   s `varUpd`  g    =   gamMapElts (s `varUpd`) g
 %%[[4
   s `varUpdCyc` g    =   (g',varmpUnions $ gamElts gm)

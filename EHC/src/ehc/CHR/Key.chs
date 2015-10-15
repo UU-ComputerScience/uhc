@@ -2,10 +2,13 @@
 %%% Constraint Handling Rules: Key to be used as part of TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.TreeTrie})
+%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},UHC.Util.TreeTrie)
 %%]
 
 %%[9 import(UHC.Util.Pretty, UHC.Util.Utils)
+%%]
+
+%%[9 import(UHC.Util.CHR.Key)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})
@@ -131,33 +134,8 @@ instance Keyable x => TrieKeyable x Key where
 %%% TTKeyable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(TTKeyableOpts(..),defaultTTKeyableOpts)
-data TTKeyableOpts
-  = TTKeyableOpts
-      { ttkoptsVarsAsWild       :: Bool             -- treat vars as wildcards
-      }
-
-defaultTTKeyableOpts = TTKeyableOpts True
-%%]
-
-%%[9 export(TTKeyable(..))
--- | TreeTrie key construction
-class TTKeyable x where
-  toTTKey'                  :: TTKeyableOpts -> x ->  TreeTrieKey  Key                          -- option parameterized constuction
-  toTTKeyParentChildren'    :: TTKeyableOpts -> x -> (TreeTrie1Key Key, [TreeTrieMpKey  Key])   -- building block: parent of children + children
-  
-  -- default impl
-  toTTKey' o                    = uncurry ttkAdd' . toTTKeyParentChildren' o
-  toTTKeyParentChildren' o      = ttkParentChildren . toTTKey' o
-%%]
-
-%%[9 export(toTTKey)
-toTTKey :: TTKeyable x => x -> TreeTrieKey Key
-toTTKey = toTTKey' defaultTTKeyableOpts
-%%]
-
 %%[9
-instance TTKeyable x => TreeTrieKeyable x Key where
+instance TTKeyable x Key => TreeTrieKeyable x Key where
   toTreeTrieKey   = toTTKey
 %%]
 

@@ -32,13 +32,19 @@
 %%[(50 codegen corein) hs import({%{EH}Module.ImportExport})
 %%]
 
-%%[(8 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam})
+%%[(8 codegen corein).WRAPPER ag import({Core/AbsSyn},{Core/CommonBindNm},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonLevLet},{Core/CommonCtxtPred},{Core/CommonDataGam1})
 WRAPPER CodeAGItf
+%%]
+
+%%[(8 codegen corein) hs
+deriving instance Typeable Syn_CodeAGItf
 %%]
 
 %%[(99 codegen corein)
 -- PRAGMA strictcase
+-- Enforce laziness as invocation assumes this...
 PRAGMA nocycle
+PRAGMA nostrictwrap
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

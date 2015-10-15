@@ -320,7 +320,7 @@ type ACoreAppLikeMetaBound = (ACoreBindAspectKeyS,MetaLev,CLbl)
 %%]
 
 %%[(8 codegen) hs
-instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e boundmeta {- () () -} where
+instance {-# OVERLAPPABLE  #-} AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e boundmeta {- () () -} where
   app1App       = acore1App
   appTop        = id
   appCon        = acoreVar . mkHNm
@@ -345,13 +345,13 @@ instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => AppLike e 
 %%]
 
 %%[(8 codegen coresysf) hs
-instance (AppLike e ACoreAppLikeMetaBound, HSNM bndnm, AbstractCore e m b bound ACoreAppLikeMetaBound bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
+instance {-# OVERLAPPABLE  #-} (AppLike e ACoreAppLikeMetaBound, HSNM bndnm, AbstractCore e m b bound ACoreAppLikeMetaBound bcat mbind t p pr pf a) => BndLike e bndnm {- () () -} where
   -- BndLike
   bndBndIn n l = app1MetaArr (Just $ mkHNm n,acoreBoundmeta acbaspkeyDefault l CLbl_None)
 %%]
 
 %%[(8 codegen) hs
-instance AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => RecLike e boundmeta {- () () -} where
+instance {-# OVERLAPPABLE  #-} AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => RecLike e boundmeta {- () () -} where
   recRow _ fs   = acoreTagTyTupBound CTagRec (acoreTyErr "AbstractCore.RecLike.recRow") [ acoreBound1MetaVal (acoreBoundmeta acbaspkeyDefault 0 (CLbl_Nm n)) e | (n,e) <- fs ]
   
   recMbRecRow  _= Nothing -- tyMbRecRowWithLkup (const Nothing)
@@ -382,7 +382,9 @@ acoreMetaLiftDict = fmap2Tuple acoreMetavalDfltDict
 data ACoreBindAspectKey
   = ACoreBindAspectKey_Default              -- identifies the default binding, if omitted in a reference this aspect is the one chosen.
   | ACoreBindAspectKey_Ty                   -- the normal ty
+%%[[(8 codegenanalysis)
   | ACoreBindAspectKey_RelevTy              -- the relevance ty
+%%]]
   | ACoreBindAspectKey_Strict               -- the as strict as possible variant
   | ACoreBindAspectKey_Debug                -- internal debugging only
   | ACoreBindAspectKey_Core                 -- core
@@ -398,7 +400,9 @@ instance Show ACoreBindAspectKey where
   show ACoreBindAspectKey_Default       = "dft"
   show ACoreBindAspectKey_Strict        = "str"
   show ACoreBindAspectKey_Ty            = "ty"
+%%[[(8 codegenanalysis)
   show ACoreBindAspectKey_RelevTy       = "rty"
+%%]]
   show ACoreBindAspectKey_Debug         = "dbg"
   show ACoreBindAspectKey_Core          = "core"
 %%[[(8 coresysf)
@@ -429,7 +433,14 @@ acbaspkeyMetaLev mlev _ = mlev
 %%]]
 %%]
 
-%%[(8 codegen) hs export(acbaspkeyDefaultTy, acbaspkeyTy, acbaspkeyDefaultCore, acbaspkeyNone,acbaspkeyDefault,acbaspkeyDefaultRelevTy,acbaspkeyStrict,acbaspkeyDebug)
+%%[(8 codegenanalysis) hs export(acbaspkeyDefaultRelevTy)
+-- | predefined: 
+acbaspkeyDefaultRelevTy :: ACoreBindAspectKeyS
+acbaspkeyDefaultRelevTy = acbaspkeyMk
+  [ ACoreBindAspectKey_Default, ACoreBindAspectKey_RelevTy ]
+%%]
+
+%%[(8 codegen) hs export(acbaspkeyDefaultTy, acbaspkeyTy, acbaspkeyDefaultCore, acbaspkeyNone,acbaspkeyDefault,acbaspkeyStrict,acbaspkeyDebug)
 -- | predefined: 
 acbaspkeyNone :: ACoreBindAspectKeyS
 acbaspkeyNone = acbaspkeyMk
@@ -454,11 +465,6 @@ acbaspkeyDefaultTy = acbaspkeyMk
 acbaspkeyDefaultCore :: ACoreBindAspectKeyS
 acbaspkeyDefaultCore = acbaspkeyMk
   [ ACoreBindAspectKey_Default, ACoreBindAspectKey_Core ]
-
--- | predefined: 
-acbaspkeyDefaultRelevTy :: ACoreBindAspectKeyS
-acbaspkeyDefaultRelevTy = acbaspkeyMk
-  [ ACoreBindAspectKey_Default, ACoreBindAspectKey_RelevTy ]
 
 -- | predefined: 
 acbaspkeyStrict :: ACoreBindAspectKeyS
@@ -1398,6 +1404,7 @@ raltIsConst (RAlt_Alt (p : _) _ _)
   where c (RPat_Int   _ _ _) = True
         c (RPat_Char  _ _ _) = True
         c _                  = False
+raltIsConst _                = False
 %%]
 
 %%[(8 codegen) hs export(raltIsConMany)

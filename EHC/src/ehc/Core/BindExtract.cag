@@ -26,7 +26,9 @@ data BoundSel
   = BoundSel
       { selBind         :: Bool
       , selMeta         :: ACoreBindAspectKeyS -> Bool
+%%[[(8 codegenanalysis)
       , selRelevTy      :: ACoreBindAspectKeyS -> RelevTy -> Bool
+%%]]
       , selVal          :: ACoreBindAspectKeyS -> MetaLev -> CLbl -> Bool
       , selTy           :: ACoreBindAspectKeyS -> Bool
 %%[[90
@@ -41,7 +43,9 @@ noBoundSel
   = BoundSel
       { selBind			= False
       , selMeta			= const False
+%%[[(8 codegenanalysis)
       , selRelevTy		= \_ _ -> False
+%%]]
       , selVal			= \_ _ _ -> False
       , selTy			= const False
 %%[[90

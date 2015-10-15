@@ -84,6 +84,9 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[(9 hmtyinfer || hmtyast) hs export(tyEnsureNonAnyImpl)
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs import(qualified UHC.Util.RLList as RLL)
+%%]
+
 %%[(9_1 hmtyinfer || hmtyast) hs export(TyPlusId)
 %%]
 
@@ -371,12 +374,12 @@ instance Show LabelOffset where
 
 %%[(9 hmtyinfer || hmtyast) hs export(PredScope(..),initPredScope)
 data PredScope
-  = PredScope_Lev !(RLList Int)
+  = PredScope_Lev !(RLL.RLList Int)
   | PredScope_Var !TyVarId
   deriving (Eq,Ord)
 
 initPredScope :: PredScope
-initPredScope = PredScope_Lev rllEmpty
+initPredScope = PredScope_Lev RLL.empty
 %%]
 
 %%[(50 hmtyinfer || hmtyast) hs
@@ -398,10 +401,10 @@ instance Show PredScope where
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpEnter,pscpLeave)
 pscpEnter :: Int -> PredScope -> (Int,PredScope)
-pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (s `rllConcat` rllSingleton x))
+pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (s `RLL.concat` RLL.singleton x))
 
 pscpLeave :: PredScope -> PredScope
-pscpLeave (PredScope_Lev s) = PredScope_Lev $ fst $ fromJust $ rllInitLast s
+pscpLeave (PredScope_Lev s) = PredScope_Lev $ fst $ fromJust $ RLL.initLast s
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpEnter',pscpLeave',pscpMk')
@@ -432,26 +435,26 @@ pscpMk' yesEnter x s
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpIsVisibleIn,pscpCommon)
 pscpIsVisibleIn :: PredScope -> PredScope -> Bool
-pscpIsVisibleIn (PredScope_Lev sOuter) (PredScope_Lev sInner) = sOuter `rllIsPrefixOf` sInner
+pscpIsVisibleIn (PredScope_Lev sOuter) (PredScope_Lev sInner) = sOuter `RLL.isPrefixOf` sInner
 pscpIsVisibleIn _                      _                      = False
 
 pscpCommon :: PredScope -> PredScope -> Maybe PredScope
 pscpCommon (PredScope_Lev s1) (PredScope_Lev s2)
   = Just $ PredScope_Lev $ commonPrefix s1 s2
-  where commonPrefix xxs     yys     | isJust ht1 && isJust ht2 && x == y     = rllSingleton x `rllConcat` commonPrefix xs ys
-                                     | otherwise                              = rllEmpty
-                                     where ht1 = rllHeadTail xxs
-                                           ht2 = rllHeadTail yys
+  where commonPrefix xxs     yys     | isJust ht1 && isJust ht2 && x == y     = RLL.singleton x `RLL.concat` commonPrefix xs ys
+                                     | otherwise                              = RLL.empty
+                                     where ht1 = RLL.headTail xxs
+                                           ht2 = RLL.headTail yys
                                            (x,xs) = fromJust ht1
                                            (y,ys) = fromJust ht2
-        -- commonPrefix _       _                    = rllEmpty
+        -- commonPrefix _       _                    = RLL.empty
 pscpCommon _                  _                  
   = Nothing        
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpParents)
 pscpParents :: PredScope -> [PredScope]
-pscpParents (PredScope_Lev s) | not (rllNull s) = map PredScope_Lev $ rllInits $ rllInit s
+pscpParents (PredScope_Lev s) | not (RLL.null s) = map PredScope_Lev $ RLL.inits $ RLL.init s
 pscpParents _                                   = []
 %%]
 
@@ -461,7 +464,7 @@ pscpCmp (PredScope_Lev s) (PredScope_Lev t) = Just $ s `compare` t
 pscpCmp _                 _                 = Nothing                 
 
 pscpCmpByLen :: PredScope -> PredScope -> Ordering                  
-pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = (rllLength s) `compare` (rllLength t)                    
+pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = (RLL.length s) `compare` (RLL.length t)                    
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -812,7 +815,7 @@ tyIsLam ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer || hmtyast).AppLike hs
-instance AppLike Ty Ty {- TyAnn () -} where
+instance {-# OVERLAPPING  #-} AppLike Ty Ty {- TyAnn () -} where
   -- AppLike
   
   app1App        = Ty_App
@@ -864,7 +867,7 @@ instance BndLike Ty TyVarId {- TyAnn () -} where
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs
-instance RecLike Ty Ty {- TyAnn () -} where
+instance {-# OVERLAPPING  #-} RecLike Ty Ty {- TyAnn () -} where
   -- RecLike
 %%[[7
   recRow r 		= foldl (\t (n,e) -> Ty_Ext t n e) r

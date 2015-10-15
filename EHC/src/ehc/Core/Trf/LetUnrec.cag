@@ -13,7 +13,10 @@
 %%[(8 codegen) hs import({%{EH}AbstractCore})
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Utils(scc))
+%%[(8 codegen) hs import(UHC.Util.Utils(scc))
+%%]
+
+%%[(8888 codegen) hs import({%{EH}Base.Debug})
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe,qualified Data.Map as Map, qualified Data.Set as Set)

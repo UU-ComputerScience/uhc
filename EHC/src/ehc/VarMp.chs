@@ -60,7 +60,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[6 import({%{EH}VarLookup}) export(module {%{EH}VarLookup})
 %%]
 
-%%[6 import({%{EH}Base.Debug})
+%%[6666 import({%{EH}Base.Debug})
 %%]
 
 %%[8 import(UHC.Util.Utils)

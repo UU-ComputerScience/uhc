@@ -118,7 +118,7 @@ SEM Declaration
                                         >#< ppParens @context.pp >#< "=>" >#< @type.pp -- @name >#< ppSpaces @types.ppL
                                         >-< indent 2 @where.pp
     | InstanceUseImplicitly
-        loc         .   pp          =   "instance" >#< @expression.pp >#< "<:" >#< @name >#< ppSpaces @types.ppL
+        loc         .   pp          =   "instance" >#< @expression.pp >#< "<:" >#< @type.pp -- @name >#< ppSpaces @types.ppL
     | Default
         loc         .   pp          =   "default" >#< maybe empty pp @name >#< ppParensCommas @types.ppL
 %%]

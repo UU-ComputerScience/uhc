@@ -256,8 +256,9 @@ DATA Declaration                                  {- *** -}
     | InstanceUseImplicitly
         range                    : Range
         expression               : Expression
-        name                     : Name
-        types                    : Types
+        -- name                     : Name
+        -- types                    : Types
+        type					 : Type
     | Default
         range                    : Range
         name                     : MaybeName

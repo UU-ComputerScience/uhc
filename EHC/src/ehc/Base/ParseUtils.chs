@@ -60,18 +60,18 @@ parseString scanOpts p s
 -- | Options to influence parsing
 data EHParseOpts
   = EHParseOpts
-      { ehpoptsLitMode		:: Bool			-- ^ literal mode?
-      , ehpoptsStopAtErr	:: Bool			-- ^ stop prematurely when parse error occurs?
-      , ehpoptsForImport	:: Bool			-- ^ for import only?
+      { ehpoptsLitMode			:: Bool			-- ^ literal mode?
+      , ehpoptsOkToStopAtErr	:: Bool			-- ^ stop prematurely when parse error occurs and be ok with the result parsed until then?
+      , ehpoptsForImport		:: Bool			-- ^ for import only?
       }
     deriving (Show)
 
 defaultEHParseOpts :: EHParseOpts
 defaultEHParseOpts
   = EHParseOpts
-      { ehpoptsLitMode		= False
-      , ehpoptsStopAtErr	= False
-      , ehpoptsForImport	= False
+      { ehpoptsLitMode			= False
+      , ehpoptsOkToStopAtErr	= False
+      , ehpoptsForImport		= False
       }
 %%]
 
@@ -110,7 +110,7 @@ instance EHParser OffsideParser [Token] Token (OffsideSymbol Token) (Maybe Token
 -- instance EHParser (OffsideParser [Token] Pair Token (Maybe Token)) [Token] Token (OffsideSymbol Token) (Maybe Token) where
   ehScanParseToResMsgs sopts popts prs fn fh = do
     tokens <- offsideScanHandle sopts fn fh
-    return $ if ehpoptsStopAtErr popts
+    return $ if ehpoptsOkToStopAtErr popts
       then parseOffsideToResMsgsStopAtErr prs tokens
       else parseOffsideToResMsgs prs tokens
 %%]

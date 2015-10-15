@@ -37,7 +37,7 @@
 %%]
 
 Debug
-%%[(88 codegen grin cmm) hs import({%{EH}Base.Debug})
+%%[(8888 codegen grin cmm) hs import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

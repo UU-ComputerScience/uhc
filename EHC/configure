@@ -687,6 +687,7 @@ CFLAGS
 CC
 GCC_CMD
 gccCmd
+RULER_EXISTS
 RULER_CMD
 rulerCmd
 SHUFFLE_CMD
@@ -733,6 +734,7 @@ cppCmd
 ENABLE_SANDBOX
 ENABLE_TAUPHI
 ENABLE_CORESYSF
+ENABLE_CORERUN_ASINPOUTP
 ENABLE_CORE_ASINPOUTP
 ENABLE_TYCORE
 ENABLE_CLR
@@ -820,6 +822,7 @@ enable_llvm
 enable_clr
 enable_tycore
 enable_core_asinpoutp
+enable_corerun_asinpoutp
 enable_coresysf
 enable_tauphi
 enable_sandbox
@@ -1480,6 +1483,9 @@ Optional Features:
   --enable-tycore         include TyCore typed intermediate language
   --enable-core-asinpoutp allow use of Core untyped intermediate language as a
                           backend and source language
+  --enable-corerun-asinpoutp
+                          allow use of CoreRun untyped intermediate language
+                          as a backend and source language
   --enable-coresysf       include System F type generation for Core
   --enable-tauphi         include TauPhi language extension and analyses
   --enable-sandbox        build EHC/UHC libs with cabal sandbox
@@ -2822,6 +2828,11 @@ EH_VERSION_FULL=$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_V
 EH_VERSION_ASNUMBER=$EH_VERSION_MAJOR$EH_VERSION_MINOR_ZEROPAD$EH_VERSION_MINORMINOR_ZEROPAD$EH_VERSION_MINORMINORMINOR_ZEROPAD
 
 
+### global settings, variables, defaults
+# command/msg to run when tool is absent
+cmdForExitIfAbsentLibOrTool='echo "**** ERROR **** A tool or library is missing. Check ./configure summary." ; exit 1'
+
+
 
 
 
@@ -3167,6 +3178,17 @@ else
 fi
 
 ENABLE_CORE_ASINPOUTP=$enableCoreAsInpOutp
+
+
+### enable options: corerun-asinpoutp (CoreRun variation of Core), default is no
+# Check whether --enable-corerun-asinpoutp was given.
+if test "${enable_corerun_asinpoutp+set}" = set; then :
+  enableval=$enable_corerun_asinpoutp; enableCoreRunAsInpOutp=yes
+else
+  enableCoreRunAsInpOutp=no
+fi
+
+ENABLE_CORERUN_ASINPOUTP=$enableCoreRunAsInpOutp
 
 
 ### enable options: core + system F (Core variation of Typed Core, picking from Typed Core), default is no
@@ -4017,7 +4039,7 @@ then
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           uhc-util)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.5.5&&<0.1.6"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.3&&<0.1.7"
             ;;
           uulib)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"
@@ -4272,10 +4294,12 @@ if test "$rulerCmd" != "no" -a -x "$rulerCmd" ; then
   rulerVersion=`$rulerCmd --version`
   buildOptionalToolDependenciesUnchecked="ruler>=0.4.0.1 ${buildOptionalToolDependenciesUnchecked}"
 else
-  rulerCmd=""
+  rulerCmd="${cmdForExitIfAbsentLibOrTool}"
   rulerExists="no"
 fi
 RULER_CMD=$rulerCmd
+
+RULER_EXISTS=$rulerExists
 
 
 # gcc
@@ -9162,7 +9186,7 @@ if test "x$uuagcExists" = "xyes" \
 then
   exitIfAbsentLibOrTool=""
 else
-  exitIfAbsentLibOrTool='echo "**** ERROR **** : A tool or library is missing. Check ./configure summary." ; exit 1'
+  exitIfAbsentLibOrTool="${cmdForExitIfAbsentLibOrTool}"
 fi
 EXIT_IF_ABSENT_LIB_OR_TOOL=$exitIfAbsentLibOrTool
 
@@ -10576,6 +10600,11 @@ echo "  haddock is available?         : $haddockExists"
 if test "x$haddockExists" = "xyes" ;then
 echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
+fi
+echo "  ruler is available?           : $rulerExists"
+if test "x$rulerExists" = "xyes" ;then
+echo "    version                     : $rulerVersion"
+echo "    command for ruler           : $rulerCmd"
 fi
 
 echo "Absolute location of directories:"

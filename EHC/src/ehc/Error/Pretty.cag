@@ -358,7 +358,7 @@ SEM Err
   | FileNotFound        lhs     .  pp   =   ppMsgErr    "File not found"
                                                         (    "file name         :" >#< @fileName
                                                          >-< "searched locations:" >#< vlist (map (text.show) @locations)
-                                                         -- >-< "attempted suffixes:" >#< ppCommas' (map pp $ catMaybes @suffixes)
+                                                         >-< "attempted suffixes:" >#< ppCommas' (map pp $ catMaybes @suffixes)
                                                         )
 %%[[99
                                                         @range
@@ -596,6 +596,13 @@ SEM Err
                                                         @range
 %%]]
   | WrongMagic          lhs     .  pp   =   ppMsgErr    (".hi file has wrong magic number")
+                                                        (    "module              :" >#< @modNm
+                                                         >-< "file                :" >#< @file
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+  | CannotCreateFile    lhs     .  pp   =   ppMsgErr    ("cannot create file")
                                                         (    "module              :" >#< @modNm
                                                          >-< "file                :" >#< @file
                                                         )

@@ -41,7 +41,7 @@ in ...f g...
 %%]
 
 -- for debug
-%%[(8 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(8888 codegen) hs import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 %%[(8 codegen) hs import(Debug.Trace)
 %%]

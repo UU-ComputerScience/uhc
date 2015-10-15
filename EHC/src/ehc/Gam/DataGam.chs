@@ -16,15 +16,20 @@
 %%]
 %%[(7 hmtyinfer) hs import({%{EH}Error}) 
 %%]
+%%[(8 hmtyinfer) hs import({%{EH}CodeGen.RefGenerator}) 
+%%]
 
 %%[(8 counting) hs import(qualified {%{EH}Core.CountingAnalysis.Types} as CA) 
+%%]
+
+%%[(7 hmtyinfer) import(Control.Applicative((<|>))) 
 %%]
 
 %%[(7 hmtyinfer) import(qualified Data.Map as Map)
 %%]
 %%[(7 hmtyinfer) import(qualified Data.Set as Set)
 %%]
-%%[(90 hmtyinfer) import(Data.Maybe)
+%%[(7 hmtyinfer) import(Data.Maybe)
 %%]
 
 %%[(7 hmtyinfer) import({%{EH}VarMp},{%{EH}Substitutable})
@@ -37,7 +42,7 @@
 %%]
 
 -- debug
-%%[(8 codegen) import({%{EH}Base.Debug},UHC.Util.Pretty)
+%%[(8888 codegen) import({%{EH}Base.Debug},UHC.Util.Pretty)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -56,7 +61,18 @@ data DataFldInfo
       { dfiOffset 	:: !Fld
       }
 %%]]
-      deriving (Show, Generic)
+      deriving (Generic)
+
+
+instance Show DataFldInfo where
+%%[[(7 hmtyinfer)
+  show _ = "DataFldInfo"
+%%][(8 codegen || hmtyinfer)
+  show i = show (dfiOffset i)
+%%]]
+
+instance PP DataFldInfo where
+  pp = pp . show
 
 type DataFldMp = Map.Map HsName DataFldInfo
 
@@ -105,7 +121,20 @@ data DataTagInfo
 %%[[91
       , dtiMbFixityPrio 	:: !(Maybe (Int,Fixity))	-- if defined as infix, with priority
 %%]]
-      } deriving (Show, Generic)
+      } deriving (Generic)
+
+instance Show DataTagInfo where
+  show _ = "DataTagInfo"
+
+instance PP DataTagInfo where
+  pp i = dtiConNm i >-< indent 2 (
+  		    "flds=" >#< ppCommas [n >#< ppTy t | (n,t) <- dtiFldTyL i]
+  		>-< "fldmp=" >#< ppCommas [n >#< t | (n,t) <- Map.toList $ dtiFldMp i]
+%%[[8
+  		>-< "fldrefs=" >#< ppCommas (dtiFldRefL i)
+%%]]
+  		>-< "conty=" >#< ppTy (dtiConTy i)
+  		)
 
 type DataConstrTagMp = Map.Map HsName DataTagInfo
 
@@ -121,6 +150,26 @@ emptyDataTagInfo
 %%]]
 %%[[91
       Nothing
+%%]]
+%%]
+
+%%[(7 hmtyinfer) export(fldTyLEnsureLabels, mkFldRefAndMp)
+-- | Ensure presence of field labels
+fldTyLEnsureLabels :: FldTyL -> FldTyL
+fldTyLEnsureLabels = zipWith (\pn (ml,t) -> (ml <|> Just pn, t)) positionalFldNames
+
+-- | Construct fld info from FldTyL
+mkFldRefAndMp :: FldTyL -> (DataFldMp, FldTyL, AssocL HsName Fld)
+mkFldRefAndMp fldTyL = (fldMp, fldTyL', fldRefL)
+  where fldTyL' = fldTyLEnsureLabels fldTyL
+%%[[7
+        fldRefL = []
+        fldMp   = Map.fromList $ mkfs fldTyL
+          where mk = emptyDataFldInfo
+                mkfs = foldl (\m (ml,_) -> maybe m (\l -> (l,mk):m) ml) []
+%%][8
+        fldRefL = refGen 0 1 [ n | (Just n, _) <- fldTyL' ]
+        fldMp   = Map.fromList $ catMaybes $ zipWith (\(_,r) (ml,_) -> fmap (\l -> (l,emptyDataFldInfo {dfiOffset = r})) ml) fldRefL fldTyL
 %%]]
 %%]
 
@@ -159,7 +208,7 @@ data DataGamInfoVariant
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)
-      , dgiDataTy 			:: !Ty					-- the type sum of product
+      , dgiDataTy 			:: !Ty					-- the type dataty -> sum of product
       , dgiDataKi 			:: !Ty					-- the kind
 %%[[(8 counting)
       , dgiAnnVars      :: ![CA.Var]      -- all annatotation variables 
@@ -185,6 +234,18 @@ data DataGamInfo
 
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
+
+instance PP DataGamInfo where
+  pp i@(DataGamInfo {dgiTyNm=nm, dgiDataTy=sumprod, dgiDataKi=ki}) = nm >-< indent 2 (
+		    "sumprod=" >#< ppTy sumprod
+		>-< "ki=" >#< ppTy ki
+%%[[50
+		>-< "constrnms=" >#< ppCommas (dgiConstrNmL i)
+%%]]
+%%[[8
+		>-< "constrmp=" >#< vlist (Map.toList $ dgiConstrTagMp i)
+%%]]
+		)
 %%]
 
 %%[(90 hmtyinfer) export(dgiMbNewtype,dgiIsNewtype)

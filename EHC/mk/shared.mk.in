@@ -262,6 +262,14 @@ SHELL_FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
 SHELL_AGDEPEND				:= $(BINABS_PREFIX)agdepend
 TAR							:= @TAR_CMD@
 
+#tool existence
+ifeq (@RULER_EXISTS@,yes)
+RULER_EXISTS				:= yes
+else
+# just leave empty
+RULER_EXISTS				:= 
+endif
+
 # lhs2TeX
 LHS2TEX_ENV					:= $(LHS2TEX)
 LHS2TEX_CMD					:= LHS2TEX=".$(PATHS_SEP)../../$(FMT_SRC_PREFIX)$(PATHS_SEP)$(LHS2TEX_ENV)" lhs2TeX
@@ -507,7 +515,7 @@ FUN_GEN_CABAL		= \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" ; \
 					echo   "Exposed:			False" ; \
 					echo   "C-Sources:			$(subst $(space),$(comma),$(strip $(7)))" ; \
-					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC)" \
+					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC) -fno-warn-tabs" \
 					)
 
 # generate cabal file for library
@@ -590,6 +598,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Exposed-Modules:		$(7)" ; \
 					echo   "  Other-Modules:		$(8)" ; \
+					echo   "  Ghc-Options:			-fno-warn-tabs" ; \
 					echo   "" ; \
 					echo   "Executable $(strip $(10))" ; \
 					echo   "  Hs-Source-Dirs:       $(18)" ; \
