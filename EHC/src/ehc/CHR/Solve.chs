@@ -80,10 +80,10 @@ chrTrieLookup' = TreeTrie.lookupPartialByKey'
 chrTrieLookup :: CHRLookupHow -> CHRTrieKey -> CHRTrie Key v -> ([v],Maybe v)
 chrTrieLookup = TreeTrie.lookupPartialByKey
 
-chrToKey :: TTKeyable x Key => x -> CHRTrieKey
+chrToKey :: (TTKeyable x, TTKey x ~ Key) => x -> CHRTrieKey
 chrToKey = ttkFixate . toTTKey
 
-chrToWorkKey :: TTKeyable x Key => x -> CHRTrieKey
+chrToWorkKey :: (TTKeyable x, TTKey x ~ Key) => x -> CHRTrieKey
 chrToWorkKey = ttkFixate . toTTKey' (defaultTTKeyableOpts {ttkoptsVarsAsWild = False})
 %%]
 
@@ -157,7 +157,7 @@ instance (PP p, PP i, PP g) => PP (StoredCHR p i g s) where
 
 %%[(9 hmtyinfer || hmtyast) export(chrStoreFromElems,chrStoreUnion,chrStoreUnions,chrStoreSingletonElem)
 -- | Convert from list to store
-chrStoreFromElems :: (TTKeyable p Key) => [CHR (Constraint p i) g s] -> CHRStore p i g s
+chrStoreFromElems :: (TTKeyable p, TTKey p ~ Key) => [CHR (Constraint p i) g s] -> CHRStore p i g s
 chrStoreFromElems chrs
   = mkCHRStore
     $ chrTrieFromListByKeyWith cmbStoredCHRs
@@ -171,7 +171,7 @@ chrStoreFromElems chrs
               ks' = map Just ks1 ++ [Nothing] ++ map Just ks2
         ]
 
-chrStoreSingletonElem :: (TTKeyable p Key) => CHR (Constraint p i) g s -> CHRStore p i g s
+chrStoreSingletonElem :: (TTKeyable p, TTKey p ~ Key) => CHR (Constraint p i) g s -> CHRStore p i g s
 chrStoreSingletonElem x = chrStoreFromElems [x]
 
 chrStoreUnion :: CHRStore p i g s -> CHRStore p i g s -> CHRStore p i g s
@@ -270,13 +270,13 @@ ppUsedByKey (k,i) = ppCHRTrieKey k >|< "/" >|< i
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-mkWorkList :: (TTKeyable p Key) => WorkTime -> [Constraint p i] -> WorkList p i
+mkWorkList :: (TTKeyable p, TTKey p ~ Key) => WorkTime -> [Constraint p i] -> WorkList p i
 mkWorkList wtm = flip (wlInsert wtm) emptyWorkList
 
 wlToList :: {- (PP p, PP i) => -} WorkList p i -> [Constraint p i]
 wlToList wl = map workCnstr $ chrTrieElems $ wlTrie wl
 
-wlCnstrToIns :: (TTKeyable p Key) => WorkList p i -> [Constraint p i] -> AssocL WorkKey (Constraint p i)
+wlCnstrToIns :: (TTKeyable p, TTKey p ~ Key) => WorkList p i -> [Constraint p i] -> AssocL WorkKey (Constraint p i)
 wlCnstrToIns wl@(WorkList {wlDoneSet = ds}) inscs
   = [(chrToWorkKey c,c) | c <- inscs, let k = chrToKey c, not (k `Set.member` ds)]
 
@@ -289,11 +289,11 @@ wlDeleteByKeyAndInsert' wtm delkeys inskeycs wl@(WorkList {wlQueue = wlq, wlTrie
   where inswork = Map.fromList [ (k,Work k c wtm) | (k,c) <- inskeycs ]
         instrie = chrTrieFromListPartialExactWith const $ Map.toList inswork
 
-wlDeleteByKeyAndInsert :: (TTKeyable p Key) => WorkTime -> [WorkKey] -> [Constraint p i] -> WorkList p i -> WorkList p i
+wlDeleteByKeyAndInsert :: (TTKeyable p, TTKey p ~ Key) => WorkTime -> [WorkKey] -> [Constraint p i] -> WorkList p i -> WorkList p i
 wlDeleteByKeyAndInsert wtm delkeys inscs wl
   = wlDeleteByKeyAndInsert' wtm delkeys (wlCnstrToIns wl inscs) wl
 
-wlInsert :: (TTKeyable p Key) => WorkTime -> [Constraint p i] -> WorkList p i -> WorkList p i
+wlInsert :: (TTKeyable p, TTKey p ~ Key) => WorkTime -> [Constraint p i] -> WorkList p i -> WorkList p i
 wlInsert wtm = wlDeleteByKeyAndInsert wtm []
 %%]
 
@@ -583,7 +583,7 @@ chrSolve'' env chrStore cnstrs prevState
                           $ addStats Map.empty
                                 [ ("no match work", ppCHRTrieKey workHdKey)
                                 , ("wl queue sz", pp (length (wlQueue wl')))
-                                ] st')
+                                ]
                           $
 %%][100      
 %%]]    

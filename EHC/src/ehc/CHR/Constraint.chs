@@ -88,8 +88,8 @@ instance (CHRMatchable env p s Key) => CHRMatchable env (Constraint p info) s Ke
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance TTKeyable p Key => TTKeyable (Constraint p info) Key where
-  -- type TTKey (Constraint p info) = TTKey p
+instance (TTKeyable p, TTKey (Constraint p info) ~ TTKey p) => TTKeyable (Constraint p info) where
+  type TTKey (Constraint p info) = Key
   toTTKey' o c -- = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
     = case cnstrReducablePart c of
         Just (s,p,_) -> ttkAdd' (TT1K_One $ Key_Str s) cs
