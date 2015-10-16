@@ -89,7 +89,7 @@ For debug/trace:
 %%[[4
 fiAppVarMp :: FIIn -> Ty -> Ty
 %%][8
-fiAppVarMp :: VarUpdatable Ty gm TyVarId VarMpInfo => FIIn' gm -> Ty -> Ty
+fiAppVarMp :: VarUpdatable Ty gm => FIIn' gm -> Ty -> Ty
 %%]]
 fiAppVarMp fi x = fiVarMpLoc fi `varUpd` (fiVarMp fi `varUpd` x)
 %%]
@@ -299,6 +299,7 @@ fitsIn
      => -} 
      ( VarLookup gm TyVarId VarMpInfo
      , VarLookupCmb VarMp gm
+     , VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo
      )
      => FIOpts -> FIEnv -> UID -> gm -> Ty -> Ty
      -> FIOut
@@ -329,6 +330,7 @@ fitsInFI
      => -} 
      ( VarLookup gm TyVarId VarMpInfo
      , VarLookupCmb VarMp gm
+     , VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Ty -> Ty
      -> FIOut
@@ -1810,6 +1812,7 @@ fitsInFold opts env uniq varmp tyl
 fitPredIntoPred
   :: ( VarLookupCmb VarMp gm
      , VarLookup gm TyVarId VarMpInfo
+     , VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Pred -> Pred
      -> Maybe (Pred,VarMp)

@@ -169,7 +169,7 @@ predCanonic' opts pr
 
 %%[(9 hmtyinfer) hs export(tyCanonic)
 tyCanonic
-  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
+  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm, VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo)
      => TyBetaRedEnv gm -> Ty
      -> Ty
 tyCanonic fi
@@ -182,7 +182,7 @@ tyCanonic fi
 
 %%[(9 hmtyinfer) hs export(tyCanonicFFI')
 tyCanonicFFI'
-  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
+  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm, VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo)
      => Bool			-- expand newtypes
      -> TyBetaRedEnv gm 
      -> Ty
@@ -210,7 +210,7 @@ tyCanonicFFI' expNewtype renv
 
 %%[(9 hmtyinfer) hs export(tyCanonicFFI)
 tyCanonicFFI
-  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
+  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm, VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo)
      => TyBetaRedEnv gm
      -> Ty
      -> Ty
@@ -219,7 +219,7 @@ tyCanonicFFI = tyCanonicFFI' False
 
 %%[(9 hmtyinfer) hs export(predCanonic)
 predCanonic
-  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm)
+  :: (VarLookup gm TyVarId VarMpInfo, VarLookupCmb VarMp gm, VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo)
      => TyBetaRedEnv gm -> Pred
      -> (Pred,VarMp)
 predCanonic renv

@@ -108,7 +108,7 @@ relevQualRemoveAmbig bound qualS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegenanalysis) hs
-instance VarUpdatable RelevTy RVarMp UID RVarMpInfo where
+instance VarUpdatable RelevTy RVarMp where
   varUpd = relevtyAppVarLookup
 
 instance VarExtractable RelevTy UID where
@@ -116,7 +116,7 @@ instance VarExtractable RelevTy UID where
 %%]
 
 %%[(8 codegenanalysis) hs
-instance VarUpdatable RelevQual RVarMp UID RVarMpInfo where
+instance VarUpdatable RelevQual RVarMp where
   varUpd = relevqualAppVarLookup
 
 instance VarExtractable RelevQual UID where
@@ -124,7 +124,7 @@ instance VarExtractable RelevQual UID where
 %%]
 
 %%[(8 codegenanalysis) hs
-instance VarUpdatable RelevCoe RVarMp UID RVarMpInfo where
+instance VarUpdatable RelevCoe RVarMp where
   varUpd = relevcoeAppVarLookup
 
 instance VarExtractable RelevCoe UID where

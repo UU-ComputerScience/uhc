@@ -94,7 +94,7 @@ instance PP Guard where
 instance VarExtractable CHRPredOccCnstrMp TyVarId where
   varFreeSet        x = Set.unions [ varFreeSet k | k <- Map.keys x ]
 
-instance VarUpdatable CHRPredOccCnstrMp VarMp VarId VarMpInfo where
+instance VarUpdatable CHRPredOccCnstrMp VarMp where
   varUpd s x = Map.mapKeysWith (++) (varUpd s) x
 
 instance VarExtractable Guard TyVarId where
@@ -112,7 +112,7 @@ instance VarExtractable Guard TyVarId where
   varFreeSet        (EqualModuloUnification t1 t2)    = Set.unions [varFreeSet t1, varFreeSet t2]
 %%]]
 
-instance VarUpdatable Guard VarMp VarId VarMpInfo where
+instance VarUpdatable Guard VarMp where
   varUpd s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s `varUpd` p1) (s `varUpd` p2) (s `varUpd` p3)
   varUpd s (IsStrictParentScope    p1 p2 p3) = IsStrictParentScope    (s `varUpd` p1) (s `varUpd` p2) (s `varUpd` p3)
   varUpd s (IsVisibleInScope       p1 p2   ) = IsVisibleInScope       (s `varUpd` p1) (s `varUpd` p2)
@@ -135,7 +135,7 @@ instance VarExtractable VarUIDHsName TyVarId where
   varFreeSet          _                 = Set.empty
 
 -- instance VarUpdatable VarUIDHsName VarMp where
-instance VarLookup m ImplsVarId VarMpInfo => VarUpdatable VarUIDHsName m ImplsVarId VarMpInfo where
+instance (VarLookup m (VarUpdKey m) (VarUpdVal m), VarUpdKey m ~ ImplsVarId, VarUpdVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
   varUpd s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 
@@ -147,7 +147,7 @@ instance VarExtractable RedHowAnnotation TyVarId where
 %%]]
   varFreeSet        _                             = Set.empty
 
-instance VarUpdatable RedHowAnnotation VarMp VarId VarMpInfo where
+instance VarUpdatable RedHowAnnotation VarMp where
   varUpd s (RedHow_Assumption   vun sc)  = RedHow_Assumption (varUpd s vun) (varUpd s sc)
 %%[[10
   varUpd s (RedHow_ByLabel      l o sc)  = RedHow_ByLabel (varUpd s l) (varUpd s o) (varUpd s sc)

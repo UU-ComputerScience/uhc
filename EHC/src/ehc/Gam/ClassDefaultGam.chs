@@ -15,6 +15,8 @@ Currently only the first one is used.
 %%]
 %%[(9 hmtyinfer) import({%{EH}Gam},{%{EH}Ty},{%{EH}VarMp})
 %%]
+%%[(9 hmtyinfer) import(UHC.Util.Substitutable)
+%%]
 %%[(9 hmtyinfer) import({%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn})
 %%]
 
@@ -53,6 +55,7 @@ clDfGamLookupDefault
   :: ( VarLookup gm TyVarId VarMpInfo
      -- , VarLookup gm Ty VarMpInfo
      , VarLookupCmb VarMp gm
+     , VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Pred -> ClassDefaultGam
      -> Maybe VarMp

@@ -105,7 +105,7 @@ instance (VarExtractable p v,VarExtractable info v) => VarExtractable (Constrain
         Just (_,p,_) -> varFreeSet p
         _            -> Set.empty
 
-instance (VarUpdatable p s VarId VarMpInfo,VarUpdatable info s VarId VarMpInfo) => VarUpdatable (Constraint p info) s VarId VarMpInfo where
+instance (VarUpdatable p s,VarUpdatable info s) => VarUpdatable (Constraint p info) s where
   varUpd s      (Prove     p       ) = Prove      (varUpd s p)
   varUpd s      (Assume    p       ) = Assume     (varUpd s p)
   varUpd s      r@(Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=ps})
