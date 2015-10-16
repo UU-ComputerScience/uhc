@@ -79,7 +79,8 @@ instance Keyable p => Keyable (Constraint p info) where
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance (CHRMatchable env p s Key) => CHRMatchable env (Constraint p info) s Key where
+instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
+  type CHRMatchableKey s = Key
   chrMatchTo env s c1 c2
     = do { (_,p1,_) <- cnstrReducablePart c1
          ; (_,p2,_) <- cnstrReducablePart c2

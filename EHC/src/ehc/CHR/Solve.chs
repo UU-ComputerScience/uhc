@@ -427,7 +427,7 @@ chrSolveStateTrace = stTrace
 %%[(9 hmtyinfer || hmtyast) export(chrSolve,chrSolve')
 chrSolve
   :: ( Ord i, Ord p
-     , CHRMatchable env p s Key, CHRCheckable env g s
+     , CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarLookupCmb s s
      , VarUpdatable s s VarId VarMpInfo, VarUpdatable g s VarId VarMpInfo, VarUpdatable i s VarId VarMpInfo, VarUpdatable p s VarId VarMpInfo
@@ -448,7 +448,7 @@ chrSolve env chrStore cnstrs
 
 chrSolve'
   :: ( Ord i, Ord p
-     , CHRMatchable env p s Key, CHRCheckable env g s
+     , CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarLookupCmb s s
      , VarUpdatable s s VarId VarMpInfo, VarUpdatable g s VarId VarMpInfo, VarUpdatable i s VarId VarMpInfo, VarUpdatable p s VarId VarMpInfo
@@ -472,7 +472,7 @@ chrSolve' env chrStore cnstrs
 chrSolve''
   :: forall env p i g s  .
      ( Ord i, Ord p
-     , CHRMatchable env p s Key, CHRCheckable env g s
+     , CHRMatchable env p s, CHRCheckable env g s
      -- , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , VarLookupCmb s s
      , VarUpdatable s s VarId VarMpInfo, VarUpdatable g s VarId VarMpInfo, VarUpdatable i s VarId VarMpInfo, VarUpdatable p s VarId VarMpInfo
@@ -731,7 +731,7 @@ slvIsUsedByPropPart wlUsedIn (chr,(keys,_))
 -- | Match the stored CHR with a set of possible constraints, giving a substitution on success
 slvMatch
   :: ( CHREmptySubstitution s
-     , CHRMatchable env p s Key
+     , CHRMatchable env p s
      , CHRCheckable env g s
      , VarLookupCmb s s
      )
