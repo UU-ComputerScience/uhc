@@ -15,8 +15,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
+{-
 showPP :: PP a => a -> String
 showPP p = disp (pp p) 1000 ""
+-}
 
 trm :: String -> (a -> PP_Doc) -> a -> a
 trm msg pp x = trace msg (trace (showPP (msg >|< ":" >|< pp x)) x)

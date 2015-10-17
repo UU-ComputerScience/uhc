@@ -28,6 +28,14 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constraint type famility instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+type instance CHRMatchableKey VarMp = Key
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constraint
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -45,6 +53,8 @@ data Constraint p info
 %%]]
                     }
   deriving (Eq, Ord, Show)
+
+type instance TTKey (Constraint p info) = TTKey p
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(mkReduction)
@@ -79,8 +89,7 @@ instance Keyable p => Keyable (Constraint p info) where
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
-  type CHRMatchableKey s = Key
+instance (CHRMatchable env p s, TTKey p ~ Key) => CHRMatchable env (Constraint p info) s where
   chrMatchTo env s c1 c2
     = do { (_,p1,_) <- cnstrReducablePart c1
          ; (_,p2,_) <- cnstrReducablePart c2
@@ -89,8 +98,8 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance (TTKeyable p, TTKey (Constraint p info) ~ TTKey p) => TTKeyable (Constraint p info) where
-  type TTKey (Constraint p info) = Key
+instance (TTKeyable p {- , TTKey (Constraint p info) ~ TTKey p -} , TTKey p ~ Key) => TTKeyable (Constraint p info) where
+  -- type TTKey (Constraint p info) = Key
   toTTKey' o c -- = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
     = case cnstrReducablePart c of
         Just (s,p,_) -> ttkAdd' (TT1K_One $ Key_Str s) cs

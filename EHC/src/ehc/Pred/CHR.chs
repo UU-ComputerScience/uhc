@@ -284,7 +284,6 @@ instance CHRCheckable FIIn Guard VarMp where
 
 %%[(9 hmtyinfer)
 instance CHRMatchable FIIn Pred VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo fi subst pr1 pr2
     = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst |+> fiVarMp fi}) pr1 pr2
          ; return subst'
@@ -293,11 +292,9 @@ instance CHRMatchable FIIn Pred VarMp where
 
 %%[(9 hmtyinfer)
 instance CHRMatchable FIIn CHRPredOccCxt VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo e subst (CHRPredOccCxt_Scope1 sc1) (CHRPredOccCxt_Scope1 sc2) = chrMatchTo e subst sc1 sc2
 
 instance CHRMatchable FIIn PredScope VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
                                                                              where mbSc = varmpScopeLookup v1 subst
@@ -311,7 +308,6 @@ instance CHRMatchable FIIn PredScope VarMp where
 
 %%[(9 hmtyinfer)
 instance CHRMatchable FIIn CHRPredOcc VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo fi subst po1 po2
     = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
          ; subst2 <- chrMatchTo fi subst (cpoCxt po1) (cpoCxt po2)
@@ -321,7 +317,6 @@ instance CHRMatchable FIIn CHRPredOcc VarMp where
 
 %%[(10 hmtyinfer)
 instance CHRMatchable FIIn Label VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo _ subst (Label_Var v1) lb2@(Label_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (Label_Var v1) lb2                | isJust mbLb = chrMatchTo e subst (fromJust mbLb) lb2
                                                                      where mbLb = varmpLabelLookup v1 subst
@@ -335,7 +330,6 @@ instance CHRMatchable FIIn Label VarMp where
 
 %%[(10 hmtyinfer)
 instance CHRMatchable FIIn LabelOffset VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo _ subst (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo s subst (LabelOffset_Var v1) of2                      | isJust mbOf = chrMatchTo s subst (fromJust mbOf) of2
                                                                                  where mbOf = varmpOffsetLookup v1 subst

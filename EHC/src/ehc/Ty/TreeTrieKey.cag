@@ -35,38 +35,45 @@ tyTreeTrieKey opts ty
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
+type instance TTKey Ty = Key
+
 instance TTKeyable Ty where
-  type TTKey Ty = Key
   toTTKey' o = tyTreeTrieKey o
 
+type instance TTKey Pred = Key
+
 instance TTKeyable Pred where
-  type TTKey Pred = Key
   toTTKey' o pr = tyTreeTrieKey o $ mkTyPr pr
 
+type instance TTKey PredScope = Key
+
 instance TTKeyable PredScope where
-  type TTKey PredScope = Key
   toTTKey' o (PredScope_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
                                | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
   toTTKey' o (PredScope_Lev l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
 
+type instance TTKey CHRPredOccCxt = Key
+
 instance TTKeyable CHRPredOccCxt where
-  type TTKey CHRPredOccCxt = Key
   toTTKey' o (CHRPredOccCxt_Scope1 sc) = toTTKey' o sc -- for now
 
+type instance TTKey PredOcc = Key
+
 instance TTKeyable PredOcc where
-  type TTKey PredOcc = Key
   toTTKey' o po = toTTKey' o (poPr po)
 
+type instance TTKey CHRPredOcc = Key
+
 instance TTKeyable CHRPredOcc where
-  type TTKey CHRPredOcc = Key
   -- toTTKey' o po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)]
   toTTKeyParentChildren' o po = (TT1K_One $ Key_Str "occ", ttkChildren [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)])
 
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
+type instance TTKey PredOccId = Key
+
 instance TTKeyable PredOccId where
-  type TTKey PredOccId = Key
   toTTKey' o (PredOccId     i) = ttkSingleton $ TT1K_One $ Key_UID i
 %%]
 
@@ -84,14 +91,16 @@ labelTreeTrieKey opts label
 %%]
 
 %%[(10 hmtyinfer || hmtyast) hs
+type instance TTKey LabelOffset = Key
+
 instance TTKeyable LabelOffset where
-  type TTKey LabelOffset = Key
   toTTKey' o (LabelOffset_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
                                  | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
   toTTKey' o (LabelOffset_Off l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
 
+type instance TTKey Label = Key
+
 instance TTKeyable Label where
-  type TTKey Label = Key
   toTTKey' = labelTreeTrieKey
 %%]
 

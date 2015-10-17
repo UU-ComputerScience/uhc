@@ -462,6 +462,7 @@ chrSimplifySolveToRedGraph
      , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
+     , TTKey p ~ Key
      ) => FIIn -> CHRStore p i g s -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
           -> ( ConstraintToInfoMap p i

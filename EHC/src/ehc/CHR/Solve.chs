@@ -437,6 +437,7 @@ chrSolve
      , PP g, PP i, PP p -- for debugging
 %%][100
 %%]]
+     , TTKey p ~ Key
      )
      => env
      -> CHRStore p i g s
@@ -458,6 +459,7 @@ chrSolve'
      , PP g, PP i, PP p -- for debugging
 %%][100
 %%]]
+     , TTKey p ~ Key
      )
      => env
      -> CHRStore p i g s
@@ -482,6 +484,7 @@ chrSolve''
      , PP g, PP i, PP p -- for debugging
 %%][100
 %%]]
+     , TTKey p ~ Key
      )
      => env
      -> CHRStore p i g s
@@ -734,6 +737,7 @@ slvMatch
      , CHRMatchable env p s
      , CHRCheckable env g s
      , VarLookupCmb s s
+     , TTKey p ~ Key
      )
      => env -> StoredCHR p i g s -> [Constraint p i] -> Maybe s
 slvMatch env chr cnstrs

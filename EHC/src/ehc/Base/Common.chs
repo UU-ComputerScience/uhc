@@ -283,7 +283,7 @@ ppPair :: (PP a, PP b) => (a,b) -> PP_Doc
 ppPair (x,y) = ppParens (pp x >|< "," >|< pp y)
 %%]
 
-%%[8 export(showPP)
+%%[8888 export(showPP)
 showPP :: PP a => a -> String
 showPP x = disp (pp x) 100 ""
 %%]
@@ -770,7 +770,8 @@ data Presence = Present | Absent deriving (Eq,Ord,Show)
 %%% Combinations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(combineToDistinguishedElts)
+-- To uhc-util
+%%[9999 export(combineToDistinguishedElts)
 -- | Combine [[x1..xn],..,[y1..ym]] to [[x1..y1],[x2..y1],..,[xn..ym]].
 --   Each element [xi..yi] is distinct based on the the key k in xi==(k,_)
 combineToDistinguishedElts :: Eq k => [AssocL k v] -> [AssocL k v]
