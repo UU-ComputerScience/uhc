@@ -91,7 +91,11 @@ SEM Decl
                                                     =   mkDataConstrTys1 (assocLElts @clsAllFldTyL, @clsAllFldTyL) @dataDictTy
                                 .   dataDictQuUnConTy
                                                     =   mkDataConstrTys2 (tvarKi @lhs.finTyKiGam @tyPrExpr.intlTyKiGam @lhs.tvKiVarMp emptyVarMp) @dataDictConProdTy @dataDictTy
-                lhs             .   patTyGam        =   gamAdd @dataDictNm (TyGamInfo (appCon @dataDictNm)) @lhs.patTyGam
+                lhs             .   patTyGam        =   gamAdd @dataDictNm (TyGamInfo (appCon @dataDictNm)
+%%[[(8 counting)
+                                                                            [] (CA.TyError "Class_patTyGam")
+%%]]
+                                                                  ) @lhs.patTyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
                                 .   patClGam2       =   gamTopUpdate @clgiUpd @clNm @lhs.patClGam2
                                 .	patValGam		=	mkDataConstrValGam @dataDictNm @dataDictConTy @dataDictQuUnConTy `gamUnion` @lhs.patValGam
