@@ -457,9 +457,9 @@ patchUnresolvedWithAssumption env unres redGraph evidMp
 %%[(9 hmtyinfer) export(chrSimplifySolveToRedGraph)
 chrSimplifySolveToRedGraph
   :: ( Ord p, Ord i
-     , CHRMatchable FIIn p s Key, CHRCheckable FIIn g s
+     , CHRMatchable FIIn p s, CHRCheckable FIIn g s
      , VarLookupCmb s s
-     , VarUpdatable s s VarId VarMpInfo, VarUpdatable g s VarId VarMpInfo, VarUpdatable i s VarId VarMpInfo, VarUpdatable p s VarId VarMpInfo
+     , VarUpdatable s s, VarUpdatable g s, VarUpdatable i s, VarUpdatable p s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      ) => FIIn -> CHRStore p i g s -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i

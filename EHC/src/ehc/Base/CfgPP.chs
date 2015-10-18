@@ -164,6 +164,7 @@ ppCTagExtensive' x t
 ppCTagsMp :: CfgPP' x => x -> CTagsMp -> PP_Doc
 ppCTagsMp x
   = mkl (mkl (ppCTag' x))
-  where mkl pe = ppCurlysSemisBlock . map (\(n,e) -> cfgppHsName x n >-< indent 1 ("=" >#< pe e))
+  where mkl :: (x -> PP_Doc) -> AssocL HsName x -> PP_Doc
+        mkl pe = ppCurlysSemisBlock . map (\(n,e) -> cfgppHsName x n >-< indent 1 ("=" >#< pe e))
 %%]
 

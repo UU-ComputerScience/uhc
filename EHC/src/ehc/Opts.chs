@@ -691,6 +691,7 @@ ehcCmdLineOpts = sortOptions $
                                    | otherwise            = Nothing
                                    where l = r ehcOptOptimizationLevel maxlev ml
                                          s = r ehcOptOptimizationScope maxscp ms
+                                         r :: Enum x => (EHCOpts -> x) -> Int -> Maybe Char -> Maybe Int
                                          r dflt mx m
                                            | x >= 0 && x < mx = Just x
                                            | otherwise        = Nothing

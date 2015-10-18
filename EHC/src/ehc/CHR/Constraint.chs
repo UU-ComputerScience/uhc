@@ -79,7 +79,8 @@ instance Keyable p => Keyable (Constraint p info) where
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance (CHRMatchable env p s Key) => CHRMatchable env (Constraint p info) s Key where
+instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
+  type CHRMatchableKey s = Key
   chrMatchTo env s c1 c2
     = do { (_,p1,_) <- cnstrReducablePart c1
          ; (_,p2,_) <- cnstrReducablePart c2
@@ -88,8 +89,8 @@ instance (CHRMatchable env p s Key) => CHRMatchable env (Constraint p info) s Ke
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance TTKeyable p Key => TTKeyable (Constraint p info) Key where
-  -- type TTKey (Constraint p info) = TTKey p
+instance (TTKeyable p, TTKey (Constraint p info) ~ TTKey p) => TTKeyable (Constraint p info) where
+  type TTKey (Constraint p info) = Key
   toTTKey' o c -- = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
     = case cnstrReducablePart c of
         Just (s,p,_) -> ttkAdd' (TT1K_One $ Key_Str s) cs
@@ -104,7 +105,7 @@ instance (VarExtractable p v,VarExtractable info v) => VarExtractable (Constrain
         Just (_,p,_) -> varFreeSet p
         _            -> Set.empty
 
-instance (VarUpdatable p s VarId VarMpInfo,VarUpdatable info s VarId VarMpInfo) => VarUpdatable (Constraint p info) s VarId VarMpInfo where
+instance (VarUpdatable p s,VarUpdatable info s) => VarUpdatable (Constraint p info) s where
   varUpd s      (Prove     p       ) = Prove      (varUpd s p)
   varUpd s      (Assume    p       ) = Assume     (varUpd s p)
   varUpd s      r@(Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=ps})

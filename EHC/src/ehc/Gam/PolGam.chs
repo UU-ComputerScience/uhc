@@ -112,7 +112,7 @@ initPolGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(17 hmtyinfer || hmtyast).Substitutable.inst.PolGamInfo
-instance VarUpdatable PolGamInfo VarMp VarId VarMpInfo where
+instance VarUpdatable PolGamInfo VarMp where
   s `varUpd` pgi  = pgi { pgiPol = s `varUpd` pgiPol pgi }
   s `varUpdCyc` pgi = substLift pgiPol (\i x -> i {pgiPol = x}) varUpdCyc s pgi
 
