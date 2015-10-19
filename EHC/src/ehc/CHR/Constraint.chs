@@ -225,11 +225,12 @@ cnstrMpUnions = Map.unionsWith (++)
 %%% Observations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(cnstrRequiresSolve)
+%%[(9 hmtyinfer || hmtyast)
 -- | Predicate for whether solving is required
-cnstrRequiresSolve :: Constraint p info -> Bool
-cnstrRequiresSolve (Reduction {}) = False
-cnstrRequiresSolve _              = True
+instance IsConstraint (Constraint p info) where
+-- cnstrRequiresSolve :: Constraint p info -> Bool
+  cnstrRequiresSolve (Reduction {}) = False
+  cnstrRequiresSolve _              = True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
