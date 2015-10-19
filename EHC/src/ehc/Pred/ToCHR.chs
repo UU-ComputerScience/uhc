@@ -33,11 +33,11 @@ Conversion from Pred to CHR.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(ScopedPredStore,ScopedPredCHR,ScopedPredStoreL)
-type PredStore  p g s info = CHRStore (Constraint p info) g s
-type PredStoreL p g s info = [CHR (Constraint p info) g s]
+type PredStore  p g s info = CHRStore (Constraint p info) g
+type PredStoreL p g s info = [Rule (Constraint p info) g]
 type ScopedPredStore  = PredStore  CHRPredOcc Guard VarMp RedHowAnnotation
 type ScopedPredStoreL = PredStoreL CHRPredOcc Guard VarMp RedHowAnnotation
-type ScopedPredCHR    = CHR CHRConstraint Guard VarMp
+type ScopedPredCHR    = Rule CHRConstraint Guard
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,7 +237,9 @@ mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotatio
 mkClassSimplChrs env rules (context, head, infos)
   = simps
   where simps        = chrStoreFromElems $ mapTrans (Set.fromList [head1]) [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
-        superClasses = chrSolve env rules (map (\p -> Assume $ mkCHRPredOcc p sc1) context)
+        (superClassesWork, superClassesDone, _ :: SolveTrace CHRConstraint Guard VarMp)
+                     = chrSolve' env rules (map (\p -> Assume $ mkCHRPredOcc p sc1) context)
+        superClasses = superClassesWork ++ superClassesDone
         graph        = mkRedGraphFromReductions superClasses
         head1        = mkCHRPredOcc head sc1
         head2        = mkCHRPredOcc head sc2
@@ -463,7 +465,7 @@ chrSimplifySolveToRedGraph
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      , TTKey p ~ Key
-     ) => FIIn -> CHRStore (Constraint p i) g s -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
+     ) => FIIn -> CHRStore (Constraint p i) g -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
           -> ( ConstraintToInfoMap p i
              , SimplifyResult p i g s
