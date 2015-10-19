@@ -108,7 +108,9 @@ instance (TTKeyable p {- , TTKey (Constraint p info) ~ TTKey p -} , TTKey p ~ Ke
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance (VarExtractable p v,VarExtractable info v) => VarExtractable (Constraint p info) v where
+type instance ExtrValVarKey (Constraint p info) = ExtrValVarKey p
+
+instance (VarExtractable p) => VarExtractable (Constraint p info) where
   varFreeSet c
     = case cnstrReducablePart c of
         Just (_,p,_) -> varFreeSet p
@@ -226,9 +228,7 @@ cnstrMpUnions = Map.unionsWith (++)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast)
--- | Predicate for whether solving is required
 instance IsConstraint (Constraint p info) where
--- cnstrRequiresSolve :: Constraint p info -> Bool
   cnstrRequiresSolve (Reduction {}) = False
   cnstrRequiresSolve _              = True
 %%]

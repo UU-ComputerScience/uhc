@@ -115,7 +115,9 @@ instance VarUpdatable PolGamInfo VarMp where
   s `varUpd` pgi  = pgi { pgiPol = s `varUpd` pgiPol pgi }
   s `varUpdCyc` pgi = substLift pgiPol (\i x -> i {pgiPol = x}) varUpdCyc s pgi
 
-instance VarExtractable PolGamInfo TyVarId where
+type instance ExtrValVarKey PolGamInfo = TyVarId
+
+instance VarExtractable PolGamInfo where
   varFreeSet pgi = varFreeSet (pgiPol pgi)
 %%]
 

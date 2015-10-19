@@ -71,15 +71,17 @@ instance (PP info, PP p) => PP (Evidence p info) where
 %%]
 
 %%[(9 hmtyinfer)
-instance VarExtractable p v => VarExtractable (Evidence p info) v where
+type instance ExtrValVarKey (Evidence p info) = ExtrValVarKey p
+
+instance (VarExtractable p) => VarExtractable (Evidence p info) where
   varFreeSet            (Evid_Unresolved  p   _ )    = varFreeSet p
   varFreeSet            (Evid_Proof       p _ es)    = Set.unions $ varFreeSet p : map varFreeSet es
   varFreeSet            (Evid_Recurse     p     )    = varFreeSet p
   varFreeSet            (Evid_Ambig       p  ess)    = Set.unions $ varFreeSet p : map (Set.unions . map varFreeSet . snd) ess
 
 instance VarUpdatable p s => VarUpdatable (Evidence p info) s where
-  -- type VarUpdKey s = VarUpdKey s
-  -- type VarUpdVal s = VarUpdVal s
+  -- type SubstVarKey s = SubstVarKey s
+  -- type SubstVarVal s = SubstVarVal s
   varUpd s     (Evid_Unresolved  p   u )    = Evid_Unresolved (varUpd s p) u
   varUpd s     (Evid_Proof       p i es)    = Evid_Proof      (varUpd s p) i (map (varUpd s) es)
   varUpd s     (Evid_Recurse     p     )    = Evid_Recurse    (varUpd s p)  

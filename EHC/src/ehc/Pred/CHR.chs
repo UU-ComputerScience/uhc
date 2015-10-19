@@ -91,13 +91,17 @@ instance PP Guard where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-instance VarExtractable CHRPredOccCnstrMp TyVarId where
+type instance ExtrValVarKey CHRPredOccCnstrMp = TyVarId
+
+instance VarExtractable CHRPredOccCnstrMp where
   varFreeSet        x = Set.unions [ varFreeSet k | k <- Map.keys x ]
 
 instance VarUpdatable CHRPredOccCnstrMp VarMp where
   varUpd s x = Map.mapKeysWith (++) (varUpd s) x
 
-instance VarExtractable Guard TyVarId where
+type instance ExtrValVarKey Guard = TyVarId
+
+instance VarExtractable Guard where
   varFreeSet        (HasStrictCommonScope   p1 p2 p3) = Set.unions $ map varFreeSet [p1,p2,p3]
   varFreeSet        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map varFreeSet [p1,p2,p3]
   varFreeSet        (IsVisibleInScope       p1 p2   ) = Set.unions $ map varFreeSet [p1,p2]
@@ -130,17 +134,21 @@ instance VarUpdatable Guard VarMp where
 %%]
 
 %%[(9 hmtyinfer)
-instance VarExtractable VarUIDHsName TyVarId where
+type instance ExtrValVarKey VarUIDHsName = TyVarId
+
+instance VarExtractable VarUIDHsName where
   varFreeSet          (VarUIDHs_Var i)  = Set.singleton i
   varFreeSet          _                 = Set.empty
 
 -- instance VarUpdatable VarUIDHsName VarMp where
-instance (VarLookup m (VarUpdKey m) (VarUpdVal m), VarUpdKey m ~ ImplsVarId, VarUpdVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
+instance (VarLookup m (SubstVarKey m) (SubstVarVal m), SubstVarKey m ~ ImplsVarId, SubstVarVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
   varUpd s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 
 %%[(9 hmtyinfer)
-instance VarExtractable RedHowAnnotation TyVarId where
+type instance ExtrValVarKey RedHowAnnotation = TyVarId
+
+instance VarExtractable RedHowAnnotation where
   varFreeSet        (RedHow_Assumption   vun sc)  = Set.unions [varFreeSet vun,varFreeSet sc]
 %%[[10
   varFreeSet        (RedHow_ByLabel      l o sc)  = Set.unions [varFreeSet l,varFreeSet o,varFreeSet sc]
@@ -374,12 +382,12 @@ toOrdering o
 
 %%[(9 hmtyinfer) export(isLetProveCandidate,isLetProveFailure)
 -- | Consider a pred for proving if: no free tvars, or its free tvars do not coincide with those globally used
-isLetProveCandidate :: (VarExtractable x v) => Set.Set v -> x -> Bool
+isLetProveCandidate :: (VarExtractable x) => Set.Set (ExtrValVarKey x) -> x -> Bool
 isLetProveCandidate glob x
   = Set.null fv || Set.null (fv `Set.intersection` glob)
   where fv = varFreeSet x
 
-isLetProveFailure :: (VarExtractable x v) => Set.Set v -> x -> Bool
+isLetProveFailure :: (VarExtractable x) => Set.Set (ExtrValVarKey x) -> x -> Bool
 isLetProveFailure glob x
   = Set.null fv
   where fv = varFreeSet x

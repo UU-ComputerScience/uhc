@@ -227,19 +227,23 @@ instance (Eq tk, VarUpdatable vv subst) => VarUpdatable (Gam tk vv) subst where
                      where (ll',m) = unzip $ map (assocLMapUnzip . assocLMapElt (s `varUpdCyc`)) ll
 %%]]
 
-instance (Eq k,Eq tk,VarExtractable vv k) => VarExtractable (Gam tk vv) k where
+type instance ExtrValVarKey (Gam tk vv) = ExtrValVarKey vv
+
+instance (Eq (ExtrValVarKey vv), Eq tk, VarExtractable vv) => VarExtractable (Gam tk vv) where
   varFreeSet (Gam ll)    =   Set.unions . map varFreeSet . map snd . concat $ ll
 %%]
 
 %%[(8 hmtyinfer || hmtyast).Substitutable.SGam -2.Substitutable.Gam
-instance (Ord tk, Ord (VarUpdKey subst), VarUpdatable vv subst) => VarUpdatable (SGam tk vv) subst where
+instance (Ord tk, Ord (SubstVarKey subst), VarUpdatable vv subst) => VarUpdatable (SGam tk vv) subst where
   s `varUpd`  g    =   gamMapElts (s `varUpd`) g
 %%[[4
   s `varUpdCyc` g    =   (g',varmpUnions $ gamElts gm)
               where (g',gm) = sgamUnzip $ gamMapElts (s `varUpdCyc`) g
 %%]]
 
-instance (Ord tk,Ord k,VarExtractable vv k) => VarExtractable (SGam tk vv) k where
+type instance ExtrValVarKey (SGam tk vv) = ExtrValVarKey vv
+
+instance (Ord tk, Ord (ExtrValVarKey vv), VarExtractable vv) => VarExtractable (SGam tk vv) where
   varFreeSet g    =   Set.unions $ map varFreeSet $ gamElts g
 %%]
 

@@ -33,7 +33,7 @@ Conversion from Pred to CHR.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(ScopedPredStore,ScopedPredCHR,ScopedPredStoreL)
-type PredStore  p g s info = CHRStore p info g s
+type PredStore  p g s info = CHRStore (Constraint p info) g s
 type PredStoreL p g s info = [CHR (Constraint p info) g s]
 type ScopedPredStore  = PredStore  CHRPredOcc Guard VarMp RedHowAnnotation
 type ScopedPredStoreL = PredStoreL CHRPredOcc Guard VarMp RedHowAnnotation
@@ -306,7 +306,7 @@ mkInstanceChr (context, hd, i, s)
 %%[(9 hmtyinfer) export(SimplifyResult(..),emptySimplifyResult)
 data SimplifyResult p i g s
   = SimplifyResult
-      { simpresSolveState		:: SolveState p i g s
+      { simpresSolveState		:: SolveState (Constraint p i) g s
       , simpresRedGraph			:: RedGraph p i
 
       -- for debugging only:
@@ -463,7 +463,7 @@ chrSimplifySolveToRedGraph
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      , TTKey p ~ Key
-     ) => FIIn -> CHRStore p i g s -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
+     ) => FIIn -> CHRStore (Constraint p i) g s -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
           -> ( ConstraintToInfoMap p i
              , SimplifyResult p i g s
