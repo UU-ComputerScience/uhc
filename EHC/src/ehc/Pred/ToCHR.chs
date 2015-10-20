@@ -37,7 +37,7 @@ type PredStore  p g s info = CHRStore (Constraint p info) g
 type PredStoreL p g s info = [Rule (Constraint p info) g]
 type ScopedPredStore  = PredStore  CHRPredOcc Guard VarMp RedHowAnnotation
 type ScopedPredStoreL = PredStoreL CHRPredOcc Guard VarMp RedHowAnnotation
-type ScopedPredCHR    = Rule CHRConstraint Guard
+type ScopedPredCHR    = Rule CHRPredConstraint Guard
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,7 +237,7 @@ mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotatio
 mkClassSimplChrs env rules (context, head, infos)
   = simps
   where simps        = chrStoreFromElems $ mapTrans (Set.fromList [head1]) [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
-        (superClassesWork, superClassesDone, _ :: SolveTrace CHRConstraint Guard VarMp)
+        (superClassesWork, superClassesDone, _ :: SolveTrace CHRPredConstraint Guard VarMp)
                      = chrSolve' env rules (map (\p -> Assume $ mkCHRPredOcc p sc1) context)
         superClasses = superClassesWork ++ superClassesDone
         graph        = mkRedGraphFromReductions superClasses
@@ -414,7 +414,7 @@ partitionUnresolved2AssumableAndOthers unresCnstrMp
 -- | Group unresolved constraints, reducing the various scopes to the outermost scope.
 --   Find assume's wich have a common scope prefix, then share these.
 --   Assumption: we will never share outer scopes because we only get passed inner scopes, because these will be abstracted over in bindings of a let expression.
-shareUnresolvedAssumptionsByScope :: CHRPredOccCnstrTraceMp -> [(CHRConstraint,(PredScope,CHRPredOccCnstrTraceMp))]
+shareUnresolvedAssumptionsByScope :: CHRPredOccCnstrTraceMp -> [(CHRPredConstraint,(PredScope,CHRPredOccCnstrTraceMp))]
 shareUnresolvedAssumptionsByScope unres
   = [ ( c
       , ( -- the common prefix off all scopes, i.e. the most global scope
@@ -458,6 +458,7 @@ patchUnresolvedWithAssumption env unres redGraph evidMp
 
 %%[(9 hmtyinfer) export(chrSimplifySolveToRedGraph)
 chrSimplifySolveToRedGraph
+{-
   :: ( Ord p, Ord i
      , CHRMatchable FIIn p s, CHRCheckable FIIn g s
      , VarLookupCmb s s
@@ -465,6 +466,10 @@ chrSimplifySolveToRedGraph
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      , TTKey p ~ Key
+-}
+  :: ( IsCHRSolvable FIIn (Constraint p i) g s
+     -- , TTKey p ~ Key
+     , Ord p, Ord i
      ) => FIIn -> CHRStore (Constraint p i) g -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
           -> ( ConstraintToInfoMap p i

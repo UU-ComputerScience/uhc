@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.CHR} import(UHC.Util.CHR,{%{EH}CHR.Key},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.CHR} import(UHC.Util.CHR,{%{EH}CHR.Key},{%{EH}CHR.Solve},{%{EH}CHR.Constraint})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR}) export(module {%{EH}Pred.CommonCHR})
@@ -347,6 +347,18 @@ instance CHRMatchable FIIn LabelOffset VarMp where
   chrMatchTo _ subst (LabelOffset_Var v1) of2                                    = Just $ v1 `varmpOffsetUnit` of2
   chrMatchTo _ subst (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2    = Just emptyVarMp
   chrMatchTo _ subst _                    _                                      = Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR instances: IsCHRConstraint, IsCHRGuard, IsCHRSolvable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+instance IsCHRConstraint FIIn CHRPredConstraint VarMp
+
+instance IsCHRGuard FIIn Guard VarMp
+
+instance IsCHRSolvable FIIn CHRPredConstraint Guard VarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
