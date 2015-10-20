@@ -467,9 +467,9 @@ chrSimplifySolveToRedGraph
      , PP g, PP i, PP p -- for debugging
      , TTKey p ~ Key
 -}
-  :: ( IsCHRSolvable FIIn (Constraint p i) g s
-     -- , TTKey p ~ Key
-     , Ord p, Ord i
+  :: ( Ord p, Ord i
+     , IsCHRSolvable FIIn (Constraint p i) g s
+     -- , IsCHRSolvable FIIn s
      ) => FIIn -> CHRStore (Constraint p i) g -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
           -> ( ConstraintToInfoMap p i

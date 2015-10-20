@@ -12,3 +12,7 @@ Assumptions (to be documented further)
 -- no additions, for now, moved to uhc-util
 %%]
 
+%%[(9999 hmtyinfer || hmtyast) module {%{EH}CHR.Solve} import(UHC.Util.CHR.Solve.TreeTrie.Poly) export(module UHC.Util.CHR.Solve.TreeTrie.Poly)
+-- no additions, for now, moved to uhc-util
+%%]
+
