@@ -150,10 +150,10 @@ instance PP ByScopeRedHow where
 
 %%[(9 hmtyinfer).mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
 mkProveConstraint :: Pred -> UID -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
-mkProveConstraint pr i sc =  (Prove (mkCHRPredOcc pr sc),RedHow_ProveObl i sc)
+mkProveConstraint pr i sc =  (mkProve (mkCHRPredOcc pr sc),RedHow_ProveObl i sc)
 
 mkAssumeConstraint'' :: Pred -> VarUIDHsName -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
-mkAssumeConstraint'' pr vun sc =  (Assume (mkCHRPredOcc pr sc),RedHow_Assumption vun sc)
+mkAssumeConstraint'' pr vun sc =  (mkAssume (mkCHRPredOcc pr sc),RedHow_Assumption vun sc)
 
 mkAssumeConstraint' :: Pred -> UID -> HsName -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
 mkAssumeConstraint' pr i n sc =  mkAssumeConstraint'' pr (VarUIDHs_Name i n) sc
@@ -164,10 +164,10 @@ mkAssumeConstraint pr i sc =  mkAssumeConstraint'' pr (VarUIDHs_UID i) sc
 
 %%[(99 hmtyinfer) -9.mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
 mkProveConstraint :: Range -> Pred -> UID -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
-mkProveConstraint r pr i sc =  (Prove (mkCHRPredOccRng r pr sc),RedHow_ProveObl i sc)
+mkProveConstraint r pr i sc =  (mkProve (mkCHRPredOccRng r pr sc),RedHow_ProveObl i sc)
 
 mkAssumeConstraint'' :: Range -> Pred -> VarUIDHsName -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
-mkAssumeConstraint'' r pr vun sc =  (Assume (mkCHRPredOccRng r pr sc),RedHow_Assumption vun sc)
+mkAssumeConstraint'' r pr vun sc =  (mkAssume (mkCHRPredOccRng r pr sc),RedHow_Assumption vun sc)
 
 mkAssumeConstraint' :: Range -> Pred -> UID -> HsName -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
 mkAssumeConstraint' r pr i n sc =  mkAssumeConstraint'' r pr (VarUIDHs_Name i n) sc
@@ -179,7 +179,7 @@ mkAssumeConstraint r pr i sc =  mkAssumeConstraint'' r pr (VarUIDHs_UID i) sc
 %%[(9 hmtyinfer) export(patchToAssumeConstraint)
 patchToAssumeConstraint :: UID -> PredScope -> (PredScope -> RedHowAnnotation -> x -> x) -> (CHRPredConstraint,x) -> (CHRPredConstraint,x)
 patchToAssumeConstraint i sc set (c,x)
-  = (Assume (pr {cpoCxt = cx {cpocxScope = sc}}), set sc (RedHow_Assumption (VarUIDHs_UID i) sc) x)
+  = (mkAssume (pr {cpoCxt = cx {cpocxScope = sc}}), set sc (RedHow_Assumption (VarUIDHs_UID i) sc) x)
   where pr = cnstrPred c
         cx = cpoCxt pr
 %%]
@@ -207,7 +207,7 @@ predOccCnstrMpLiftScope :: PredScope -> CHRPredOccCnstrMp -> CHRPredOccCnstrMp
 predOccCnstrMpLiftScope sc
   = Map.mapKeysWith (++) c . Map.map (map i)
   where c (Prove o@(CHRPredOcc {cpoCxt=cx}))
-            = Prove (o {cpoCxt = cx {cpocxScope = sc}})
+            = mkProve (o {cpoCxt = cx {cpocxScope = sc}})
         c x = x
         i (RedHow_ProveObl id _)
             = RedHow_ProveObl id sc

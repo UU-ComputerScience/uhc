@@ -1,0 +1,292 @@
+%%[0 lhs2tex
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing of internal AST structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This pretty printed AST representation displays the tree structure,
+together with tracing info, meant for debugging. The basic
+definitions only show the structure with placeholder local
+info_<variant> attributes; additional per aspect definitions redefine
+the placeholders.
+
+%%[1 hs
+ppNestTrPP :: PP a => EHCOpts -> [a] -> [PP_Doc] -> [PP_Doc] -> TrPP -> PP_Doc
+ppNestTrPP opts nms attrs ps trpp
+  = ppListSep "" "" "_" nms
+    >#< (   (if null attrs then empty else ppSpaced attrs)
+        >-< trpp
+        )
+    >-< indent 2 (vlist ps)
+
+ppTrNm :: HsName -> PP_Doc
+ppTrNm = text . show . show
+%%]
+
+%%[1
+ATTR AllNT AGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
+
+SEM AGItf
+  | AGItf       lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] @trppHere
+
+SEM Decl
+  | Val         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] @trppHere
+  | TySig       lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","TySig"] [ppTrNm @nm] [@tyExpr.ppAST] @trppHere
+
+SEM Expr
+  | IConst      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","IConst"] [@pp] [] @trppHere
+  | CConst      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","CConst"] [@pp] [] @trppHere
+  | Var         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","Var"] [ppTrNm @nm] [] @trppHere
+  | Con         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","Con"] [ppTrNm @nm] [] @trppHere
+  | Let         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","Let"] [] [@decls.ppAST] @trppHere
+                                        >-< @body.ppAST
+  | App         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","App"] [] [@func.ppAST,@arg.ppAST] @trppHere
+  | Parens      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","Parens"] [] [@expr.ppAST] @trppHere
+  | AppTop      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] @trppHere
+  | Lam         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] @trppHere
+  | TypeAs      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","TypeAs"] [pp @isScoped] [@expr.ppAST,@tyExpr.ppAST] @trppHere
+
+SEM PatExpr
+  | IConst      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","IConst"] [@pp] [] @trppHere
+  | CConst      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","CConst"] [@pp] [] @trppHere
+  | Var         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","Var"] [ppTrNm @nm] [] @trppHere
+  | VarAs       lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","VarAs"] [ppTrNm @nm] [@patExpr.ppAST] @trppHere
+  | Con         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","Con"] [ppTrNm @nm] [] @trppHere
+  | App         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","App"] [] [@func.ppAST,@arg.ppAST] @trppHere
+  | Parens      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","Parens"] [] [@patExpr.ppAST] @trppHere
+  | AppTop      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","AppTop"] [] [@patExpr.ppAST] @trppHere
+  
+SEM TyExpr
+  | Con         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Con"] [ppTrNm @nm] [] @trppHere
+  | App         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","App"] [] [@func.ppAST,@arg.ppAST] @trppHere
+  | Parens      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Parens"] [] [@tyExpr.ppAST] @trppHere
+  | AppTop      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","AppTop"] [] [@tyExpr.ppAST] @trppHere
+
+SEM Decls
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Decls","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Decls","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+%%]
+
+%%[2
+SEM TyExpr
+  | Wild        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Wild"] [] [] @trppHere
+  | Mono        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Mono"] [] [] @trppHere
+
+%%]
+
+
+%%[3
+SEM TyExpr
+  | Var         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Var"] [ppTrNm @nm] [] @trppHere
+  | VarWild     lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","VarWild"] [ppTrNm @nm] [] @trppHere
+%%]
+
+%%[4
+SEM Expr
+  | AppImpred   lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","AppImpred"] [] [@func.ppAST,@arg.ppAST] @trppHere
+
+SEM PatExpr
+  | TypeAs      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","TypeAs"] [] [@patExpr.ppAST,@tyExpr.ppAST] @trppHere
+
+SEM TyExpr
+  | Quant       lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Quant"] [text (showTyQu @qu),ppTrNm @tyVar] [@tyExpr.ppAST] @trppHere
+%%]
+
+%%[5
+SEM Decl
+  | Data        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","Data"] [ppTrNm @tyNm] [@tyVars.ppAST,@constrs.ppAST] @trppHere
+
+SEM Expr
+  | SConst      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","SConst"] [@pp] [] @trppHere
+  | Case        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","Case"] [] [@expr.ppAST,@alts.ppAST] @trppHere
+
+SEM PatExpr
+  | SConst      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","SConst"] [@pp] [] @trppHere
+
+SEM CaseAlt
+  | Pat         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["CaseAlt","Pat"] [] [@patExpr.ppAST,@expr.ppAST] @trppHere
+
+SEM CaseAlts
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["CaseAlts","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["CaseAlts","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+
+SEM TyExprs
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExprs","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExprs","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+
+SEM TyVar
+  | Var         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyVar","Var"] [ppTrNm @nm] [] @trppHere
+
+SEM TyVars
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyVars","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyVars","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+
+SEM DataConstr
+  | Constr      loc     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstr","Constr"] [ppTrNm @conNm]
+                                                             [ @fields.ppAST
+%%[[31
+                                                             , @mbGadtTyExpr.ppAST
+%%]]
+%%[[41
+                                                             , @eqs.ppAST
+%%]]
+                                                             ] @trppHere
+
+SEM DataConstrs
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstrs","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstrs","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+%%]
+
+%%[7
+SEM Expr
+  | DataFields  loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","DataFields"] [] [@dataFieldExpr.ppAST] @trppHere
+  | Rec         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","Rec"] [] [@recExpr.ppAST] @trppHere
+  | Sel         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","Sel"] [ppTrNm @lbl] [@expr.ppAST] @trppHere
+
+SEM PatExpr
+  | DataFields  loc     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","DataFields"] [] [@dataFieldPatExpr.ppAST] @trppHere
+  | Rec         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["PatExpr","Rec"] [] [@recPatExpr.ppAST] @trppHere
+
+SEM TyExpr
+  | Row         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Row"] [] [@rowTyExpr.ppAST] @trppHere
+
+SEM RecExpr
+  | Empty       loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RecExpr","Empty"] [] [] @trppHere
+  | Ext         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RecExpr","Ext"] [ppTrNm @nm] [@recExpr.ppAST,@expr.ppAST] @trppHere
+  | Upd         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RecExpr","Upd"] [ppTrNm @nm] [@recExpr.ppAST,@expr.ppAST] @trppHere
+  | Expr        loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RecExpr","Expr"] [] [@expr.ppAST] @trppHere
+
+SEM RecPatExpr
+  | Empty       loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RecPatExpr","Empty"] [] [] @trppHere
+  | Ext         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RecPatExpr","Ext"] [ppTrNm @nm] [@recPatExpr.ppAST,@patExpr.ppAST] @trppHere
+  | Expr        loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RecPatExpr","Expr"] [] [@patExpr.ppAST] @trppHere
+
+SEM RowTyExpr
+  | Empty       loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RowTyExpr","Empty"] [] [] @trppHere
+  | Ext         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RowTyExpr","Ext"] [ppTrNm @nm] [@rowTyExpr.ppAST,@tyExpr.ppAST] @trppHere
+
+SEM DataField
+  | Field       loc     .  ppAST    =   ppNestTrPP @lhs.opts ["DataField","Field"] [pp (maybe [] (map ppTrNm) @mbLabels)] [@tyExpr.ppAST] @trppHere
+
+SEM DataFields
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataFields","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataFields","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+
+SEM DataFieldExpr
+  | Con         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["DataFieldExpr","Con"] [ppTrNm @nm] [] @trppHere
+  | Upd         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["DataFieldExpr","Upd"] [ppTrNm @nm] [@dataFieldExpr.ppAST,@expr.ppAST] @trppHere
+  | Expr        loc     .  ppAST    =   ppNestTrPP @lhs.opts ["DataFieldExpr","Expr"] [] [@expr.ppAST] @trppHere
+
+SEM DataFieldPatExpr
+  | Con         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["DataFieldPatExpr","Con"] [ppTrNm @nm] [] @trppHere
+  | Ext         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["DataFieldPatExpr","Ext"] [ppTrNm @nm] [@dataFieldPatExpr.ppAST,@patExpr.ppAST] @trppHere
+%%]
+
+%%[8
+SEM Decl
+  | FFI         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","FFI"] [pp (show @impEnt),ppTrNm @nm] [@tyExpr.ppAST] @trppHere
+%%]
+
+%%[9
+SEM RowTyExpr
+  | Var         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["RowTyExpr","Var"] [ppTrNm @nm] [] @trppHere
+
+SEM TyExpr
+  | Pred        loc     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Pred"] [] [@prExpr.ppAST] @trppHere
+
+SEM PrExpr
+  | Class       loc     .  ppAST    =   ppNestTrPP @lhs.opts ["PrExpr","Class"] [ppTrNm @nm] [@tyExprs.ppAST] @trppHere
+  | Arrow       loc     .  ppAST    =   ppNestTrPP @lhs.opts ["PrExpr","Arrow"] [] [@arg.ppAST,@res.ppAST] @trppHere
+
+SEM Decl
+  | Class       loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","Class"] [] [ @tyPrExpr.ppAST
+%%[[15
+                                                                                 , @funcDeps.ppAST
+%%]]
+                                                                                 , @decls.ppAST] @trppHere
+  | Instance    loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppTrNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] @trppHere
+  | InstanceIntro
+                loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","InstanceIntro"] [] [@expr.ppAST,@prExpr.ppAST] @trppHere
+  | Default     loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","Default"] [ppTrNm @nm] [@tyExprs.ppAST] @trppHere
+%%]
+
+%%[10
+SEM Expr
+  | DynVar      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","DynVar"] [ppTrNm @nm] [] @trppHere
+
+SEM PrExpr
+  | Lacks       loc     .  ppAST    =   ppNestTrPP @lhs.opts ["PrExpr","Lacks"] [ppTrNm @nm] [@rowTyExpr.ppAST] @trppHere
+  | DynVar      loc     .  ppAST    =   ppNestTrPP @lhs.opts ["PrExpr","DynVar"] [ppTrNm @nm] [@tyExpr.ppAST] @trppHere
+%%]
+
+%%[(11 hmtyinfer)
+SEM TyExpr
+  | Lam         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["TyExpr","Lam"] [ppTrNm @tyVar] [@tyExpr.ppAST] @trppHere
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","AppImpl"] [] [@func.ppAST,@arg.ppAST,@argPr.ppAST] @trppHere
+  | LamImpl     lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","LamImpl"] [] [@arg.ppAST,@argPr.ppAST,@body.ppAST] @trppHere
+%%]
+
+%%[15
+SEM FuncDep
+  | Dep         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["FuncDep","Dep"] [] [@fromTvs.ppAST,@toTvs.ppAST] @trppHere
+
+SEM FuncDeps
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["FuncDeps","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["FuncDeps","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+
+%%]
+
+%%[31
+SEM MbTyExpr
+  | Just        loc     .  ppAST    =   ppNestTrPP @lhs.opts ["MbTyExpr","Just"] [] [@just.ppAST] @trppHere
+  | Nothing     loc     .  ppAST    =   ppNestTrPP @lhs.opts ["MbTyExpr","Nothing"] [] [] @trppHere
+%%]
+
+%%[1010
+SEM Decl
+  | DynVal      lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","DynVal"] [ppTrNm @nm] [@expr.ppAST] @trppHere
+  | DynTySig    lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","DynTySig"] [ppTrNm @nm] [@tyExpr.ppAST] @trppHere
+%%]
+
+%%[41
+SEM DataConstrEq
+  | Eq          lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstrEq","Eq"] [] [@tyVar.ppAST,@tyExpr.ppAST] @trppHere
+
+SEM DataConstrEqs
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstrEqs","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstrEqs","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+%%]
+
+%%[31
+SEM PrExpr
+  | Eq          loc     .  ppAST    =   ppNestTrPP @lhs.opts ["PrExpr","Eq"] [] [@tyExpr1.ppAST,@tyExpr2.ppAST] @trppHere
+%%]
+
+%%[40
+SEM DataConstrEq
+  | Eq          lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstrEq","Eq"] [] [@tyVar.ppAST,@tyExpr.ppAST] @trppHere
+
+SEM DataConstrEqs
+  | Nil         lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstrEqs","Nil"] [] [] @trppHere
+  | Cons        lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["DataConstrEqs","Cons"] [] [@hd.ppAST,@tl.ppAST] @trppHere
+
+SEM DataConstr
+  | Constr      loc     .  ppAST    :=  ppNestTrPP @lhs.opts  ["DataConstr","Constr"] [ppTrNm @conNm] [@fields.ppAST,@eqs.ppAST] @trppHere
+%%]
+
+%%[90
+SEM Decl
+  | FFE         loc     .  ppAST    =   ppNestTrPP @lhs.opts ["Decl","FFE"] [ppTrNm @nm,pp @expEnt] [@expr.ppAST,@tyExpr.ppAST] @trppHere
+%%]
+
+%%[97
+SEM Expr
+  | IIConst     lhs     .  ppAST    =   ppNestTrPP @lhs.opts ["Expr","IIConst"] [@pp] [] @trppHere
+%%]

@@ -57,7 +57,13 @@ data Constraint p info
 type instance TTKey (Constraint p info) = TTKey p
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(mkReduction)
+%%[(9 hmtyinfer || hmtyast) export(mkProve, mkAssume, mkReduction)
+mkProve :: p -> Constraint p info
+mkProve = Prove
+
+mkAssume :: p -> Constraint p info
+mkAssume = Assume
+
 mkReduction :: p -> info -> [p] -> Constraint p info
 mkReduction p i ps
   = Reduction p i ps

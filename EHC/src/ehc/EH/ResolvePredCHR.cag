@@ -258,12 +258,7 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
 
        ; return ()
        }
-  where {-
-        canon s (Prove p) = (Prove $ p {cpoPr = p'}, m)
-                          where (p',m) = predCanonic (simpEnv s) $ cpoPr p
-        canon s  c        = (c, emptyVarMp)
-        -}
-        canon s c
+  where canon s c
           = case cnstrReducablePart c of
               Just (_,p,mkc) -> (mkc $ p {cpoPr = p'}, m)
                              where (p',m) = predCanonic (emptyTyBetaRedEnv {tbredFI=simpEnv s}) $ cpoPr p

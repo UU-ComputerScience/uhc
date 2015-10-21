@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.CHR} import(UHC.Util.CHR,{%{EH}CHR.Key},{%{EH}CHR.Solve},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.CHR} import(UHC.Util.CHR,{%{EH}CHR.Key},{%{EH}CHR.Constraint})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR}) export(module {%{EH}Pred.CommonCHR})
@@ -357,8 +357,6 @@ instance CHRMatchable FIIn LabelOffset VarMp where
 instance IsCHRConstraint FIIn CHRPredConstraint VarMp
 
 instance IsCHRGuard FIIn Guard VarMp
-
-instance IsCHRSolvable FIIn CHRPredConstraint Guard VarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
