@@ -33,7 +33,7 @@ Analysis domains
 DERIVING *
   : Show
 %%[[50
-  , Typeable, Data
+  , Typeable
 %%]]
 
 DERIVING *
@@ -57,7 +57,7 @@ data RQuant
   deriving
     ( Eq, Ord, Enum
 %%[[50
-    , Typeable, Data
+    , Typeable
 %%]]
     )
 %%]

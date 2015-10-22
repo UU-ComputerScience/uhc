@@ -114,11 +114,6 @@ DERIVING *
 %%]
 
 %%[(50 core) ag
-DERIVING *
-  : Data
-%%]
-
-%%[(50 core) ag
 DERIVING CMetaBind
   : Enum
 %%]
@@ -216,7 +211,6 @@ data CBindCateg
 
 %%[(50 core) hs
 deriving instance Typeable CBindCateg
-deriving instance Data CBindCateg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

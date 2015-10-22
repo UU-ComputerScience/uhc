@@ -68,7 +68,6 @@ emptyCLGI
 
 %%[50
 deriving instance Typeable ClGamInfo
-deriving instance Data ClGamInfo
 %%]
 
 %%[(9 hmtyinfer)

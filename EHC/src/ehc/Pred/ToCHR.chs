@@ -448,7 +448,7 @@ chrSimplifySolveToRedGraph env chrStore cnstrInfoMpPrev cnstrInfoMp prevRes
         }
     )
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
-        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (toSolverConstraint $ Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
+        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (map toSolverConstraint $ Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
         cnstrInfoMpAll = cnstrMpUnion cnstrInfoMp cnstrInfoMpPrev
         redGraph
           = addToRedGraphFromReductions (filterMb fromSolverConstraint $ chrSolveStateDoneConstraints solveState)

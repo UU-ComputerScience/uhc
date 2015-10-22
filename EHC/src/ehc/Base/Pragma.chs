@@ -55,7 +55,7 @@ data Pragma
       { pragmaExcludeTargets   		:: [Target]
       }
 %%]]
-  deriving (Eq,Ord,Show,Typeable,Data)
+  deriving (Eq,Ord,Show,Typeable)
 
 %%]
 

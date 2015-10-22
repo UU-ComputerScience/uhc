@@ -52,7 +52,7 @@ data Guard
   | EqualModuloUnification  Ty Ty
 %%]]
 %%[[50
-  deriving (Typeable, Data)
+  deriving (Typeable)
 %%]]
 %%]
 

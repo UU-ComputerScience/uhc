@@ -43,7 +43,7 @@ data Key
 %%]]
   deriving ( Eq, Ord
 %%[[50
-           , Typeable, Data
+           , Typeable
 %%]]
            )
 %%]

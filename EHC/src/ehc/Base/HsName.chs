@@ -855,26 +855,20 @@ instance Position HsName where
 
 %%[1
 deriving instance Typeable HsName
-deriving instance Data HsName
 
 deriving instance Typeable IdOccKind
-deriving instance Data IdOccKind
 
 deriving instance Typeable IdOcc
-deriving instance Data IdOcc
 %%]
 
 %%[7
 deriving instance Typeable HsNameUniqifier
-deriving instance Data HsNameUniqifier
 
 deriving instance Typeable HsNameUnique
-deriving instance Data HsNameUnique
 %%]
 
 %%[8
 deriving instance Typeable OrigName
-deriving instance Data OrigName
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1143,7 +1137,6 @@ instance Serialize Track where
            3 -> liftM2 TrackSelect   sget sget
            4 -> liftM2 TrackVarApply sget sget
 
-deriving instance Data Track
 deriving instance Typeable Track
 
 

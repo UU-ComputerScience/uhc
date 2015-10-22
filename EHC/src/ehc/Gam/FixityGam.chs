@@ -47,8 +47,6 @@ type FixityGam = Gam HsName FixityGamInfo
 
 %%[50
 deriving instance Typeable FixityGamInfo
-deriving instance Data FixityGamInfo
-
 %%]
 
 %%[1 export(fixityGamLookup)

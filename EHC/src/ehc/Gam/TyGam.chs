@@ -49,7 +49,6 @@ data TyGamInfo
 
 %%[(50 hmtyinfer)
 deriving instance Typeable TyGamInfo
-deriving instance Data TyGamInfo
 %%]
 
 %%[(6 hmtyinfer || hmtyast).mkTGIData export(mkTGIData)

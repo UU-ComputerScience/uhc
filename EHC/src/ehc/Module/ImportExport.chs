@@ -93,7 +93,6 @@ mentrelStrip = Rel.mapDomRng (\(n,e) -> (n,mentStrip e))
 
 %%[50
 deriving instance Typeable ModEnt
-deriving instance Data ModEnt
 %%]
 
 %%[50

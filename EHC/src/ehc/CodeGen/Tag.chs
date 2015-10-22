@@ -202,7 +202,6 @@ emptyCTagsMp = []
 
 %%[50
 deriving instance Typeable CTag
-deriving instance Data CTag
 
 %%]
 

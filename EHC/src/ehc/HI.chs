@@ -137,7 +137,7 @@ data HIInfo
 %%]]
       }
 %%[[50
-  deriving (Typeable, Data)
+  deriving (Typeable)
 %%]]
 %%]
 
@@ -367,7 +367,7 @@ hiiIdDefOccGamFromHIIdGam = gamMap (\(k,v) -> (k,mkIdDefOcc v IdAsp_Any nmLevOut
 data HIOrigin
   = HIOrigin_FromFile                               -- from .hi file
   | HIOrigin_FromImportedBy HsNameS                 -- reconstructed from modules which imported this hi
-  deriving (Eq,Show,Typeable,Data)
+  deriving (Eq,Show,Typeable)
 %%]
 
 %%[50 hs export(HIValidity(..))
@@ -376,7 +376,7 @@ data HIValidity
   | HIValidity_WrongMagic       -- wrong magic number
   | HIValidity_Inconsistent     -- inconsistent with compiler
   | HIValidity_Absent           -- not available
-  deriving (Eq,Enum,Show,Typeable,Data)
+  deriving (Eq,Enum,Show,Typeable)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -37,7 +37,7 @@ data ClassDefaultGamInfo
       { cldiDefaultTypes	:: [Ty]
       }
 %%[[50
-      deriving (Data,Typeable)
+      deriving (Typeable)
 %%]]
 %%]
 

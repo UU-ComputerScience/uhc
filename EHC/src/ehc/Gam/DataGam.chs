@@ -410,24 +410,18 @@ dgiIsEnumable dgi = dgiMaxConstrArity dgi == 0
 
 %%[(50 hmtyinfer)
 deriving instance Typeable DataFldInfo
-deriving instance Data DataFldInfo
 
 deriving instance Typeable DataConFldAnnInfo
-deriving instance Data DataConFldAnnInfo
 
 deriving instance Typeable DataTagInfo
-deriving instance Data DataTagInfo
 
 deriving instance Typeable DataFldInConstr
-deriving instance Data DataFldInConstr
 
 deriving instance Typeable DataGamInfo
-deriving instance Data DataGamInfo
 %%]
 
 %%[(90 hmtyinfer)
 deriving instance Typeable DataGamInfoVariant
-deriving instance Data DataGamInfoVariant
 %%]
 
 %%[(90 hmtyinfer)

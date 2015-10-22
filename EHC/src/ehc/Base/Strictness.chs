@@ -36,7 +36,6 @@ instance Show Strictness where
 
 %%[(50 codegen || hmtyinfer || hmtyast)
 deriving instance Typeable Strictness
-deriving instance Data Strictness
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1179,32 +1179,25 @@ showStr2stMp = concat . intersperse " " . Map.keys
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
-deriving instance Data KnownPrim
 deriving instance Typeable KnownPrim
 %%]
 
 %%[50
 deriving instance Typeable VarUIDHsName
-deriving instance Data VarUIDHsName
 
 deriving instance Typeable TagDataInfo
-deriving instance Data TagDataInfo
 
 deriving instance Typeable Fixity
-deriving instance Data Fixity
 
 #if __GLASGOW_HASKELL__ >= 708
 deriving instance Typeable  AlwaysEq
 #else
 deriving instance Typeable1 AlwaysEq
 #endif
-deriving instance Data x => Data (AlwaysEq x)
 
 deriving instance Typeable PredOccId
-deriving instance Data PredOccId
 
 deriving instance Typeable CLbl
-deriving instance Data CLbl
 
 %%]
 

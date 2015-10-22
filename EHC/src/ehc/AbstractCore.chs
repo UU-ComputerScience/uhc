@@ -519,10 +519,6 @@ hsnUniqifyACoreBindAspectKeyS as n
 deriving instance Typeable ACoreBindAspectKey
 %%]
 
-%%[(50 codegen) hs
-deriving instance Data ACoreBindAspectKey
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% A reference to an aspected value, i.e. a particular aspect of a binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -571,7 +567,6 @@ instance PP ACoreBindRef where
 
 %%[(50 codegen) hs
 deriving instance Typeable ACoreBindRef
-deriving instance Data ACoreBindRef
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1153,7 +1148,12 @@ type Coe = Coe'
 data CoeCtx
   = CoeCtx_Allow
   | CoeCtx_DontAllow
-  deriving (Eq,Show)
+  deriving
+   ( Eq, Show
+%%[[50
+   , Typeable
+%%]]
+   )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1516,7 +1516,6 @@ cafailHasId (CaseAltFailReason_Continue i) = (True ,i)
 
 %%[(50 codegen) hs
 deriving instance Typeable CaseAltFailReason
-deriving instance Data CaseAltFailReason
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

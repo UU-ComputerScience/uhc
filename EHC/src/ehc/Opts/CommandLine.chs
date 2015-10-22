@@ -40,20 +40,20 @@ data CmdFlag
   
   -- modifiers
   | CmdFlag_ModfMin      	CmdFlag		-- double '-'
-  deriving (Eq,Typeable,Data)
+  deriving (Eq,Typeable)
 
 data Cmd
   = Cmd_CPP_Preprocessing
   | Cmd_CPP
   | Cmd_C
-  deriving (Eq,Ord,Enum,Bounded,Typeable,Data)
+  deriving (Eq,Ord,Enum,Bounded,Typeable)
 
 data CmdLineOpt
   = CmdLineOpt
       { cloptForCmd     :: Cmd
       , cloptFlag       :: CmdFlag
       }
-  deriving (Eq,Typeable,Data)
+  deriving (Eq,Typeable)
 
 type CmdLineOpts = [CmdLineOpt]
 %%]

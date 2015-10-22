@@ -63,7 +63,7 @@ C subset, modelled after C--
 DERIVING *
   : Show
 %%[[50
-  , Typeable, Data
+  , Typeable
 %%]]
 
 DERIVING *

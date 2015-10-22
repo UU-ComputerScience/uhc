@@ -71,7 +71,7 @@ data StackTraceInfo
   | StackTraceInfo_IsStackTraceEquiv	HsName		-- is a stack traced equivalent
   deriving ( Show
 %%[[50
-           , Data, Typeable
+           , Typeable
 %%]]
            )
 %%]
@@ -83,7 +83,7 @@ data FusionRole
   | FusionRole_BuildLeft	-- role of g in 'convert g,h'
   | FusionRole_BuildRight	-- role of h in 'convert g,h'
   deriving ( Enum, Show
-           , Data,Typeable
+           , Typeable
            )
 %%]
 
@@ -120,7 +120,7 @@ data LamInfoBindAsp
 %%]]
   deriving ( Show
 %%[[50
-           , Data, Typeable
+           , Typeable
 %%]]
            )
 
@@ -152,7 +152,7 @@ data LamInfo
       }
   deriving ( Show
 %%[[50
-           , Data, Typeable
+           , Typeable
 %%]]
            )
 
@@ -304,7 +304,7 @@ data GrinByteCodeLamInfo
   deriving
      ( Show
 %%[[50
-     , Typeable, Data
+     , Typeable
 %%]]
      )
 

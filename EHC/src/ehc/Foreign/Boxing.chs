@@ -202,10 +202,8 @@ unboxedTyMp2 opts
 
 %%[(50 codegen) hs
 deriving instance Typeable UnboxedTy
-deriving instance Data UnboxedTy
 
 deriving instance Typeable Boxing
-deriving instance Data Boxing
 %%]
 
 %%[(50 codegen) hs

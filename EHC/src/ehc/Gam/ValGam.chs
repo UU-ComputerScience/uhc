@@ -50,7 +50,6 @@ type ValGam = Gam HsName ValGamInfo
 
 %%[(50 hmtyinfer || hmtyast)
 deriving instance Typeable ValGamInfo
-deriving instance Data ValGamInfo
 %%]
 
 %%[(8 hmtyinfer || hmtyast) export(vgiGetSet)

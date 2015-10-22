@@ -1,3 +1,4 @@
+- [dependencies] Removal of dependency on Data.Data/syb
 - [chr] CHR machinery moved to uhc-util
 - [ast dump] Framework for debugging AST: --ehopt=dump-ast & --debug-traceon=... combi allow selectively looking into AST + info
 

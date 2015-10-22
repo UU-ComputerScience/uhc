@@ -132,7 +132,6 @@ deriving instance Typeable  Fld'
 #else
 deriving instance Typeable1 Fld'
 #endif
-deriving instance Data x => Data (Fld' x)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -68,7 +68,6 @@ deriving instance Typeable  Constraint'
 #else
 deriving instance Typeable2 Constraint'
 #endif
-deriving instance (Data x, Data y) => Data (Constraint' x y)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(cnstrReducablePart)
@@ -224,7 +223,7 @@ data RedHowAnnotation
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable, Data
+    , Typeable
 %%]]
     )
 %%]
@@ -276,7 +275,7 @@ data ByScopeRedHow
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable, Data
+    , Typeable
 %%]]
     )
 

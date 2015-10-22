@@ -296,23 +296,3 @@ optimizationLevelMp
 %%]]
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary, Serialize
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(5020 codegen)
-deriving instance Typeable Optimize
-deriving instance Data Optimize
-%%]
-
-%%[(5020 codegen)
-instance Binary Optimize where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize Optimize where
-  sput = sputEnum8
-  sget = sgetEnum8
-%%]
-
-

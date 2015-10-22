@@ -169,10 +169,8 @@ instance Ord Pos where
 
 %%[50
 deriving instance Typeable Range
-deriving instance Data Range
 
 deriving instance Typeable Pos
-deriving instance Data Pos
 
 %%]
 

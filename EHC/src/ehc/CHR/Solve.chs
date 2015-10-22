@@ -14,7 +14,7 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
-%%[(9 hmtyinfer) import(UHC.Util.Utils, UHC.Util.CHR.Rule, UHC.Util.Substitutable) export(module UHC.Util.CHR.Rule)
+%%[(9 hmtyinfer) import(UHC.Util.Utils, UHC.Util.CHR, UHC.Util.CHR.Rule, UHC.Util.Substitutable) export(module UHC.Util.CHR.Rule)
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}CHR.Instances}, {%{EH}CHR.Key}, {%{EH}VarMp}, {%{EH}Ty}, {%{EH}Ty.FitsInCommon2})
@@ -40,7 +40,7 @@ type SolveStep  e c g s = Mono.SolveStep  c g s
 %%[(9999 hmtyinfer) import(UHC.Util.CHR.Solve.TreeTrie.Poly hiding(IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore), qualified UHC.Util.CHR.Solve.TreeTrie.Poly as Poly) export(module UHC.Util.CHR.Solve.TreeTrie.Poly, IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore', CHRSolverConstraint)
 instance Poly.IsCHRSolvable FIIn VarMp
 
-type CHRSolverConstraint = CHRConstraint
+type CHRSolverConstraint = CHRConstraint FIIn VarMp
 
 type instance ExtrValVarKey (CHRConstraint FIIn VarMp) = TyVarId
 type instance ExtrValVarKey (CHRGuard FIIn VarMp) = TyVarId
@@ -51,12 +51,19 @@ class ( Poly.IsCHRSolvable env s
 
 instance IsCHRSolvable FIIn Constraint Guard VarMp
 
-type instance TTKey (CHRConstraint FIIn VarMp) = Key
+type instance TTKey (CHRConstraint FIIn VarMp) = TTKey Constraint
 
 type CHRStore'  e c g s = Poly.CHRStore   e s
 type SolveState e c g s = Poly.SolveState e s
 type SolveTrace e c g s = Poly.SolveTrace e s
 type SolveStep  e c g s = Poly.SolveStep  e s
+
+{-
+instance Serialize (CHRRule FIIn VarMp) where
+  sput (CHRRule (Rule a b c s)) = sput a
+  sget = liftM CHRRule sget
+-}
+
 %%]
 
 %%[(9 hmtyinfer) export(CHRStore)
