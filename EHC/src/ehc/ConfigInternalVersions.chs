@@ -25,15 +25,16 @@ mkInternalVersion = fromIntegral
 internalVersionCombined :: InternalVersionCombined
 internalVersionCombined =
       internalVersionHI
-  .|. (internalVersionCore 		`shiftL` 8)
-  .|. (internalVersionCoreRun 	`shiftL` 16)
-  .|. (internalVersionTySys 	`shiftL` 24)
-  .|. (internalVersionCodeGen 	`shiftL` 32)
+  .|. (internalVersionCore 		`shiftL` 6)
+  .|. (internalVersionCoreRun 	`shiftL` 12)
+  .|. (internalVersionTySys 	`shiftL` 18)
+  .|. (internalVersionCodeGen 	`shiftL` 24)
+  .|. (internalVersionEH 	    `shiftL` 30)
 %%]
 
 %%[50 hs export(internalVersionTySys, internalVersionCodeGen, internalVersionHI, internalVersionCore, internalVersionCoreRun)
 -- | For variation in type inferencing
-internalVersionTySys = mkInternalVersion 5
+internalVersionTySys = mkInternalVersion 1
 
 -- | For variation in code gen
 internalVersionCodeGen = mkInternalVersion 1
@@ -42,9 +43,13 @@ internalVersionCodeGen = mkInternalVersion 1
 internalVersionHI = mkInternalVersion 1
 
 -- | For binary/serialized Core .cr/.bcr/.tcr etc files
-internalVersionCore = mkInternalVersion 20
+internalVersionCore = mkInternalVersion 1
 
 -- | For binary/serialized CoreRun .crr/.bcrr./tcrr etc files
-internalVersionCoreRun = mkInternalVersion 11
+internalVersionCoreRun = mkInternalVersion 1
+
+-- | For binary/serialized EH intermediate structures
+internalVersionEH = mkInternalVersion 1
+
 %%]
 

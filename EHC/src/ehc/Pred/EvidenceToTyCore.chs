@@ -2,7 +2,7 @@
 %%% Translation of Evidence (of Pred) to TyCore fragments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen tycore) module {%{EH}Pred.EvidenceToTyCore} import({%{EH}Pred.Evidence},{%{EH}Pred.CommonCHR})
+%%[(9 codegen tycore) module {%{EH}Pred.EvidenceToTyCore} import({%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
 %%]
 
 %%[(9 codegen tycore) import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)

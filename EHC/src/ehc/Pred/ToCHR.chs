@@ -12,10 +12,10 @@ Conversion from Pred to CHR.
 %%[(9 hmtyinfer) import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(9 hmtyinfer) import(UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}CHR.Solve},{%{EH}CHR.Key})
+%%[(9 hmtyinfer) import(UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}CHR.Guard},{%{EH}CHR.Solve},{%{EH}CHR.Key})
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Pred.CHR},{%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
+%%[(9 hmtyinfer) import({%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
@@ -32,12 +32,9 @@ Conversion from Pred to CHR.
 %%% Rule store
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(ScopedPredStore,ScopedPredCHR,ScopedPredStoreL)
-type PredStore  p g s info = CHRStore (Constraint p info) g
-type PredStoreL p g s info = [Rule (Constraint p info) g]
-type ScopedPredStore  = PredStore  CHRPredOcc Guard VarMp RedHowAnnotation
-type ScopedPredStoreL = PredStoreL CHRPredOcc Guard VarMp RedHowAnnotation
-type ScopedPredCHR    = Rule CHRPredConstraint Guard
+%%[(9 hmtyinfer) export(ScopedPredStore,ScopedPredCHR)
+type ScopedPredStore   = CHRStore FIIn CHRPredConstraint Guard VarMp
+type ScopedPredCHR     = Rule CHRPredConstraint Guard
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,7 +177,7 @@ initScopedPredStore
         predSeq1     = [mkProve s1s1]
                          <==> [mkProve s2s1, mkProve s3s1]
         predSeq2     = [mkProve $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
-                         <==> []
+                         <==> ([] :: [CHRPredConstraint])
 %%]]
 %%[[41
         eqT1T2s1 = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
@@ -237,10 +234,10 @@ mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotatio
 mkClassSimplChrs env rules (context, head, infos)
   = simps
   where simps        = chrStoreFromElems $ mapTrans (Set.fromList [head1]) [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
-        (superClassesWork, superClassesDone, _ :: SolveTrace CHRPredConstraint Guard VarMp)
-                     = chrSolve' env rules (map (\p -> mkAssume $ mkCHRPredOcc p sc1) context)
+        (superClassesWork, superClassesDone, _ :: SolveTrace FIIn CHRPredConstraint Guard VarMp)
+                     = chrSolve' env rules (map (\p -> toSolverConstraint $ mkAssume $ mkCHRPredOcc p sc1) context)
         superClasses = superClassesWork ++ superClassesDone
-        graph        = mkRedGraphFromReductions superClasses
+        graph        = mkRedGraphFromReductions $ filterMb fromSolverConstraint superClasses
         head1        = mkCHRPredOcc head sc1
         head2        = mkCHRPredOcc head sc2
         head3        = mkCHRPredOcc head sc3
@@ -371,7 +368,7 @@ mkEvidence heur cnstrMp redGraph
           where redAlts    = redAlternatives redGraph p
                 redTrees   = heur infos redAlts
                 evidMp     = foldr (uncurry evidMpInsert) Map.empty redTrees
-                remCnstrMp = [ (mkProve (utraceRedFrom u),(i,[u])) | (i,t) <- redTrees, u <- evidUnresolved t ]
+                remCnstrMp = [ (Prove (utraceRedFrom u),(i,[u])) | (i,t) <- redTrees, u <- evidUnresolved t ]
         mk (c, infos)
           = ([ (c,(i,[])) | i <- infos],Map.empty,[],[])
 %%]
@@ -460,8 +457,9 @@ patchUnresolvedWithAssumption env unres redGraph evidMp
 chrSimplifySolveToRedGraph
   :: ( Ord p, Ord i
      , IsCHRSolvable FIIn (Constraint p i) g s
+     , TTKey p ~ CHRMatchableKey s
      ) => FIIn
-          -> CHRStore (Constraint p i) g
+          -> CHRStore FIIn (Constraint p i) g s
           -> ConstraintToInfoMap p i
           -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
@@ -477,10 +475,10 @@ chrSimplifySolveToRedGraph env chrStore cnstrInfoMpPrev cnstrInfoMp prevRes
         }
     )
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
-        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
+        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (toSolverConstraint $ Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
         cnstrInfoMpAll = cnstrMpUnion cnstrInfoMp cnstrInfoMpPrev
         redGraph
-          = addToRedGraphFromReductions (chrSolveStateDoneConstraints solveState)
+          = addToRedGraphFromReductions (filterMb fromSolverConstraint $ chrSolveStateDoneConstraints solveState)
             $ addToRedGraphFromAssumes cnstrInfoMpAll
             $ simpresRedGraph prevRes
 %%]

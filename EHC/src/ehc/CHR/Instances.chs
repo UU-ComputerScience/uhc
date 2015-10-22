@@ -4,10 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.CHR} import(UHC.Util.CHR,{%{EH}CHR.Key},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}CHR.Instances} import(UHC.Util.CHR,{%{EH}CHR.Key})
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR}) export(module {%{EH}Pred.CommonCHR})
+%%[(9 hmtyinfer) import({%{EH}CHR.Constraint}, {%{EH}CHR.Guard}) export(module {%{EH}CHR.Constraint}, module {%{EH}CHR.Guard})
 %%]
 
 %%[(9 hmtyinfer) import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
@@ -35,59 +35,7 @@ Derived from work by Gerrit vd Geest.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Guard, CHRCheckable
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 hmtyinfer) export(Guard(..))
-data Guard
-  = HasStrictCommonScope    PredScope PredScope PredScope                   -- have strict/proper common scope?
-  | IsVisibleInScope        PredScope PredScope                             -- is visible in 2nd scope?
-  | NotEqualScope           PredScope PredScope                             -- scopes are unequal
-  | EqualScope              PredScope PredScope                             -- scopes are equal
-  | IsStrictParentScope     PredScope PredScope PredScope                   -- parent scope of each other?
-%%[[10
-  | NonEmptyRowLacksLabel   Ty LabelOffset Ty Label                         -- non empty row does not have label?, yielding its position + rest
-%%]]
-%%[[41
-  | IsCtxNilReduction       Ty Ty
-  | EqsByCongruence         Ty Ty PredSeq
-  | UnequalTy               Ty Ty
-  | EqualModuloUnification  Ty Ty
-%%]]
-%%[[50
-  deriving (Typeable, Data)
-%%]]
-%%]
-
-%%[(9 hmtyinfer)
-ppGuard :: Guard -> PP_Doc
-ppGuard (HasStrictCommonScope   sc1 sc2 sc3) = ppParensCommas' [sc1 >#< "<" >#< sc2,sc1 >#< "<=" >#< sc3]
-ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (sc1 >#< "==" >#< sc2 >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
-ppGuard (IsVisibleInScope       sc1 sc2    ) = sc1 >#< "`visibleIn`" >#< sc2
-ppGuard (NotEqualScope          sc1 sc2    ) = sc1 >#< "/=" >#< sc2
-ppGuard (EqualScope             sc1 sc2    ) = sc1 >#< "==" >#< sc2
-%%[[10
-ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
-%%]]
-%%[[41
-ppGuard (IsCtxNilReduction t1 t2           ) = t1 >#< "~>" >#< t2
-ppGuard (EqsByCongruence t1 t2 ps          ) = t1 >#< "~~" >#< t2 >#< "~>" >#< ps
-ppGuard (UnequalTy t1 t2                   ) = t1 >#< "/=" >#< t2
-ppGuard (EqualModuloUnification t1 t2      ) = t1 >#< "==" >#< t2
-%%]]
-%%]
-ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (ppParens (sc1 >#< "==" >#< sc2 >#< "\\/" >#< sc1 >#< "==" >#< sc3 ) >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
-
-%%[(9 hmtyinfer)
-instance Show Guard where
-  show _ = "CHR Guard"
-
-instance PP Guard where
-  pp = ppGuard
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CHR instances: VarExtractable, VarUpdatable
+%%% Substitutable instances: VarExtractable, VarUpdatable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
@@ -174,6 +122,69 @@ instance VarUpdatable RedHowAnnotation VarMp where
 instance CHREmptySubstitution VarMp where
   chrEmptySubst = emptyVarMp
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR instances: CHRMatchable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+instance CHRMatchable FIIn Pred VarMp where
+  chrMatchTo fi subst pr1 pr2
+    = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst |+> fiVarMp fi}) pr1 pr2
+         ; return subst'
+         }
+%%]
+
+%%[(9 hmtyinfer)
+instance CHRMatchable FIIn CHRPredOccCxt VarMp where
+  chrMatchTo e subst (CHRPredOccCxt_Scope1 sc1) (CHRPredOccCxt_Scope1 sc2) = chrMatchTo e subst sc1 sc2
+
+instance CHRMatchable FIIn PredScope VarMp where
+  chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
+  chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
+                                                                             where mbSc = varmpScopeLookup v1 subst
+  chrMatchTo e subst sc1                    (PredScope_Var v2) | isJust mbSc = chrMatchTo e subst sc1 (fromJust mbSc)
+                                                                             where mbSc = varmpScopeLookup v2 subst
+  chrMatchTo _ subst _                      (PredScope_Var v2)               = Nothing
+  chrMatchTo _ subst (PredScope_Var v1) sc2                                  = Just $ v1 `varmpScopeUnit` sc2
+  chrMatchTo _ subst (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2    = Just emptyVarMp
+  chrMatchTo _ subst _                  _                                    = Nothing
+%%]
+
+%%[(9 hmtyinfer)
+instance CHRMatchable FIIn CHRPredOcc VarMp where
+  chrMatchTo fi subst po1 po2
+    = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
+         ; subst2 <- chrMatchTo fi subst (cpoCxt po1) (cpoCxt po2)
+         ; return $ subst2 |+> subst1
+         }
+%%]
+
+%%[(10 hmtyinfer)
+instance CHRMatchable FIIn Label VarMp where
+  chrMatchTo _ subst (Label_Var v1) lb2@(Label_Var v2) | v1 == v2    = Just emptyVarMp
+  chrMatchTo e subst (Label_Var v1) lb2                | isJust mbLb = chrMatchTo e subst (fromJust mbLb) lb2
+                                                                     where mbLb = varmpLabelLookup v1 subst
+  chrMatchTo e subst lb1                (Label_Var v2) | isJust mbLb = chrMatchTo e subst lb1 (fromJust mbLb)
+                                                                     where mbLb = varmpLabelLookup v2 subst
+  chrMatchTo _ subst _                  (Label_Var v2)               = Nothing
+  chrMatchTo _ subst (Label_Var v1) lb2                              = Just $ v1 `varmpLabelUnit` lb2
+  chrMatchTo _ subst (Label_Lab l1)     (Label_Lab l2) | l1 == l2    = Just emptyVarMp
+  chrMatchTo _ subst _              _                                = Nothing
+%%]
+
+%%[(10 hmtyinfer)
+instance CHRMatchable FIIn LabelOffset VarMp where
+  chrMatchTo _ subst (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2    = Just emptyVarMp
+  chrMatchTo s subst (LabelOffset_Var v1) of2                      | isJust mbOf = chrMatchTo s subst (fromJust mbOf) of2
+                                                                                 where mbOf = varmpOffsetLookup v1 subst
+  chrMatchTo s subst of1                      (LabelOffset_Var v2) | isJust mbOf = chrMatchTo s subst of1 (fromJust mbOf)
+                                                                                 where mbOf = varmpOffsetLookup v2 subst
+  chrMatchTo _ subst _                        (LabelOffset_Var v2)               = Nothing
+  chrMatchTo _ subst (LabelOffset_Var v1) of2                                    = Just $ v1 `varmpOffsetUnit` of2
+  chrMatchTo _ subst (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2    = Just emptyVarMp
+  chrMatchTo _ subst _                    _                                      = Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -285,70 +296,6 @@ instance CHRCheckable FIIn Guard VarMp where
             = Nothing
 %%]
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CHR instances: CHRMatchable
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 hmtyinfer)
-instance CHRMatchable FIIn Pred VarMp where
-  chrMatchTo fi subst pr1 pr2
-    = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst |+> fiVarMp fi}) pr1 pr2
-         ; return subst'
-         }
-%%]
-
-%%[(9 hmtyinfer)
-instance CHRMatchable FIIn CHRPredOccCxt VarMp where
-  chrMatchTo e subst (CHRPredOccCxt_Scope1 sc1) (CHRPredOccCxt_Scope1 sc2) = chrMatchTo e subst sc1 sc2
-
-instance CHRMatchable FIIn PredScope VarMp where
-  chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
-  chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
-                                                                             where mbSc = varmpScopeLookup v1 subst
-  chrMatchTo e subst sc1                    (PredScope_Var v2) | isJust mbSc = chrMatchTo e subst sc1 (fromJust mbSc)
-                                                                             where mbSc = varmpScopeLookup v2 subst
-  chrMatchTo _ subst _                      (PredScope_Var v2)               = Nothing
-  chrMatchTo _ subst (PredScope_Var v1) sc2                                  = Just $ v1 `varmpScopeUnit` sc2
-  chrMatchTo _ subst (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2    = Just emptyVarMp
-  chrMatchTo _ subst _                  _                                    = Nothing
-%%]
-
-%%[(9 hmtyinfer)
-instance CHRMatchable FIIn CHRPredOcc VarMp where
-  chrMatchTo fi subst po1 po2
-    = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
-         ; subst2 <- chrMatchTo fi subst (cpoCxt po1) (cpoCxt po2)
-         ; return $ subst2 |+> subst1
-         }
-%%]
-
-%%[(10 hmtyinfer)
-instance CHRMatchable FIIn Label VarMp where
-  chrMatchTo _ subst (Label_Var v1) lb2@(Label_Var v2) | v1 == v2    = Just emptyVarMp
-  chrMatchTo e subst (Label_Var v1) lb2                | isJust mbLb = chrMatchTo e subst (fromJust mbLb) lb2
-                                                                     where mbLb = varmpLabelLookup v1 subst
-  chrMatchTo e subst lb1                (Label_Var v2) | isJust mbLb = chrMatchTo e subst lb1 (fromJust mbLb)
-                                                                     where mbLb = varmpLabelLookup v2 subst
-  chrMatchTo _ subst _                  (Label_Var v2)               = Nothing
-  chrMatchTo _ subst (Label_Var v1) lb2                              = Just $ v1 `varmpLabelUnit` lb2
-  chrMatchTo _ subst (Label_Lab l1)     (Label_Lab l2) | l1 == l2    = Just emptyVarMp
-  chrMatchTo _ subst _              _                                = Nothing
-%%]
-
-%%[(10 hmtyinfer)
-instance CHRMatchable FIIn LabelOffset VarMp where
-  chrMatchTo _ subst (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2    = Just emptyVarMp
-  chrMatchTo s subst (LabelOffset_Var v1) of2                      | isJust mbOf = chrMatchTo s subst (fromJust mbOf) of2
-                                                                                 where mbOf = varmpOffsetLookup v1 subst
-  chrMatchTo s subst of1                      (LabelOffset_Var v2) | isJust mbOf = chrMatchTo s subst of1 (fromJust mbOf)
-                                                                                 where mbOf = varmpOffsetLookup v2 subst
-  chrMatchTo _ subst _                        (LabelOffset_Var v2)               = Nothing
-  chrMatchTo _ subst (LabelOffset_Var v1) of2                                    = Just $ v1 `varmpOffsetUnit` of2
-  chrMatchTo _ subst (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2    = Just emptyVarMp
-  chrMatchTo _ subst _                    _                                      = Nothing
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR instances: IsCHRConstraint, IsCHRGuard, IsCHRSolvable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -359,81 +306,3 @@ instance IsCHRConstraint FIIn CHRPredConstraint VarMp
 instance IsCHRGuard FIIn Guard VarMp
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Lattice ordering, for annotations which have no ordering
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-This should be put in some library
-
-%%[(9 hmtyinfer) export(PartialOrdering(..),toOrdering,toPartialOrdering)
-data PartialOrdering
-  = P_LT | P_EQ | P_GT | P_NE
-  deriving (Eq,Show)
-
-toPartialOrdering :: Ordering -> PartialOrdering
-toPartialOrdering o
-  = case o of
-      EQ -> P_EQ
-      LT -> P_LT
-      GT -> P_GT
-
-toOrdering :: PartialOrdering -> Maybe Ordering
-toOrdering o
-  = case o of
-      P_EQ -> Just EQ
-      P_LT -> Just LT
-      P_GT -> Just GT
-      _    -> Nothing
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Criterium for proving in a let expression
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 hmtyinfer) export(isLetProveCandidate,isLetProveFailure)
--- | Consider a pred for proving if: no free tvars, or its free tvars do not coincide with those globally used
-isLetProveCandidate :: (VarExtractable x) => Set.Set (ExtrValVarKey x) -> x -> Bool
-isLetProveCandidate glob x
-  = Set.null fv || Set.null (fv `Set.intersection` glob)
-  where fv = varFreeSet x
-
-isLetProveFailure :: (VarExtractable x) => Set.Set (ExtrValVarKey x) -> x -> Bool
-isLetProveFailure glob x
-  = Set.null fv
-  where fv = varFreeSet x
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary, Serialize
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(50 hmtyinfer)
-instance Serialize Guard where
-  sput (HasStrictCommonScope     a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
-  sput (IsVisibleInScope         a b    ) = sputWord8 1  >> sput a >> sput b
-  sput (NotEqualScope            a b    ) = sputWord8 2  >> sput a >> sput b
-  sput (EqualScope               a b    ) = sputWord8 3  >> sput a >> sput b
-  sput (IsStrictParentScope      a b c  ) = sputWord8 4  >> sput a >> sput b >> sput c
-  sput (NonEmptyRowLacksLabel    a b c d) = sputWord8 5  >> sput a >> sput b >> sput c >> sput d
-%%[[41
-  sput (IsCtxNilReduction        a b    ) = sputWord8 6  >> sput a >> sput b
-  sput (EqsByCongruence          a b c  ) = sputWord8 7  >> sput a >> sput b >> sput c
-  sput (UnequalTy                a b    ) = sputWord8 8  >> sput a >> sput b
-  sput (EqualModuloUnification   a b    ) = sputWord8 9  >> sput a >> sput b
-%%]]
-  sget = do t <- sgetWord8
-            case t of
-              0  -> liftM3 HasStrictCommonScope     sget sget sget
-              1  -> liftM2 IsVisibleInScope         sget sget
-              2  -> liftM2 NotEqualScope            sget sget
-              3  -> liftM2 EqualScope               sget sget
-              4  -> liftM3 IsStrictParentScope      sget sget sget
-              5  -> liftM4 NonEmptyRowLacksLabel    sget sget sget sget
-%%[[41
-              6  -> liftM2 IsCtxNilReduction        sget sget
-              7  -> liftM3 EqsByCongruence          sget sget sget
-              8  -> liftM2 UnequalTy                sget sget
-              9  -> liftM2 EqualModuloUnification   sget sget
-%%]]
-
-%%]

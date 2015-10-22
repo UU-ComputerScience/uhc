@@ -2,7 +2,7 @@
 %%% Translation of Evidence (of Pred) to Core fragments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) module {%{EH}Pred.EvidenceToCore} import({%{EH}Pred.Evidence},{%{EH}Pred.CommonCHR})
+%%[(9 codegen) module {%{EH}Pred.EvidenceToCore} import({%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
 %%]
 
 %%[(9 codegen) import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)

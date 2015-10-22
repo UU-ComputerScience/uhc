@@ -106,7 +106,7 @@
 %%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}CHR.Guard},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})

@@ -4,7 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.Evidence} import(UHC.Util.CHR,{%{EH}Pred.CHR},{%{EH}Substitutable}, {%{EH}VarMp})
+%%[(9 hmtyinfer) module {%{EH}Pred.Evidence}
+%%]
+
+%%[(9 hmtyinfer) import(UHC.Util.CHR, {%{EH}Substitutable}, {%{EH}VarMp}, {%{EH}CHR.Constraint})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})

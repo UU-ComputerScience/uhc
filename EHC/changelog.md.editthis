@@ -1,4 +1,5 @@
-- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
+- [chr] CHR machinery moved to uhc-util
+- [ast dump] Framework for debugging AST: --ehopt=dump-ast & --debug-traceon=... combi allow selectively looking into AST + info
 
 ## 1.1.9.1 - 20151013
 
