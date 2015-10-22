@@ -124,7 +124,7 @@ data HIInfo
       , hiiDataGam              :: !DataGam                                 -- datatype info env
       , hiiClGam                :: !Pr.ClGam                                -- class env
       , hiiClDfGam              :: !ClassDefaultGam                         -- class defaults env
-      , hiiCHRStore             :: !ScopedPredStore                         -- rule database
+      , hiiCHRStore             :: !CHRStore                         -- rule database
 %%]]
 %%[[(50 codegen)
       , hiiLamMp                :: !LamMp                                   -- codegen info for identifiers
@@ -180,8 +180,8 @@ hiiIdDefOccGam hii = hiiIdDefOccGamFromHIIdGam $ mentrelToIdDefOccGam (hiiModule
 %%]
 
 %%[5020 hs export(hiiCHRStore)
-hiiCHRStore :: HIInfo -> ScopedPredStore
-hiiCHRStore = hiiScopedPredStoreFromList . hiiCHRStoreL
+hiiCHRStore :: HIInfo -> CHRStore
+hiiCHRStore = hiiCHRStoreFromList . hiiCHRStoreL
 %%]
 
 %%[50 hs

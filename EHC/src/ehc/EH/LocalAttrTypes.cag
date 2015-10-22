@@ -13,7 +13,7 @@ SEM *
 		-- loc.doPredAmbigSplit			: {forall x . (x -> PredOcc) -> TQOGam -> [x] -> ([x],[x])}
 		-- loc.doPredAmbigSplitForSimplify	: {[(CHRPredOcc,PredScope)] -> ([(CHRPredOcc,PredScope)],[(CHRPredOcc,PredScope)])}
 		loc.generInstInfoL				: {[GenerDataInstInfo]}
-		loc.generInstDeclL				: {[CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]}
+		loc.generInstDeclL				: {[CHRScopedInstanceDecl]}
 		loc.gathTvKiVarMp2				: {VarMp}
 		loc.bodyTyKiVarMp2				: {VarMp}
 		loc.tyVarMpDeclsL0				: {VarMp}
@@ -33,13 +33,13 @@ SEM *
 		-- loc.cannotRes1CnstrMp  			: CHRPredOccCnstrMp
 		loc.chrFIIn  					: FIIn
 		loc.chrProveFIIn  				: FIIn
-		loc.chrSimplifyResult1 			: {SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp}
+		loc.chrSimplifyResult1 			: {SimplifyResult}
 		loc.chrSolve1Errs  				: ErrL
 		loc.chrSolve1EvidBindMp 		: EvidKeyToCBindMap
 		loc.chrSolve1EvidBindMpTC 		: {E2C.EvidKeyToValBindMap}
 		loc.chrSolve1EvidCoreMp 		: EvidKeyToCExprMap
 		loc.chrSolve1EvidCoreMpTC 		: {E2C.EvidKeyToExprMap}
-		loc.chrSolve1EvidMp 			: CHRPredOccEvidMp
+		loc.chrSolve1EvidMp 			: InfoToEvidenceMap
 		-- loc.chrSolve1RemCnstrMp 		: CHRPredOccCnstrMp
 		loc.chrSolve1ScopeBindMp 		: PredScopeToCBindMap
 		loc.chrSolve1ScopeBindMpTC 		: {E2C.PredScopeToValBindMap}

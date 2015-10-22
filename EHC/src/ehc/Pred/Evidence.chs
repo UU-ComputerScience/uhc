@@ -7,7 +7,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) module {%{EH}Pred.Evidence}
 %%]
 
-%%[(9 hmtyinfer) import(UHC.Util.CHR, {%{EH}Substitutable}, {%{EH}VarMp}, {%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) import(UHC.Util.CHR, {%{EH}Substitutable}, {%{EH}Ty}, {%{EH}VarMp}, {%{EH}CHR.Constraint})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})
@@ -33,27 +33,29 @@ Evidence is the witness for predicates: a dictionary for class instances, an off
 %%% Representation of evidence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Eviden
+Evidence
 
-%%[(9 hmtyinfer) export(Evidence(..))
-data Evidence  p info
-  =  Evid_Unresolved { evidPred :: !p                       , evidTrace     :: ![UnresolvedTrace p info]    }
-  -- =  Evid_Unresolved { evidPred :: !p                       , evidAttempts  :: ![Evidence p info]           }
-  |  Evid_Proof      { evidPred :: !p  , evidInfo :: !info  , evidProofSubs :: ![Evidence p info]           }
+%%[(9 hmtyinfer) export(Evidence, Evidence'(..))
+data Evidence' p info
+  =  Evid_Unresolved { evidPred :: !p                       , evidTrace     :: ![UnresolvedTrace' p info]    }
+  -- =  Evid_Unresolved { evidPred :: !p                       , evidAttempts  :: ![Evidence' p info]           }
+  |  Evid_Proof      { evidPred :: !p  , evidInfo :: !info  , evidProofSubs :: ![Evidence' p info]           }
   |  Evid_Recurse    { evidPred :: !p                                                                       }
-  |  Evid_Ambig      { evidPred :: !p                       , evidAmbigSubs :: ![(info,[Evidence p info])]  }
+  |  Evid_Ambig      { evidPred :: !p                       , evidAmbigSubs :: ![(info,[Evidence' p info])]  }
+
+type Evidence = Evidence' CHRPredOcc RedHowAnnotation
 %%]
 
 %%[(9 hmtyinfer)
-instance (Show info, Show p) => Show (Evidence p info) where
+instance (Show info, Show p) => Show (Evidence' p info) where
   show _ = "Evidence"
 
-instance (Eq p, Eq info) => Eq (Evidence p info) where
+instance (Eq p, Eq info) => Eq (Evidence' p info) where
   (Evid_Proof _ i1 evs1) == (Evid_Proof _ i2 evs2) = i1 == i2 && evs1 == evs2
   (Evid_Recurse p1     ) == (Evid_Recurse p2     ) = p1 == p2
   _                      == _                      = False
 
-instance (Ord p, Ord info) => Ord (Evidence p info) where
+instance (Ord p, Ord info) => Ord (Evidence' p info) where
   Evid_Unresolved _ _    `compare` _                      = LT
   _                      `compare` Evid_Unresolved _ _    = GT
   Evid_Proof _ i1 evs1   `compare` Evid_Proof _ i2 evs2   = orderingLexic (i1 `compare` i2 : zipWith compare evs1 evs2)
@@ -65,7 +67,7 @@ instance (Ord p, Ord info) => Ord (Evidence p info) where
 %%]
 
 %%[(9 hmtyinfer)
-instance (PP info, PP p) => PP (Evidence p info) where
+instance (PP info, PP p) => PP (Evidence' p info) where
   pp (Evid_Proof _ info []) = "Ev:"             >#< info
   pp (Evid_Proof _ info es) = "Ev:"             >#< info >#< ppBracketsCommas' es
   pp (Evid_Recurse p      ) = "Ev: recurse:"    >#< p
@@ -74,15 +76,15 @@ instance (PP info, PP p) => PP (Evidence p info) where
 %%]
 
 %%[(9 hmtyinfer)
-type instance ExtrValVarKey (Evidence p info) = ExtrValVarKey p
+type instance ExtrValVarKey (Evidence' p info) = ExtrValVarKey p
 
-instance (VarExtractable p) => VarExtractable (Evidence p info) where
+instance (VarExtractable p) => VarExtractable (Evidence' p info) where
   varFreeSet            (Evid_Unresolved  p   _ )    = varFreeSet p
   varFreeSet            (Evid_Proof       p _ es)    = Set.unions $ varFreeSet p : map varFreeSet es
   varFreeSet            (Evid_Recurse     p     )    = varFreeSet p
   varFreeSet            (Evid_Ambig       p  ess)    = Set.unions $ varFreeSet p : map (Set.unions . map varFreeSet . snd) ess
 
-instance VarUpdatable p s => VarUpdatable (Evidence p info) s where
+instance VarUpdatable p s => VarUpdatable (Evidence' p info) s where
   -- type SubstVarKey s = SubstVarKey s
   -- type SubstVarVal s = SubstVarVal s
   varUpd s     (Evid_Unresolved  p   u )    = Evid_Unresolved (varUpd s p) u
@@ -97,7 +99,7 @@ instance VarUpdatable p s => VarUpdatable (Evidence p info) s where
 
 %%[(9 hmtyinfer) export(evidUnresolved)
 -- | Get unresolved trace from evidence from which is known is belongs to unresolved predicate
-evidUnresolved :: Eq p => Evidence p info -> [UnresolvedTrace p info]
+evidUnresolved :: Eq p => Evidence' p info -> [UnresolvedTrace' p info]
 evidUnresolved (Evid_Unresolved p us)	= -- concatMap evidUnresolved us
                                           us
 evidUnresolved (Evid_Proof p i ps)
@@ -113,7 +115,7 @@ evidUnresolved _                    	= []
 
 %%[(9 hmtyinfer) export(evidUpdateUnresolved)
 -- | Choose proof over unresolved, to be used when patching evidence with newfound proofs
-evidUpdateUnresolved :: Eq p => Evidence p info -> Evidence p info -> Evidence p info
+evidUpdateUnresolved :: Eq p => Evidence' p info -> Evidence' p info -> Evidence' p info
 evidUpdateUnresolved e                        (Evid_Unresolved _ _)= e
 evidUpdateUnresolved (Evid_Proof p i qs)      e                    = Evid_Proof   p i [evidUpdateUnresolved q e | q <- qs] 
 evidUpdateUnresolved (Evid_Recurse p   )      e                    = Evid_Recurse p
@@ -122,7 +124,7 @@ evidUpdateUnresolved u@(Evid_Unresolved q _)  e     | q == evidPred e = e
 %%]
 
 %%[(9 hmtyinfer)
-evidSubstUnresolved :: (p -> Maybe (Evidence p info)) -> Evidence p info -> Evidence p info
+evidSubstUnresolved :: (p -> Maybe (Evidence' p info)) -> Evidence' p info -> Evidence' p info
 evidSubstUnresolved lkup ev
   = s ev
   where s ev = case ev of
@@ -139,15 +141,17 @@ evidSubstUnresolved lkup ev
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(InfoToEvidenceMap,evidMpInsert,evidMpUnion,evidMpSubst)
-type InfoToEvidenceMap p info = Map.Map info (Evidence p info)
+type InfoToEvidenceMap' p info = Map.Map info (Evidence' p info)
 
-evidMpInsert :: (Eq p, Ord info) => info -> Evidence p info -> InfoToEvidenceMap p info -> InfoToEvidenceMap p info
+type InfoToEvidenceMap = InfoToEvidenceMap' CHRPredOcc RedHowAnnotation
+
+evidMpInsert :: (Eq p, Ord info) => info -> Evidence' p info -> InfoToEvidenceMap' p info -> InfoToEvidenceMap' p info
 evidMpInsert = Map.insertWith evidUpdateUnresolved
 
-evidMpUnion :: (Eq p, Ord info) => InfoToEvidenceMap p info -> InfoToEvidenceMap p info -> InfoToEvidenceMap p info
+evidMpUnion :: (Eq p, Ord info) => InfoToEvidenceMap' p info -> InfoToEvidenceMap' p info -> InfoToEvidenceMap' p info
 evidMpUnion = Map.unionWith evidUpdateUnresolved
 
-evidMpSubst :: (p -> Maybe (Evidence p info)) -> InfoToEvidenceMap p info -> InfoToEvidenceMap p info
+evidMpSubst :: (p -> Maybe (Evidence' p info)) -> InfoToEvidenceMap' p info -> InfoToEvidenceMap' p info
 evidMpSubst lkup = Map.map (evidSubstUnresolved lkup)
 %%]
 

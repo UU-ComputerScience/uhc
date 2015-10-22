@@ -48,7 +48,7 @@ Initial values
 %%]
 
 -- CHR solver
-%%[(50 hmtyinfer) import({%{EH}Pred.ToCHR}(initScopedPredStore))
+%%[(50 hmtyinfer) import({%{EH}Pred.ToCHR}(initCHRStore))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,7 +97,7 @@ initialEHSem opts fp
       , EHSem.kiGam_Inh_AGItf           		= initKiGam
       , EHSem.clGam_Inh_AGItf           		= Pr.initClGam
       , EHSem.clDfGam_Inh_AGItf         		= emptyGam
-      , EHSem.chrStore_Inh_AGItf        		= initScopedPredStore
+      , EHSem.chrStore_Inh_AGItf        		= initCHRStore
 %%]]
 %%[[(50 codegen)
       , EHSem.importUsedModules_Inh_AGItf		= emptyImportUsedModules

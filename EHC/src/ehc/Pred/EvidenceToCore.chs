@@ -62,12 +62,14 @@ type PredScopeToCBindMap = PredScopeToBindMap' CBind
 %%[(9 codegen)
 %%]
 
-%%[(9 codegen) export(OverlapEvid(..))
-data OverlapEvid p info
+%%[(9 codegen) export(OverlapEvid, OverlapEvid'(..))
+data OverlapEvid' p info
   = OverlapEvid
       { overlapevidPredOcc  :: !p
       , overlapevidInfos    :: ![info]
       }
+
+type OverlapEvid = OverlapEvid' CHRPredOcc RedHowAnnotation
 %%]
 
 %%[(9 codegen) export(evidKeyToBindMapUnion,predScopeToBindMapUnion)
@@ -85,7 +87,7 @@ predScopeToBindMapUnion = Map.unionWith (++)
 %%[(9 codegen)
 -- | Translate evidence to actual core, taking into account the need to share (i.e. do CSE, by state accumulating maps).
 --   Cleanup dd 20120209, rewrite to State version.
-evidMpToCore2 :: FIIn' gm -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[OverlapEvid CHRPredOcc RedHowAnnotation])
+evidMpToCore2 :: FIIn' gm -> InfoToEvidenceMap -> (EvidKeyToCExprMap,[OverlapEvid])
 evidMpToCore2 env evidMp
   = ( -- Map.map (\r -> (tcrCExpr r,tcrTy r,tcrUsed r,tcrScope r)) $ 
       tcsMp
@@ -102,8 +104,8 @@ evidMpToCore2 env evidMp
 
         -- | Make Core for a single Evidence, recursing for subevidence
         mk1 :: Maybe UID									-- an UID already may have been assigned, it then should be used (the case for start evidence of this fun)
-            -> Evidence CHRPredOcc RedHowAnnotation			-- the evidence
-            -> State (ToCoreState CHRPredOcc RedHowAnnotation CExpr Ty) (ToCoreRes CExpr Ty)
+            -> Evidence			-- the evidence
+            -> State (ToCoreState CExpr Ty) (ToCoreRes CExpr Ty)
         mk1 mbevk ev
           = case ev of
               Evid_Proof p info evs
@@ -143,12 +145,12 @@ evidMpToCore2 env evidMp
         ins :: Bool                                     -- insert in UID map?
             -> UID                                      -- the UID for this evidence
             -> HsName                                   -- the name as used in Core for this evidence
-            -> Evidence CHRPredOcc RedHowAnnotation     -- the evidence
+            -> Evidence						     		-- the evidence
             -> CExpr                                    -- its Core expr
             -> Ty                                       -- its type
             -> PredScope                                -- its scope
             -> Set.Set SubEvid                          -- its sub evidence
-            -> State (ToCoreState CHRPredOcc RedHowAnnotation CExpr Ty) (ToCoreRes CExpr Ty)
+            -> State (ToCoreState CExpr Ty) (ToCoreRes CExpr Ty)
         ins insk k evnm ev c ty sc uses
           = do { st <- get
                ; case Map.lookup ev $ tcsEvMp st of
@@ -402,13 +404,15 @@ evidMpToCore3 env evidMp
 
 %%[(9 codegen)
 -- | State maintained during evid -> core
-data ToCoreState p info e t
+data ToCoreState' p info e t
   = ToCoreState
       { tcsMp       :: !(Map.Map UID (ToCoreRes e t))                 	-- accumulating map: uid -> Core (+additional info)
-      , tcsEvMp     :: !(Map.Map (Evidence p info) (ToCoreRes e t))   	-- accumulating map: evidence -> Core (+additional info)
+      , tcsEvMp     :: !(Map.Map (Evidence' p info) (ToCoreRes e t))   	-- accumulating map: evidence -> Core (+additional info)
       , tcsPrMp     :: !(Map.Map p HsName)                      		-- accumulating map: for recursive proof, names for predicates to be introduced
       , tcsUniq     :: !UID                                     		-- threaded unique id
       }
+
+type ToCoreState e t = ToCoreState' CHRPredOcc RedHowAnnotation e t
 
 -- | The core expression, plus additional info
 data ToCoreRes e t
@@ -445,7 +449,7 @@ instance PP SubEvid where
 
 %%[(9 codegen) export(evidMpToCore)
 -- | Translate evidence to actual core, taking into account the need to share (i.e. do CSE)
-evidMpToCore :: FIIn' gm -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[OverlapEvid CHRPredOcc RedHowAnnotation])
+evidMpToCore :: FIIn' gm -> InfoToEvidenceMap -> (EvidKeyToCExprMap,[OverlapEvid])
 evidMpToCore = evidMpToCore2
 {-
 evidMpToCore env evidMp

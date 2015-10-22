@@ -99,7 +99,7 @@ data FIOut
 %%]]
 %%[[9
        ,  foPredOccL        :: ![PredOcc]				-- arisen predicates (to be obsolete)
-       ,  foGathCnstrMp     :: !CHRPredOccCnstrMp		-- arisen predicates
+       ,  foGathCnstrMp     :: !ConstraintToInfoMap		-- arisen predicates
 %%]]
 %%[[10
        ,  foRowCoeL         :: !(AssocL HsName Coe)		-- internal, coercions for row fields

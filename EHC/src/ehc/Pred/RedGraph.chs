@@ -48,26 +48,28 @@ true  ::  RedNode p
 true  =   mkRedNode []
 %%]
 
-%%[(9 hmtyinfer) export(RedGraph,emptyRedGraph)
-type RedGraph p info = AGraph (RedNode p) info
+%%[(9 hmtyinfer) export(RedGraph',RedGraph,emptyRedGraph)
+type RedGraph' p info = AGraph (RedNode p) info
 
-emptyRedGraph :: Ord p => RedGraph p i
+type RedGraph = RedGraph' CHRPredOcc RedHowAnnotation
+
+emptyRedGraph :: Ord p => RedGraph' p i
 emptyRedGraph = emptyAGraph
 %%]
 
 %%[(9 hmtyinfer) export(mkRedGraphFromReductions,addToRedGraphFromReductions)
-addToRedGraphFromReductions :: Ord p => [Constraint p info] -> RedGraph p info -> RedGraph p info
+addToRedGraphFromReductions :: [Constraint] -> RedGraph -> RedGraph
 addToRedGraphFromReductions cs g = foldr addReduction g cs
 
-mkRedGraphFromReductions :: Ord p => [Constraint p info] -> RedGraph p info
+mkRedGraphFromReductions :: [Constraint] -> RedGraph
 mkRedGraphFromReductions cs = addToRedGraphFromReductions cs emptyRedGraph
 %%]
 
 %%[(9 hmtyinfer) export(addToRedGraphFromAssumes,mkRedGraphFromAssumes)
-addToRedGraphFromAssumes :: Ord p => ConstraintToInfoMap p info -> RedGraph p info -> RedGraph p info
+addToRedGraphFromAssumes :: ConstraintToInfoMap -> RedGraph -> RedGraph
 addToRedGraphFromAssumes cm g = Map.foldrWithKey addAssumption g cm
 
-mkRedGraphFromAssumes :: Ord p => ConstraintToInfoMap p info -> RedGraph p info
+mkRedGraphFromAssumes :: ConstraintToInfoMap -> RedGraph
 mkRedGraphFromAssumes cm = addToRedGraphFromAssumes cm emptyRedGraph
 %%]
 
@@ -82,7 +84,7 @@ instance PP p => PP (RedNode p) where
 %%]
 
 %%[(9 hmtyinfer) export(ppRedGraph)
-ppRedGraph :: (PP p, PP i) => RedGraph p i -> PP_Doc
+ppRedGraph :: (PP p, PP i) => RedGraph' p i -> PP_Doc
 ppRedGraph ag = "RedGraph" >-< indent 2 ((ppBracketsCommasBlock $ nodes g) >-< (ppBracketsCommasBlock $ edges g) >-< pp (show g))
   where g = agraphGraph ag
 %%]
@@ -92,13 +94,13 @@ ppRedGraph ag = "RedGraph" >-< indent 2 ((ppBracketsCommasBlock $ nodes g) >-< (
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(addAssumption)
-addAssumption :: Ord p => Constraint p info -> [info] -> RedGraph p info -> RedGraph p info
+addAssumption :: Constraint -> [RedHowAnnotation] -> RedGraph -> RedGraph
 addAssumption (Assume  p)  is  = insertEdges (zip3 (repeat (Red_Pred p)) (repeat true) is) 
 addAssumption _            _   = id
 %%]
 
 %%[(9 hmtyinfer) export(addReduction)
-addReduction :: Ord p => Constraint p info -> RedGraph p info -> RedGraph p info
+addReduction :: Constraint -> RedGraph -> RedGraph
 addReduction (Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=[q]})
                                     =  insertEdge (Red_Pred p, Red_Pred q  , i)
 addReduction (Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=ps})
@@ -116,7 +118,7 @@ addReduction _                      =  id
 - until stop nodes are reached.
 
 %%[(9 hmtyinfer) export(redPruneReductionsUntil)
-redPruneReductionsUntil :: (Ord p) => [p] -> (p -> Bool) -> RedGraph p info -> RedGraph p info
+redPruneReductionsUntil :: [CHRPredOcc] -> (CHRPredOcc -> Bool) -> RedGraph -> RedGraph
 redPruneReductionsUntil leaves stop gr
   = dels (map Red_Pred leaves) gr
   where dels leaves g = foldr del g leaves
@@ -133,7 +135,7 @@ redPruneReductionsUntil leaves stop gr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(redAlternatives)
-redAlternatives :: (Ord p {-, PP p, PP info debug -}) => RedGraph p info -> p -> HeurAlts p info
+redAlternatives :: RedGraph -> CHRPredOcc -> HeurAlts
 redAlternatives gr
   = recOr Set.empty
   where  recOr visited p = HeurAlts p (map (recAnd visited') (successors gr (Red_Pred p)))

@@ -42,9 +42,9 @@ type instance CHRMatchableKey VarMp = Key
 %%% Constraint
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(Constraint(..))
+%%[(9 hmtyinfer || hmtyast) export(Constraint, Constraint'(..))
 -- | A Constraint is abstracted over the exact predicate, but differentiates on the role: to prove, can be assumed, and side effect of reduction
-data Constraint p info
+data Constraint' p info
   = Prove           { cnstrPred :: !p }             -- proof obligation
   | Assume          { cnstrPred :: !p }             -- assumed constraint
   | Reduction                                       -- 'side effect', residual info used by (e.g.) codegeneration
@@ -57,30 +57,30 @@ data Constraint p info
                     }
   deriving (Eq, Ord, Show)
 
-type Constraint' = Constraint CHRPredOcc RedHowAnnotation
+type Constraint = Constraint' CHRPredOcc RedHowAnnotation
 
-type instance TTKey (Constraint p info) = TTKey p
+type instance TTKey (Constraint' p info) = TTKey p
 %%]
 
 %%[(50 hmtyinfer || hmtyast)
 #if __GLASGOW_HASKELL__ >= 708
-deriving instance Typeable  Constraint
+deriving instance Typeable  Constraint'
 #else
-deriving instance Typeable2 Constraint
+deriving instance Typeable2 Constraint'
 #endif
-deriving instance (Data x, Data y) => Data (Constraint x y)
+deriving instance (Data x, Data y) => Data (Constraint' x y)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(cnstrReducablePart)
 -- | Dissection of Constraint, including reconstruction function
-cnstrReducablePart :: Constraint p info -> Maybe (String,p,p->Constraint p info)
+cnstrReducablePart :: Constraint' p info -> Maybe (String,p,p->Constraint' p info)
 cnstrReducablePart (Prove  p) = Just ("Prf",p,Prove)
 cnstrReducablePart (Assume p) = Just ("Ass",p,Assume)
 cnstrReducablePart _          = Nothing
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance (CHRMatchable env p s, TTKey p ~ Key) => CHRMatchable env (Constraint p info) s where
+instance (CHRMatchable env p s, TTKey p ~ Key) => CHRMatchable env (Constraint' p info) s where
   chrMatchTo env s c1 c2
     = do { (_,p1,_) <- cnstrReducablePart c1
          ; (_,p2,_) <- cnstrReducablePart c2
@@ -89,25 +89,25 @@ instance (CHRMatchable env p s, TTKey p ~ Key) => CHRMatchable env (Constraint p
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-instance (TTKeyable p {- , TTKey (Constraint p info) ~ TTKey p -} , TTKey p ~ Key) => TTKeyable (Constraint p info) where
-  -- type TTKey (Constraint p info) = Key
+instance (TTKeyable p, TTKey p ~ Key) => TTKeyable (Constraint' p info) where
+  -- type TTKey (Constraint' p info) = Key
   toTTKey' o c -- = maybe [] (\(s,p,_) -> ttkAdd (TT1K_One $ Key_Str s) [toTTKey' o p]) $ cnstrReducablePart c
     = case cnstrReducablePart c of
         Just (s,p,_) -> ttkAdd' (TT1K_One $ Key_Str s) cs
                      where (_,cs) = toTTKeyParentChildren' o p
-        _            -> panic "TTKeyable (Constraint p info).toTTKey'" -- ttkEmpty
+        _            -> panic "TTKeyable (Constraint' p info).toTTKey'" -- ttkEmpty
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
-type instance ExtrValVarKey (Constraint p info) = ExtrValVarKey p
+type instance ExtrValVarKey (Constraint' p info) = ExtrValVarKey p
 
-instance (VarExtractable p) => VarExtractable (Constraint p info) where
+instance (VarExtractable p) => VarExtractable (Constraint' p info) where
   varFreeSet c
     = case cnstrReducablePart c of
         Just (_,p,_) -> varFreeSet p
         _            -> Set.empty
 
-instance (VarUpdatable p s,VarUpdatable info s) => VarUpdatable (Constraint p info) s where
+instance (VarUpdatable p s,VarUpdatable info s) => VarUpdatable (Constraint' p info) s where
   varUpd s      (Prove     p       ) = Prove      (varUpd s p)
   varUpd s      (Assume    p       ) = Assume     (varUpd s p)
   varUpd s      r@(Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=ps})
@@ -118,22 +118,19 @@ instance (VarUpdatable p s,VarUpdatable info s) => VarUpdatable (Constraint p in
 %%% Common (derived) types & basic construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(CHRPredConstraint,CHRIntermediateUntilAssume)
--- | Constraint specialized to scoped predicates with reduction info
-type CHRPredConstraint    = Constraint CHRPredOcc RedHowAnnotation
-
+%%[(9 hmtyinfer) export(CHRIntermediateUntilAssume)
 -- | intermediate structure for holding constraint and related info until it can safely be assumed
-type CHRIntermediateUntilAssume = (CHRPredOcc,(PredScope,CHRPredOccCnstrTraceMp))
+type CHRIntermediateUntilAssume = (CHRPredOcc,(PredScope,ConstraintToInfoTraceMp))
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(mkProve, mkAssume, mkReduction)
-mkProve :: CHRPredOcc -> CHRPredConstraint
+mkProve :: CHRPredOcc -> Constraint
 mkProve = Prove
 
-mkAssume :: CHRPredOcc -> CHRPredConstraint
+mkAssume :: CHRPredOcc -> Constraint
 mkAssume = Assume
 
-mkReduction :: CHRPredOcc -> RedHowAnnotation -> [CHRPredOcc] -> CHRPredConstraint
+mkReduction :: CHRPredOcc -> RedHowAnnotation -> [CHRPredOcc] -> Constraint
 mkReduction p i ps
   = Reduction p i ps
 %%[[15
@@ -146,35 +143,35 @@ mkReduction p i ps
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer).mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
-mkProveConstraint :: Pred -> UID -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
+mkProveConstraint :: Pred -> UID -> PredScope -> (Constraint,RedHowAnnotation)
 mkProveConstraint pr i sc =  (mkProve (mkCHRPredOcc pr sc),RedHow_ProveObl i sc)
 
-mkAssumeConstraint'' :: Pred -> VarUIDHsName -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
+mkAssumeConstraint'' :: Pred -> VarUIDHsName -> PredScope -> (Constraint,RedHowAnnotation)
 mkAssumeConstraint'' pr vun sc =  (mkAssume (mkCHRPredOcc pr sc),RedHow_Assumption vun sc)
 
-mkAssumeConstraint' :: Pred -> UID -> HsName -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
+mkAssumeConstraint' :: Pred -> UID -> HsName -> PredScope -> (Constraint,RedHowAnnotation)
 mkAssumeConstraint' pr i n sc =  mkAssumeConstraint'' pr (VarUIDHs_Name i n) sc
 
-mkAssumeConstraint :: Pred -> UID -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
+mkAssumeConstraint :: Pred -> UID -> PredScope -> (Constraint,RedHowAnnotation)
 mkAssumeConstraint pr i sc =  mkAssumeConstraint'' pr (VarUIDHs_UID i) sc
 %%]
 
 %%[(99 hmtyinfer) -9.mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
-mkProveConstraint :: Range -> Pred -> UID -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
+mkProveConstraint :: Range -> Pred -> UID -> PredScope -> (Constraint,RedHowAnnotation)
 mkProveConstraint r pr i sc =  (mkProve (mkCHRPredOccRng r pr sc),RedHow_ProveObl i sc)
 
-mkAssumeConstraint'' :: Range -> Pred -> VarUIDHsName -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
+mkAssumeConstraint'' :: Range -> Pred -> VarUIDHsName -> PredScope -> (Constraint,RedHowAnnotation)
 mkAssumeConstraint'' r pr vun sc =  (mkAssume (mkCHRPredOccRng r pr sc),RedHow_Assumption vun sc)
 
-mkAssumeConstraint' :: Range -> Pred -> UID -> HsName -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
+mkAssumeConstraint' :: Range -> Pred -> UID -> HsName -> PredScope -> (Constraint,RedHowAnnotation)
 mkAssumeConstraint' r pr i n sc =  mkAssumeConstraint'' r pr (VarUIDHs_Name i n) sc
 
-mkAssumeConstraint :: Range -> Pred -> UID -> PredScope -> (CHRPredConstraint,RedHowAnnotation)
+mkAssumeConstraint :: Range -> Pred -> UID -> PredScope -> (Constraint,RedHowAnnotation)
 mkAssumeConstraint r pr i sc =  mkAssumeConstraint'' r pr (VarUIDHs_UID i) sc
 %%]
 
 %%[(9 hmtyinfer) export(patchToAssumeConstraint)
-patchToAssumeConstraint :: UID -> PredScope -> (PredScope -> RedHowAnnotation -> x -> x) -> (CHRPredConstraint,x) -> (CHRPredConstraint,x)
+patchToAssumeConstraint :: UID -> PredScope -> (PredScope -> RedHowAnnotation -> x -> x) -> (Constraint,x) -> (Constraint,x)
 patchToAssumeConstraint i sc set (c,x)
   = (mkAssume (pr {cpoCxt = cx {cpocxScope = sc}}), set sc (RedHow_Assumption (VarUIDHs_UID i) sc) x)
   where pr = cnstrPred c
@@ -185,22 +182,17 @@ patchToAssumeConstraint i sc set (c,x)
 %%% Constraint to info map for CHRPredOcc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(CHRPredOccCnstrTraceMp,CHRPredOccCnstrMp)
-type CHRPredOccCnstrTraceMp = ConstraintToInfoTraceMp CHRPredOcc RedHowAnnotation
-type CHRPredOccCnstrMp      = ConstraintToInfoMap     CHRPredOcc RedHowAnnotation
-%%]
-
 %%[(9 hmtyinfer) export(gathPredLToProveCnstrMp,gathPredLToAssumeCnstrMp)
-gathPredLToProveCnstrMp :: [PredOcc] -> CHRPredOccCnstrMp
+gathPredLToProveCnstrMp :: [PredOcc] -> ConstraintToInfoMap
 gathPredLToProveCnstrMp l = cnstrMpFromList [ rngLift (poRange po) mkProveConstraint (poPr po) (poId po) (poScope po) | po <- l ]
 
-gathPredLToAssumeCnstrMp :: [PredOcc] -> CHRPredOccCnstrMp
+gathPredLToAssumeCnstrMp :: [PredOcc] -> ConstraintToInfoMap
 gathPredLToAssumeCnstrMp l = cnstrMpFromList [ rngLift (poRange po) mkAssumeConstraint (poPr po) (poId po) (poScope po) | po <- l ]
 %%]
 
 %%[(9 hmtyinfer) export(predOccCnstrMpLiftScope)
 -- | Lift predicate occurrences to new scope, used to lift unproven predicates to an outer scope.
-predOccCnstrMpLiftScope :: PredScope -> CHRPredOccCnstrMp -> CHRPredOccCnstrMp
+predOccCnstrMpLiftScope :: PredScope -> ConstraintToInfoMap -> ConstraintToInfoMap
 predOccCnstrMpLiftScope sc
   = Map.mapKeysWith (++) c . Map.map (map i)
   where c (Prove o@(CHRPredOcc {cpoCxt=cx}))
@@ -318,30 +310,32 @@ instance PP ByScopeRedHow where
 %%% Resolution trace reification, for error reporting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) export(UnresolvedTrace(..))
+%%[(9 hmtyinfer || hmtyast) export(UnresolvedTrace'(..), UnresolvedTrace)
 -- | The trace of an unresolved predicate
-data UnresolvedTrace p info
+data UnresolvedTrace' p info
   = UnresolvedTrace_None									-- no trace required when all is resolved
   | UnresolvedTrace_Red										-- ok reduction, with failure deeper down
       { utraceRedFrom		:: p
       , utraceInfoTo2From	:: info
-      , utraceRedTo			:: [UnresolvedTrace p info]
+      , utraceRedTo			:: [UnresolvedTrace' p info]
       }
   | UnresolvedTrace_Fail									-- failed reduction
       { utraceRedFrom		:: p
       -- , utraceInfoTo2From	:: info
-      , utraceRedTo			:: [UnresolvedTrace p info]
+      , utraceRedTo			:: [UnresolvedTrace' p info]
       }
   | UnresolvedTrace_Overlap									-- choice could not be made
       { utraceRedFrom		:: p
-      , utraceRedChoices	:: [(info,[UnresolvedTrace p info])]
+      , utraceRedChoices	:: [(info,[UnresolvedTrace' p info])]
       }
   deriving Show
 
-instance Eq p => Eq (UnresolvedTrace p info) where
+type UnresolvedTrace = UnresolvedTrace' CHRPredOcc RedHowAnnotation
+
+instance Eq p => Eq (UnresolvedTrace' p info) where
   t1 == t2 = True -- utraceRedFrom t1 == utraceRedFrom t2
 
-instance (PP p, PP info) => PP (UnresolvedTrace p info) where
+instance (PP p, PP info) => PP (UnresolvedTrace' p info) where
   pp x = case x of
   		   UnresolvedTrace_None 			-> PP.empty
   		   UnresolvedTrace_Red 		p i us 	-> p >|< ":" >#< i >-< indent 2 (vlist $ map pp us)
@@ -355,45 +349,49 @@ instance (PP p, PP info) => PP (UnresolvedTrace p info) where
 
 %%[(9 hmtyinfer || hmtyast)
 -- | Map from constraint to something
-type ConstraintMp' p info x = Map.Map (Constraint p info) [x]
+type ConstraintMp' p info x = Map.Map (Constraint' p info) [x]
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(cnstrMpSingletonL,cnstrMpFromList)
-cnstrMpSingletonL :: Constraint p i -> [x] -> ConstraintMp' p i x
+cnstrMpSingletonL :: Constraint' p i -> [x] -> ConstraintMp' p i x
 cnstrMpSingletonL c xs = Map.singleton c xs
 
-cnstrMpSingleton :: Constraint p i -> x -> ConstraintMp' p i x
+cnstrMpSingleton :: Constraint' p i -> x -> ConstraintMp' p i x
 cnstrMpSingleton c x = cnstrMpSingletonL c [x]
 
-cnstrMpFromList :: (Ord p, Ord i) => [(Constraint p i,x)] -> ConstraintMp' p i x
+cnstrMpFromList :: (Ord p, Ord i) => [(Constraint' p i,x)] -> ConstraintMp' p i x
 cnstrMpFromList l = Map.fromListWith (++) [ (c,[x]) | (c,x) <- l ]
 
 cnstrMpMap :: (Ord p, Ord i) => (x -> y) -> ConstraintMp' p i x -> ConstraintMp' p i y
 cnstrMpMap f = Map.map (map f)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoTraceMp)
+%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoTraceMp', ConstraintToInfoTraceMp)
 -- | Map from constraint to info + trace
-type ConstraintToInfoTraceMp p info = ConstraintMp' p info (info,[UnresolvedTrace p info])
+type ConstraintToInfoTraceMp' p info = ConstraintMp' p info (info,[UnresolvedTrace' p info])
+
+type ConstraintToInfoTraceMp = ConstraintToInfoTraceMp' CHRPredOcc RedHowAnnotation
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(cnstrTraceMpSingleton,cnstrTraceMpLiftTrace,cnstrTraceMpElimTrace,cnstrTraceMpFromList)
-cnstrTraceMpFromList :: (Ord p, Ord i) => [(Constraint p i,(i,[UnresolvedTrace p i]))] -> ConstraintToInfoTraceMp p i
+cnstrTraceMpFromList :: (Ord p, Ord i) => [(Constraint' p i,(i,[UnresolvedTrace' p i]))] -> ConstraintToInfoTraceMp' p i
 cnstrTraceMpFromList = cnstrMpFromList
 
-cnstrTraceMpSingleton :: Constraint p i -> i -> [UnresolvedTrace p i] -> ConstraintToInfoTraceMp p i
+cnstrTraceMpSingleton :: Constraint' p i -> i -> [UnresolvedTrace' p i] -> ConstraintToInfoTraceMp' p i
 cnstrTraceMpSingleton c i ts = cnstrMpSingleton c (i,ts)
 
-cnstrTraceMpElimTrace :: (Ord p, Ord i) => ConstraintToInfoTraceMp p i -> ConstraintToInfoMap p i
+cnstrTraceMpElimTrace :: (Ord p, Ord i) => ConstraintToInfoTraceMp' p i -> ConstraintToInfoMap' p i
 cnstrTraceMpElimTrace = cnstrMpMap fst
 
-cnstrTraceMpLiftTrace :: (Ord p, Ord i) => ConstraintToInfoMap p i -> ConstraintToInfoTraceMp p i
+cnstrTraceMpLiftTrace :: (Ord p, Ord i) => ConstraintToInfoMap' p i -> ConstraintToInfoTraceMp' p i
 cnstrTraceMpLiftTrace = cnstrMpMap (\x -> (x,[]))
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap)
+%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap', ConstraintToInfoMap)
 -- | Map from constraint to info
-type ConstraintToInfoMap     p info = ConstraintMp' p info info
+type ConstraintToInfoMap'     p info = ConstraintMp' p info info
+
+type ConstraintToInfoMap = ConstraintToInfoMap' CHRPredOcc RedHowAnnotation
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(emptyCnstrMp)
@@ -402,7 +400,7 @@ emptyCnstrMp = Map.empty
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) export(cnstrMpFromList)
-cnstrMpFromList :: (Ord p, Ord i) => [(Constraint p i,i)] -> ConstraintToInfoMap p i
+cnstrMpFromList :: (Ord p, Ord i) => [(Constraint' p i,i)] -> ConstraintToInfoMap' p i
 cnstrMpFromList l = Map.fromListWith (++) [ (c,[i]) | (c,i) <- l ]
 %%]
 
@@ -419,7 +417,7 @@ cnstrMpUnions = Map.unionsWith (++)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast)
-instance IsConstraint (Constraint p info) where
+instance IsConstraint (Constraint' p info) where
   cnstrRequiresSolve (Reduction {}) = False
   cnstrRequiresSolve _              = True
 %%]
@@ -429,7 +427,7 @@ instance IsConstraint (Constraint p info) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast)
-instance (PP p, PP info) => PP (Constraint p info) where
+instance (PP p, PP info) => PP (Constraint' p info) where
   pp (Prove     p     ) = "Prove"  >#< p
   pp (Assume    p     ) = "Assume" >#< p
   pp (Reduction {cnstrPred=p, cnstrInfo=i, cnstrFromPreds=ps})
@@ -441,7 +439,7 @@ instance (PP p, PP info) => PP (Constraint p info) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 hmtyinfer || hmtyast)
-instance (Serialize p, Serialize i) => Serialize (Constraint p i) where
+instance (Serialize p, Serialize i) => Serialize (Constraint' p i) where
   sput (Prove     a      ) = sputWord8 0 >> sput a
   sput (Assume    a      ) = sputWord8 1 >> sput a
   sput (Reduction a b c d) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d

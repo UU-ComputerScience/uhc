@@ -12,16 +12,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-ATTR NTPrf [ chrStore: ScopedPredStore | | ]
+ATTR NTPrf [ chrStore: CHRStore | | ]
 %%]
 
 %%[(50 hmtyinfer)
-ATTR AGItf [ chrStore: ScopedPredStore | | gathChrStore: ScopedPredStore ]
+ATTR AGItf [ chrStore: CHRStore | | gathChrStore: CHRStore ]
 %%]
 
 %%[(9 hmtyinfer).initChrStore
 SEM AGItf
-  | AGItf       loc         .   initChrStore        =   initScopedPredStore
+  | AGItf       loc         .   initChrStore        =   initCHRStore
 %%]
 
 %%[(50 hmtyinfer) -9.initChrStore
@@ -206,7 +206,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-ATTR AllDecl Expr [ | | chrClassDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRClassDecl Pred RedHowAnnotation)} ]
+ATTR AllDecl Expr [ | | chrClassDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRClassDecl)} ]
 %%]
 
 %%[(9 hmtyinfer)
@@ -235,7 +235,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-ATTR NTCode [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedHowAnnotation PredScope)} ]
+ATTR NTCode [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl)} ]
 %%]
 
 %%[(9 hmtyinfer)

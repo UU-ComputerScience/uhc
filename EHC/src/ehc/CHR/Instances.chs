@@ -39,12 +39,12 @@ Derived from work by Gerrit vd Geest.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-type instance ExtrValVarKey CHRPredOccCnstrMp = TyVarId
+type instance ExtrValVarKey ConstraintToInfoMap = TyVarId
 
-instance VarExtractable CHRPredOccCnstrMp where
+instance VarExtractable ConstraintToInfoMap where
   varFreeSet        x = Set.unions [ varFreeSet k | k <- Map.keys x ]
 
-instance VarUpdatable CHRPredOccCnstrMp VarMp where
+instance VarUpdatable ConstraintToInfoMap VarMp where
   varUpd s x = Map.mapKeysWith (++) (varUpd s) x
 
 type instance ExtrValVarKey Guard = TyVarId
@@ -301,7 +301,7 @@ instance CHRCheckable FIIn Guard VarMp where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-instance IsCHRConstraint FIIn CHRPredConstraint VarMp
+instance IsCHRConstraint FIIn Constraint VarMp
 
 instance IsCHRGuard FIIn Guard VarMp
 %%]
