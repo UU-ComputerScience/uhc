@@ -170,14 +170,6 @@ mkAssumeConstraint :: Range -> Pred -> UID -> PredScope -> (Constraint,RedHowAnn
 mkAssumeConstraint r pr i sc =  mkAssumeConstraint'' r pr (VarUIDHs_UID i) sc
 %%]
 
-%%[(9 hmtyinfer) export(patchToAssumeConstraint)
-patchToAssumeConstraint :: UID -> PredScope -> (PredScope -> RedHowAnnotation -> x -> x) -> (Constraint,x) -> (Constraint,x)
-patchToAssumeConstraint i sc set (c,x)
-  = (mkAssume (pr {cpoCxt = cx {cpocxScope = sc}}), set sc (RedHow_Assumption (VarUIDHs_UID i) sc) x)
-  where pr = cnstrPred c
-        cx = cpoCxt pr
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constraint to info map for CHRPredOcc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -349,66 +341,62 @@ instance (PP p, PP info) => PP (UnresolvedTrace' p info) where
 
 %%[(9 hmtyinfer || hmtyast)
 -- | Map from constraint to something
-type ConstraintMp' p info x = Map.Map (Constraint' p info) [x]
+type ConstraintMp'' p info x = Map.Map (Constraint' p info) [x]
+type ConstraintMp'         x = ConstraintMp'' CHRPredOcc RedHowAnnotation x
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(cnstrMpSingletonL,cnstrMpFromList)
-cnstrMpSingletonL :: Constraint' p i -> [x] -> ConstraintMp' p i x
+%%[(9 hmtyinfer || hmtyast) export(cnstrMpFromList)
+cnstrMpSingletonL :: Constraint -> [x] -> ConstraintMp' x
 cnstrMpSingletonL c xs = Map.singleton c xs
 
-cnstrMpSingleton :: Constraint' p i -> x -> ConstraintMp' p i x
+cnstrMpSingleton :: Constraint -> x -> ConstraintMp' x
 cnstrMpSingleton c x = cnstrMpSingletonL c [x]
 
-cnstrMpFromList :: (Ord p, Ord i) => [(Constraint' p i,x)] -> ConstraintMp' p i x
+cnstrMpFromList :: [(Constraint,x)] -> ConstraintMp' x
 cnstrMpFromList l = Map.fromListWith (++) [ (c,[x]) | (c,x) <- l ]
 
-cnstrMpMap :: (Ord p, Ord i) => (x -> y) -> ConstraintMp' p i x -> ConstraintMp' p i y
+cnstrMpMap :: (x -> y) -> ConstraintMp' x -> ConstraintMp' y
 cnstrMpMap f = Map.map (map f)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoTraceMp', ConstraintToInfoTraceMp)
--- | Map from constraint to info + trace
-type ConstraintToInfoTraceMp' p info = ConstraintMp' p info (info,[UnresolvedTrace' p info])
+%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoTraceMp)
+-- type ConstraintToInfoTraceMp' p info = ConstraintMp'' p info (info,[UnresolvedTrace' p info])
 
-type ConstraintToInfoTraceMp = ConstraintToInfoTraceMp' CHRPredOcc RedHowAnnotation
+-- | Map from constraint to info + trace
+type ConstraintToInfoTraceMp = ConstraintMp' (RedHowAnnotation,[UnresolvedTrace])
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(cnstrTraceMpSingleton,cnstrTraceMpLiftTrace,cnstrTraceMpElimTrace,cnstrTraceMpFromList)
-cnstrTraceMpFromList :: (Ord p, Ord i) => [(Constraint' p i,(i,[UnresolvedTrace' p i]))] -> ConstraintToInfoTraceMp' p i
+%%[(9 hmtyinfer || hmtyast) export(cnstrTraceMpSingleton,cnstrTraceMpElimTrace,cnstrTraceMpFromList)
+cnstrTraceMpFromList :: [(Constraint,(RedHowAnnotation,[UnresolvedTrace]))] -> ConstraintToInfoTraceMp
 cnstrTraceMpFromList = cnstrMpFromList
 
-cnstrTraceMpSingleton :: Constraint' p i -> i -> [UnresolvedTrace' p i] -> ConstraintToInfoTraceMp' p i
+cnstrTraceMpSingleton :: Constraint -> RedHowAnnotation -> [UnresolvedTrace] -> ConstraintToInfoTraceMp
 cnstrTraceMpSingleton c i ts = cnstrMpSingleton c (i,ts)
 
-cnstrTraceMpElimTrace :: (Ord p, Ord i) => ConstraintToInfoTraceMp' p i -> ConstraintToInfoMap' p i
+cnstrTraceMpElimTrace :: ConstraintToInfoTraceMp -> ConstraintToInfoMap
 cnstrTraceMpElimTrace = cnstrMpMap fst
 
-cnstrTraceMpLiftTrace :: (Ord p, Ord i) => ConstraintToInfoMap' p i -> ConstraintToInfoTraceMp' p i
+cnstrTraceMpLiftTrace :: ConstraintToInfoMap -> ConstraintToInfoTraceMp
 cnstrTraceMpLiftTrace = cnstrMpMap (\x -> (x,[]))
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap', ConstraintToInfoMap)
--- | Map from constraint to info
-type ConstraintToInfoMap'     p info = ConstraintMp' p info info
+%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap)
+-- type ConstraintToInfoMap'     p info = ConstraintMp'' p info info
 
-type ConstraintToInfoMap = ConstraintToInfoMap' CHRPredOcc RedHowAnnotation
+-- | Map from constraint to info
+type ConstraintToInfoMap = ConstraintMp' RedHowAnnotation
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(emptyCnstrMp)
-emptyCnstrMp :: ConstraintMp' p info x
+emptyCnstrMp :: ConstraintMp' x
 emptyCnstrMp = Map.empty
 %%]
 
-%%[(9999 hmtyinfer || hmtyast) export(cnstrMpFromList)
-cnstrMpFromList :: (Ord p, Ord i) => [(Constraint' p i,i)] -> ConstraintToInfoMap' p i
-cnstrMpFromList l = Map.fromListWith (++) [ (c,[i]) | (c,i) <- l ]
-%%]
-
 %%[(9 hmtyinfer || hmtyast) export(cnstrMpUnion,cnstrMpUnions)
-cnstrMpUnion :: (Ord p, Ord i) => ConstraintMp' p i x -> ConstraintMp' p i x -> ConstraintMp' p i x
+cnstrMpUnion :: ConstraintMp' x -> ConstraintMp' x -> ConstraintMp' x
 cnstrMpUnion = Map.unionWith (++)
 
-cnstrMpUnions :: (Ord p, Ord i) => [ConstraintMp' p i x] -> ConstraintMp' p i x
+cnstrMpUnions :: [ConstraintMp' x] -> ConstraintMp' x
 cnstrMpUnions = Map.unionsWith (++)
 %%]
 

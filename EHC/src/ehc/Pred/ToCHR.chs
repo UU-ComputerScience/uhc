@@ -321,7 +321,7 @@ mkEvidence
      , InfoToEvidenceMap							-- mapping to evidence
      , [Err]											-- errors
 %%[[9
-     , [(HeurAlts, [(i, Evidence)])]        	-- debug info
+     , [(HeurAlts, [(RedHowAnnotation, Evidence)])]        	-- debug info
 %%][100
 %%]]
      )
