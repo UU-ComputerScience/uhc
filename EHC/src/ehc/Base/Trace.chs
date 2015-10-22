@@ -79,6 +79,9 @@ trppIsEmpty = Sq.null
 
 trppEmpty :: TrPP
 trppEmpty = Sq.empty
+
+instance PP TrPP where
+  pp = vlist . Fld.toList
 %%]
 
 %%[1 export(trPPOnIO, trPP, trOnPP, trOn)
@@ -96,12 +99,6 @@ trPPOnIO ppl = liftIO $ mapM_ putPPLn $ Fld.toList ppl
 -- | Tracing PPs, producing output on IO
 trOnPP :: (Monad m, MonadIO m) => (TraceOn -> Bool) -> TraceOn -> [PP_Doc] -> m ()
 trOnPP onTr ton ms = when (onTr ton) $ trPPOnIO $ trPP onTr ton ms
-{-
-  where pr []      = return ()
-        pr [m]     = putPPLn $ show ton >|< ":" >#< m
-        pr (m:ms)  = do pr [m]
-                        forM_ ms $ \m -> putPPLn $ indent 2 m
--}
 {-# INLINE trOnPP #-}
 
 -- | Tracing Strings, producing output on IO

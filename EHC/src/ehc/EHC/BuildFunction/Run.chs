@@ -1085,10 +1085,11 @@ ecuIsHSNewerThanHI ecu
 %%][99
                when (isTopMod && ehcOptShowAst opts)
                     (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
-               when (isTopMod && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
-                    liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 %%][100
 %%]]
+               when (isTopMod && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+                    liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
+
                cpSetLimitErrsWhen 5 about errs
 %%[[(99 hmtyinfer tyderivtree)
                when (isTopMod && ehcOptEmitDerivTree opts /= DerivTreeWay_None)

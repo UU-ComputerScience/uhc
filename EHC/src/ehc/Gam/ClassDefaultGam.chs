@@ -55,7 +55,7 @@ clDfGamLookupDefault
   :: ( VarLookup gm TyVarId VarMpInfo
      -- , VarLookup gm Ty VarMpInfo
      , VarLookupCmb VarMp gm
-     , VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo
+     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Pred -> ClassDefaultGam
      -> Maybe VarMp

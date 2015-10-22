@@ -357,7 +357,9 @@ instance VarUpdatable TyGamInfo VarMp where
   s `varUpdCyc` tgi         =   substLift tgiTy (\i x -> i {tgiTy = x}) varUpdCyc s tgi
 %%]]
 
-instance VarExtractable TyGamInfo TyVarId where
+type instance ExtrValVarKey TyGamInfo = TyVarId
+
+instance VarExtractable TyGamInfo where
   varFreeSet tgi         =   varFreeSet (tgiTy tgi)
 %%]
 

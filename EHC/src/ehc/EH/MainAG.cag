@@ -187,10 +187,13 @@ WRAPPER AGItf
 %%[(8 noHmTyRuler hmtyinfer) -1.EHRulerRules
 %%]
 
-%%[1.PrettyAST ag import({EH/PrettyAST})
+%%[1111.PrettyAST ag import({EH/PrettyAST})
 %%]
 
-%%[100 -1.PrettyAST
+%%[100100 -1111.PrettyAST
+%%]
+
+%%[1 ag import({EH/PrettyTrace})
 %%]
 
 %%[(99 tyderivtree).PrettyLaTeX ag import({EH/PrettyLatexDerivTree})

@@ -91,13 +91,17 @@ instance PP Guard where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-instance VarExtractable CHRPredOccCnstrMp TyVarId where
+type instance ExtrValVarKey CHRPredOccCnstrMp = TyVarId
+
+instance VarExtractable CHRPredOccCnstrMp where
   varFreeSet        x = Set.unions [ varFreeSet k | k <- Map.keys x ]
 
 instance VarUpdatable CHRPredOccCnstrMp VarMp where
   varUpd s x = Map.mapKeysWith (++) (varUpd s) x
 
-instance VarExtractable Guard TyVarId where
+type instance ExtrValVarKey Guard = TyVarId
+
+instance VarExtractable Guard where
   varFreeSet        (HasStrictCommonScope   p1 p2 p3) = Set.unions $ map varFreeSet [p1,p2,p3]
   varFreeSet        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map varFreeSet [p1,p2,p3]
   varFreeSet        (IsVisibleInScope       p1 p2   ) = Set.unions $ map varFreeSet [p1,p2]
@@ -130,17 +134,21 @@ instance VarUpdatable Guard VarMp where
 %%]
 
 %%[(9 hmtyinfer)
-instance VarExtractable VarUIDHsName TyVarId where
+type instance ExtrValVarKey VarUIDHsName = TyVarId
+
+instance VarExtractable VarUIDHsName where
   varFreeSet          (VarUIDHs_Var i)  = Set.singleton i
   varFreeSet          _                 = Set.empty
 
 -- instance VarUpdatable VarUIDHsName VarMp where
-instance (VarLookup m (VarUpdKey m) (VarUpdVal m), VarUpdKey m ~ ImplsVarId, VarUpdVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
+instance (VarLookup m (SubstVarKey m) (SubstVarVal m), SubstVarKey m ~ ImplsVarId, SubstVarVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
   varUpd s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 
 %%[(9 hmtyinfer)
-instance VarExtractable RedHowAnnotation TyVarId where
+type instance ExtrValVarKey RedHowAnnotation = TyVarId
+
+instance VarExtractable RedHowAnnotation where
   varFreeSet        (RedHow_Assumption   vun sc)  = Set.unions [varFreeSet vun,varFreeSet sc]
 %%[[10
   varFreeSet        (RedHow_ByLabel      l o sc)  = Set.unions [varFreeSet l,varFreeSet o,varFreeSet sc]
@@ -284,7 +292,6 @@ instance CHRCheckable FIIn Guard VarMp where
 
 %%[(9 hmtyinfer)
 instance CHRMatchable FIIn Pred VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo fi subst pr1 pr2
     = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst |+> fiVarMp fi}) pr1 pr2
          ; return subst'
@@ -293,11 +300,9 @@ instance CHRMatchable FIIn Pred VarMp where
 
 %%[(9 hmtyinfer)
 instance CHRMatchable FIIn CHRPredOccCxt VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo e subst (CHRPredOccCxt_Scope1 sc1) (CHRPredOccCxt_Scope1 sc2) = chrMatchTo e subst sc1 sc2
 
 instance CHRMatchable FIIn PredScope VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
                                                                              where mbSc = varmpScopeLookup v1 subst
@@ -311,7 +316,6 @@ instance CHRMatchable FIIn PredScope VarMp where
 
 %%[(9 hmtyinfer)
 instance CHRMatchable FIIn CHRPredOcc VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo fi subst po1 po2
     = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
          ; subst2 <- chrMatchTo fi subst (cpoCxt po1) (cpoCxt po2)
@@ -321,7 +325,6 @@ instance CHRMatchable FIIn CHRPredOcc VarMp where
 
 %%[(10 hmtyinfer)
 instance CHRMatchable FIIn Label VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo _ subst (Label_Var v1) lb2@(Label_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (Label_Var v1) lb2                | isJust mbLb = chrMatchTo e subst (fromJust mbLb) lb2
                                                                      where mbLb = varmpLabelLookup v1 subst
@@ -335,7 +338,6 @@ instance CHRMatchable FIIn Label VarMp where
 
 %%[(10 hmtyinfer)
 instance CHRMatchable FIIn LabelOffset VarMp where
-  type CHRMatchableKey VarMp = Key
   chrMatchTo _ subst (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo s subst (LabelOffset_Var v1) of2                      | isJust mbOf = chrMatchTo s subst (fromJust mbOf) of2
                                                                                  where mbOf = varmpOffsetLookup v1 subst
@@ -345,6 +347,16 @@ instance CHRMatchable FIIn LabelOffset VarMp where
   chrMatchTo _ subst (LabelOffset_Var v1) of2                                    = Just $ v1 `varmpOffsetUnit` of2
   chrMatchTo _ subst (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2    = Just emptyVarMp
   chrMatchTo _ subst _                    _                                      = Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR instances: IsCHRConstraint, IsCHRGuard, IsCHRSolvable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+instance IsCHRConstraint FIIn CHRPredConstraint VarMp
+
+instance IsCHRGuard FIIn Guard VarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -380,12 +392,12 @@ toOrdering o
 
 %%[(9 hmtyinfer) export(isLetProveCandidate,isLetProveFailure)
 -- | Consider a pred for proving if: no free tvars, or its free tvars do not coincide with those globally used
-isLetProveCandidate :: (VarExtractable x v) => Set.Set v -> x -> Bool
+isLetProveCandidate :: (VarExtractable x) => Set.Set (ExtrValVarKey x) -> x -> Bool
 isLetProveCandidate glob x
   = Set.null fv || Set.null (fv `Set.intersection` glob)
   where fv = varFreeSet x
 
-isLetProveFailure :: (VarExtractable x v) => Set.Set v -> x -> Bool
+isLetProveFailure :: (VarExtractable x) => Set.Set (ExtrValVarKey x) -> x -> Bool
 isLetProveFailure glob x
   = Set.null fv
   where fv = varFreeSet x

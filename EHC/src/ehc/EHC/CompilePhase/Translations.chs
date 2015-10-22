@@ -173,10 +173,11 @@ cpTranslateEH2Output modNm
 %%][99
                      ; when (_ecuIsTopMod ecu && ehcOptShowAst opts)
                             (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
-                     ; when (_ecuIsTopMod ecu && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
-                            liftIO $ putPPFPath (mkOutputFPath opts modNm fp Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 %%][100
 %%]]
+                     ; when (_ecuIsTopMod ecu && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+                            liftIO $ putPPFPath (mkOutputFPath opts modNm fp Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
+
                      ; cpSetLimitErrsWhen 5 about errs
 %%[[(99 hmtyinfer tyderivtree)
                      ; when (_ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)

@@ -299,7 +299,7 @@ fitsIn
      => -} 
      ( VarLookup gm TyVarId VarMpInfo
      , VarLookupCmb VarMp gm
-     , VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo
+     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
      )
      => FIOpts -> FIEnv -> UID -> gm -> Ty -> Ty
      -> FIOut
@@ -330,7 +330,7 @@ fitsInFI
      => -} 
      ( VarLookup gm TyVarId VarMpInfo
      , VarLookupCmb VarMp gm
-     , VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo
+     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Ty -> Ty
      -> FIOut
@@ -1812,7 +1812,7 @@ fitsInFold opts env uniq varmp tyl
 fitPredIntoPred
   :: ( VarLookupCmb VarMp gm
      , VarLookup gm TyVarId VarMpInfo
-     , VarUpdKey gm ~ VarId, VarUpdVal gm ~ VarMpInfo
+     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Pred -> Pred
      -> Maybe (Pred,VarMp)

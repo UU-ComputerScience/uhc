@@ -224,7 +224,9 @@ instance VarUpdatable TyKiGamInfo VarMp where
   s `varUpd`  tkgi         =   tkgi { tkgiKi = s `varUpd` tkgiKi tkgi }
   s `varUpdCyc` tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) varUpdCyc s tkgi
 
-instance VarExtractable TyKiGamInfo TyVarId where
+type instance ExtrValVarKey TyKiGamInfo = TyVarId
+
+instance VarExtractable TyKiGamInfo where
   varFreeSet tkgi         =   varFreeSet (tkgiKi tkgi)
 %%]
 
