@@ -57,7 +57,7 @@ SEM DataConstr
 %%% Data info gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(7 hmtyinfer).dataGam
+%%[7.dataGam
 ATTR
   AllDecl AllExpr -- AllCase
 %%[[97

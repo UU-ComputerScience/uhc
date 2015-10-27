@@ -49,7 +49,7 @@ internalVersionCore = mkInternalVersion 1
 internalVersionCoreRun = mkInternalVersion 1
 
 -- | For binary/serialized EH intermediate structures
-internalVersionEH = mkInternalVersion 1
+internalVersionEH = mkInternalVersion 2
 
 %%]
 

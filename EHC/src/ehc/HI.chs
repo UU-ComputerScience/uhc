@@ -116,12 +116,14 @@ data HIInfo
 %%[[(50 codegen hmtyinfer)
       , hiiMbOrphan             :: !(Maybe (Set.Set HsName))                -- is orphan module, carrying the module names required
 %%]]
+%%[[50
+      , hiiDataGam              :: !DataGam                                 -- datatype info env
+%%]]
 %%[[(50 hmtyinfer)
       , hiiValGam               :: !ValGam                                  -- value identifier environment
       , hiiTyGam                :: !TyGam                                   -- type identifier env
       , hiiTyKiGam              :: !TyKiGam                                 -- type/tyvar kind env
       , hiiPolGam               :: !PolGam                                  -- polarity env
-      , hiiDataGam              :: !DataGam                                 -- datatype info env
       , hiiClGam                :: !Pr.ClGam                                -- class env
       , hiiClDfGam              :: !ClassDefaultGam                         -- class defaults env
       , hiiCHRStore             :: !CHRStore                         -- rule database
@@ -154,8 +156,11 @@ emptyHIInfo
 %%[[(50 codegen hmtyinfer)
            Nothing
 %%]]
+%%[[50
+           emptyGam
+%%]]
 %%[[(50 hmtyinfer)
-           emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
+           emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
 %%]]
 %%[[(50 codegen)
            Map.empty
@@ -241,10 +246,12 @@ hiiUnion m1 m2
        , hiiTyGam               = hiiTyGam          m1 `gamUnion`       hiiTyGam        m2
        , hiiTyKiGam             = hiiTyKiGam        m1 `gamUnion`       hiiTyKiGam      m2
        , hiiPolGam              = hiiPolGam         m1 `gamUnion`       hiiPolGam       m2
-       , hiiDataGam             = hiiDataGam        m1 `gamUnion`       hiiDataGam      m2
        , hiiClGam               = hiiClGam          m1 `gamUnion`       hiiClGam        m2
        , hiiClDfGam             = hiiClDfGam        m1 `gamUnion`       hiiClDfGam      m2
        , hiiCHRStore            = hiiCHRStore       m1 `chrStoreUnion`  hiiCHRStore     m2
+%%]]
+%%[[99
+       , hiiDataGam             = hiiDataGam        m1 `gamUnion`       hiiDataGam      m2
 %%]]
 %%[[(99 codegen)
        , hiiLamMp               = hiiLamMp          m1 `Map.union`      hiiLamMp        m2
@@ -268,9 +275,11 @@ hiiRestrictToFilterMp mfm hii
       , hiiTyGam                = fg expT  $ hiiTyGam           hii
       , hiiTyKiGam              = fg expT' $ hiiTyKiGam         hii
       , hiiPolGam               = fg expT  $ hiiPolGam          hii
-      , hiiDataGam              = fg expT  $ hiiDataGam         hii
       , hiiClGam                = fg expC  $ hiiClGam           hii
       , hiiClDfGam              = fg expC  $ hiiClDfGam         hii
+%%]]
+%%[[99
+      , hiiDataGam              = fg expT  $ hiiDataGam         hii
 %%]]
 %%[[(99 codegen)
       , hiiLamMp                = fm expV  $ hiiLamMp           hii
@@ -436,12 +445,14 @@ sgetHIInfo opts = do
 %%[[(50 codegen hmtyinfer)
                       ; isorph    <- sget
 %%]]
+%%[[50
+                      ; dg        <- sget
+%%]]
 %%[[(50 hmtyinfer)
                       ; vg        <- sget
                       ; tg        <- sget
                       ; tkg       <- sget
                       ; pg        <- sget
-                      ; dg        <- sget
                       ; cg        <- sget
                       ; cdg       <- sget
                       ; cs        <- sget
@@ -481,12 +492,14 @@ sgetHIInfo opts = do
 %%[[(50 codegen hmtyinfer)
                             , hiiMbOrphan             = isorph
 %%]]
+%%[[50
+                            , hiiDataGam              = dg
+%%]]
 %%[[(50 hmtyinfer)
                             , hiiValGam               = vg
                             , hiiTyGam                = tg
                             , hiiTyKiGam              = tkg
                             , hiiPolGam               = pg
-                            , hiiDataGam              = dg
                             , hiiClGam                = cg
                             , hiiClDfGam              = cdg
                             , hiiCHRStore             = cs
@@ -547,12 +560,14 @@ instance Serialize HIInfo where
 %%[[(50 codegen hmtyinfer)
                   , hiiMbOrphan             = isorph
 %%]]
+%%[[50
+                  , hiiDataGam              = dg
+%%]]
 %%[[(50 hmtyinfer)
                   , hiiValGam               = vg
                   , hiiTyGam                = tg
                   , hiiTyKiGam              = tkg
                   , hiiPolGam               = pg
-                  , hiiDataGam              = dg
                   , hiiClGam                = cg
                   , hiiClDfGam              = cdg
                   , hiiCHRStore             = cs
@@ -591,12 +606,14 @@ instance Serialize HIInfo where
 %%[[(50 codegen hmtyinfer)
                 >> sput isorph
 %%]]
+%%[[50
+                >> sput (gamFlatten dg)
+%%]]
 %%[[(50 hmtyinfer)
                 >> sput (gamFlatten vg)
                 >> sput (gamFlatten tg)
                 >> sput (gamFlatten tkg)
                 >> sput (gamFlatten pg)
-                >> sput (gamFlatten dg)
                 >> sput (gamFlatten cg)
                 >> sput (gamFlatten cdg)
                 >> sput cs

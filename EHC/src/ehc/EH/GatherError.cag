@@ -320,9 +320,11 @@ SEM RowTyExpr
 
 %%[9
 SEM Decl
-  | Instance    loc         .   lErrSq      =   Seq.firstNotEmpty
-                                                  [ Seq.fromList @clgiNmErrs
-                                                  , Seq.unions [ 
+  | Instance    loc         .   lErrSq      =   Seq.firstNotEmpty $ 
+%%[[(9 hmtyinfer)
+                                                  [ Seq.fromList @clgiNmErrs ] ++
+%%]]
+                                                  [ Seq.unions [ 
 %%[[9
                                                                  @tyPrExpr.errSq
 %%][92

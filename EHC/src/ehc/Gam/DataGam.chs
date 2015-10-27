@@ -2,17 +2,20 @@
 %%% Gam specialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(7 hmtyinfer) module {%{EH}Gam.DataGam}
+%%[7 module {%{EH}Gam.DataGam}
 %%]
 
-%%[(7 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.Utils)
+%%[7 import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
-%%[(7 hmtyinfer) hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin})
+%%[7 hs import ({%{EH}Base.Common})
+%%]
+
+%%[(7 hmtyinfer) hs import ({%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin})
 %%]
 %%[(7 hmtyinfer) hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
-%%[(7 hmtyinfer) hs import ({%{EH}Gam})
+%%[7 hs import ({%{EH}Gam})
 %%]
 %%[(7 hmtyinfer) hs import({%{EH}Error}) 
 %%]
@@ -34,7 +37,7 @@
 %%[(7 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 -- debug
@@ -188,11 +191,12 @@ data DataGamInfoVariant
   deriving Eq
 %%]
 
-%%[(7 hmtyinfer) export(DataGamInfo(..))
-
+%%[7 export(DataGamInfo(..))
 -- If this changes, also change {%{EH}ConfigInternalVersions}
+-- | Implementation details for datatype, type/kind of a datatype are (also) stored in separate environments (TyGam, TyKiGam)
 data DataGamInfo
   = DataGamInfo
+%%[[(7 hmtyinfer)
       { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)
       , dgiDataTy 			:: !Ty					-- the type dataty -> sum of product
       , dgiDataKi 			:: !Ty					-- the kind
@@ -213,11 +217,13 @@ data DataGamInfo
       , dgiMbGenerInfo		:: !(Maybe Int)			-- max kind arity for generic behavior, currently \in {0,1}
 %%]]
       }
+%%]]
 
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
 
 instance PP DataGamInfo where
+%%[[(7 hmtyinfer)
   pp i@(DataGamInfo {dgiTyNm=nm, dgiDataTy=sumprod, dgiDataKi=ki}) = nm >-< indent 2 (
 		    "sumprod=" >#< ppTy sumprod
 		>-< "ki=" >#< ppTy ki
@@ -228,6 +234,9 @@ instance PP DataGamInfo where
 		>-< "constrmp=" >#< vlist (Map.toList $ dgiConstrTagMp i)
 %%]]
 		)
+%%][7
+  pp = pp . show
+%%]]
 %%]
 
 %%[(90 hmtyinfer) export(dgiMbNewtype,dgiIsNewtype)
@@ -244,7 +253,7 @@ dgiIsRec :: DataGamInfo -> Bool
 dgiIsRec dgi = dgiVariant dgi == DataGamInfoVariant_Rec
 %%]
 
-%%[(7 hmtyinfer) export(DataGam)
+%%[7 export(DataGam)
 type DataGam = Gam HsName DataGamInfo
 %%]
 
@@ -416,7 +425,9 @@ deriving instance Typeable DataConFldAnnInfo
 deriving instance Typeable DataTagInfo
 
 deriving instance Typeable DataFldInConstr
+%%]
 
+%%[50
 deriving instance Typeable DataGamInfo
 %%]
 
@@ -462,13 +473,18 @@ instance Serialize DataTagInfo where
 instance Serialize DataFldInConstr where
   sput (DataFldInConstr a) = sput a
   sget = liftM DataFldInConstr sget
+%%]
 
+%%[50
 instance Serialize DataGamInfo where
-%%[[50
+%%[[(50 hmtyinfer)
   sput (DataGamInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
   sget = liftM8 DataGamInfo sget sget sget sget sget sget sget sget
-%%][92
+%%][(92 hmtyinfer)
   sput (DataGamInfo a b c d e f g h i) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i
   sget = liftM9 DataGamInfo sget sget sget sget sget sget sget sget sget
+%%][50
+  sput (DataGamInfo) = return ()
+  sget = return DataGamInfo
 %%]]
 %%]
