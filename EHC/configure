@@ -4016,7 +4016,7 @@ HSC2HS_CMD=$hsc2hsCmd
 
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
-ghcLibsRequired="fgl vector syb uulib network binary hashable uhc-util base mtl transformers directory containers array process filepath"
+ghcLibsRequired="fgl vector uulib network binary hashable uhc-util base mtl transformers directory containers array process filepath"
 #if test x$enableClr = "xyes"
 #then
 #  ghcLibsRequired="${ghcLibsRequired} primitive"
@@ -4039,7 +4039,7 @@ then
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           uhc-util)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.3&&<0.1.7"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.4&&<0.1.7"
             ;;
           uulib)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"
