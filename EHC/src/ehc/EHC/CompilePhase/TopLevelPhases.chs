@@ -1324,7 +1324,7 @@ cpProcessCoreFold modNm
            cpFoldCore2Grin modNm
            -- void $ bcall $ FoldCore2Grin (mkPrevFileSearchKeyWithName modNm)
 %%]]
-%%[[(50 corerun)
+%%[[(8 corerun)
        ; when (targetIsCoreVariation (ehcOptTarget opts)) $
            cpFoldCore2CoreRun modNm
 %%]]

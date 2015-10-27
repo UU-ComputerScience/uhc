@@ -160,6 +160,14 @@ coreOptMp :: Map.Map String CoreOpt
 coreOptMp = str2stMpWithOmit [CoreOpt_NONE]
 %%]
 
+%%[(8 corerun)
+instance Show CoreRunOpt where
+  show = strToLower . showUnprefixed 1
+
+coreRunOptMp :: Map.Map String CoreRunOpt
+coreRunOptMp = str2stMp
+%%]
+
 %%[(8 codegen tycore)
 instance Show TyCoreOpt where
   show TyCoreOpt_Sugar      = "sugar"       -- first letters of alternatives must be unique
@@ -825,6 +833,9 @@ sharedCmdLineOpts
 %%[[(8 codegen)
      ,  Option ""   ["coreopt"]             (ReqArg oOptCore "opt[,...]")           ("opts (specific) for Core: " ++ showStr2stMp coreOptMp)
 %%]]
+%%[[(8 corerun)
+     ,  Option ""   ["corerunopt"]          (ReqArg oOptCoreRun "opt[,...]")        ("opts (specific) for CoreRun: " ++ showStr2stMp coreRunOptMp)
+%%]]
      ]
 %%]
 
@@ -856,6 +867,10 @@ oOptEh      s   o =  o { ehcOptEhOpts   = optOpts ehOptMp s ++ ehcOptEhOpts o}
 
 %%[[(8 codegen)
 oOptCore    s   o =  o { ehcOptCoreOpts = optOpts coreOptMp s ++ ehcOptCoreOpts o}
+%%]]
+
+%%[[(8 corerun)
+oOptCoreRun s   o =  o { ehcOptCoreRunOpts = Set.fromList (optOpts coreRunOptMp s) `Set.union` ehcOptCoreRunOpts o}
 %%]]
 
 %%[99

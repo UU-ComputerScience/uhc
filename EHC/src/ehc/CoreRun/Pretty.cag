@@ -18,6 +18,9 @@ Pretty printing for CoreRun
 %%[(8 corerun) hs import({%{EH}Scanner.Common})
 %%]
 
+%%[(8 corerun) hs import(qualified UHC.Util.RelMap as RelMap)
+%%]
+
 %%[(8888 corerun) hs import(Data.Array)
 %%]
 %%[(8 corerun) hs import(qualified Data.Vector as V)
@@ -63,7 +66,9 @@ letoffUpd upd i@(InhPP {letoffInhPP=o}) = i {letoffInhPP = upd o}
 ppRRef :: InhPP -> RRef -> PP_Doc
 -- ppRRef inhpp r = ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) r
 -- ppRRef inhpp r = {- ppMbPost ppCurly (ref2nmLookup r $ r2nInhPP inhpp) -} pp r
-ppRRef inhpp r = ppCmtExtra inhpp (maybe (pp "?") pp $ ref2nmLookup r $ r2nInhPP inhpp) $ pp r
+ppRRef inhpp r -- = ppCmtExtra inhpp (maybe (pp "?") pp $ ref2nmLookup r $ r2nInhPP inhpp) $ pp r
+  = maybe r' (\i -> ppCmtExtra inhpp (pp i) r') $ ref2nmLookup r $ r2nInhPP inhpp
+  where r' = pp r
 %%]
 
 %%[(8 corerun) hs
@@ -162,6 +167,17 @@ ATTR AllNT [ inhpp: InhPP | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 corerunin)
+ATTR AGItf Mod AllExport [ | | nm2refGath USE {`nm2refUnion`} {emptyNm2RefMp} : Nm2RefMp ]
+
+SEM Export
+  | Export		lhs			.   nm2refGath			=   RelMap.singleton @nm (RRef_Mod @offset)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name mapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -170,7 +186,7 @@ SEM AGItf
   | AGItf		loc			.	inhpp		=	mkEmptyInhPP defaultEHCOpts
 
 SEM Mod
-  | Mod			loc			.	inhpp		=	r2nAdd @ref2nm @lhs.inhpp
+  | Mod			loc			.	inhpp		=	r2nAdd @exports.nm2refGath @lhs.inhpp
 
 SEM Exp
   | Let      	loc			.	inhpp		=	letoffUpd (+ V.length @binds) $ r2nAdd @ref2nm @lhs.inhpp

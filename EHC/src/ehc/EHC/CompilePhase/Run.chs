@@ -226,7 +226,9 @@ cpRunCoreRun5 bglob modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_
 %%[[8
              (liftIO . putStrLn . show . pp)
 %%][100    
-             (\_ -> return ())
+             (\r -> when (CoreRunOpt_PrintResult `Set.member` ehcOptCoreRunOpts opts) $
+                      liftIO $ putStrLn $ show $ pp r
+             )
 %%]]    
              res
 %%]

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.9.2 - 20151027
+
+- [corerun] CoreRun specific options via --corerunopt=...
+- [corerun] Some cleanup for use in course http://foswiki.cs.uu.nl/foswiki/Cco/WebHome
+- [dependencies] Removal of dependency on Data.Data/syb
+- [chr] CHR machinery moved to uhc-util
+- [ast dump] Framework for debugging AST: --ehopt=dump-ast & --debug-traceon=... combi allow selectively looking into AST + info
+
 ## 1.1.9.1 - 20151013
 
 - [guarantees] This is a pre-release as far as below extensions is concerned.
