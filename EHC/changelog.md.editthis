@@ -1,4 +1,4 @@
-- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
+- [uhc-util] move of LexScope encoding via RLList to separate module in uhc-util
 
 ## 1.1.9.2 - 20151027
 
