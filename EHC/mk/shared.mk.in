@@ -510,7 +510,7 @@ FUN_GEN_CABAL		= \
 					echo   "Category:			Testing" ; \
 					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "Build-Tools:		" ; \
-					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
+					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies TupleSections NamedFieldPuns RecordWildCards $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" ; \
 					echo   "Exposed:			False" ; \

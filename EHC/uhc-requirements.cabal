@@ -32,5 +32,5 @@ cabal-version:       >=1.8
 library  
   -- Other library packages from which modules are imported.
   build-depends:       base ==4.5.*, fgl, syb, uulib, network, binary, hashable,
-                       uhc-util, uuagc, shuffle
+                       uhc-util, uuagc, shuffle, dequeue
   

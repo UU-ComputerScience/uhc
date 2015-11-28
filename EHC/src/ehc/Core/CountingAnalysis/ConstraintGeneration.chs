@@ -130,6 +130,11 @@ computeTimes freshVars a1 a2 = runState (computeTimes' a1 a2) freshVars
 computeCon :: Compute a => Var -> Annotation -> a -> ((Constraints, a), Var)
 computeCon freshVars a1 a2 = runState (computeCon' a1 a2) freshVars
 
+simpleCompute :: (Var -> a -> b -> ((Constraints, b), Var)) -> a -> b -> Maybe b
+simpleCompute f a b 
+  | c == [] && v == 0 = Just r
+  | otherwise = Nothing
+  where ((c,r),v) = f 0 a b
 
 class Compute a where
   computeAdd' :: a -> a -> State Var (Constraints, a)
@@ -146,10 +151,10 @@ computeAnn (f, _) x y = do
   return (c, a)
 
 -- computeTy :: ([Annotation] -> [Annotation] -> State Var (Constraints, [Annotation]), [AnnotatedType] -> [AnnotatedType] -> State Var (Constraints, [AnnotatedType])) -> AnnotatedType -> AnnotatedType -> State Var (Constraints, AnnotatedType)
-computeTy ((f, g), _, _) (DataTy n1 a1 t1) (DataTy n2 a2 t2) | n1 == n2 = do 
+computeTy ((f, g), _, _) (TyData n1 a1 t1) (TyData n2 a2 t2) | n1 == n2 = do 
   (c1, a) <- f a1 a2
   (c2, t) <- g t1 t2
-  return (c1 ++ c2, DataTy n1 a t)
+  return (c1 ++ c2, TyData n1 a t)
 computeTy (_, (f, g), _) (TyFunc r1 e1) (TyFunc r2 e2) = do 
   (c1, r) <- f r1 r2
   (c2, e) <- g e1 e2
@@ -169,10 +174,10 @@ computeTy (_, _, f) t1 t2 = do
 --   -> Annotation 
 --   -> AnnotatedType
 --   -> State Var (Constraints, AnnotatedType)
-computeTyAnn ((f, g), _, _) a (DataTy n as ts) = do
+computeTyAnn ((f, g), _, _) a (TyData n as ts) = do
   (c1, ax) <- f a as
   (c2, t) <- g a ts
-  return (c1 ++ c2, DataTy n ax t)
+  return (c1 ++ c2, TyData n ax t)
 computeTyAnn (_, (f, g), _) a (TyFunc r2 e2) = do 
   (c1, r) <- f a r2
   (c2, e) <- g a e2
@@ -185,7 +190,7 @@ computeTyAnn (_, _, f) a t2 = do
 
 computeScheme f t1 t2 = do
   x <- getFresh
-  let t = SchemeVar $ mkHNm $ "CA" ++ show x
+  let t = SchemeVar $ SV x
   c <- f t1 t2 t
   return (c, t)
 

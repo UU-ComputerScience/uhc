@@ -39,10 +39,14 @@ annPow = S.fromList . map (S.fromList) . annPow' . S.toList
         annPow' (x:xs) = p ++ map (x:) p
           where p = annPow' xs
 
+annPowWithoutEmpty :: AnnVal -> Set AnnVal
+annPowWithoutEmpty = S.delete (S.empty) . annPow
+
 data AnnotatedType
   = TyVar HsName
-  | DataTy HsName [Annotation] [AnnotatedType]
+  | TyData HsName [Annotation] [AnnotatedType]
   | TyFunc (Rho AnnotatedType) (Eta AnnotatedType)
+  | TyRow [AnnotatedType]
   -- If this is ever inspected then something is wrong in the algorithm
   -- But at the moment it is needed as the AG needs a type in every expression
   -- even unused ones
@@ -61,11 +65,13 @@ instance Functor Rho where
   fmap f (Rho x a) = Rho (fmap f x) a
 
 data TyScheme 
-  = SchemeVar HsName 
+  = SchemeVar SchemeVar 
   | SForAll (Set HsName) Constraints AnnotatedType
   deriving (Data, Typeable, Eq, Ord, Show, Generic)
 
 type Var = Int
+newtype SchemeVar = SV {unSV :: Var}
+  deriving (Data, Typeable, Eq, Ord, Show, Generic)
 
 type Env = Map HsName (Rho TyScheme)
 
@@ -121,92 +127,14 @@ data C a
   deriving (Data, Typeable, Eq, Ord, Show, Generic)
 
 instance Serialize AnnPrim where
-  -- sput (Zero) = sputWord8 0
-  -- sput (One) = sputWord8 1
-  -- sput (Infinity) = sputWord8 2
-  -- sget = error "sget AnnPrim"
-  -- sget = do
-  --   t <- sgetWord8
-  --   case t of
-  --     0 -> return Zero
-  --     1 -> return One
-  --     2 -> return Infinity 
-
 instance Serialize Annotation where
-  -- sput (AnnVar v) = sputWord8 0 >> sput v
-  -- sput (AnnVal v) = sputWord8 1 >> sput v
-  -- sget = error "sget Annotation"
-  -- sget = do
-  --   t <- sgetWord8
-  --   case t of
-  --     0 -> liftM AnnVar sget
-  --     1 -> liftM AnnVal sget
-
 instance Serialize AnnotatedType where
---   sput (TyVar v) = sputWord8 0 >> sput v
---   sput (DataTy n al atl) = sputWord8 1 >> sput n >> sput al >> sput atl
---   sput (TyFunc t1 t2) = sputWord8 2 >> sput t1 >> sput t2
---   sput (TyError v) = sputWord8 3 >> sput v
---   sget = error "sget AnnotatedType"
-  -- sget = do
-  --   t <- sgetWord8
-  --   case t of
-  --     0 -> liftM TyVar sget
-  --     1 -> liftM3 DataTy sget sget sget
-  --     2 -> liftM2 TyFunc sget sget
-  --     3 -> liftM TyError sget
-
 instance Serialize a => Serialize (Eta a) where
-  -- sput (Eta a u) = sput a >> sput u
-  -- sget = error "sget Eta"
-  -- sget = liftM2 Eta sget sget
-
 instance Serialize a => Serialize (Rho a) where
-  -- sput (Rho a u) = sput a >> sput u
-  -- sget = error "sget Rho"
-  -- sget = liftM2 Rho sget sget
-
 instance Serialize TyScheme where
-  -- sput (SchemeVar v) = sputWord8 0 >> sput v
-  -- sput (SForAll sv c t) = sputWord8 1 >> sput sv >> sput c >> sput t
-  -- sget = error "sget TyScheme"
-  -- sget = do
-  --   t <- sgetWord8
-  --   case t of
-  --     0 -> liftM SchemeVar sget
-  --     1 -> liftM3 SForAll sget sget sget
-
+instance Serialize SchemeVar where
 instance Serialize Constraint where
-  -- sput (AnnC c) = sputWord8 0 >> sput c
-  -- sput (TyC c) = sputWord8 1 >> sput c
-  -- sput (SchemeC c) = sputWord8 2 >> sput c
-  -- sput (InstC s t) = sputWord8 3 >> sput s >> sput t
-  -- sput (GenC  t c e s) = sputWord8 4 >> sput t >> sput c >> sput e >> sput s
-  -- sget = error "sget Constraint"
-  -- sget = do
-  --   t <- sgetWord8
-  --   case t of
-  --     0 -> liftM AnnC sget
-  --     1 -> liftM TyC sget
-  --     2 -> liftM SchemeC sget
-  --     3 -> liftM2 InstC sget sget
-  --     4 -> liftM4 GenC sget sget sget sget
-
 instance Serialize a => Serialize (C a) where
-  -- sput (EqC t1 t2) = sputWord8 0 >> sput t1 >> sput t2
-  -- sput (PlusC t t1 t2) = sputWord8 1 >> sput t >> sput t1 >> sput t2
-  -- sput (UnionC t t1 t2) = sputWord8 2 >> sput t >> sput t1 >> sput t2
-  -- sput (TimesC t t1 t2) = sputWord8 3 >> sput t >> sput t1 >> sput t2
-  -- sput (ConC t t1 t2) = sputWord8 4 >> sput t >> sput t1 >> sput t2
-  -- sget = error "sget C"
-  -- sget = do
-  --   t <- sgetWord8
-  --   case t of 
-  --    0 -> liftM2 EqC sget sget
-  --    1 -> liftM3 PlusC sget sget sget
-  --    2 -> liftM3 UnionC sget sget sget
-  --    3 -> liftM3 TimesC sget sget sget
-  --    4 -> liftM3 ConC sget sget sget
 
 replaceRho :: AnnotatedType -> Rho AnnotatedType -> Rho AnnotatedType
 replaceRho bt (Rho t d)      = Rho (replaceEta bt t) d
@@ -216,7 +144,7 @@ replaceEta bt (Eta t u)      = Eta (replace bt t) u
 
 replace :: AnnotatedType -> AnnotatedType -> AnnotatedType
 replace bt tv@(TyVar v)      = if hsnIsNr v then bt else tv
-replace bt (DataTy n ann tl) = DataTy n ann $ map (replace bt) tl
+replace bt (TyData n ann tl) = TyData n ann $ map (replace bt) tl
 replace bt (TyFunc rt et)    = TyFunc (replaceRho bt rt) $ replaceEta bt et
 replace _ x = x
 

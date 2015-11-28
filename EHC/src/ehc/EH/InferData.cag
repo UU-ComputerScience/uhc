@@ -124,7 +124,7 @@ ATTR AllDataField AllTyExpr [ caDeeper: Bool | | ]
 
 ATTR DataField TyExpr [ | | caAnnTy: {CA.AnnotatedType}]
 ATTR TyExpr [ | |  caIsFunc: {Maybe Bool}]
-ATTR DataFields TyExprs [ | | caAnnTyList: {[CA.AnnotatedType]}]
+ATTR DataFields TyExprs RowTyExpr [ | | caAnnTyList: {[CA.AnnotatedType]}]
 ATTR DataFields [ | | caLength: {Int} ]
 -- ATTR AllDataConstr AllDataField AllTyExpr [ caBaseDataTypeName: HsName caBaseAnnDataType: {CA.AnnotatedType} | | ]
 
@@ -135,7 +135,7 @@ SEM AGItf
     expr.caTyGam = @lhs.tyGam
     expr.caLocalAnnVars = []
     expr.caLocalDataNames = Set.empty
-    expr.caLocalDataGam = baseAnnTypes
+    expr.caLocalDataGam = Map.empty -- baseAnnTypes
 
 SEM Expr
   | Let
@@ -153,6 +153,14 @@ SEM DataFields TyExprs
     lhs.caAnnTyList        = @hd.caAnnTy : @tl.caAnnTyList
   | Nil
     lhs.caAnnTyList        = []
+
+SEM RowTyExpr
+  | Empty
+    lhs.caAnnTyList = []
+  | Ext
+    lhs.caAnnTyList = @tyExpr.caAnnTy : @rowTyExpr.caAnnTyList
+  | Var
+    lhs.caAnnTyList = panic "RowTyExpr Var not supported" 
 
 SEM DataFields
   | Cons
@@ -203,14 +211,14 @@ SEM TyExpr
        . caNumTy = fmap (traceShow ("type: ",@nm) . (\x -> (True,x)) . length . tgiAnnVars) $ @nm `tyGamLookup` @lhs.caTyGam
        . caNumPanic = panic $ "Could not find data type " ++ show @nm
     -- loc.caTypeLookup = @nm `tyGamLookup` @lhs.caTyGam
-    lhs.caAnnTy = if @loc.localGroup then CA.DataTy @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
-                  else CA.DataTy @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
+    lhs.caAnnTy = if @loc.localGroup then CA.TyData @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
+                  else CA.TyData @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
     -- lhs.caAnnTy = if @loc.localGroup then if @loc.caIsType then
     --                   traceShow ("typeLoc: ", @nm, show @loc.caTypeLookup) (tgiAnnTy (fromJust @loc.caTypeLookup))
-    --                 else CA.DataTy @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
+    --                 else CA.TyData @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
     --               else if @loc.caIsType then
     --                   traceShow ("typeGlob: ", @nm, show @loc.caTypeLookup) (tgiAnnTy (fromJust @loc.caTypeLookup))
-    --                 else CA.DataTy @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
+    --                 else CA.TyData @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
     loc.localGroup = Set.member @nm @lhs.caLocalDataNames 
   | App
     lhs.caIsFunc = case @func.caIsFunc of
@@ -222,7 +230,7 @@ SEM TyExpr
                     -- Assume type constructor application
                     _ -> case @func.caAnnTy of
                           -- TODO does not deal with 
-                          CA.DataTy n ann ty -> CA.DataTy n ann (ty ++ [@arg.caAnnTy])
+                          CA.TyData n ann ty -> CA.TyData n ann (ty ++ [@arg.caAnnTy])
                           _ -> @func.caAnnTy
     loc.isCurFunc = case @func.caIsFunc of
                       Just False -> True
@@ -237,24 +245,24 @@ SEM TyExpr
     loc.caAnnTy = @tyExpr.caAnnTy
   | Ann
     loc.caAnnTy = @tyExpr.caAnnTy
+  | Lam
+    loc.caAnnTy = @tyExpr.caAnnTy
+  | Quant
+    loc.caAnnTy = @tyExpr.caAnnTy
+  | Row
+    loc.caAnnTy = CA.TyRow @rowTyExpr.caAnnTyList
   | Wild
     loc.caAnnTy = CA.TyError "UnsupportedWild"
   | Mono
     loc.caAnnTy = CA.TyError "UnsupportedMono"
   | VarWild
     loc.caAnnTy = CA.TyError "UnsupportedVarWild"
-  | Quant
-    loc.caAnnTy = CA.TyError "UnsupportedQuant"
-  | Row
-    loc.caAnnTy = CA.TyError "UnsupportedRow"
   | Pred
     loc.caAnnTy = CA.TyError "UnsupportedPred"
   | Impls
     loc.caAnnTy = CA.TyError "UnsupportedImpls"
   | NoImpls
     loc.caAnnTy = CA.TyError "UnsupportedNoImpls"
-  | Lam
-    loc.caAnnTy = CA.TyError "UnsupportedLam"
 
 SEM DataConstr
   | Constr
@@ -324,12 +332,13 @@ SEM PatExpr
 -- extractNumAnns dg = Map.fromList $ map f $ gamToAssocL dg
 --   where f (x, y) = (x, length $ dgiAnnVars y)
 
-baseAnnTypes :: Map HsName Int
-baseAnnTypes = Map.fromList [
-    (mkHNm "Int", 0),
-    -- (mkHNm "Bool", 0),
-    (mkHNm "Char", 0)
-  ]
+-- baseAnnTypes :: Map HsName Int
+-- baseAnnTypes = 
+  -- Map.fromList [
+  --   (mkHNm "Int", 0),
+  --   -- (mkHNm "Bool", 0),
+  --   (mkHNm "Char", 0)
+  -- ]
 
 traceShow' :: (Show a, Show b) => a -> b -> b
 traceShow' x y = traceShow (x,y) y
