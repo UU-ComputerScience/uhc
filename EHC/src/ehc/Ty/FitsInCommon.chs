@@ -30,7 +30,7 @@
 %%[(7 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR})
+%%[(9 hmtyinfer) import({%{EH}CHR.Constraint})
 %%]
 
 %%[(9 codegen hmtyinfer) import({%{EH}Core},{%{EH}Core.Coercion},{%{EH}Core.Subst})
@@ -99,7 +99,7 @@ data FIOut
 %%]]
 %%[[9
        ,  foPredOccL        :: ![PredOcc]				-- arisen predicates (to be obsolete)
-       ,  foGathCnstrMp     :: !CHRPredOccCnstrMp		-- arisen predicates
+       ,  foGathCnstrMp     :: !ConstraintToInfoMap		-- arisen predicates
 %%]]
 %%[[10
        ,  foRowCoeL         :: !(AssocL HsName Coe)		-- internal, coercions for row fields

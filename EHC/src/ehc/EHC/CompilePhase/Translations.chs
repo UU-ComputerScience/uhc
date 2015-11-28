@@ -175,7 +175,11 @@ cpTranslateEH2Output modNm
                             (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][100
 %%]]
+%%[[8
+                     ; when (EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+%%][50
                      ; when (_ecuIsTopMod ecu && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+%%]]
                             liftIO $ putPPFPath (mkOutputFPath opts modNm fp Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 
                      ; cpSetLimitErrsWhen 5 about errs

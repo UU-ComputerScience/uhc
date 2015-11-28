@@ -234,7 +234,6 @@ nextUnique = mkNewLevUID
 
 %%[1
 deriving instance Typeable UID
-deriving instance Data UID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

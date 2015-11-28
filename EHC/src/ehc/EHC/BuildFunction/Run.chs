@@ -79,7 +79,7 @@ Running of BuildFunction
 -- HS Module
 %%[50 import({%{EH}Module.ImportExport}, qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
-%%[50 import({%{EH}CodeGen.ModuleImportExportImpl})
+%%[(50 codegen) import({%{EH}CodeGen.ModuleImportExportImpl})
 %%]
 %%[(92 codegen) import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
 %%]
@@ -935,8 +935,9 @@ ecuIsHSNewerThanHI ecu
                    impNmL     | isWholeProg = []
                               | otherwise   = ecuImpNmL ecu
                return impNmL
-  
+%%]]  
                
+%%[[(50 codegen)
           ImportExportImpl modSearchKey@(PrevFileSearchKey {_pfsrchKey=FileSearchKey {_fsrchNm=modNm}}) optimScope -> do
                ecu    <- bcall $ EcuOfPrevNameAndPath modSearchKey
                opts   <- bcall $ EHCOptsOf modSearchKey
@@ -959,8 +960,6 @@ ecuIsHSNewerThanHI ecu
                  , mieimplLamMp             = crsi ^. crsiCEnv ^. cenvLamMp
 %%]]
                  }
-  
-  
 %%]]
                
           FoldHsPMb bglob modSearchKey astpipe -> do
@@ -1087,7 +1086,11 @@ ecuIsHSNewerThanHI ecu
                     (liftIO $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][100
 %%]]
+%%[[8
+               when (EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+%%][50
                when (isTopMod && EhOpt_DumpAST `elem` ehcOptEhOpts opts) $
+%%]]
                     liftIO $ putPPFPath (mkOutputFPath opts modNm (ecuFilePath ecu) Cfg.suffixDotlessOutputTextualEhAST) (EHSem.ppAST_Syn_AGItf ehSem) 1000
 
                cpSetLimitErrsWhen 5 about errs
@@ -1920,11 +1923,15 @@ bAllowFlowPl modNm astplan flowstage astpred = do
 %%]
 
 %%[8
-astpMbFromHSToEH, astpMbFromEHToCore, astpMbFromHS, astpMbFromEH :: ASTFlowPred'
+astpMbFromHSToEH, astpMbFromHS, astpMbFromEH :: ASTFlowPred'
 astpMbFromHSToEH top p = case p of {ASTPipe_Derived ASTType_EH p' | astpType p' == ASTType_HS -> Just (if' top p p', (Just ASTType_EH, ASTType_HS)); _ -> Nothing}
-astpMbFromEHToCore top p = case p of {ASTPipe_Derived ASTType_Core p' | astpType p' == ASTType_EH -> Just (if' top p p', (Just ASTType_Core, ASTType_EH)); _ -> Nothing}
 astpMbFromHS top p = case p of {ASTPipe_Derived _ p' | astpType p' == ASTType_HS -> Just (if' top p p', (Nothing, ASTType_HS)); _ -> Nothing}
 astpMbFromEH top p = case p of {ASTPipe_Derived _ p' | astpType p' == ASTType_EH -> Just (if' top p p', (Nothing, ASTType_EH)); _ -> Nothing}
+%%]
+
+%%[(8 core)
+astpMbFromEHToCore :: ASTFlowPred'
+astpMbFromEHToCore top p = case p of {ASTPipe_Derived ASTType_Core p' | astpType p' == ASTType_EH -> Just (if' top p p', (Just ASTType_Core, ASTType_EH)); _ -> Nothing}
 %%]
 
 %%[(8 core grin)

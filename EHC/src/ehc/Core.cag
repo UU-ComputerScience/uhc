@@ -216,7 +216,6 @@ data CBindCateg
 
 %%[(50 core) hs
 deriving instance Typeable CBindCateg
-deriving instance Data CBindCateg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

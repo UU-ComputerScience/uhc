@@ -31,11 +31,11 @@ It is unclear whether later stages (i.e. Core transformations) introduce name us
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 hs
-gathMentrelFilterMpFromSimplifyResult :: HsName -> SimplifyResult p RedHowAnnotation g m -> ModEntRelFilterMp
+gathMentrelFilterMpFromSimplifyResult :: HsName -> SimplifyResult -> ModEntRelFilterMp
 gathMentrelFilterMpFromSimplifyResult moduleNm simpRes
   = mentrelFilterMpUnions
       [ mentrelFilterMpSingleton [moduleNm] IdOcc_Val nm
-      | (Reduction {cnstrInfo=RedHow_ByInstance nm _ _}) <- chrSolveStateDoneConstraints $ simpresSolveState simpRes
+      | (Reduction {cnstrInfo=RedHow_ByInstance nm _ _}) <- (filterMb fromSolverConstraint $ chrSolveStateDoneConstraints $ simpresSolveState simpRes :: [Constraint])
       ]
 %%]
 

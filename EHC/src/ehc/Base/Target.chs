@@ -547,13 +547,10 @@ allFFIWays = nub $ (FFIWay_Prim :) $ concatMap targiAllowedFFI $ Map.elems allTa
 
 %%[50
 deriving instance Typeable Target
-deriving instance Data Target
 
 deriving instance Typeable FFIWay
-deriving instance Data FFIWay
 
 deriving instance Typeable TargetFlavor
-deriving instance Data TargetFlavor
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

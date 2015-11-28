@@ -54,7 +54,6 @@ mapPolGam f
 
 %%[(50 hmtyinfer || hmtyast)
 deriving instance Typeable PolGamInfo
-deriving instance Data PolGamInfo
 %%]
 
 %%[(17 hmtyinfer || hmtyast) export(polGamLookup,polGamLookupErr)

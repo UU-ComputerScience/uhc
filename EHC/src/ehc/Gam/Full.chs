@@ -17,7 +17,7 @@
 %%]
 %%[6 hs import ({%{EH}Gam.KiGam}) export(module {%{EH}Gam.KiGam})
 %%]
-%%[(7 hmtyinfer) hs import ({%{EH}Gam.DataGam}) export(module {%{EH}Gam.DataGam})
+%%[7 hs import ({%{EH}Gam.DataGam}) export(module {%{EH}Gam.DataGam})
 %%]
 %%[9999 hs import ({%{EH}Gam.ClassDefaultGam}) export(module {%{EH}Gam.ClassDefaultGam})
 %%]

@@ -43,7 +43,6 @@ data BasicSize
 
 %%[(50 codegen) hs
 deriving instance Typeable BasicSize
-deriving instance Data BasicSize
 %%]
 
 The Show of BasicSize should returns strings of which the first letter is unique for the type.
@@ -303,7 +302,6 @@ data BasicTy
 
 %%[(50 codegen) hs
 deriving instance Typeable BasicTy
-deriving instance Data BasicTy
 %%]
 
 The Show of BasicTy should returns strings of which the first letter is unique for the type.
@@ -370,12 +368,10 @@ basicAnnotWord = BasicAnnot_Size basicSizeWord BasicTy_Word BasicAnnotTagging_No
 
 %%[(50 grin) hs
 deriving instance Typeable BasicAnnotTagging
-deriving instance Data BasicAnnotTagging
 %%]
 
 %%[(50 grin) hs
 deriving instance Typeable BasicAnnot
-deriving instance Data BasicAnnot
 %%]
 
 %%[(8 grin) hs export(grinBasicAnnotSizeInBytes,grinBasicAnnotSizeInWords)

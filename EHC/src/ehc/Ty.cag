@@ -357,7 +357,7 @@ data LabelOffset
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable, Data
+    , Typeable
 %%]]
     )
 %%]
@@ -384,7 +384,6 @@ initPredScope = PredScope_Lev RLL.empty
 
 %%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable PredScope
-deriving instance Data PredScope
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpMbVar)
@@ -489,7 +488,6 @@ mkImplsProveOcc = ImplsProveOcc
 
 %%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable ImplsProveOcc
-deriving instance Data ImplsProveOcc
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -546,7 +544,6 @@ data CHRPredOccCxt
 
 %%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable CHRPredOccCxt
-deriving instance Data CHRPredOccCxt
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(CHRPredOcc'(..),CHRPredOcc,cpoScope,mkCHRPredOcc)
@@ -592,7 +589,6 @@ deriving instance Typeable  CHRPredOcc'
 -- #else
 -- deriving instance Typeable1 CHRPredOcc'
 -- #endif
-deriving instance Data CHRPredOcc
 %%]
 
 %%[(99 hmtyinfer || hmtyast) hs export(mkCHRPredOccRng)
@@ -1761,7 +1757,6 @@ instance Show TyKiKey where
 
 %%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable TyKiKey
-deriving instance Data TyKiKey
 %%]
 
 %%[6 hs export(tyKiKeyMbName)

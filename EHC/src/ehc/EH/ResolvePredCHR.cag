@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-ATTR NTPrf [ | | gathCnstrMp USE {`cnstrMpUnion`} {Map.empty}: CHRPredOccCnstrMp ]
+ATTR NTPrf [ | | gathCnstrMp USE {`cnstrMpUnion`} {Map.empty}: ConstraintToInfoMap ]
 
 SEM Expr
   | IConst CConst Var Con
@@ -152,15 +152,15 @@ data SimplifyHow
 %%[(9 hmtyinfer) hs
 data SimplifyState
   = SimplifyState
-      { simpToProveHereCnstrMp          :: !CHRPredOccCnstrMp                               -- new constraints to prove
-      , simpAllCnstrMp                  :: !CHRPredOccCnstrMp                               -- all constraints to prove, including previous
-      , simpRemCnstrTraceMp             :: !CHRPredOccCnstrTraceMp                          -- remaining to be proven, as Assume's
+      { simpToProveHereCnstrMp          :: !ConstraintToInfoMap                               -- new constraints to prove
+      , simpAllCnstrMp                  :: !ConstraintToInfoMap                               -- all constraints to prove, including previous
+      , simpRemCnstrTraceMp             :: !ConstraintToInfoTraceMp                          -- remaining to be proven, as Assume's
       , simpRemOccL                     :: ![CHRIntermediateUntilAssume]                    -- same, but only occurrences (as list), with original trace mp split up per pred
-      , simpCannotCnstrTraceMp          :: !CHRPredOccCnstrTraceMp                          -- cannot be proven
+      , simpCannotCnstrTraceMp          :: !ConstraintToInfoTraceMp                          -- cannot be proven
       , simpVarMp                       :: !VarMp                                           -- additional substitution
-      , simpEvidMp                      :: !CHRPredOccEvidMp                                -- map from constraint/pred occurrence to evidence
+      , simpEvidMp                      :: !InfoToEvidenceMap                                -- map from constraint/pred occurrence to evidence
       , simpEnv                         :: !FIIn
-      , simpRes                         :: !(SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp)                                -- simplification work done at a previous call
+      , simpRes                         :: !(SimplifyResult)                                -- simplification work done at a previous call
       , simpErrs                        :: ![Err]                                           -- errors
       }
 
@@ -169,11 +169,11 @@ emptySimplifyState = SimplifyState Map.empty Map.empty Map.empty [] Map.empty em
 
 simplify'
   :: [SimplifyHow]
-     -> ScopedPredStore                                                                     -- available CHR rules
+     -> CHRStore                                                                     -- available CHR rules
      -> ClassDefaultGam                                                                     -- environment/gam for defaulting
-     -> Heuristic CHRPredOcc RedHowAnnotation                                               -- graph reduction heuristic
+     -> Heuristic                                               -- graph reduction heuristic
      -> ([CHRIntermediateUntilAssume] -> ([CHRIntermediateUntilAssume],[CHRIntermediateUntilAssume]))   -- partition into ambiguous predicates (and others), for defaulting
-     -> CHRPredOccCnstrMp                                                                   -- constraints already proven a previous call
+     -> ConstraintToInfoMap                                                                   -- constraints already proven a previous call
      -> State SimplifyState ()
 simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev
   = do { s <- get
@@ -300,20 +300,20 @@ simplify' simplifyHow chrStore clDfGam heur partitionUnresolved2AmbigAndOthers t
 simplify
   :: [SimplifyHow]                                                                          -- config
      -> FIIn                                                                                -- environment
-     -> ScopedPredStore                                                                     -- available CHR rules
+     -> CHRStore                                                                     -- available CHR rules
      -> ClassDefaultGam                                                                     -- environment/gam for defaulting
-     -> Heuristic CHRPredOcc RedHowAnnotation                                               -- graph reduction heuristic
+     -> Heuristic                                               							-- graph reduction heuristic
      -> ([CHRIntermediateUntilAssume] -> ([CHRIntermediateUntilAssume],[CHRIntermediateUntilAssume]))   -- partition into ambiguous predicates (and others), for defaulting
-     -> CHRPredOccCnstrMp                                                                   -- constraints already proven a previous call
-     -> CHRPredOccCnstrMp                                                                   -- constraints to prove
-     -> SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp                              -- simplification work done at a previous call
-     -> ( CHRPredOccCnstrMp                                                                 -- canonicalized to be proven constraints
-        , CHRPredOccCnstrTraceMp                                                            -- remaining to be proven, as Assume's
-        , CHRPredOccCnstrTraceMp                                                            -- cannot be proven
+     -> ConstraintToInfoMap                                                                   -- constraints already proven a previous call
+     -> ConstraintToInfoMap                                                                   -- constraints to prove
+     -> SimplifyResult                              -- simplification work done at a previous call
+     -> ( ConstraintToInfoMap                                                                 -- canonicalized to be proven constraints
+        , ConstraintToInfoTraceMp                                                            -- remaining to be proven, as Assume's
+        , ConstraintToInfoTraceMp                                                            -- cannot be proven
         , VarMp                                                                             -- additional substitution found during proving & simplification
         , [Err]                                                                             -- errors
-        , SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp                            -- simplification work, for a next call
-        , CHRPredOccEvidMp                                                                  -- map from constraint/pred occurrence to evidence
+        , SimplifyResult                            -- simplification work, for a next call
+        , InfoToEvidenceMap                                                                  -- map from constraint/pred occurrence to evidence
 %%[[(9 codegen)
         , EvidCBindL																		-- bindings which can be directly inserted
         , EvidKeyToCBindMap                                                                 -- map from occurrence to binding, globally

@@ -777,6 +777,7 @@ astpipeForCfg apbcfg =
           Target_None_Core_CoreRun
                                                              -> ([astpipe_CoreRun apbcfg], ASTType_CoreRun)
 %%]]
+          _                                                  -> ([astpipe_EH], ASTType_EH)
 
         cmb [p] = p
         cmb ps  = ASTPipe_Compound topty ps

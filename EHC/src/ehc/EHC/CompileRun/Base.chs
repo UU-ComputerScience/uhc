@@ -66,7 +66,7 @@ An EHC compile run maintains info for one compilation invocation
 -- Module
 %%[50 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
-%%[50 import({%{EH}CodeGen.ModuleImportExportImpl})
+%%[(50 codegen) import({%{EH}CodeGen.ModuleImportExportImpl})
 %%]
 %%[99 import(qualified {%{EH}Base.Pragma} as Pragma)
 %%]
@@ -464,7 +464,9 @@ data BFun' m res where
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
     -> OptimizationScope				--- ^ scope for which this holds
     -> BFun' m [HsName]
+%%]]
 
+%%[[(50 codegen)
   --- | Import/Export info for module codegen
   ImportExportImpl
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
@@ -642,8 +644,10 @@ bfunCompare f1 f2 = case (f1,f2) of
     (ModnameAndImportsPlMb		a1 b1				, ModnameAndImportsPlMb		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (HsModnameAndImports		a1 					, HsModnameAndImports		a2 					) ->         a1 `compare` a2
     (FoldHIInfo					a1 					, FoldHIInfo				a2 					) ->         a1 `compare` a2
-    (ImportExportImpl			a1 b1				, ImportExportImpl			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ImportNameInfo				a1 b1				, ImportNameInfo			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
+%%]]
+%%[[(50 codegen)
+    (ImportExportImpl			a1 b1				, ImportExportImpl			a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
 %%]]
     (FoldHsPMb					a1 b1 c1			, FoldHsPMb					a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
     (FoldHsPlMb					a1 b1 c1			, FoldHsPlMb				a2 b2 c2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2]
@@ -716,8 +720,10 @@ instance Hashable (BFun' m res) where
 	ModnameAndImportsPlMb		a b			-> salt `hashWithSalt` (33::Int) `hashWithSalt` a `hashWithSalt` b
 	HsModnameAndImports			a 			-> salt `hashWithSalt` (34::Int) `hashWithSalt` a
 	FoldHIInfo					a 			-> salt `hashWithSalt` (35::Int) `hashWithSalt` a
-	ImportExportImpl			a b			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a `hashWithSalt` b
 	ImportNameInfo				a b			-> salt `hashWithSalt` (37::Int) `hashWithSalt` a `hashWithSalt` b
+%%]]
+%%[[(50 codegen)
+	ImportExportImpl			a b			-> salt `hashWithSalt` (36::Int) `hashWithSalt` a `hashWithSalt` b
 %%]]
 	FoldHsPMb					a b c		-> salt `hashWithSalt` (38::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c
 	FoldHsPlMb					a b c		-> salt `hashWithSalt` (39::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c

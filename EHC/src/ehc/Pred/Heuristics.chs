@@ -4,7 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, UHC.Util.CHR,{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Key},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.Heuristics}
+%%]
+
+%%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, UHC.Util.CHR,{%{EH}VarMp},{%{EH}Pred.Evidence},{%{EH}CHR.Key},{%{EH}CHR.Constraint},{%{EH}CHR.Guard},{%{EH}CHR.Solve})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})
@@ -16,26 +19,14 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.AGraph,UHC.Util.Utils)
 %%]
 
-%%[(9 hmtyinfer) export(Heuristic,SHeuristic)
-type Heuristic p info = [info] -> HeurAlts p info -> [(info, Evidence p info)]
+%%[(9 hmtyinfer) export(Heuristic, SHeuristic)
+type Heuristic' p info = [info] -> HeurAlts' p info -> [(info, Evidence' p info)]
 
-type SHeuristic p info = HeurAlts p info -> Evidence p info
-%%]
+type Heuristic = Heuristic' CHRPredOcc RedHowAnnotation
 
-%%[(9999 hmtyinfer) export(Traced(..),TracedTrace(..))
-data TracedTrace p info
-  = TracedTrace_Ok
-      { ttraceRedFrom	:: 
-      }
-  | TracedTrace_Ok
-      { ttraceRedFrom	:: 
-      }
+type SHeuristic' p info = HeurAlts' p info -> Evidence' p info
 
-data Traced p info res
-  = Traced
-      { tracedTrace		:: TracedTrace p info
-      , tracedResult	:: res
-      }
+type SHeuristic = SHeuristic' CHRPredOcc RedHowAnnotation
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,36 +35,40 @@ data Traced p info res
 %%% tree is only evaluated when needed.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(HeurAlts(..),HeurRed(..))
-data HeurAlts  p  info
+%%[(9 hmtyinfer) export(HeurAlts,HeurAlts'(..),HeurRed,HeurRed'(..))
+data HeurAlts' p info
   = HeurAlts
      { redaltsPredicate  	:: p
-     , redaltsAlts  		:: [HeurRed p info]
+     , redaltsAlts  		:: [HeurRed' p info]
      }
 
-data HeurRed   p  info
+type HeurAlts = HeurAlts' CHRPredOcc RedHowAnnotation
+
+data HeurRed' p info
   = HeurRed
      { redInfo           	:: info
-     , redContext   		:: [HeurAlts p info]
+     , redContext   		:: [HeurAlts' p info]
      }
   | HeurRed_Rec
      { redRecPred           :: p
      }
+
+type HeurRed = HeurRed' CHRPredOcc RedHowAnnotation
 %%]
 
 %%[(9 hmtyinfer)
-instance Show (HeurAlts  p  info) where
+instance Show (HeurAlts' p info) where
   show _ = "HeurAlts"
 
-instance Show (HeurRed  p  info) where
+instance Show (HeurRed' p info) where
   show _ = "HeurRed"
 %%]
  
 %%[(9 hmtyinfer)
-instance (PP p, PP info) => PP (HeurAlts  p  info) where
+instance (PP p, PP info) => PP (HeurAlts' p info) where
   pp x = "HeurAlts" >#< redaltsPredicate x >#< ppBracketsCommasBlock (redaltsAlts x)
 
-instance (PP p, PP info) => PP (HeurRed  p  info) where
+instance (PP p, PP info) => PP (HeurRed' p info) where
   pp (HeurRed     i subs) = "HeurRed" >#< i >#< ppBracketsCommasBlock subs
   pp (HeurRed_Rec p     ) = "HeurRec" >#< p
 %%]
@@ -83,7 +78,7 @@ instance (PP p, PP info) => PP (HeurRed  p  info) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(toHeuristic)
-toHeuristic :: SHeuristic p info -> Heuristic p info
+toHeuristic :: SHeuristic' p info -> Heuristic' p info
 toHeuristic h infos alts
   = zip infos (repeat ev)
   where ev = h alts
@@ -94,7 +89,7 @@ toHeuristic h infos alts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(heurTry)
-heurTry :: Eq p => SHeuristic p info -> SHeuristic p info -> SHeuristic p info
+heurTry :: Eq p => SHeuristic' p info -> SHeuristic' p info -> SHeuristic' p info
 heurTry f g a  | null (evidUnresolved ev) = ev
                | otherwise                = g a
                where ev = f a
@@ -105,7 +100,7 @@ heurTry f g a  | null (evidUnresolved ev) = ev
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(localChoice)
-localChoice :: (Eq p, Eq info) => (p -> [info] -> [info]) -> SHeuristic p info  
+localChoice :: (Eq p, Eq info) => (p -> [info] -> [info]) -> SHeuristic' p info  
 localChoice choose (HeurAlts p reds) = 
   case filter ((`elem` redinfos) . redInfo) reds of
     []                    -> Evid_Unresolved p (concatMap evidUnresolved [ Evid_Proof p i evs | (i,evs) <- chs reds])
@@ -118,7 +113,7 @@ localChoice choose (HeurAlts p reds) =
 %%]
 
 %%[(9 hmtyinfer) export(binChoice)
-binChoice :: (Eq p, Eq info) => (info -> info -> PartialOrdering) -> SHeuristic p info
+binChoice :: (Eq p, Eq info) => (info -> info -> PartialOrdering) -> SHeuristic' p info
 binChoice order = localChoice (const local)
   where  local []  = []
          local is  = [mx]
@@ -144,7 +139,7 @@ heurMaximumBy cmp (x:xs)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
-contextChoice :: Eq p => (p -> [HeurRed p info] -> [HeurRed p info]) -> SHeuristic p info
+contextChoice :: Eq p => (p -> [HeurRed' p info] -> [HeurRed' p info]) -> SHeuristic' p info
 contextChoice choose (HeurAlts p reds) = 
   case choose p reds of
          []                   -> Evid_Unresolved p [UnresolvedTrace_Fail p []]
@@ -154,7 +149,7 @@ contextChoice choose (HeurAlts p reds) =
   where ch (HeurRed i rs) = (i,map (contextChoice choose) rs)
         chs rs            = map ch rs
          
-contextBinChoice :: Eq p => (HeurRed p info -> HeurRed p info -> PartialOrdering) -> SHeuristic p info
+contextBinChoice :: Eq p => (HeurRed' p info -> HeurRed' p info -> PartialOrdering) -> SHeuristic' p info
 contextBinChoice order = contextChoice (const local)
   where  local []                = []
          local is | null eqPairs = [mx]
@@ -169,14 +164,14 @@ contextBinChoice order = contextChoice (const local)
 This should be merged with similar choices made at callsites.
 
 %%[(9 hmtyinfer)
-reallyOverlapEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
+reallyOverlapEvid :: p -> [(info,[Evidence' p info])] -> Evidence' p info
 reallyOverlapEvid p evs
   = case filter (not . null . snd) evs of
       []       -> Evid_Ambig p evs
       [(i,ev)] -> Evid_Proof p i ev
       _        -> Evid_Ambig p evs
 %%]
-reallyOverlapEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
+reallyOverlapEvid :: p -> [(info,[Evidence' p info])] -> Evidence' p info
 reallyOverlapEvid p evs
   = case filter (not . null . snd) evs of
       []       -> Evid_Unresolved p
@@ -188,14 +183,14 @@ reallyOverlapEvid p evs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(solvable)
-solvable :: HeurAlts p info -> HeurAlts p info
+solvable :: HeurAlts' p info -> HeurAlts' p info
 solvable (HeurAlts p rs) = HeurAlts p (catMaybes (map heu rs))
    where heu h@(HeurRed info reds)  | all hasAlts reds'  = Just (HeurRed info  reds') 
                                     | otherwise          = Nothing
                                     where reds' = map solvable reds
          heu h@(HeurRed_Rec p    )                       = Just h
 
-hasAlts :: HeurAlts p info -> Bool
+hasAlts :: HeurAlts' p info -> Bool
 hasAlts (HeurAlts _ [])  = False
 hasAlts _                = True
 %%]
@@ -307,7 +302,7 @@ cmpEqReds r1                            r2                              = panic 
 %%]
 
 %%[(9 hmtyinfer)
-anncmpEHCScoped :: CHRMatchable (FIIn' gm) Pred VarMp => Bool -> FIIn' gm -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
+anncmpEHCScoped :: CHRMatchable (FIIn' gm) Pred VarMp => Bool -> FIIn' gm -> HeurRed -> HeurRed -> PartialOrdering
 anncmpEHCScoped preferInst env ann1 ann2
   = case (ann1,ann2) of
       (HeurRed (RedHow_Assumption     _ _) _    , _                                        )              ->  P_GT
@@ -344,16 +339,16 @@ If no full solution is possible, we just use the superclass relationship.
 - We also allow for ambiguity here, randomly picking an alternative, the first. This is not good, but will work for now...
 
 %%[(9999 hmtyinfer)
-ehcAllowForGeneralization :: HeurRed CHRPredOcc RedHowAnnotation -> Bool
+ehcAllowForGeneralization :: HeurRed -> Bool
 ehcAllowForGeneralization (HeurRed (RedHow_BySuperClass _ _ _) _) = True
 ehcAllowForGeneralization _                                       = False
 
-ehcOnlySuperReduce :: a -> [HeurRed CHRPredOcc RedHowAnnotation] -> [HeurRed CHRPredOcc RedHowAnnotation]
+ehcOnlySuperReduce :: a -> [HeurRed] -> [HeurRed]
 ehcOnlySuperReduce _  reds = take 1 $ filter ehcAllowForGeneralization reds
 %%]
 
 %%[(9 hmtyinfer) export(heurScopedEHC)
-heurScopedEHC :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> Heuristic CHRPredOcc RedHowAnnotation
+heurScopedEHC :: CHRMatchable (FIIn' gm) Pred VarMp => FIIn' gm -> Heuristic
 heurScopedEHC env
   = toHeuristic
     $ ifthenelseSHeuristic isEqHeuristic
@@ -378,7 +373,7 @@ heurScopedEHC env
       = contextBinChoice (anncmpEHCScoped env)
 -}
 
-ifthenelseSHeuristic :: (p -> Bool) -> SHeuristic p info -> SHeuristic p info -> SHeuristic p info
+ifthenelseSHeuristic :: (p -> Bool) -> SHeuristic' p info -> SHeuristic' p info -> SHeuristic' p info
 ifthenelseSHeuristic g t e alts
   | g (redaltsPredicate alts) = t alts
   | otherwise = e alts
@@ -387,7 +382,7 @@ ifthenelseSHeuristic g t e alts
 Previous heuristic did not behave ghc alike in that instances were eagerly used, also when it still would lead to unresolved predicates.
 These would then end up in the context of a function, the early decision inhibiting the use of other instances at a later moment:
 
-heurScopedEHC :: FIIn' gm -> Heuristic CHRPredOcc RedHowAnnotation
+heurScopedEHC :: FIIn' gm -> Heuristic
 heurScopedEHC env
   = toHeuristic
     $ ifthenelseSHeuristic isEqHeuristic

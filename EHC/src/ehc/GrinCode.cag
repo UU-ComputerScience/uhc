@@ -126,7 +126,6 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 
 %%[(50 grin) hs
 deriving instance Typeable GrTagAnn
-deriving instance Data GrTagAnn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,7 +171,6 @@ data GrBindAnn
 
 %%[(50 grin) hs
 deriving instance Typeable GrBindAnn
-deriving instance Data GrBindAnn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,7 +196,6 @@ data GrAltAnn
 
 %%[(50 grin) hs
 deriving instance Typeable GrAltAnn
-deriving instance Data GrAltAnn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

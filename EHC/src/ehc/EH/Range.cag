@@ -86,7 +86,7 @@ to the source location where such a predicate did arise.
 %%[(99 hmtyinfer) hs
 type RangeMp = Map.Map Pred [Range]
 
-cnstrMpToRangeMp :: CHRPredOccCnstrMp -> RangeMp
+cnstrMpToRangeMp :: ConstraintToInfoMap -> RangeMp
 cnstrMpToRangeMp m = Map.unionsWith (++) [ Map.singleton (cpoPr p) [cpoRange p] | (Prove p) <- Map.keys m ]
 %%]
 

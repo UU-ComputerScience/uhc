@@ -609,7 +609,7 @@ ATTR CodeAGItf CModule [ | | crm: {CR.Mod} ]
 
 SEM CModule
   | Mod         loc         .   crmBinds        =   CR.crarrayFromList $ map snd @expr.crb
-                lhs         .   crm             =   CR.Mod_Mod (CR.nm2RefMpInverse @nm2refNew)
+                lhs         .   crm             =   CR.Mod_Mod CR.emptyNm2RefMp  -- (CR.nm2RefMpInverse @nm2refNew)
                                                       @moduleNm @lhs.modNr (@expr.stackDepthMax + 2 {- - CR.craLength @crmBinds -})
                                                       [CR.Import_Import i | i <- @imports.impNmL]
                                                       [CR.Export_Export e (CR.rrefEntry r) | (e,r) <- Rel.toList @nm2refNew]

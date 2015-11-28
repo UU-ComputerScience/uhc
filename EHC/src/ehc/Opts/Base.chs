@@ -29,6 +29,9 @@
 %%[7 import(qualified Data.Set as Set)
 %%]
 
+%%[8 import(GHC.Generics(Generic))
+%%]
+
 %%[8 import(Data.List,Data.Char,{%{EH}Base.HsName.Builtin})
 %%]
 
@@ -159,6 +162,15 @@ data CoreOpt
   deriving (Eq,Enum,Bounded)
 %%]
 
+%%[(8 corerun) export(CoreRunOpt(..))
+-- | Core specific options
+data CoreRunOpt
+  = CoreRunOpt_PrintResult				-- Print run result
+  deriving (Eq,Ord,Enum,Bounded,Generic)
+
+instance DataAndConName CoreRunOpt
+%%]
+
 %%[(8 codegen javascript) export(JavaScriptOpt(..))
 -- | JavaScript options
 data JavaScriptOpt
@@ -267,6 +279,9 @@ data EHCOpts
                               ::  OptimizeOptionMp  -- optimization specific configuration
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
       ,  ehcOptCoreOpts       ::  [CoreOpt]  	    -- Core options
+%%]]
+%%[[(8 corerun)
+      ,  ehcOptCoreRunOpts    ::  !(Set.Set CoreRunOpt)  	    -- CoreRun options
 %%]]
 %%[[(8 codegen cmm)
       ,  ehcOptUseCmm		  ::  Maybe [CmmOpt]	-- use cmm? + options
@@ -454,6 +469,9 @@ emptyEHCOpts
       ,  ehcOptOptimizations    =   optimizeRequiresClosure $ Map.findWithDefault Set.empty OptimizationLevel_Normal optimizationLevelMp
       ,  ehcOptOptimizeOptionMp =   Map.empty
       ,  ehcOptCoreOpts         =   []
+%%]]
+%%[[(8 corerun)
+      ,  ehcOptCoreRunOpts      =   Set.empty
 %%]]
 %%[[(8 codegen cmm)
       ,  ehcOptUseCmm           =	Nothing

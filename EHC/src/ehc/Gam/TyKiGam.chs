@@ -58,7 +58,6 @@ type TyKiGam = Gam TyKiKey TyKiGamInfo
 
 %%[(50 hmtyinfer || hmtyast)
 deriving instance Typeable TyKiGamInfo
-deriving instance Data TyKiGamInfo
 %%]
 
 %%[(8 hmtyinfer || hmtyast) export(tkgiGetSet)

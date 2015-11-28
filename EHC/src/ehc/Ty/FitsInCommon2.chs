@@ -24,6 +24,9 @@ structures for fitsIn and related functions.
 %%[(8 hmtyinfer) import({%{EH}AbstractCore})
 %%]
 
+%%[(50 hmtyinfer) import(UHC.Util.Utils)
+%%]
+
 For debug/trace:
 %%[(4 hmtyinfer) import(UHC.Util.Pretty)
 %%]
@@ -57,7 +60,7 @@ data FIIn' globvm
   = FIIn
       { fiFIOpts          ::  !FIOpts               -- options to fitsIn
       , fiUniq            ::  !UID                  -- unique thread
-      , fiVarMp           ::  !globvm               -- global (type) var bindings
+      , fiVarMp           ::   globvm               -- global (type) var bindings
       , fiVarMpLoc        ::  !VarMp                    -- locally introduced (type) var bindings
       , fiExpLTvS         ::  !(Set.Set TyVarId)        -- lhs ty vars for which expansion (via VarMp) is inhibited (already done once)
       , fiExpRTvS         ::  !(Set.Set TyVarId)        -- and rhs
@@ -69,6 +72,9 @@ data FIIn' globvm
       , fiEnv             ::  !FIEnv                -- environment (Gam's,...)
 %%]]
       }
+%%[[50
+      deriving (Typeable)
+%%]]
 
 type FIIn = FIIn' VarMp
 %%]
