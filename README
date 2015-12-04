@@ -1,6 +1,19 @@
 The Utrecht Haskell Compiler (UHC)
 ==================================
 
-Subdirectory EHC holds the actual compiler.
-See EHC/README for further installation instructions
+When installing from this (https://github.com/UU-ComputerScience/uhc)
+repo also use the repo for uhc-util
+(https://github.com/UU-ComputerScience/uhc-util) as these are kept in
+sync. For further installation instructions see EHC/README in the
+subdirectory EHC holding the actual compiler.
 
+Alternatively, and with less features, a lightweight variant of UHC is
+available on hackage: https://hackage.haskell.org/package/uhc-light. Its
+version lags behind the master of this repo.
+
+Supported platforms
+===================
+
+UHC currently compiles/runs on MacOSX (10.11) with GHC 7.10.
+Compiling on other Unix platforms in general does not give problems,
+but is somewhat unpredictable due the great variation in combinations.
