@@ -384,6 +384,7 @@ initPredScope = PredScope_Lev RLL.empty
 
 %%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable PredScope
+deriving instance Data PredScope
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpMbVar)
@@ -480,7 +481,7 @@ data ImplsProveOcc
       { ipoId       :: !UID
       , ipoScope    :: !PredScope
       }
-  deriving (Eq,Show,Ord)
+  deriving (Eq,Show,Ord,Data)
 
 mkImplsProveOcc :: UID -> PredScope -> ImplsProveOcc
 mkImplsProveOcc = ImplsProveOcc

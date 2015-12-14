@@ -115,7 +115,7 @@ DERIVING *
 
 %%[(50 core) ag
 DERIVING *
-  : Data, Generic
+  : Generic
 %%]
 
 %%[(50 core) ag

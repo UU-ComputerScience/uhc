@@ -44,6 +44,8 @@ Currently the following is maintained:
 %%]
 %%[(8 codegen) import(UHC.Util.Utils)
 %%]
+%%[(8 counting) import({%{EH}CountingAnalysis (EtaAnnotatedType)})
+%%]
 
 -- PP
 %%[(8 codegen) import(UHC.Util.Pretty)
@@ -71,7 +73,7 @@ data StackTraceInfo
   | StackTraceInfo_IsStackTraceEquiv	HsName		-- is a stack traced equivalent
   deriving ( Show
 %%[[50
-           , Data, Typeable, Generic
+           , Typeable, Generic
 %%]]
            )
 %%]
@@ -83,7 +85,7 @@ data FusionRole
   | FusionRole_BuildLeft	-- role of g in 'convert g,h'
   | FusionRole_BuildRight	-- role of h in 'convert g,h'
   deriving ( Enum, Show
-           , Data,Typeable, Generic
+           , Typeable, Generic
            )
 %%]
 
@@ -120,7 +122,7 @@ data LamInfoBindAsp
 %%]]
   deriving ( Show
 %%[[50
-           , Data, Typeable, Generic
+           , Typeable, Generic
 %%]]
            )
 
@@ -148,11 +150,14 @@ data LamInfo
 %%[[(8 grin)
       , laminfoGrinByteCode			:: Maybe GrinByteCodeLamInfo	-- GB specific info
 %%]]
+%%[[(8 counting)
+      , laminfoCaType   :: !EtaAnnotatedType
+%%]]
       , laminfoBindAspMp			:: !LamInfoBindAspMp			-- info organized per/keyed on aspect
       }
   deriving ( Show
 %%[[50
-           , Data, Typeable, Generic
+           , Typeable, Generic
 %%]]
            )
 
@@ -304,7 +309,7 @@ data GrinByteCodeLamInfo
   deriving
      ( Show
 %%[[50
-     , Typeable, Data, Generic
+     , Typeable, Generic
 %%]]
      )
 

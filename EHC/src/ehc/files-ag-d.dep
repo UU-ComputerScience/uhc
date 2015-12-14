@@ -2,6 +2,7 @@ EH
 HS
 Ty
 Core
+CountingAnalysis
 CoreRun
 TyCore
 JVMClass

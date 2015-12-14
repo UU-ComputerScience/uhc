@@ -15,7 +15,10 @@ Implementation of Hidde's counting Analysis
 %%[(8 counting) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
 %%]
 
-%%[(8 counting) hs import({%{EH}Core.CountingAnalysis.ConstraintGeneration},{%{EH}Core.CountingAnalysis.ConstraintSolver},{%{EH}Core.CountingAnalysis.Types})
+%%[(8 counting) hs import({%{EH}CountingAnalysis.ConstraintGeneration},{%{EH}CountingAnalysis.ConstraintSolver},{%{EH}CountingAnalysis})
+%%]
+
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis.Substitution} as S)
 %%]
 
 %%[(8 counting) hs import(UHC.Util.Utils)
@@ -79,7 +82,7 @@ ATTR CodeAGItf AllNT [ subtyping: Bool | | ]
 
 %%[(8 counting) ag
 ATTR AllNT [ solvedContraints: {Solution} | freshVar: {Var} | constrs USE {++} {[]}: {Constraints}]
-ATTR AllExprBase [ | env: Env | ety: {Eta AnnotatedType} fety: {Eta AnnotatedType}]
+ATTR AllExprBase [ | env: Env | ety: {EtaAnnotatedType} fety: {EtaAnnotatedType}]
 ATTR CBind CBound [ | | name: HsName]
 ATTR AllExprBase [ isSeq: Bool | | ]
 
@@ -98,7 +101,7 @@ SEM CodeAGItf
 
 SEM AllExprBase
   | * 
-    lhs.fety = Eta (TyError "Unsupported fety") annBot
+    lhs.fety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported fety") annBot
 
 SEM CModule
   | *
@@ -110,7 +113,7 @@ SEM CBind
     lhs.name = @nm
   | * - Bind
     lhs.name = mkHNm $ "Not supported CBind alternative: " {-++ show @loc.cTrf-}
-    loc.ety = Eta (TyError $ "Unsupported CBind alternative" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBind alternative" {-++ show @loc.cTrf-}) annBot
 
 SEM CBound
   | Bind
@@ -120,36 +123,36 @@ SEM CBound
                 _ -> panic "Code is not in ANormalForm"
   | * - Bind
     lhs.name = mkHNm $ "Not supported CBound alternative: " {-++ show @loc.cTrf-}
-    loc.ety = Eta (TyError $ "Unsupported CBound alternative" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBound alternative" {-++ show @loc.cTrf-}) annBot
 
 SEM CExpr
   | * 
-    lhs.fety := subst (undefined :: Proxy HsName) @lhs.solvedContraints $ subst (undefined :: Proxy Var) @lhs.solvedContraints @loc.ety
+    lhs.fety := S.substSolution @loc.ety @lhs.solvedContraints
   | Var
     lhs.freshVar = @lhs.freshVar + 3
-    loc.tau = TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 0)
-    loc.sigma = SchemeVar $ SV $ @lhs.freshVar + 1
-    loc.nu = AnnVar $ @lhs.freshVar + 2
-    lhs.constrs = [InstC @loc.sigma @loc.tau]
-    lhs.env = Map.singleton (acbrefNm @ref) $ Rho (Eta @loc.sigma @loc.nu) annOne 
-    loc.ety = Eta @loc.tau @loc.nu
+    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 0)
+    loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
+    loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
+    lhs.constrs = [Constraint_InstC @loc.sigma @loc.tau]
+    lhs.env = Map.singleton (acbrefNm @ref) $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) annOne 
+    loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
   | Lam
-    loc.nu2 = AnnVar $ @lhs.freshVar + 0
-    loc.tau = TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)
+    loc.nu2 = Annotation_AnnVar $ @lhs.freshVar + 0
+    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)
     ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind.name @body.env
     bind.freshVar = @lhs.freshVar + 2
     (loc.scheme, lhs.freshVar) = envLookup @loc.fv @body.env @bind.name
-    lhs.constrs = SchemeC (EqC (stripRhoEta @loc.scheme) (SForAll Set.empty [] @loc.tau)) : @body.constrs ++ @loc.c2
-    loc.ety = Eta (TyFunc (fmap (const @loc.tau) @loc.scheme) @body.ety) @loc.nu2 
+    lhs.constrs = Constraint_SchemeC (CTyScheme_EqC (stripRhoEta $ toRho @loc.scheme) (TyScheme_SForAll Set.empty Set.empty [] @loc.tau)) : @body.constrs ++ @loc.c2
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyFunc (fromRho $ fmap (const @loc.tau) $ toRho @loc.scheme) @body.ety) @loc.nu2 
   | App
     ((loc.c2a, loc.tyArg), loc.fv1) = sub @func.freshVar True @func.ety
     ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 @lhs.subtyping @arg.ety
     func.freshVar = @lhs.freshVar + 3
-    loc.delta2 = AnnVar $ @lhs.freshVar + 0
-    loc.sigma3 = Eta (TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)) $ AnnVar $ @lhs.freshVar + 2
-    ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ (Map.adjust (\(Rho sigma4 _) -> Rho sigma4 @loc.delta2) (@arg.name) @arg.env)
-    lhs.constrs = AnnC (EqC (getAnnEta @loc.tyFunc) annOne) : 
-                    TyC (EqC (stripEta @loc.tyFunc) (TyFunc (Rho @loc.tyArg @loc.delta2) @loc.sigma3)) :
+    loc.delta2 = Annotation_AnnVar $ @lhs.freshVar + 0
+    loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)) $ Annotation_AnnVar $ @lhs.freshVar + 2
+    ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ (Map.adjust (\(RhoTyScheme_Rho sigma4 _) -> RhoTyScheme_Rho sigma4 @loc.delta2) (@arg.name) @arg.env)
+    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) : 
+                    Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.tyArg @loc.delta2) @loc.sigma3)) :
                     @loc.c1a ++ @func.constrs ++ @loc.c2a ++ @arg.constrs ++ @loc.c3
     loc.ety = @loc.sigma3
   | Let
@@ -159,64 +162,64 @@ SEM CExpr
     binds.isSeq = @loc.isThisSeq
     loc.ety = @body.ety
   | Tup -- How to deal with these as tuple, data constroctor
-    loc.ety = Eta (TyError $ "Unsupported expression Tup" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Tup" {-++ show @loc.cTrf-}) annBot
   | Case
-    loc.ety = Eta (TyError $ "Unsupported expression Case" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Case" {-++ show @loc.cTrf-}) annBot
   | Int
-    loc.ety = Eta (TyError $ "Unsupported expression Int" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Int" {-++ show @loc.cTrf-}) annBot
   | Char
-    loc.ety = Eta (TyError $ "Unsupported expression Char" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Char" {-++ show @loc.cTrf-}) annBot
   | String
-    loc.ety = Eta (TyError $ "Unsupported expression String" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression String" {-++ show @loc.cTrf-}) annBot
 %%[[(97 core)
   | Integer
-    loc.ety = Eta (TyError $ "Unsupported expression Integer" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Integer" {-++ show @loc.cTrf-}) annBot
 %%]]
   -- not supported
   | FFI
-    loc.ety = Eta (TyError $ "Unsupported expression FFI" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression FFI" {-++ show @loc.cTrf-}) annBot
   | CaseAltFail
-    loc.ety = Eta (TyError $ "Unsupported expression CaseAltFail " {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression CaseAltFail " {-++ show @loc.cTrf-}) annBot
   | TupDel
-    loc.ety = Eta (TyError $ "Unsupported expression TupDel" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupDel" {-++ show @loc.cTrf-}) annBot
   | TupIns
-    loc.ety = Eta (TyError $ "Unsupported expression TupIns" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupIns" {-++ show @loc.cTrf-}) annBot
   | TupUpd
-    loc.ety = Eta (TyError $ "Unsupported expression TupUpd" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupUpd" {-++ show @loc.cTrf-}) annBot
   | Dbg
-    loc.ety = Eta (TyError $ "Unsupported expression Dbg" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Dbg" {-++ show @loc.cTrf-}) annBot
   | Hole
-    loc.ety = Eta (TyError $ "Unsupported expression Hole" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Hole" {-++ show @loc.cTrf-}) annBot
   | HoleLet
-    loc.ety = Eta (TyError $ "Unsupported expression HoleLet" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression HoleLet" {-++ show @loc.cTrf-}) annBot
   | CoeArg
-    loc.ety = Eta (TyError $ "Unsupported expression CoeArg" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression CoeArg" {-++ show @loc.cTrf-}) annBot
   | ImplsApp
-    loc.ety = Eta (TyError $ "Unsupported expression ImplsApp" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression ImplsApp" {-++ show @loc.cTrf-}) annBot
   | ImplsLam
-    loc.ety = Eta (TyError $ "Unsupported expression ImplsLam" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression ImplsLam" {-++ show @loc.cTrf-}) annBot
   | Ann
-    loc.ety = Eta (TyError $ "Unsupported expression Ann" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Ann" {-++ show @loc.cTrf-}) annBot
 
 SEM CExprAnn
   | *
-    loc.ety = Eta (TyError $ "Unsupported CExprAnn" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CExprAnn" {-++ show @loc.cTrf-}) annBot
 
 SEM CAltL CBindAnnL CBindL CBoundL CPatFldL
   | Nil
-    loc.ety = Eta (TyError $ "Unsupported Nil contructor" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported Nil contructor" {-++ show @loc.cTrf-}) annBot
 
 SEM CBindAnn
   | Coe
-    loc.ety = Eta (TyError $ "Unsupported CBindAnn Coe" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBindAnn Coe" {-++ show @loc.cTrf-}) annBot
 
 SEM CPat
   | * 
-    loc.ety = Eta (TyError $ "Unsupported CPat" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CPat" {-++ show @loc.cTrf-}) annBot
 
 SEM CPatRest
   | *
-    loc.ety = Eta (TyError $ "Unsupported CPatRest" {-++ show @loc.cTrf-}) annBot
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CPatRest" {-++ show @loc.cTrf-}) annBot
 
 
 %%]

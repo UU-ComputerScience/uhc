@@ -55,11 +55,7 @@ data Pragma
       { pragmaExcludeTargets   		:: [Target]
       }
 %%]]
-<<<<<<< HEAD
-  deriving (Eq,Ord,Show,Typeable,Data, Generic)
-=======
-  deriving (Eq,Ord,Show,Typeable)
->>>>>>> origin/master
+  deriving (Eq,Ord,Show,Typeable,Generic)
 
 %%]
 

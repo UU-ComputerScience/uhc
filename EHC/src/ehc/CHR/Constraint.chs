@@ -223,7 +223,7 @@ data RedHowAnnotation
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable
+    , Typeable , Generic
 %%]]
     )
 %%]
@@ -275,7 +275,7 @@ data ByScopeRedHow
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable
+    , Typeable , Generic
 %%]]
     )
 

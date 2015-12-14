@@ -1,0 +1,94 @@
+%%[(8 counting) hs module {%{EH}CountingAnalysis.ExtractVar} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map hiding (foldr),qualified Data.Map as Map)
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.HsName (HsName)})
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysis})
+%%]
+
+%%[(8 counting) ag import({CountingAnalysis/AbsSyn})
+WRAPPER *
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% access functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) hs export (ExtractVar(..))
+
+class ExtractVar a where
+  extractAnnVars :: a -> Set Var
+  extractAnnVars a = let (s,_,_) = extractVars a in s
+  extractTyVars :: a -> Set HsName
+  extractTyVars a =  let (_,s,_) = extractVars a in s
+  extractSchemeVars :: a -> Set SchemeVar
+  extractSchemeVars a = let (_,_,s) = extractVars a in s
+
+  extractVars :: a -> (Set Var, Set HsName, Set SchemeVar)
+
+instance ExtractVar AnnotatedType where
+  extractVars a = (fav_Syn_AnnotatedType syn, ftv_Syn_AnnotatedType syn, fsv_Syn_AnnotatedType syn)  
+    where syn = wrap_AnnotatedType (sem_AnnotatedType a) Inh_AnnotatedType
+
+instance ExtractVar CAnnotation where
+  extractVars a = (fav_Syn_CAnnotation syn, ftv_Syn_CAnnotation syn, fsv_Syn_CAnnotation syn)  
+    where syn = wrap_CAnnotation (sem_CAnnotation a) Inh_CAnnotation
+
+instance ExtractVar CAnnotatedType where
+  extractVars a = (fav_Syn_CAnnotatedType syn, ftv_Syn_CAnnotatedType syn, fsv_Syn_CAnnotatedType syn)  
+    where syn = wrap_CAnnotatedType (sem_CAnnotatedType a) Inh_CAnnotatedType
+
+instance ExtractVar Env where
+  extractVars a = (fav_Syn_Env syn, ftv_Syn_Env syn, fsv_Syn_Env syn)  
+    where syn = wrap_Env (sem_Env a) Inh_Env
+
+instance ExtractVar RhoTyScheme where
+  extractVars a = (fav_Syn_RhoTyScheme syn, ftv_Syn_RhoTyScheme syn, fsv_Syn_RhoTyScheme syn)  
+    where syn = wrap_RhoTyScheme (sem_RhoTyScheme a) Inh_RhoTyScheme
+
+instance ExtractVar TyScheme where
+  extractVars a = (fav_Syn_TyScheme syn, ftv_Syn_TyScheme syn, fsv_Syn_TyScheme syn)  
+    where syn = wrap_TyScheme (sem_TyScheme a) Inh_TyScheme
+
+instance ExtractVar RhoAnnotatedType where
+  extractVars a = (fav_Syn_RhoAnnotatedType syn, ftv_Syn_RhoAnnotatedType syn, fsv_Syn_RhoAnnotatedType syn)  
+    where syn = wrap_RhoAnnotatedType (sem_RhoAnnotatedType a) Inh_RhoAnnotatedType
+
+instance ExtractVar Constraints where
+  extractVars a = (fav_Syn_Constraints syn, ftv_Syn_Constraints syn, fsv_Syn_Constraints syn)  
+    where syn = wrap_Constraints (sem_Constraints a) Inh_Constraints
+
+    -- =  let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
+    --                           (Inh_CodeAGItf
+    --                            { dataGam_Inh_CodeAGItf = dataGam,
+    --                              subtyping_Inh_CodeAGItf = s
+    --                            })
+    --    in cTrf_Syn_CodeAGItf t
+%%]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Freevars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) ag
+
+ATTR ALL [ | | fav USE {Set.union} {Set.empty}: {Set Var} ]
+ATTR ALL [ | | ftv USE {Set.union} {Set.empty}: {Set HsName} ]
+ATTR ALL [ | | fsv USE {Set.union} {Set.empty}: {Set SchemeVar} ]
+
+
+SEM Annotation
+  | AnnVar
+    lhs.fav = Set.singleton @v
+
+SEM AnnotatedType
+  | TyVar
+    lhs.ftv = Set.singleton @v
+
+SEM TyScheme
+  | SchemeVar
+    lhs.fsv = Set.singleton @v
+  | SForAll
+    +ftv = (\x -> x Set.\\ @ts)
+    +fav = (\x -> x Set.\\ @as)
+%%]

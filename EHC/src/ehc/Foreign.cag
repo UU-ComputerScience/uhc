@@ -37,7 +37,7 @@
 %%[90
 DERIVING AllForeign ForeignExpr
   : Show, Eq
-  , Typeable, Data, Generic
+  , Typeable, Generic
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

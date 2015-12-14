@@ -1,0 +1,95 @@
+%%[(8 counting) hs module {%{EH}CountingAnalysis.Substitution} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map,qualified Data.Map as Map)
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.HsName (HsName)})
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysis})
+%%]
+
+%%[(8 counting) ag import({CountingAnalysis/AbsSyn})
+WRAPPER *
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% access functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) hs export (Subst(..))
+
+class Subst a where
+  substAnn :: a -> AnnSol -> a
+  substAnn a m = subst a m Map.empty Map.empty
+  substTy :: a -> TySol -> a
+  substTy a m =  subst a Map.empty m Map.empty
+  substScheme :: a -> SchemeSol -> a
+  substScheme a m = subst a Map.empty Map.empty m
+  substSolution :: a -> Solution -> a
+  substSolution a (Solution as ts ss) = subst a as ts ss
+
+  subst :: a -> AnnSol -> TySol -> SchemeSol -> a
+
+instance Subst AnnotatedType where
+  subst a am tm sm = subst_Syn_AnnotatedType $ wrap_AnnotatedType (sem_AnnotatedType a) 
+    (Inh_AnnotatedType am sm tm)
+
+instance Subst CAnnotation where
+  subst a am tm sm = subst_Syn_CAnnotation $ wrap_CAnnotation (sem_CAnnotation a) 
+    (Inh_CAnnotation am sm tm)
+
+instance Subst CAnnotatedType where
+  subst a am tm sm = subst_Syn_CAnnotatedType $ wrap_CAnnotatedType (sem_CAnnotatedType a) 
+    (Inh_CAnnotatedType am sm tm)
+
+instance Subst CTyScheme where
+  subst a am tm sm = subst_Syn_CTyScheme $ wrap_CTyScheme (sem_CTyScheme a) 
+    (Inh_CTyScheme am sm tm)
+
+instance Subst Constraints where
+  subst a am tm sm = subst_Syn_Constraints $ wrap_Constraints (sem_Constraints a) 
+    (Inh_Constraints am sm tm)
+
+instance Subst EtaAnnotatedType where
+  subst a am tm sm = subst_Syn_EtaAnnotatedType $ wrap_EtaAnnotatedType (sem_EtaAnnotatedType a) 
+    (Inh_EtaAnnotatedType am sm tm)
+
+instance Subst RhoAnnotatedType where
+  subst a am tm sm = subst_Syn_RhoAnnotatedType $ wrap_RhoAnnotatedType (sem_RhoAnnotatedType a) 
+    (Inh_RhoAnnotatedType am sm tm)
+
+instance Subst RhoTyScheme where
+  subst a am tm sm = subst_Syn_RhoTyScheme $ wrap_RhoTyScheme (sem_RhoTyScheme a) 
+    (Inh_RhoTyScheme am sm tm)
+
+instance Subst Env where
+  subst a am tm sm = subst_Syn_Env $ wrap_Env (sem_Env a) 
+    (Inh_Env am sm tm)
+
+instance Subst TyScheme where
+  subst a am tm sm = subst_Syn_TyScheme $ wrap_TyScheme (sem_TyScheme a) 
+    (Inh_TyScheme am sm tm)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% substitition
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) ag
+
+ATTR * [ substAnnMap: AnnSol substTyMap: TySol substSchemeMap: SchemeSol | | subst: SELF ]
+
+SEM Annotation
+  | AnnVar
+    lhs.subst = fromMaybe @loc.subst $ Map.lookup @v @lhs.substAnnMap
+
+SEM AnnotatedType
+  | TyVar
+    lhs.subst = fromMaybe @loc.subst $ Map.lookup @v @lhs.substTyMap
+
+SEM TyScheme
+  | SchemeVar
+    lhs.subst = fromMaybe @loc.subst $ Map.lookup @v @lhs.substSchemeMap
+
+
+%%]

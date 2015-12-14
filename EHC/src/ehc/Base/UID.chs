@@ -89,7 +89,7 @@ newtype UID = UID { uidInts :: [Int] }
 %%][99
 data UID = UID { uidHash :: !Int, uidInts :: ![Int] }
 %%]]
-  deriving (Eq,Ord,Generic)
+  deriving (Eq,Ord,Data,Generic)
 %%]
 
 %%[1 export(mkUID)

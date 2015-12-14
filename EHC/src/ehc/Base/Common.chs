@@ -166,7 +166,7 @@ newtype PredOccId
   = PredOccId
       { poiId       :: UID
       }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Data)
 %%]
 
 %%[9 hs export(mkPrId,poiHNm)
@@ -521,7 +521,7 @@ data CompilePoint
 %%[1 export(Fixity(..))
 data Fixity
   = Fixity_Infix | Fixity_Infixr | Fixity_Infixl
-  deriving (Eq,Ord,Show,Enum)
+  deriving (Eq,Ord,Show,Enum, Data)
 
 instance PP Fixity where
   pp Fixity_Infix  = pp "infix"

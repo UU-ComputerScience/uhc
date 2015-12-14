@@ -85,7 +85,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix CoreRun/,Run Prim) \
 													$(addprefix CoreRun/Run/,Val) \
 													$(addprefix CoreRun/Run/Val/,RunImplStk RunExplStk Prim) \
-													$(addprefix Core/CountingAnalysis/,ConstraintGeneration ConstraintSolver Types) \
+													$(addprefix CountingAnalysis/,ConstraintGeneration) \
 													$(addprefix Core/,Utils Merge FFI Coercion) \
 													$(addprefix Core/SysF/,AsTy) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \

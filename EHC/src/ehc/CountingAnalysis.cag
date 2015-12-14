@@ -1,0 +1,210 @@
+%%[(8 counting) hs module {%{EH}CountingAnalysis}
+%%]
+
+%%[(8 counting) hs import(Data.Set (Set),qualified Data.Set as S,Data.Map (Map),qualified Data.Map as M)
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.HsName (HsName, hsnIsNr)})
+%%]
+
+%%[(8 counting) hs import(UHC.Util.Binary, UHC.Util.Serialize)
+%%]
+
+%%[(8 counting) hs import(Control.Monad)
+%%]
+
+%%[(8 core) ag import({CountingAnalysis/AbsSyn})
+%%]
+
+%%[(8 counting) hs
+type AnnVal = Set AnnPrim
+type Var = Int
+newtype SchemeVar = SV {unSV :: Var}
+  deriving (Typeable, Eq, Ord, Show, Data, Generic)
+
+type AnnSol = Map Var Annotation
+type AnnPartSol = Map Var (Set AnnVal)
+type TySol = Map HsName AnnotatedType
+type SchemeSol = Map SchemeVar TyScheme
+
+data Solution = Solution
+  { annSol :: AnnSol
+  , tySol :: TySol
+  , schemeSol :: SchemeSol
+  }
+%%]
+
+%%[(8 counting) ag
+DERIVING *
+  : Typeable, Eq, Ord, Show, Data, Generic
+
+%%]
+
+%%[(8 counting) hs
+
+annBot' = S.empty
+annZero' = S.singleton AnnPrim_Zero
+annOne' = S.singleton AnnPrim_One
+annW' = S.singleton AnnPrim_Infinity
+annTop' = S.fromList [AnnPrim_Zero, AnnPrim_One, AnnPrim_Infinity]
+
+annBot = Annotation_AnnVal annBot'
+annZero = Annotation_AnnVal annZero'
+annOne = Annotation_AnnVal annOne'
+annW = Annotation_AnnVal annW'
+annTop = Annotation_AnnVal annTop'
+
+annPow :: AnnVal -> Set AnnVal
+annPow = S.fromList . map (S.fromList) . annPow' . S.toList
+  where annPow' [] = [[]]
+        annPow' (x:xs) = p ++ map (x:) p
+          where p = annPow' xs
+
+annPowWithoutEmpty :: AnnVal -> Set AnnVal
+annPowWithoutEmpty = S.delete (S.empty) . annPow
+
+instance Functor Eta where
+  fmap f (Eta x a) = Eta (f x) a
+
+instance Functor Rho where
+  fmap f (Rho x a) = Rho (fmap f x) a
+
+annAdd :: AnnVal -> AnnVal -> AnnVal
+annAdd a1 a2 = S.fromList [x .+ y | x <- S.toList a1, y <- S.toList a2] 
+
+annUnion :: AnnVal -> AnnVal -> AnnVal
+annUnion = S.union
+
+annTimes :: AnnVal -> AnnVal -> AnnVal
+annTimes a1 a2 = S.fromList [annFromInt (sum $ map annToInt y) | x <- S.toList a1, y <- f (annToInt x) $ S.toList a2]
+  where f 0 _ = [[]] 
+        f _ [] = []
+        f n y@(x:xs) = f n xs ++ map (x:) (f (n-1) y)
+
+annCon :: AnnVal -> AnnVal -> AnnVal
+annCon a1 a2 = S.unions $ map (\x -> if x == AnnPrim_Zero then annZero' else a2) $ S.toList a1
+
+(.+) :: AnnPrim -> AnnPrim -> AnnPrim
+x .+ y = annFromInt $ annToInt x + annToInt y
+
+annToInt :: AnnPrim -> Int
+annToInt AnnPrim_Zero = 0
+annToInt AnnPrim_One = 1
+annToInt AnnPrim_Infinity = 2;
+
+annFromInt :: Int -> AnnPrim
+annFromInt 0 = AnnPrim_Zero
+annFromInt 1 = AnnPrim_One
+annFromInt _ = AnnPrim_Infinity
+
+instance Serialize AnnPrim where
+instance Serialize Annotation where
+instance Serialize AnnotatedType where
+instance Serialize a => Serialize (Eta a) where
+instance Serialize a => Serialize (Rho a) where
+instance Serialize EtaAnnotatedType where
+instance Serialize RhoAnnotatedType where
+instance Serialize EtaTyScheme where
+instance Serialize RhoTyScheme where
+instance Serialize TyScheme where
+instance Serialize SchemeVar where
+instance Serialize Constraint where
+instance Serialize a => Serialize (C a) where
+instance Serialize CAnnotation where
+instance Serialize CAnnotatedType where
+instance Serialize CTyScheme where
+
+data C a
+  = EqC a a
+  | PlusC a a a
+  | UnionC a a a
+  | TimesC a Annotation a
+  | ConC a Annotation a
+  deriving (Typeable, Eq, Ord, Show, Data, Generic)
+
+class ToGC a b | a -> b, b -> a where
+  toGC :: b -> C a
+  fromGC :: C a -> b
+
+instance ToGC Annotation CAnnotation where
+  toGC (CAnnotation_EqC a b) = EqC a b
+  toGC (CAnnotation_PlusC a b c) = PlusC a b c
+  toGC (CAnnotation_UnionC a b c) = UnionC a b c
+  toGC (CAnnotation_TimesC a b c) = TimesC a b c
+  toGC (CAnnotation_ConC a b c) = ConC a b c
+  fromGC (EqC a b) = CAnnotation_EqC a b
+  fromGC (PlusC a b c) = CAnnotation_PlusC a b c
+  fromGC (UnionC a b c) = CAnnotation_UnionC a b c
+  fromGC (TimesC a b c) = CAnnotation_TimesC a b c
+  fromGC (ConC a b c) = CAnnotation_ConC a b c
+
+instance ToGC AnnotatedType CAnnotatedType where
+  toGC (CAnnotatedType_EqC a b) = EqC a b
+  toGC (CAnnotatedType_PlusC a b c) = PlusC a b c
+  toGC (CAnnotatedType_UnionC a b c) = UnionC a b c
+  toGC (CAnnotatedType_TimesC a b c) = TimesC a b c
+  toGC (CAnnotatedType_ConC a b c) = ConC a b c
+  fromGC (EqC a b) = CAnnotatedType_EqC a b
+  fromGC (PlusC a b c) = CAnnotatedType_PlusC a b c
+  fromGC (UnionC a b c) = CAnnotatedType_UnionC a b c
+  fromGC (TimesC a b c) = CAnnotatedType_TimesC a b c
+  fromGC (ConC a b c) = CAnnotatedType_ConC a b c
+
+instance ToGC TyScheme CTyScheme where
+  toGC (CTyScheme_EqC a b) = EqC a b
+  toGC (CTyScheme_PlusC a b c) = PlusC a b c
+  toGC (CTyScheme_UnionC a b c) = UnionC a b c
+  toGC (CTyScheme_TimesC a b c) = TimesC a b c
+  toGC (CTyScheme_ConC a b c) = ConC a b c
+  fromGC (EqC a b) = CTyScheme_EqC a b
+  fromGC (PlusC a b c) = CTyScheme_PlusC a b c
+  fromGC (UnionC a b c) = CTyScheme_UnionC a b c
+  fromGC (TimesC a b c) = CTyScheme_TimesC a b c
+  fromGC (ConC a b c) = CTyScheme_ConC a b c
+
+data Eta a = Eta a Annotation
+  deriving (Typeable, Eq, Ord, Show, Data, Generic)
+
+class ToEta a b | a -> b, b -> a where
+  toEta :: b -> Eta a
+  fromEta :: Eta a -> b
+
+instance ToEta AnnotatedType EtaAnnotatedType where
+  toEta (EtaAnnotatedType_Eta a b) = Eta a b
+  fromEta (Eta a b) = EtaAnnotatedType_Eta a b
+
+instance ToEta TyScheme EtaTyScheme where
+  toEta (EtaTyScheme_Eta a b) = Eta a b
+  fromEta (Eta a b) = EtaTyScheme_Eta a b
+
+data Rho a = Rho (Eta a) Annotation 
+  deriving (Typeable, Eq, Ord, Show, Data, Generic)
+
+class ToRho a b | a -> b, b -> a where
+  toRho :: b -> Rho a
+  fromRho :: Rho a -> b
+
+instance ToEta AnnotatedType EtaAnnotatedType => ToRho AnnotatedType RhoAnnotatedType where
+  toRho (RhoAnnotatedType_Rho a b) = Rho (toEta a) b
+  fromRho (Rho a b) = RhoAnnotatedType_Rho (fromEta a) b
+
+instance ToEta TyScheme EtaTyScheme => ToRho TyScheme RhoTyScheme where
+  toRho (RhoTyScheme_Rho a b) = Rho (toEta a) b
+  fromRho (Rho a b) = RhoTyScheme_Rho (fromEta a) b
+
+stripRho :: Rho a -> Eta a
+stripRho (Rho t _) = t
+
+stripEta :: Eta a -> a
+stripEta (Eta t _) = t
+
+stripRhoEta :: Rho a -> a
+stripRhoEta (Rho (Eta t _) _) = t
+
+getAnnRho :: Rho a -> Annotation
+getAnnRho (Rho _ a) = a
+
+getAnnEta :: Eta a -> Annotation
+getAnnEta (Eta _ a) = a
+
+%%]

@@ -62,7 +62,7 @@ DERIVING * - GrTag
   , Typeable
 %%]]
 %%[[50
-  , Data, Generic
+  , Generic
 %%]]
 DERIVING GrTag
   : Show
@@ -70,7 +70,7 @@ DERIVING GrTag
   , Typeable
 %%]]
 %%[[50
-  , Data, Generic
+  , Generic
 %%]]
 %%]
 
@@ -304,7 +304,7 @@ data GrInl
       { inlGrExpr   :: !GrExpr
       }
 %%[[50
-  deriving (Typeable, Data, Generic)
+  deriving (Typeable, Generic)
 %%]]
 
 type GrInlMp = Map.Map HsName GrInl

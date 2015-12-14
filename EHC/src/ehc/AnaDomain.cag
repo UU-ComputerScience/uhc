@@ -33,7 +33,7 @@ Analysis domains
 DERIVING *
   : Show
 %%[[50
-  , Typeable, Data, Generic
+  , Typeable, Generic
 %%]]
 
 DERIVING *

@@ -87,7 +87,7 @@
 %%]
 %%[(8 codegen) hs import({%{EH}Core.Subst})
 %%]
-%%[(8 counting) hs import(qualified {%{EH}Core.CountingAnalysis.Types} as CA)
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis} as CA)
 %%]
 %3%[(8 counting) hs import(qualified {%{EH}EH.AbsSyn} as AS)
 %3%]
@@ -110,11 +110,14 @@
 %%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}CHR.Guard},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
 %%]
+%%[(9 codegen) hs import({%{EH}Pred.Evidence(InfoToEvidenceMap)})
+%%]
+
 %%[(9 codegen tycore) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
 %%]
 %%[(9 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
@@ -223,10 +226,7 @@ WRAPPER AGItf
 %%[(2 hmtyinfer) ag import({EH/InferIncrFtv})
 %%]
 
-%%[(5 hmtyinfer) ag import({EH/InferCaseExpr})
-%%]
-
-%%[5 ag import({EH/InferData})
+%%[(5 hmtyinfer) ag import({EH/InferCaseExpr},{EH/InferData})
 %%]
 
 %%[(6 hmtyinfer) ag import({EH/InferKiExpr})

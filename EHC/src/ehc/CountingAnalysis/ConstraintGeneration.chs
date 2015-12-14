@@ -1,4 +1,4 @@
-%%[(8 counting) hs module{%{EH}Core.CountingAnalysis.ConstraintGeneration}
+%%[(8 counting) hs module{%{EH}CountingAnalysis.ConstraintGeneration}
 
 import Data.Map (Map)
 import qualified Data.Map as M
@@ -6,8 +6,9 @@ import Data.Set (Set)
 import qualified Data.Set as S
 
 import Control.Monad.State
+import Control.Arrow (second)
 
-import %%@{%{EH}%%}Core.CountingAnalysis.Types
+import %%@{%{EH}%%}CountingAnalysis
 import %%@{%{EH}%%}Base.HsName (HsName, mkHNm)
 
 genAdd :: ConstraintGeneration a => Var -> a -> a -> a -> (Constraints, Var)
@@ -42,13 +43,13 @@ class ConstraintGeneration a where
   genCon' a1 a2 a = return [genC $ ConC a a1 a2]
 
 instance ConstraintGeneration Annotation where
-  genC = AnnC
+  genC = Constraint_AnnC . fromGC
 
 instance ConstraintGeneration AnnotatedType where
-  genC = TyC
+  genC = Constraint_TyC . fromGC
 
 instance ConstraintGeneration TyScheme where
-  genC = SchemeC
+  genC = Constraint_SchemeC . fromGC
 
 instance ConstraintGeneration a => ConstraintGeneration (Eta a) where
   genAdd' (Eta u1 v1) (Eta u2 v2) (Eta u v) = do
@@ -85,6 +86,30 @@ instance ConstraintGeneration a => ConstraintGeneration (Rho a) where
     c1 <- genCon' phi1 u2 u
     c2 <- genCon' phi1 v2 v
     return $ c1 ++ c2
+
+instance ConstraintGeneration EtaAnnotatedType where
+  genAdd' a b c = genAdd' (toEta a) (toEta b) (toEta c)
+  genUnion' a b c = genUnion' (toEta a) (toEta b) (toEta c)
+  genTimes' a b c = genTimes' a (toEta b) (toEta c)
+  genCon' a b c = genCon' a (toEta b) (toEta c)
+
+instance ConstraintGeneration RhoAnnotatedType where
+  genAdd' a b c = genAdd' (toRho a) (toRho b) (toRho c)
+  genUnion' a b c = genUnion' (toRho a) (toRho b) (toRho c)
+  genTimes' a b c = genTimes' a (toRho b) (toRho c)
+  genCon' a b c = genCon' a (toRho b) (toRho c)
+
+instance ConstraintGeneration EtaTyScheme where
+  genAdd' a b c = genAdd' (toEta a) (toEta b) (toEta c)
+  genUnion' a b c = genUnion' (toEta a) (toEta b) (toEta c)
+  genTimes' a b c = genTimes' a (toEta b) (toEta c)
+  genCon' a b c = genCon' a (toEta b) (toEta c)
+
+instance ConstraintGeneration RhoTyScheme where
+  genAdd' a b c = genAdd' (toRho a) (toRho b) (toRho c)
+  genUnion' a b c = genUnion' (toRho a) (toRho b) (toRho c)
+  genTimes' a b c = genTimes' a (toRho b) (toRho c)
+  genCon' a b c = genCon' a (toRho b) (toRho c)
 
 instance ConstraintGeneration Env where
   genAdd' env1 env2 env = do 
@@ -142,26 +167,30 @@ class Compute a where
   computeTimes' :: Annotation -> a -> State Var (Constraints, a)
   computeCon' :: Annotation -> a -> State Var (Constraints, a)
 
--- computeAnn :: (Annotation -> Annotation -> Annotation -> State Var Constraints, Annotation -> Annotation -> Annotation) -> Annotation -> Annotation -> State Var (Constraints, Annotation)
-computeAnn (_, f) (AnnVal x) (AnnVal y) = return ([], AnnVal $ f x y)
+-- computeAnn :: (Annotation -> Annotation -> Annotation -> 
+--     State Var Constraints, Annotation -> Annotation -> Annotation)
+--   -> Annotation -> Annotation -> State Var (Constraints, Annotation)
+computeAnn (_, f) (Annotation_AnnVal x) (Annotation_AnnVal y) = return ([], Annotation_AnnVal $ f x y)
 computeAnn (f, _) x y = do
   z <- getFresh
-  let a = AnnVar z
+  let a = Annotation_AnnVar z
   c <- f x y a
   return (c, a)
 
--- computeTy :: ([Annotation] -> [Annotation] -> State Var (Constraints, [Annotation]), [AnnotatedType] -> [AnnotatedType] -> State Var (Constraints, [AnnotatedType])) -> AnnotatedType -> AnnotatedType -> State Var (Constraints, AnnotatedType)
-computeTy ((f, g), _, _) (TyData n1 a1 t1) (TyData n2 a2 t2) | n1 == n2 = do 
+-- computeTy :: ([Annotation] -> [Annotation] -> State Var (Constraints, [Annotation]), 
+--     [AnnotatedType] -> [AnnotatedType] -> State Var (Constraints, [AnnotatedType])) 
+--   -> AnnotatedType -> AnnotatedType -> State Var (Constraints, AnnotatedType)
+computeTy ((f, g), _, _) (AnnotatedType_TyData n1 a1 t1) (AnnotatedType_TyData n2 a2 t2) | n1 == n2 = do 
   (c1, a) <- f a1 a2
   (c2, t) <- g t1 t2
-  return (c1 ++ c2, TyData n1 a t)
-computeTy (_, (f, g), _) (TyFunc r1 e1) (TyFunc r2 e2) = do 
+  return (c1 ++ c2, AnnotatedType_TyData n1 a t)
+computeTy (_, (f, g), _) (AnnotatedType_TyFunc r1 e1) (AnnotatedType_TyFunc r2 e2) = do 
   (c1, r) <- f r1 r2
   (c2, e) <- g e1 e2
-  return (c1 ++ c2, TyFunc r e)
+  return (c1 ++ c2, AnnotatedType_TyFunc r e)
 computeTy (_, _, f) t1 t2 = do
   x <- getFresh
-  let t = TyVar $ mkHNm $ "CA" ++ show x
+  let t = AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x
   c <- f t1 t2 t
   return (c, t)
 
@@ -174,23 +203,23 @@ computeTy (_, _, f) t1 t2 = do
 --   -> Annotation 
 --   -> AnnotatedType
 --   -> State Var (Constraints, AnnotatedType)
-computeTyAnn ((f, g), _, _) a (TyData n as ts) = do
+computeTyAnn ((f, g), _, _) a (AnnotatedType_TyData n as ts) = do
   (c1, ax) <- f a as
   (c2, t) <- g a ts
-  return (c1 ++ c2, TyData n ax t)
-computeTyAnn (_, (f, g), _) a (TyFunc r2 e2) = do 
+  return (c1 ++ c2, AnnotatedType_TyData n ax t)
+computeTyAnn (_, (f, g), _) a (AnnotatedType_TyFunc r2 e2) = do 
   (c1, r) <- f a r2
   (c2, e) <- g a e2
-  return (c1 ++ c2, TyFunc r e)
+  return (c1 ++ c2, AnnotatedType_TyFunc r e)
 computeTyAnn (_, _, f) a t2 = do
   x <- getFresh
-  let t = TyVar $ mkHNm $ "CA" ++ show x
+  let t = AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x
   c <- f a t2 t
   return (c, t)
 
 computeScheme f t1 t2 = do
   x <- getFresh
-  let t = SchemeVar $ SV x
+  let t = TyScheme_SchemeVar $ SV x
   c <- f t1 t2 t
   return (c, t)
 
@@ -266,6 +295,62 @@ instance Compute a => Compute (Rho a) where
     (c2, v) <- computeCon' phi1 v2
     return (c1 ++ c2, Rho u v)
 
+instance Compute EtaAnnotatedType where
+  computeAdd' a b = do
+    (x, y) <- computeAdd' (toEta a) (toEta b)
+    return (x, fromEta y)
+  computeUnion' a b = do
+    (x, y) <- computeUnion' (toEta a) (toEta b)
+    return (x, fromEta y)
+  computeTimes' a b = do
+    (x, y) <- computeTimes' a (toEta b)
+    return (x, fromEta y)
+  computeCon' a b = do
+    (x, y) <- computeCon' a (toEta b)
+    return (x, fromEta y)
+
+instance Compute RhoAnnotatedType where
+  computeAdd' a b = do
+    (x, y) <- computeAdd' (toRho a) (toRho b)
+    return (x, fromRho y)
+  computeUnion' a b = do
+    (x, y) <- computeUnion' (toRho a) (toRho b)
+    return (x, fromRho y)
+  computeTimes' a b = do
+    (x, y) <- computeTimes' a (toRho b)
+    return (x, fromRho y)
+  computeCon' a b = do
+    (x, y) <- computeCon' a (toRho b)
+    return (x, fromRho y)
+
+instance Compute EtaTyScheme where
+  computeAdd' a b = do
+    (x, y) <- computeAdd' (toEta a) (toEta b)
+    return (x, fromEta y)
+  computeUnion' a b = do
+    (x, y) <- computeUnion' (toEta a) (toEta b)
+    return (x, fromEta y)
+  computeTimes' a b = do
+    (x, y) <- computeTimes' a (toEta b)
+    return (x, fromEta y)
+  computeCon' a b = do
+    (x, y) <- computeCon' a (toEta b)
+    return (x, fromEta y)
+
+instance Compute RhoTyScheme where
+  computeAdd' a b = do
+    (x, y) <- computeAdd' (toRho a) (toRho b)
+    return (x, fromRho y)
+  computeUnion' a b = do
+    (x, y) <- computeUnion' (toRho a) (toRho b)
+    return (x, fromRho y)
+  computeTimes' a b = do
+    (x, y) <- computeTimes' a (toRho b)
+    return (x, fromRho y)
+  computeCon' a b = do
+    (x, y) <- computeCon' a (toRho b)
+    return (x, fromRho y)
+
 instance Compute Env where
   computeAdd' env1 env2 = do
     y <- mapM (\x -> do
@@ -302,15 +387,18 @@ instance Compute Env where
     return (concat c, M.fromList e)
     where xs = M.keys env2
 
-envLookup :: Var -> Env -> HsName -> (Rho TyScheme, Var)
+envLookup :: Var -> Env -> HsName -> (RhoTyScheme, Var)
 envLookup v e h = runState (envLookup' e h) v
 
-envLookup' :: Env -> HsName -> State Var (Rho TyScheme)
+envLookup' :: Env -> HsName -> State Var (RhoTyScheme)
 envLookup' env v = case M.lookup v env of
   Just x -> return x
   Nothing -> do 
     y <- getFresh
-    return $ Rho (Eta (SForAll (S.singleton $ mkHNm $ "CA" ++ show y) [] (TyVar $ mkHNm $ "CA" ++ show y)) annZero) annZero
+    return $ RhoTyScheme_Rho (EtaTyScheme_Eta 
+      (TyScheme_SForAll (S.singleton $ mkHNm $ "CA" ++ show y) 
+        S.empty [] (AnnotatedType_TyVar $ mkHNm $ "CA" ++ show y)) 
+      annZero) annZero
 
 getFresh :: State Var Var
 getFresh = do
@@ -318,15 +406,15 @@ getFresh = do
   put $ x + 1
   return x
 
-sub :: Var -> Bool -> Eta AnnotatedType -> ((Constraints, Eta AnnotatedType), Var)
+sub :: Var -> Bool -> EtaAnnotatedType -> ((Constraints, EtaAnnotatedType), Var)
 sub v b t = runState (sub' b t) v
 
-sub' :: Bool -> Eta AnnotatedType -> State Var (Constraints, Eta AnnotatedType)
-sub' True (Eta t n2) = do
+sub' :: Bool -> EtaAnnotatedType -> State Var (Constraints, EtaAnnotatedType)
+sub' True (EtaAnnotatedType_Eta t n2) = do
   x <- getFresh
-  let n1 = AnnVar x
+  let n1 = Annotation_AnnVar x
   c <- genSub' n1 n2
-  return (c, Eta t n1)
+  return (c, EtaAnnotatedType_Eta t n1)
 sub' False t = return ([], t)
 
 %%]

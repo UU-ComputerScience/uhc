@@ -2,27 +2,24 @@
 %%% Gam specialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 module {%{EH}Gam.DataGam}
+%%[(7 hmtyinfer) module {%{EH}Gam.DataGam}
 %%]
 
-%%[7 import(UHC.Util.Pretty,UHC.Util.Utils)
+%%[(7 hmtyinfer) import(UHC.Util.Pretty,UHC.Util.Utils)
 %%]
 
-%%[7 hs import ({%{EH}Base.Common})
-%%]
-
-%%[(7 hmtyinfer) hs import ({%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin})
+%%[(7 hmtyinfer) hs import ({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName.Builtin})
 %%]
 %%[(7 hmtyinfer) hs import ({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
-%%[7 hs import ({%{EH}Gam})
+%%[(7 hmtyinfer) hs import ({%{EH}Gam})
 %%]
 %%[(7 hmtyinfer) hs import({%{EH}Error}) 
 %%]
 %%[(8 hmtyinfer) hs import({%{EH}CodeGen.RefGenerator}) 
 %%]
 
-%%[(8 counting) hs import(qualified {%{EH}Core.CountingAnalysis.Types} as CA) 
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis} as CA) 
 %%]
 
 %%[(7 hmtyinfer) import(Control.Applicative((<|>))) 
@@ -41,7 +38,7 @@
 %%[(7 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[50 import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
+%%[(50 hmtyinfer) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
 -- debug
@@ -205,12 +202,11 @@ data DataGamInfoVariant
   deriving (Eq, Generic)
 %%]
 
-%%[7 export(DataGamInfo(..))
+%%[(7 hmtyinfer) export(DataGamInfo(..))
+
 -- If this changes, also change {%{EH}ConfigInternalVersions}
--- | Implementation details for datatype, type/kind of a datatype are (also) stored in separate environments (TyGam, TyKiGam)
 data DataGamInfo
   = DataGamInfo
-%%[[(7 hmtyinfer)
       { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)
       , dgiDataTy 			:: !Ty					-- the type dataty -> sum of product
       , dgiDataKi 			:: !Ty					-- the kind
@@ -240,7 +236,6 @@ instance Show DataGamInfo where
   show _ = "DataGamInfo"
 
 instance PP DataGamInfo where
-%%[[(7 hmtyinfer)
   pp i@(DataGamInfo {dgiTyNm=nm, dgiDataTy=sumprod, dgiDataKi=ki}) = nm >-< indent 2 (
 		    "sumprod=" >#< ppTy sumprod
 		>-< "ki=" >#< ppTy ki
@@ -251,9 +246,6 @@ instance PP DataGamInfo where
 		>-< "constrmp=" >#< vlist (Map.toList $ dgiConstrTagMp i)
 %%]]
 		)
-%%][7
-  pp = pp . show
-%%]]
 %%]
 
 %%[(90 hmtyinfer) export(dgiMbNewtype,dgiIsNewtype)
@@ -270,7 +262,7 @@ dgiIsRec :: DataGamInfo -> Bool
 dgiIsRec dgi = dgiVariant dgi == DataGamInfoVariant_Rec
 %%]
 
-%%[7 export(DataGam)
+%%[(7 hmtyinfer) export(DataGam)
 type DataGam = Gam HsName DataGamInfo
 %%]
 
@@ -448,32 +440,90 @@ dgiIsEnumable dgi = dgiMaxConstrArity dgi == 0
 
 %%[(50 hmtyinfer)
 deriving instance Typeable DataFldInfo
+deriving instance Data DataFldInfo
 
 deriving instance Typeable DataConFldAnnInfo
+deriving instance Data DataConFldAnnInfo
 
 deriving instance Typeable DataTagInfo
+deriving instance Data DataTagInfo
 
 deriving instance Typeable DataFldInConstr
-%%]
+deriving instance Data DataFldInConstr
 
-%%[50
 deriving instance Typeable DataGamInfo
+deriving instance Data DataGamInfo
 %%]
 
 %%[(90 hmtyinfer)
 deriving instance Typeable DataGamInfoVariant
+deriving instance Data DataGamInfoVariant
 %%]
 
 %%[(90 hmtyinfer)
 instance Serialize DataGamInfoVariant where
+--   sput (DataGamInfoVariant_Plain    ) = sputWord8 0
+--   sput (DataGamInfoVariant_Newtype a) = sputWord8 1 >> sput a
+-- %%[[92
+--   sput (DataGamInfoVariant_Rec      ) = sputWord8 2
+-- %%]]
+--   sget = do 
+--     t <- sgetWord8
+--     case t of
+--       0 -> return DataGamInfoVariant_Plain
+--       1 -> liftM  DataGamInfoVariant_Newtype sget
+-- %%[[92
+--       2 -> return DataGamInfoVariant_Rec
+-- %%]]
 %%]
 
 %%[(50 hmtyinfer)
 instance Serialize DataFldInfo where
-instance Serialize DataConFldAnnInfo where
-instance Serialize DataTagInfo where
-instance Serialize DataFldInConstr where
+  -- sput (DataFldInfo a) = sput a
+  -- sget = liftM DataFldInfo sget
 
-%%[50
+instance Serialize DataConFldAnnInfo where
+  -- sput (DataConFldAnnInfo a) = sput a
+  -- sget = liftM DataConFldAnnInfo sget
+
+instance Serialize DataTagInfo where
+-- %%[[(50 counting)
+--   sput (DataTagInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
+--   sget = liftM8 DataTagInfo sget sget sget sget sget sget sget sget
+-- %%][50
+--   sput (DataTagInfo a b c d e f g) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g
+--   sget = liftM7 DataTagInfo sget sget sget sget sget sget sget
+-- %%][(91 counting)
+--   sput (DataTagInfo a b c d e f g h i) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i
+--   sget = liftM9 DataTagInfo sget sget sget sget sget sget sget sget sget
+-- %%][91
+--   sput (DataTagInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
+--   sget = liftM8 DataTagInfo sget sget sget sget sget sget sget sget
+-- %%]]
+
+instance Serialize DataFldInConstr where
+  -- sput (DataFldInConstr a) = sput a
+  -- sget = liftM DataFldInConstr sget
+
 instance Serialize DataGamInfo where
+-- %%[[(50 counting)
+--   sput (DataGamInfo a b c d e f g h i) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i
+--   sget = liftM9 DataGamInfo sget sget sget sget sget sget sget sget sget
+-- %%][50
+--   sput (DataGamInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
+--   sget = liftM8 DataGamInfo sget sget sget sget sget sget sget sget
+-- %%][(92 counting)
+--   sput (DataGamInfo a b c d e f g h i j) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i >> sput j
+--   sget = liftM10 DataGamInfo sget sget sget sget sget sget sget sget sget sget
+-- %%][92
+--   sput (DataGamInfo a b c d e f g h i) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h >> sput i
+--   sget = liftM9 DataGamInfo sget sget sget sget sget sget sget sget sget
+-- %%]]
+
+-- liftM10  :: (Monad m) => (a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> a7 -> a8 -> a9 -> a10 -> r)
+--            -> m a1 -> m a2 -> m a3 -> m a4 -> m a5 -> m a6 -> m a7 -> m a8 -> m a9 -> m a10 -> m r
+-- liftM10 f m1 m2 m3 m4 m5 m6 m7 m8 m9 m10
+--   = do { x1 <- m1; x2 <- m2; x3 <- m3; x4 <- m4; x5 <- m5; x6 <- m6; x7 <- m7; x8 <- m8; x9 <- m9; x10 <- m10
+--        ; return (f x1 x2 x3 x4 x5 x6 x7 x8 x9 x10)
+--        }
 %%]

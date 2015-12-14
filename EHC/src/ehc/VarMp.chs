@@ -235,7 +235,7 @@ data VarMpInfo
   deriving
     ( Eq, Ord, Show
 %%[[50
-    , Typeable, Data, Generic
+    , Typeable, Generic
 %%]]
     )
 %%]

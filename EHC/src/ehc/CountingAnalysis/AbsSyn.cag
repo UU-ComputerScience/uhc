@@ -1,0 +1,105 @@
+%%[(8 counting) ag
+TYPE Constraints = [Constraint]
+TYPE Annotations = [Annotation]
+TYPE AnnotatedTypes = [AnnotatedType]
+TYPE CAnnotations = [CAnnotation]
+TYPE CAnnotatedTypes = [CAnnotatedType]
+TYPE CTySchemes = [CTyScheme]
+TYPE Env = MAP {HsName} RhoTyScheme
+
+DATA AnnPrim 
+  | Zero 
+  | One 
+  | Infinity
+
+DATA Annotation 
+  | AnnVar v : {Var} 
+  | AnnVal v : {AnnVal}
+
+DATA AnnotatedType
+  | TyVar v : {HsName}
+  | TyData n : {HsName} as : Annotations ts : AnnotatedTypes
+  | TyFunc t1 : RhoAnnotatedType t2 : EtaAnnotatedType
+  | TyRow ts : AnnotatedTypes
+  -- If this is ever inspected then something is wrong in the algorithm
+  -- But at the moment it is needed as the AG needs a type in every expression
+  -- even unused ones
+  | TyError e : {String}
+
+DATA EtaAnnotatedType
+  | Eta w : AnnotatedType a : Annotation
+
+DATA RhoAnnotatedType
+  | Rho w : EtaAnnotatedType a : Annotation 
+
+DATA EtaTyScheme
+  | Eta w : TyScheme a : Annotation
+
+DATA RhoTyScheme
+  | Rho w : EtaTyScheme a : Annotation 
+
+DATA TyScheme 
+  | SchemeVar v : {SchemeVar} 
+  | SForAll ts : {Set HsName} as : {Set Var} cs : Constraints t : AnnotatedType
+
+DATA Constraint 
+  -- Annotation constraints
+  | AnnC c : CAnnotation
+  -- AnnotatedType constraints
+  | TyC c : CAnnotatedType
+  -- TyScheme constraints
+  | SchemeC c : CTyScheme
+  -- Instantiation constraint
+  | InstC s : TyScheme t : AnnotatedType
+  -- Generalisation constraint
+  | GenC t : RhoAnnotatedType cs : Constraints e : Env s : RhoTyScheme
+
+DATA CAnnotation
+  | EqC c1 : Annotation c2 : Annotation
+  | PlusC c1 : Annotation c2 : Annotation c3 : Annotation
+  | UnionC c1 : Annotation c2 : Annotation c3 : Annotation
+  | TimesC c1 : Annotation a : Annotation c3 : Annotation
+  | ConC c1 : Annotation a : Annotation c3 : Annotation
+
+DATA CAnnotatedType
+  | EqC c1 : AnnotatedType c2 : AnnotatedType
+  | PlusC c1 : AnnotatedType c2 : AnnotatedType c3 : AnnotatedType
+  | UnionC c1 : AnnotatedType c2 : AnnotatedType c3 : AnnotatedType
+  | TimesC c1 : AnnotatedType a : Annotation c3 : AnnotatedType
+  | ConC c1 : AnnotatedType a : Annotation c3 : AnnotatedType
+
+DATA CTyScheme
+  | EqC c1 : TyScheme c2 : TyScheme
+  | PlusC c1 : TyScheme c2 : TyScheme c3 : TyScheme
+  | UnionC c1 : TyScheme c2 : TyScheme c3 : TyScheme
+  | TimesC c1 : TyScheme a : Annotation c3 : TyScheme
+  | ConC c1 : TyScheme a : Annotation c3 : TyScheme
+
+SET CAL = CAnnotations CAnnotatedTypes CTySchemes
+SET CA = CAnnotation CAnnotatedType CTyScheme
+SET EA = EtaAnnotatedType EtaTyScheme
+SET RA = RhoAnnotatedType RhoTyScheme
+
+-- Filter/Special nodes
+
+DATA Root
+  | Root cs : Constraints
+
+DATA Phase2Root
+  | Phase2Root cs : Constraints
+
+-- DATA Subst
+--   | Ty c : AnnotatedType
+--   | Ann c : Annotation
+--   | Constr c : Constraint
+
+-- DATA FreeVar
+--   | Ty c : AnnotatedType
+--   | Ann c : Annotation
+--   | Constr c : Constraint
+
+SET SPEC = Root Phase2Root
+SET ALL = * - SPEC
+SET RHO = RhoTyScheme RhoAnnotatedType
+SET ETA = EtaTyScheme EtaAnnotatedType
+%%]

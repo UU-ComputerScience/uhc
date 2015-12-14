@@ -21,7 +21,7 @@ data Strictness
   = Strictness_Strict
   | Strictness_NonStrict
   | Strictness_Var HsName
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Data)
 
 instance Show Strictness where
   show Strictness_Strict    = "strict"

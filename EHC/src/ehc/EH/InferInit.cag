@@ -82,57 +82,57 @@ SEM AGItf
   | AGItf       loc         .   tyGam               :=  assocLToGam
                                                           [ (hsnArrow       , mkTGI (appCon hsnArrow) ([kiStar,kiStar] `appArr` kiStar)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnArrow")
+                                                                            [] (CA.AnnotatedType_TyError "hsnArrow")
 %%]]
                                                               )
                                                           , (hsnInt         , mkTGI tyInt kiStar
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnInt")
+                                                                            [] (CA.AnnotatedType_TyError "hsnInt")
 %%]]
                                                               )
                                                           , (hsnChar        , mkTGI tyChar kiStar
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnChar")
+                                                                            [] (CA.AnnotatedType_TyError "hsnChar")
 %%]]
                                                               )
                                                           , (hsnRow         , mkTGI (appCon hsnUnknown) kiRow
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRow")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRow")
 %%]]
                                                               )
                                                           , (hsnRec         , mkTGI (appCon hsnRec) ([kiRow] `appArr` kiStar)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRec")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRec")
 %%]]
                                                               )
                                                           , (hsnSum         , mkTGI (appCon hsnSum) ([kiRow] `appArr` kiStar)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnSum")
+                                                                            [] (CA.AnnotatedType_TyError "hsnSum")
 %%]]
                                                               )
                                                           , (hsnRowEmpty    , mkTGI (appCon hsnRowEmpty) kiRow
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRowEmpty")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRowEmpty")
 %%]]
                                                               )
                                                           , (hsnRow         , mkTGI (appCon hsnUnknown) kiRow
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRow")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRow")
 %%]]
                                                               )
                                                           , (hsnRec         , mkTGI (appCon hsnRec) ([kiRow] `appArr` kiStar)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRec")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRec")
 %%]]
                                                               )
                                                           , (hsnSum         , mkTGI (appCon hsnSum) ([kiRow] `appArr` kiStar)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnSum")
+                                                                            [] (CA.AnnotatedType_TyError "hsnSum")
 %%]]
                                                               )
                                                           , (hsnRowEmpty    , mkTGI (appCon hsnRowEmpty) kiRow
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRowEmpty")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRowEmpty")
 %%]]
                                                               )
                                                           ]

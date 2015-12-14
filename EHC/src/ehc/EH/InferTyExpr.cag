@@ -65,7 +65,7 @@ tyGamLookupOrAdd uniq nm tyGamLkup tyGam
        Nothing    ->  let  t    =  mkNewTyVar uniq
                            tgi  =  mkTGI t
 %%[[(8 counting)
-                                      [] (CA.TyError "tyGamLookupOrAdd")
+                                      [] (CA.AnnotatedType_TyError "tyGamLookupOrAdd")
 %%]]
                       in   (tgi,gamAdd nm tgi tyGam)
        Just tgi   ->  (tgi,tyGam)
@@ -104,11 +104,11 @@ SEM TyExpr
                 loc         .   lUniq               :   UNIQUEREF gUniq
   | Wild        loc         .   tgi_                =   TyGamInfo @tvarv
 %%[[(8 counting)
-                                                                            [] (CA.TyError "wild_tgi")
+                                                                            [] (CA.AnnotatedType_TyError "wild_tgi")
 %%]]
   | Mono        loc         .   tgi_                =   TyGamInfo @tvarv -- (Ty_Ann TyAnn_Mono @tvarv)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "mono_tgi")
+                                                                            [] (CA.AnnotatedType_TyError "mono_tgi")
 %%]]
 %%]
 
@@ -116,11 +116,11 @@ SEM TyExpr
 SEM TyExpr
   | Wild        loc         .   tgi_                :=  mkTGI @tvarv
 %%[[(8 counting)
-                                                                            [] (CA.TyError "Wild-tgi_")
+                                                                            [] (CA.AnnotatedType_TyError "Wild-tgi_")
 %%]]
   | Mono        loc         .   tgi_                :=  mkTGI (Ty_Ann TyAnn_Mono @tvarv)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "Mono-tgi_")
+                                                                            [] (CA.AnnotatedType_TyError "Mono-tgi_")
 %%]]
   | Wild Mono   loc         .   tkgi_               =   TyKiGamInfo @tvarv
 %%]
@@ -160,7 +160,7 @@ SEM TyExpr
   | Quant       loc         .   (tv,tgi_,tkgi_)     :=  let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t
 %%[[(8 counting)
-                                                                            [] (CA.TyError "Quant-(tv,tgi_,tkgi_) ")
+                                                                            [] (CA.AnnotatedType_TyError "Quant-(tv,tgi_,tkgi_) ")
 %%]]
                                                                   ,TyKiGamInfo (mkNewTyVar @lUniq_ki))
                             .   tyKiGamNew          =   tgiTy @tgi_ `tyKiGamSingleton` @tkgi_
@@ -195,7 +195,7 @@ SEM PrExpr
   | Forall      loc         .   (tv,tgi_,tkgi_)     =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t
 %%[[(8 counting)
-                                                                            [] (CA.TyError "Forall-(tv,tgi_,tkgi_) ")
+                                                                            [] (CA.AnnotatedType_TyError "Forall-(tv,tgi_,tkgi_) ")
 %%]]
                                                                 ,TyKiGamInfo (mkNewTyVar @lUniq_ki))
                 prExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
@@ -221,7 +221,7 @@ SEM TyExpr
   | Lam         loc         .   (tv,tgi_,tkgi_)     =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t
 %%[[(8 counting)
-                                                                            [] (CA.TyError "Lam-(tv,tgi_,tkgi_) ")
+                                                                            [] (CA.AnnotatedType_TyError "Lam-(tv,tgi_,tkgi_) ")
 %%]]
                                                                 ,TyKiGamInfo (mkNewTyVar @lUniq_ki))
                 tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
@@ -363,14 +363,14 @@ SEM TyExpr
   | Impls       loc         .   implsVarId          =   @lUniq
                             .   tgi_                =   mkTGI (Ty_Impls (Impls_Tail @implsVarId []))
 %%[[(8 counting)
-                                                                            [] (CA.TyError "Impls-tgi_")
+                                                                            [] (CA.AnnotatedType_TyError "Impls-tgi_")
 %%]]
                             .   tkgi_               =   TyKiGamInfo kiStar
                             .   ki                  =   tkgiKi @tkgi_
                 loc         .   lUniq               :   UNIQUEREF gUniq
   | NoImpls     loc         .   tgi_                =   mkTGI (Ty_Impls Impls_Nil)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "NoImpls-tgi_")
+                                                                            [] (CA.AnnotatedType_TyError "NoImpls-tgi_")
 %%]]
                             .   tkgi_               =   TyKiGamInfo kiStar
                             .   ki                  =   tkgiKi @tkgi_
@@ -606,7 +606,7 @@ SEM Decl
   | Type        loc         .   typeVar             =   mkTyVar @lUniq
                             .   typeTgi             =   mkTGI @typeVar
 %%[[(8 counting)
-                                                                            [] (CA.TyError "type_typeTgi")  --(@lhs.caLocalAnnVars) (@tyExpr.caAnnTy)
+                                                                            [] (CA.AnnotatedType_TyError "type_typeTgi")  --(@lhs.caLocalAnnVars) (@tyExpr.caAnnTy)
 %%]]
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
                 loc         .   foTy_               =   fitsIn  weakFIOpts defaultFIEnv @lUniq2 @lhs.tyTyVarMp

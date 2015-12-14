@@ -26,7 +26,7 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[(8 counting) hs import(qualified {%{EH}Core.CountingAnalysis.Types} as CA) 
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis} as CA) 
 %%]
 
 %%[(50 hmtyinfer || hmtyast) import(Control.Monad, UHC.Util.Binary, UHC.Util.Serialize)
@@ -118,7 +118,7 @@ emptyTGI
       Ty_Any
 %%]]
 %%[[(8 counting)
-      [] (CA.TyError "emptyTGI")
+      [] (CA.AnnotatedType_TyError "emptyTGI")
 %%]]
 %%]
 
@@ -196,120 +196,120 @@ initTyGam
 %%[[(6 hmtyinfer || hmtyast)
       [ (hsnArrow			, mkTGI (appCon hsnArrow)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnArrow")
+                                                                            [] (CA.AnnotatedType_TyError "hsnArrow")
 %%]]
           )
       , (hsnInt				, mkTGI tyInt
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnInt")
+                                                                            [] (CA.AnnotatedType_TyError "hsnInt")
 %%]]
           )
       , (hsnChar			, mkTGI tyChar
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnChar")
+                                                                            [] (CA.AnnotatedType_TyError "hsnChar")
 %%]]
           )
 %%[[7
       , (hsnRow				, mkTGI (appCon hsnUnknown)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRow")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRow")
 %%]]
           )
       , (hsnRec				, mkTGI (appCon hsnRec)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRec")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRec")
 %%]]
           )
       , (hsnSum				, mkTGI (appCon hsnSum)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnSum")
+                                                                            [] (CA.AnnotatedType_TyError "hsnSum")
 %%]]
           )
 %%]]
 %%[[9
       , (hsnPrArrow			, mkTGI (appCon hsnPrArrow)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnPrArrow")
+                                                                            [] (CA.AnnotatedType_TyError "hsnPrArrow")
 %%]]
           )
 %%]]
 %%[[18
       , (hsnRecUnboxed		, mkTGI (appCon hsnRecUnboxed)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnRecUnboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnRecUnboxed")
 %%]]
           )
       , (hsnIntUnboxed		, mkTGI tyIntUnboxed
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnIntUnboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnIntUnboxed")
 %%]]
           )
 %%]]
 %%[[31
       , (hsnEqTilde			, mkTGI (appCon hsnEqTilde)
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnEqTilde")
+                                                                            [] (CA.AnnotatedType_TyError "hsnEqTilde")
 %%]]
           )
 %%]]
 %%[[97
       , (hsnInteger			, mkTGI tyInteger		
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnInteger")
+                                                                            [] (CA.AnnotatedType_TyError "hsnInteger")
 %%]]
           )
 %%]]
 %%[[9797
       , (hsnInt8Unboxed  	, mkTGI (appCon hsnInt8Unboxed  )	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnInt8Unboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnInt8Unboxed")
 %%]]
           )
       , (hsnInt16Unboxed 	, mkTGI (appCon hsnInt16Unboxed )	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnInt16Unboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnInt16Unboxed")
 %%]]
           )
       , (hsnInt32Unboxed 	, mkTGI (appCon hsnInt32Unboxed )	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnInt32Unboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnInt32Unboxed")
 %%]]
           )
       , (hsnInt64Unboxed 	, mkTGI (appCon hsnInt64Unboxed )	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnInt64Unboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnInt64Unboxed")
 %%]]
           )
       , (hsnWordUnboxed  	, mkTGI (appCon hsnWordUnboxed  )	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnWordUnboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnWordUnboxed")
 %%]]
           )
       , (hsnWord8Unboxed 	, mkTGI (appCon hsnWord8Unboxed )	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnWord8Unboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnWord8Unboxed")
 %%]]
           )
       , (hsnWord16Unboxed	, mkTGI (appCon hsnWord16Unboxed)	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnWord16Unboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnWord16Unboxed")
 %%]]
           )
       , (hsnWord32Unboxed	, mkTGI (appCon hsnWord32Unboxed)	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnWord32Unboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnWord32Unboxed")
 %%]]
           )
       , (hsnWord64Unboxed	, mkTGI (appCon hsnWord64Unboxed)	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnWord64Unboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnWord64Unboxed")
 %%]]
           )
 %%]]
 %%[[99
       , (hsnAddrUnboxed		, mkTGI (appCon hsnAddrUnboxed  )	
 %%[[(8 counting)
-                                                                            [] (CA.TyError "hsnAddrUnboxed")
+                                                                            [] (CA.AnnotatedType_TyError "hsnAddrUnboxed")
 %%]]
           )
 %%]]  
