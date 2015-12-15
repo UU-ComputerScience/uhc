@@ -1,4 +1,5 @@
 - [uhc-util] move of LexScope encoding via RLList to separate module in uhc-util
+- [corerun] additional API calls
 
 ## 1.1.9.2 - 20151027
 

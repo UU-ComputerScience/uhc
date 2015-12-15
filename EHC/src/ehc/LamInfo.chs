@@ -208,7 +208,12 @@ lamMpUnionsBindAspMp = foldr lamMpUnionBindAspMp Map.empty
 
 %%[(8 codegen) hs export(lamMpMergeInto)
 -- propagate from new (left) to prev (right), adding new entries if necessary, combining with mergeL2RInfo, finally combining/choosing maps with mergeL2RMp
-lamMpMergeInto :: (LamInfo -> LamInfo -> LamInfo) -> (LamMp -> LamMp -> LamMp) -> LamMp -> LamMp -> LamMp
+lamMpMergeInto
+  :: (LamInfo -> LamInfo -> LamInfo)		-- ^ 'mergeL2RInfo', merge info
+  -> (LamMp -> LamMp -> LamMp)				-- ^ 'mergeL2RMp', merge map
+  -> LamMp									-- ^ new map
+  -> LamMp									-- ^ prev map
+  -> LamMp
 lamMpMergeInto mergeL2RInfo mergeL2RMp newMp prevMp
   = mergeL2RMp newMpMerge prevMp
   where newMpMerge

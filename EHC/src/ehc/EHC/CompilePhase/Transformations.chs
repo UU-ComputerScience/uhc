@@ -104,9 +104,7 @@ cpTransformCore optimScope modNm
 %%[[50
                                  , trfcoreExpNmOffMp    = crsiExpNmOffMpDbg "cpTransformCore" modNm crsi
 %%]]
-%%[[(50 grin)
 								 , trfcoreInhLamMp      = crsi ^. crsiCEnv ^. cenvLamMp
-%%]]
                                  }
                              }
               trfcoreOut = trfCore opts optimScope
@@ -116,7 +114,8 @@ cpTransformCore optimScope modNm
 %%[[(50 corein)
        -- ; liftIO $ putStrLn $ "cpTransformCore trfcoreNotYetTransformed: " ++ show (trfcoreNotYetTransformed $ trfstExtra trfcoreIn)
 %%]]
-         -- put back result: Core
+       -- ; cpUpdSI $ (crsiCEnv ^* cenvLamMp) ^= (trfcoreGathLamMp $ trfstExtra trfcoreOut)
+       -- put back result: Core
        ; cpUpdCU modNm $! ecuStoreCore (trfstMod trfcoreOut)
 
          -- put back result: unique counter

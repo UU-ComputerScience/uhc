@@ -200,7 +200,7 @@ data RRef
   -- | fld of memory/constructor node referred to by other ref
   | RRef_Fld
       { rrefRef         :: !RRef    -- ^ of what this is a field
-      , rrefEntry       :: !Int     -- ^ entry inside level
+      , rrefEntry       :: !Int     -- ^ entry inside node, zero base index
       }
   -- | debug variant, holding original name
   | RRef_Dbg
@@ -448,7 +448,7 @@ instance Binary a => Binary (CRArray a) where
 %%% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 corerun) hs export(mkLocLevRef, mkLocDifRef, mkGlobRef, mkImpRef, mkExpRef, mkModRef)
+%%[(8 corerun) hs export(mkLocLevRef, mkLocDifRef, mkGlobRef, mkImpRef, mkExpRef, mkModRef, mkTagRef, mkFldRef)
 -- **************************************
 -- Construction: references
 -- **************************************
@@ -476,6 +476,14 @@ mkExpRef = RRef_Exp
 -- | 'RRef' to global from current module, using offset
 mkModRef :: Int -> RRef
 mkModRef = RRef_Mod
+
+-- | 'RRef' to tag of node
+mkTagRef :: RRef -> RRef
+mkTagRef = RRef_Tag
+
+-- | 'RRef' to field of node, using a zero based index
+mkFldRef :: RRef -> Int -> RRef
+mkFldRef = RRef_Fld
 %%]
 
 %%[(8 corerun) hs export(mkExp, mkVar, mkVar', mkInt, mkInt', mkChar, mkChar', mkString, mkString')
