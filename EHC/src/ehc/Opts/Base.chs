@@ -141,6 +141,7 @@ data CoreOpt
   | CoreOpt_Readable			-- when there is a choice, make it more readable
 %%]]
   | CoreOpt_Dump
+  | CoreOpt_DumpAST
   | CoreOpt_DumpBinary
   | CoreOpt_DumpAlsoNonParseable-- dump also the parts which are not parseable
 %%[[(8 corerun)

@@ -64,7 +64,7 @@
 %%[(8 corerun) import({%{EH}CoreRun} as CoreRun, {%{EH}Core.ToCoreRun}, {%{EH}CoreRun.Pretty})
 %%]
 -- Core output
-%%[(8 codegen coreout) import({%{EH}Core} as Core,{%{EH}Core.Pretty})
+%%[(8 codegen coreout) import({%{EH}Core} as Core,{%{EH}Core.Pretty}, {%{EH}Core.PrettyTrace})
 %%]
 -- TyCore output
 %%[(8 codegen tycore) import({%{EH}TyCore},{%{EH}TyCore.Pretty})
@@ -335,6 +335,7 @@ astHandler'_Core = mk emptyASTHandler'
             								[ ( (ASTFileContent_Binary	, ASTFileUse_Target)	, (Cfg.suffixDotlessBinaryCore, ecuMbCore, Nothing) )
             								, ( (ASTFileContent_Text	, ASTFileUse_Src)		, (Cfg.suffixDotlessOutputTextualCore, ecuMbCore, Nothing) )
             								, ( (ASTFileContent_Text	, ASTFileUse_Dump)		, (Cfg.suffixDotlessOutputTextualCore, ecuMbCore, Nothing) )
+            								, ( (ASTFileContent_ASTText	, ASTFileUse_Dump)		, (Cfg.suffixDotlessOutputTextualCoreAST, ecuMbCore, Nothing) )
             								, ( (ASTFileContent_Binary	, ASTFileUse_Src)		, (Cfg.suffixDotlessInputOutputBinaryCore, ecuMbCore, Nothing) )
             								, ( (ASTFileContent_Binary	, ASTFileUse_Dump)		, (Cfg.suffixDotlessInputOutputBinaryCore, ecuMbCore, Nothing) )
             								]
@@ -360,6 +361,7 @@ astHandler'_Core = mk emptyASTHandler'
             , _asthdlrParser            = \opts _ -> Just $ ASTParser (CorePrs.pCModule opts :: EHPrsAna AST_Core)
 %%]]
             , _asthdlrPretty			= \opts _ ast -> Just $ ppCModule (opts {- ehcOptCoreOpts = coreOpts ++ ehcOptCoreOpts opts -}) $ cmodTrfEraseTyCore opts ast
+            , _asthdlrPrettyTrace		= \opts _ ast -> Just $ ppASTCModule opts ast
 %%[[50
 			, _asthdlrPutSerializeFileIO= default_asthdlrPutSerializeFileIO
 			, _asthdlrGetSerializeFileIO= default_asthdlrGetSerializeFileIO

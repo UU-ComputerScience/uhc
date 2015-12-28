@@ -102,9 +102,10 @@ instance PP ASTScope where
 %%[8 export(ASTFileContent(..))
 -- | File content variations of ast we can deal with (in principle)
 data ASTFileContent
-  = ASTFileContent_Text
-  | ASTFileContent_LitText
-  | ASTFileContent_Binary
+  = ASTFileContent_Text				-- ^ textual, readable input/output
+  | ASTFileContent_ASTText			-- ^ textual, readable AST output
+  | ASTFileContent_LitText			-- ^ textual, readable input
+  | ASTFileContent_Binary			-- ^ binary/serialized input/output
   | ASTFileContent_Unknown
   deriving (Eq, Ord, Enum, Typeable, Generic, Bounded)
 

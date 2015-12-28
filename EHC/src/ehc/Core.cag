@@ -25,7 +25,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 core) hs import ({%{EH}Base.Target}(FFIWay(..),TargetFlavor(..))) export(module {%{EH}Base.Target})
 %%]
 
-%%[(8 core) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Utils,Control.Applicative((<|>)))
+%%[(8 core) hs import(Data.Maybe,Data.Char,Data.List,UHC.Util.Utils,UHC.Util.Pretty,Control.Applicative((<|>)))
 %%]
 
 %%[(8 core) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBound(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CBoundL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatFld(..), CPatFldL) 
@@ -207,6 +207,9 @@ data CBindCateg
   | CBindCateg_FFE              -- exported function (not implemented yet)
 %%]]
   deriving (Show,Eq,Enum)
+
+instance PP CBindCateg where
+  pp = pp . show
 %%]
 
 %%[(50 core) hs

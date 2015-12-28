@@ -1370,6 +1370,9 @@ cpProcessCoreRest modNm
 %%[[(8 javascript)
                 ++ (if ehcOptIsViaCoreJavaScript opts then [ cpTranslateCore2JavaScript modNm ] else [])
 %%]]
+                ++ (if CoreOpt_DumpAST `elem` ehcOptCoreOpts opts
+                    then [void $ cpOutputCore ASTFileContent_ASTText {-[]-} "" Cfg.suffixDotlessOutputTextualCoreAST modNm]
+                    else [])
 %%[[(8 coreout)
                 ++ (if CoreOpt_Dump `elem` ehcOptCoreOpts opts
                     then [void $ cpOutputCore ASTFileContent_Text {-[]-} "" Cfg.suffixDotlessOutputTextualCore modNm]

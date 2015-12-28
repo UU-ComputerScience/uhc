@@ -1117,6 +1117,8 @@ data Track
   | TrackVarApply HsName [Track]
   deriving (Eq, Ord, Show)
 
+instance PP Track where
+  pp = pp . show
 %%]
 
 %%[(50 codegen) hs

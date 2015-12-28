@@ -38,6 +38,7 @@ Core/ToGrin.cag
 Core/ToJazy.cag
 Core/ToJavaScript.cag
 Core/Pretty.cag
+Core/PrettyTrace.cag
 Core/Subst.cag
 Core/FvS.cag
 Core/ModAsMap.cag

@@ -139,6 +139,7 @@ instance Show CoreOpt where
 %%]]
   show CoreOpt_DumpAlsoNonParseable	= "whendump-alsononparseable"
 %%]]
+  show CoreOpt_DumpAST             	= "dump-ast"
 %%[[(8 corerun)
   show CoreOpt_Run            	    = "run"
   show CoreOpt_LoadOnly            	= "loadonly"

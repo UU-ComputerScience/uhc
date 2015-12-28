@@ -138,8 +138,15 @@ cpTransformCore optimScope modNm
 
          -- dump intermediate stages, print errors, if any
        ; let (nms,mcs,errs) = unzip3 $ trfstModStages trfcoreOut
+             (fc,sf) | CoreOpt_DumpAST `elem` ehcOptCoreOpts opts = (ASTFileContent_ASTText, Cfg.suffixDotlessOutputTextualCoreAST)
+                     | otherwise                                  = (ASTFileContent_Text, Cfg.suffixDotlessOutputTextualCore)
        -- ; cpOutputCoreModules CPOutputCoreHow_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
-       ; cpOutputSomeModules (Just $ opts {ehcOptCoreOpts= CoreOpt_Readable : ehcOptCoreOpts opts}) astHandler'_Core ASTFileContent_Text (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm) Cfg.suffixDotlessOutputTextualCore modNm [ (n,nm) | (n, Just nm) <- zip nms mcs ]
+       ; cpOutputSomeModules
+           (Just $ opts {ehcOptCoreOpts= CoreOpt_Readable : ehcOptCoreOpts opts})
+           astHandler'_Core fc
+           (\n nm -> "-" ++ show optimScope ++ "-" ++ show n ++ "-" ++ nm)
+           sf modNm
+           [ (n,nm) | (n, Just nm) <- zip nms mcs ]
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
 %%]

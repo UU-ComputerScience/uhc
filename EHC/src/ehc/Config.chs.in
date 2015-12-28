@@ -321,7 +321,7 @@ suffixDotlessInputOutputTextualCoreRun :: String
 suffixDotlessInputOutputTextualCoreRun = suffixDotlessOutputTextualCoreRun
 %%]
 
-%%[8 export(suffixDotlessBinaryCore, suffixDotlessInputOutputBinaryCore, suffixDotlessOutputTextualCore, suffixDotlessInputOutputTextualCore)
+%%[8 export(suffixDotlessBinaryCore, suffixDotlessInputOutputBinaryCore, suffixDotlessOutputTextualCore, suffixDotlessInputOutputTextualCore, suffixDotlessOutputTextualCoreAST)
 -- | Suffix (dotless) for binary core files, to be read in as part of the compilation process
 suffixDotlessBinaryCore :: String
 suffixDotlessBinaryCore = "cr"
@@ -337,6 +337,10 @@ suffixDotlessOutputTextualCore = "tcr"
 -- | Suffix (dotless) for textually read core files
 suffixDotlessInputOutputTextualCore :: String
 suffixDotlessInputOutputTextualCore = suffixDotlessOutputTextualCore
+
+-- | Suffix (dotless) for textually dumped/output Core AST files
+suffixDotlessOutputTextualCoreAST :: String
+suffixDotlessOutputTextualCoreAST = "astcr"
 
 %%]
 

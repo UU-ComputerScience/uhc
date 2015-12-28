@@ -98,6 +98,9 @@ data ASTHandler' ast
 		  --- | Generate a pretty printed text version
 		  , _asthdlrPretty				:: EHCOpts -> EHCompileUnit -> ast -> Maybe PP_Doc
 	  
+		  --- | Generate a pretty printed text version as AST with trace info
+		  , _asthdlrPrettyTrace			:: EHCOpts -> EHCompileUnit -> ast -> Maybe PP_Doc
+	  
 %%[[50
 		  --- | Generate a serialized binary version directly on file, yielding True if this could be done
 		  , _asthdlrPutSerializeFileIO 	:: FilePath -> ast -> IO Bool
@@ -156,6 +159,7 @@ emptyASTHandler'
       , _asthdlrEcuStore			= const id
 
       , _asthdlrPretty				= \_ _ _ -> Nothing
+      , _asthdlrPrettyTrace			= \_ _ _ -> Nothing
 %%[[50
       , _asthdlrPutSerializeFileIO	= \_ _ -> return False
 %%]]
@@ -306,6 +310,12 @@ asthdlrOutputIO hdlr how opts ecu modNm fpC fnC ast = do
     case how of
       ASTFileContent_Text -> do
         case _asthdlrPretty hdlr opts ecu ast of
+          Just ppAst -> do
+            putPPFPath fpC ppAst 1000
+            return True
+          _ -> return False
+      ASTFileContent_ASTText -> do
+        case _asthdlrPrettyTrace hdlr opts ecu ast of
           Just ppAst -> do
             putPPFPath fpC ppAst 1000
             return True

@@ -1,3 +1,4 @@
+- [core] pretty printing of Core AST (for debugging purposes)
 - [uhc-util] move of LexScope encoding via RLList to separate module in uhc-util
 - [corerun] additional API calls
 

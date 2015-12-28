@@ -1,0 +1,185 @@
+%%[0 lhs2tex
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[doesWhat doclatex
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Core AST Pretty Printer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 core) hs module {%{EH}Core.PrettyTrace} import(UHC.Util.Pretty,{%{EH}Base.HsName.Builtin},{%{EH}Base.CfgPP},{%{EH}Opts.Base},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core})
+%%]
+%%[(8 core) hs import({%{EH}Base.Trace})
+%%]
+%%[(8 core) hs import({%{EH}Ty.Pretty})
+%%]
+
+%%[(8 core codegenanalysis) hs import({%{EH}AnaDomain.Pretty})
+%%]
+%%[(8888 core) hs import({%{EH}LamInfo})
+%%]
+
+%%[(90 core) hs import({%{EH}Foreign.Pretty})
+%%]
+
+%%[(8 core) hs import(qualified Data.Set as Set)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 core).WRAPPER ag import({Core/AbsSyn},{Core/Trace})
+WRAPPER CodeAGItf
+%%]
+
+%%[(8 core) hs export(ppASTCModule)
+ppASTCModule :: EHCOpts -> {- LamMp -> -} CModule -> PP_Doc
+ppASTCModule opts {- lamMp -} cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf
+                               { {- lamMp_Inh_CodeAGItf = lamMp
+                               , -} opts_Inh_CodeAGItf = opts
+                               })
+     in   (ppAST_Syn_CodeAGItf t)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 core)
+ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing of internal AST structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This pretty printed AST representation displays the tree structure,
+together with tracing info, meant for debugging. The basic
+definitions only show the structure with placeholder local
+info_<variant> attributes; additional per aspect definitions redefine
+the placeholders.
+
+%%[(8 core)
+ATTR AllNT CodeAGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
+
+SEM CodeAGItf
+  | AGItf       lhs     .  ppAST    =   ppNestTrPP ["CodeAGItf","AGItf"] [] [@module.ppAST] @trppHere
+
+SEM CModule
+  | Mod         lhs     .  ppAST    =   ppNestTrPP ["CModule","Mod"] [ppTrNm @moduleNm] [@exports.ppAST,@imports.ppAST,@declMetas.ppAST,@expr.ppAST] @trppHere
+
+SEM CExport
+  | Export      lhs     .  ppAST    =   ppNestTrPP ["CExport","Export"] [ppTrNm @nm] [] @trppHere
+  | ExportData	lhs     .  ppAST    =   ppNestTrPP ["CExport","ExportData"] [ppTrNm @nm, pp $ fmap ppParensCommas' @mbConNmL] [] @trppHere
+
+SEM CImport
+  | Import      lhs     .  ppAST    =   ppNestTrPP ["CImport","Import"] [ppTrNm @nm] [] @trppHere
+
+SEM CDeclMeta
+  | Data		lhs     .  ppAST    =   ppNestTrPP ["CDeclMeta","Data"] [ppTrNm @tyNm] [@dataCons.ppAST] @trppHere
+
+SEM CDataCon
+  | Con			lhs     .  ppAST    =   ppNestTrPP ["CDataCon","Con"] [ppTrNm @conNm, pp @tagNr, pp @arity] [] @trppHere
+
+SEM CExpr
+  | Var	      	lhs     .  ppAST    =   ppNestTrPP ["CExpr","Var"] [pp @ref] [] @trppHere
+  | Int      	lhs     .  ppAST    =   ppNestTrPP ["CExpr","Int"] [pp @int] [] @trppHere
+  | Char        lhs     .  ppAST    =   ppNestTrPP ["CExpr","Char"] [pp @char] [] @trppHere
+  | String      lhs     .  ppAST    =   ppNestTrPP ["CExpr","String"] [pp @str] [] @trppHere
+  | Tup      	lhs     .  ppAST    =   ppNestTrPP ["CExpr","Tup"] [pp @tag] [] @trppHere
+  | Let         lhs     .  ppAST    =   ppNestTrPP ["CExpr","Let"] [pp @categ] [@binds.ppAST] @trppHere
+                                        >-< @body.ppAST
+  | App         lhs     .  ppAST    =   ppNestTrPP ["CExpr","App"] [] [@func.ppAST,@arg.ppAST] @trppHere
+  | Lam         lhs     .  ppAST    =   ppNestTrPP ["CExpr","Lam"] [] [@bind.ppAST,@body.ppAST] @trppHere
+  | TupDel    	lhs     .  ppAST    =   ppNestTrPP ["CExpr","TupDel"] [pp @tag, ppTrNm @nm] [@offset.ppAST, @expr.ppAST] @trppHere
+  | TupIns    	lhs     .  ppAST    =   ppNestTrPP ["CExpr","TupIns"] [pp @tag, ppTrNm @nm] [@offset.ppAST, @fldExpr.ppAST, @expr.ppAST] @trppHere
+  | TupUpd    	lhs     .  ppAST    =   ppNestTrPP ["CExpr","TupUpd"] [pp @tag, ppTrNm @nm] [@offset.ppAST, @fldExpr.ppAST, @expr.ppAST] @trppHere
+  | Case      	lhs     .  ppAST    =   ppNestTrPP ["CExpr","Case"] [] [@expr.ppAST, @dflt.ppAST, @alts.ppAST] @trppHere
+  | CaseAltFail	lhs     .  ppAST    =   ppNestTrPP ["CExpr","CaseAltFail"] [pp @failReason] [@errorExpr.ppAST] @trppHere
+  | FFI			lhs     .  ppAST    =   ppNestTrPP ["CExpr","FFI"] [pp @callconv, pp @safety, pp @impEnt, pp @ty] [] @trppHere
+  | Dbg			lhs     .  ppAST    =   ppNestTrPP ["CExpr","Dbg"] [pp @info] [] @trppHere
+  | Ann			lhs     .  ppAST    =   ppNestTrPP ["CExpr","Ann"] [] [@ann.ppAST, @expr.ppAST] @trppHere
+%%[[(8 coresysf)
+  | Arr			lhs     .  ppAST    =   ppNestTrPP ["CExpr","Arr"] [] [@bind.ppAST,@body.ppAST] @trppHere
+  | Cast		lhs     .  ppAST    =   ppNestTrPP ["CExpr","Cast"] [] [@expr.ppAST,@ty.ppAST] @trppHere
+%%]]
+%%[[9
+  | Hole		lhs     .  ppAST    =   ppNestTrPP ["CExpr","Hole"] [pp @uid] [] @trppHere
+  | HoleLet		lhs     .  ppAST    =   ppNestTrPP ["CExpr","HoleLet"] [pp @bindsUid] [@body.ppAST] @trppHere
+  | CoeArg		lhs     .  ppAST    =   ppNestTrPP ["CExpr","CoeArg"] [] [] @trppHere
+  | ImplsApp	lhs     .  ppAST    =   ppNestTrPP ["CExpr","ImplsApp"] [pp @uid] [@func.ppAST] @trppHere
+  | ImplsLam	lhs     .  ppAST    =   ppNestTrPP ["CExpr","ImplsLam"] [pp @uid] [@body.ppAST] @trppHere
+%%]]
+%%[[97
+  | Integer		lhs     .  ppAST    =   ppNestTrPP ["CExpr","Integer"] [pp @integer] [] @trppHere
+%%]]
+
+SEM CMetaBind
+  | Plain		lhs     .  ppAST    =   ppNestTrPP ["CMetaBind","Plain"] [] [] @trppHere
+  | Function0	lhs     .  ppAST    =   ppNestTrPP ["CMetaBind","Function0"] [] [] @trppHere
+  | Function1	lhs     .  ppAST    =   ppNestTrPP ["CMetaBind","Function1"] [] [] @trppHere
+  | Apply0		lhs     .  ppAST    =   ppNestTrPP ["CMetaBind","Apply0"] [] [] @trppHere
+
+SEM CMetaVal
+  | Val			lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","Val"] [] [] @trppHere
+%%[[9
+  | Dict		lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","Dict"] [] [] @trppHere
+  | DictClass	lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","DictClass"] [ppCommas' @tracks] [] @trppHere
+  | DictInstance
+  				lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","DictInstance"] [ppCommas' @tracks] [] @trppHere
+  | Track		lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","Track"] [pp @track] [] @trppHere
+%%]]
+
+SEM CExprAnn
+  | Ty			lhs     .  ppAST    =   ppNestTrPP ["CExprAnn","Ty"] [pp @ty] [] @trppHere
+  | Debug		lhs     .  ppAST    =   ppNestTrPP ["CExprAnn","Debug"] [pp @info] [] @trppHere
+%%[[(8 codegenanalysis)
+  | Coe			lhs     .  ppAST    =   ppNestTrPP ["CExprAnn","Coe"] [pp @coe] [] @trppHere
+%%]]
+
+SEM CBindAnn
+  | Coe			lhs     .  ppAST    =   ppNestTrPP ["CBindAnn","Coe"] [pp @coe] [] @trppHere
+
+SEM CBind
+  | Bind		lhs     .  ppAST    =   ppNestTrPP ["CBind","Bind"] [ppTrNm @nm] [@bindAspects.ppAST] @trppHere
+
+SEM CBound
+  | Bind		lhs     .  ppAST    =   ppNestTrPP ["CBound","Bind"] [] [@bindMeta.ppAST, @expr.ppAST] @trppHere
+  | Meta		lhs     .  ppAST    =   ppNestTrPP ["CBound","Meta"] [pp @aspectKeyS] [@cmetas.ppAST] @trppHere
+  | Val			lhs     .  ppAST    =   ppNestTrPP ["CBound","Val"] [pp @aspectKeyS, pp @mlev, pp @lbl] [@expr.ppAST] @trppHere
+  | Ty			lhs     .  ppAST    =   ppNestTrPP ["CBound","Ty"] [pp @aspectKeyS, pp @ty] [] @trppHere
+%%[[(8 codegenanalysis)
+  | RelevTy		lhs     .  ppAST    =   ppNestTrPP ["CBound","RelevTy"] [pp @aspectKeyS, pp @relevTy] [] @trppHere
+%%]]
+%%[[90
+  | FFE			lhs     .  ppAST    =   ppNestTrPP ["CBound","FFE"] [pp @callconv, pp @expEnt, pp @ty] [@expr.ppAST] @trppHere
+%%]]
+
+SEM CAlt
+  | Alt			lhs     .  ppAST    =   ppNestTrPP ["CAlt","Alt"] [] [@pat.ppAST, @expr.ppAST] @trppHere
+
+SEM CPat
+  | Var			lhs     .  ppAST    =   ppNestTrPP ["CPat","Var"] [ppTrNm @pnm] [] @trppHere
+  | Int			lhs     .  ppAST    =   ppNestTrPP ["CPat","Int"] [pp @int] [] @trppHere
+  | Char		lhs     .  ppAST    =   ppNestTrPP ["CPat","Char"] [pp @char] [] @trppHere
+  | Con			lhs     .  ppAST    =   ppNestTrPP ["CPat","Con"] [pp @tag] [@rest.ppAST, @binds.ppAST] @trppHere
+%%[[97
+  | BoolExpr	inst	.  cexpr'	:	CExpr
+  				inst	.  cexpr'	=	@cexpr
+  				lhs     .  ppAST    =   ppNestTrPP ["CPat","BoolExpr"] [] [@cexpr'.ppAST] @trppHere
+%%]]
+
+SEM CPatRest
+  | Var			lhs     .  ppAST    =   ppNestTrPP ["CPatRest","Var"] [ppTrNm @nm] [] @trppHere
+  | Empty		lhs     .  ppAST    =   ppNestTrPP ["CPatRest","Empty"] [] [] @trppHere
+
+SEM CPatFld
+  | Fld			lhs     .  ppAST    =   ppNestTrPP ["CPatFld","Fld"] [ppTrNm @lbl] [@offset.ppAST, @bind.ppAST, @fldAnns.ppAST] @trppHere
+%%]
