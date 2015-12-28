@@ -112,7 +112,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 DERIVING *
   : Show, Eq, Ord
 %%[[50
-  , Typeable
+  , Typeable, Generic
 %%]]
 
 DERIVING TyVarCateg
@@ -529,7 +529,7 @@ data CHRPredOccCxt
       { cpocxScope			:: !PredScope			-- default, only allowed value for occurring preds
       --											-- others for solving and CHR's only
       }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
 
 %%]
 
@@ -547,7 +547,7 @@ data CHRPredOcc' p
        , cpoRange            :: !Range
 %%]]
        }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
 
 type CHRPredOcc = CHRPredOcc' Pred
 
@@ -1737,7 +1737,7 @@ data TyKiKey
 %%[[(6 hmtyinfer || hmtyast)
   | TyKiKey_TyVar   !TyVarId
 %%]]
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Generic)
 
 instance Show TyKiKey where
   show (TyKiKey_Name  n) = show n
@@ -2117,6 +2117,10 @@ tyErr = appDbg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 hs
+instance Serialize TyKiKey
+%%]
+
+%%[5050 hs
 instance Serialize TyKiKey where
   sput (TyKiKey_Name  a) = sputWord8 0 >> sput a
 %%[[(50 hmtyinfer || hmtyast)
@@ -2190,6 +2194,16 @@ instance Serialize TyQu where
 %%]
 
 %%[(50 hmtyinfer || hmtyast) hs
+instance Serialize Ty
+instance Serialize TyAnn
+instance Serialize Pred
+instance Serialize Label
+instance Serialize PredSeq
+instance Serialize Impls
+instance Serialize CHRPredOcc
+%%]
+
+%%[(5050 hmtyinfer || hmtyast) hs
 instance Serialize Ty where
   sput (Ty_Con   a      ) = sputWord8 0  >> sput a
   sput (Ty_App   a b    ) = sputWord8 1  >> sput a >> sput b
@@ -2226,13 +2240,6 @@ instance Serialize TyAnn where
               1 -> return TyAnn_Mono
               2 -> liftM  TyAnn_Strictness sget
 
-instance Binary TyVarCateg where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize TyVarCateg where
-  sput = sputPlain
-  sget = sgetPlain
 
 instance Serialize Pred where
   sput (Pred_Class  a  ) = sputWord8 0 >> sput a
@@ -2313,5 +2320,15 @@ instance Serialize Impls where
                     liftM6 Impls_Cons  sget sget sget sget sget sget
 %%]]
 
+%%]
+
+%%[(50 hmtyinfer || hmtyast) hs
+instance Binary TyVarCateg where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize TyVarCateg where
+  sput = sputPlain
+  sget = sgetPlain
 %%]
 

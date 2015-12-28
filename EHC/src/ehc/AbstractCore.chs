@@ -394,7 +394,7 @@ data ACoreBindAspectKey
 %%[[93
   | ACoreBindAspectKey_FusionRole           -- fusion role
 %%]]
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Generic)
 
 instance Show ACoreBindAspectKey where
   show ACoreBindAspectKey_Default       = "dft"
@@ -1501,7 +1501,7 @@ data CaseAltFailReason
   | CaseAltFailReason_Continue
       { cafailCaseId        :: UID              -- failed as part of case match attempt, but continues with code identified by id
       }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
 
 instance PP CaseAltFailReason where
   pp (CaseAltFailReason_Continue i) = pp i
@@ -1629,6 +1629,10 @@ instance Serialize ACoreBindAspectKey where
 %%]
 
 %%[(50 codegen) hs
+instance Serialize ACoreBindAspectKey
+%%]
+
+%%[(5050 codegen) hs
 instance Serialize ACoreBindAspectKey where
   sput (ACoreBindAspectKey_Default       ) = sputWord8 0
   sput (ACoreBindAspectKey_Strict        ) = sputWord8 1
@@ -1670,6 +1674,10 @@ instance Serialize ACoreBindRef where
 %%]
 
 %%[(50 codegen) hs
+instance Serialize CaseAltFailReason
+%%]
+
+%%[(5050 codegen) hs
 instance Serialize CaseAltFailReason where
   sput (CaseAltFailReason_Continue a) = sputWord8 0 >> sput a
   sput (CaseAltFailReason_Absence   ) = sputWord8 1

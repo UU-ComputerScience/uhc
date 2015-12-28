@@ -48,7 +48,7 @@ data ClGamInfo
 %%]]
        }
 %%]]
-       deriving Show
+       deriving (Show, Generic)
 
 type ClGam     = Gam HsName ClGamInfo
 
@@ -98,6 +98,10 @@ instance ForceEval ClGamInfo where
 %%]
 
 %%[(50 hmtyinfer)
+instance Serialize ClGamInfo
+%%]
+
+%%[(5050 hmtyinfer)
 instance Serialize ClGamInfo where
 %%[[50
   sput (ClGamInfo a b c d e) = sput a >> sput b >> sput c >> sput d >> sput e

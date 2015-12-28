@@ -71,7 +71,7 @@ data StackTraceInfo
   | StackTraceInfo_IsStackTraceEquiv	HsName		-- is a stack traced equivalent
   deriving ( Show
 %%[[50
-           , Typeable
+           , Typeable, Generic
 %%]]
            )
 %%]
@@ -84,6 +84,7 @@ data FusionRole
   | FusionRole_BuildRight	-- role of h in 'convert g,h'
   deriving ( Enum, Show
            , Typeable
+           , Generic
            )
 %%]
 
@@ -120,7 +121,7 @@ data LamInfoBindAsp
 %%]]
   deriving ( Show
 %%[[50
-           , Typeable
+           , Typeable, Generic
 %%]]
            )
 
@@ -152,7 +153,7 @@ data LamInfo
       }
   deriving ( Show
 %%[[50
-           , Typeable
+           , Typeable, Generic
 %%]]
            )
 
@@ -357,6 +358,12 @@ instance Serialize FusionRole where
 %%]
 
 %%[(50 codegen) hs
+instance Serialize LamInfoBindAsp
+instance Serialize LamInfo
+instance Serialize StackTraceInfo
+%%]
+
+%%[(5050 codegen) hs
 instance Serialize LamInfoBindAsp where
 %%[[(8 codegenanalysis)
   sput (LamInfoBindAsp_RelevTy  	a) = sputWord8 0 >> sput a

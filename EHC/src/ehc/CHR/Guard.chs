@@ -52,7 +52,7 @@ data Guard
   | EqualModuloUnification  Ty Ty
 %%]]
 %%[[50
-  deriving (Typeable)
+  deriving (Typeable, Generic)
 %%]]
 %%]
 
@@ -88,6 +88,10 @@ instance PP Guard where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 hmtyinfer)
+instance Serialize Guard
+%%]
+
+%%[(5050 hmtyinfer)
 instance Serialize Guard where
   sput (HasStrictCommonScope     a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
   sput (IsVisibleInScope         a b    ) = sputWord8 1  >> sput a >> sput b

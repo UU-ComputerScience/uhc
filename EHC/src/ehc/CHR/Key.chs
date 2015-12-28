@@ -43,7 +43,7 @@ data Key
 %%]]
   deriving ( Eq, Ord
 %%[[50
-           , Typeable
+           , Typeable, Generic
 %%]]
            )
 %%]
@@ -146,6 +146,10 @@ instance TTKeyable x => TreeTrieKeyable x where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
+instance Serialize Key
+%%]
+
+%%[5050
 instance Serialize Key where
   sput (Key_HNm  a) = sputWord8 0 >> sput a
   sput (Key_UID  a) = sputWord8 1 >> sput a

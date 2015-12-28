@@ -55,7 +55,7 @@ data Pragma
       { pragmaExcludeTargets   		:: [Target]
       }
 %%]]
-  deriving (Eq,Ord,Show,Typeable)
+  deriving (Eq,Ord,Show,Typeable,Generic)
 
 %%]
 
@@ -114,6 +114,10 @@ pragmaInvolvesCmdLine _                     = False
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+instance Serialize Pragma
+%%]
+
+%%[9999
 instance Serialize Pragma where
   sput (Pragma_NoImplicitPrelude        ) = sputWord8 0
   sput (Pragma_CPP                      ) = sputWord8 1

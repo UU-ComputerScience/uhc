@@ -235,7 +235,7 @@ data VarMpInfo
   deriving
     ( Eq, Ord, Show
 %%[[50
-    , Typeable
+    , Typeable, Generic
 %%]]
     )
 %%]
@@ -607,6 +607,10 @@ instance PP VarMpInfo where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 hmtyinfer || hmtyast)
+instance Serialize VarMpInfo
+%%]
+
+%%[(5050 hmtyinfer || hmtyast)
 instance Serialize VarMpInfo where
   sput (VMITy      a) = sputWord8 0  >> sput a
   sput (VMIImpls   a) = sputWord8 1  >> sput a

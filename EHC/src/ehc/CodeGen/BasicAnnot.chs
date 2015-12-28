@@ -297,7 +297,7 @@ data BasicTy
   | BasicTy_Double				-- C: double
   | BasicTy_SignedHalfWord		-- as BasicTy_Word, but for FFI half the size of a word, and signed. Special case for sign extend.
 %%]]
-  deriving (Eq,Ord,Enum)
+  deriving (Eq,Ord,Enum,Generic)
 %%]
 
 %%[(50 codegen) hs
@@ -358,7 +358,7 @@ data BasicAnnot
   	  , baIsSigned	:: Bool
   	  }
 %%]]
-  deriving (Show,Eq)
+  deriving (Show,Eq,Generic)
 %%]
 
 %%[(8 grin) hs export(basicAnnotWord)
@@ -427,6 +427,10 @@ instance Serialize BasicSize where
 %%]
 
 %%[(50 codegen) hs
+instance Serialize BasicAnnot
+%%]
+
+%%[(5050 codegen) hs
 instance Serialize BasicAnnot where
   sput (BasicAnnot_None                 ) = sputWord8 0
 %%[[(8 grin)

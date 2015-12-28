@@ -55,7 +55,7 @@ data Constraint' p info
                     , cnstrVarMp :: VarMp           -- additional bindings for type (etc.) variables, i.e. improving substitution
 %%]]
                     }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 type Constraint = Constraint' CHRPredOcc RedHowAnnotation
 
@@ -224,6 +224,7 @@ data RedHowAnnotation
     ( Eq, Ord
 %%[[50
     , Typeable
+    , Generic
 %%]]
     )
 %%]
@@ -275,7 +276,7 @@ data ByScopeRedHow
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable
+    , Typeable, Generic
 %%]]
     )
 
@@ -426,6 +427,10 @@ instance (PP p, PP info) => PP (Constraint' p info) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 hmtyinfer || hmtyast)
+instance (Serialize p, Serialize i) => Serialize (Constraint' p i)
+%%]
+
+%%[(5050 hmtyinfer || hmtyast)
 instance (Serialize p, Serialize i) => Serialize (Constraint' p i) where
   sput (Prove     a      ) = sputWord8 0 >> sput a
   sput (Assume    a      ) = sputWord8 1 >> sput a
@@ -438,6 +443,11 @@ instance (Serialize p, Serialize i) => Serialize (Constraint' p i) where
 %%]
 
 %%[(50 hmtyinfer)
+instance Serialize ByScopeRedHow
+instance Serialize RedHowAnnotation
+%%]
+
+%%[(5050 hmtyinfer)
 instance Serialize ByScopeRedHow where
   sput (ByScopeRedHow_Prove          ) = sputWord8 0
   sput (ByScopeRedHow_Assume         ) = sputWord8 1

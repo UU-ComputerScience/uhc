@@ -310,7 +310,7 @@ cpGetPrevCoreRun modNm
        }
 %%]
 
-%%[(50 codegen grin) export(cpGetPrevGrin)
+%%[(5050 codegen grin) export(cpGetPrevGrin)
 cpGetPrevGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m AST_Grin
 cpGetPrevGrin modNm
   = do { cpMsg modNm VerboseDebug "cpGetPrevGrin"

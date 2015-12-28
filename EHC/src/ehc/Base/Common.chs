@@ -389,7 +389,7 @@ data CLbl
   | CLbl_Tag
       { clblTag		:: !CTag
       }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
 
 clbl :: a -> (HsName -> a) -> (CTag -> a) -> CLbl -> a
 clbl f _ _  CLbl_None   = f
@@ -681,7 +681,7 @@ data VarUIDHsName
   = VarUIDHs_Name       { vunmId :: !UID, vunmNm' :: !HsName }
   | VarUIDHs_UID        { vunmId :: !UID }
   | VarUIDHs_Var        !UID
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 vunmNm :: VarUIDHsName -> HsName
 vunmNm (VarUIDHs_Name _ n) = n
@@ -1211,7 +1211,14 @@ instance Serialize KnownPrim where
 instance Serialize TagDataInfo where
   sput (TagDataInfo a b) = sput a >> sput b
   sget = liftM2 TagDataInfo sget sget
+%%]
 
+%%[50
+instance Serialize VarUIDHsName
+instance Serialize CLbl
+%%]
+
+%%[5050
 instance Serialize VarUIDHsName where
   sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
   sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
@@ -1231,7 +1238,9 @@ instance Serialize CLbl where
               0 -> liftM  CLbl_Nm 	sget
               1 -> liftM  CLbl_Tag  sget
               2 -> return CLbl_None
+%%]
 
+%%[50
 instance Binary Fixity where
   put = putEnum8
   get = getEnum8

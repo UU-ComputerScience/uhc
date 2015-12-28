@@ -233,14 +233,14 @@ Post processing involves the following:
 cpEhcFullProgPostModulePhases :: EHCCompileRunner m => EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhaseT m ()
 cpEhcFullProgPostModulePhases opts modNmL modSpl
   | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore = cpEhcCoreFullProgPostModulePhases opts modNmL modSpl
-%%[[(50 grin)
+%%[[(5050 grin)
   | otherwise                                                   = cpEhcGrinFullProgPostModulePhases opts modNmL modSpl
 %%][50
   | otherwise                                                   = return ()
 %%]]
 %%]
 
-%%[(50 codegen grin)
+%%[(5050 codegen grin)
 cpEhcGrinFullProgPostModulePhases :: EHCCompileRunner m => EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhaseT m ()
 cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpEnsureGrin m | m <- modNmL]
@@ -1362,7 +1362,7 @@ cpProcessCoreRest modNm
        ; cpSeq (   []
 %%[[(8 grin)
                 ++ [ cpTranslateCore2Grin modNm ]
-                ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin ASTFileContent_Binary "" modNm] else [])
+                -- ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin ASTFileContent_Binary "" modNm] else [])
 %%]]
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]

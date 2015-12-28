@@ -188,7 +188,7 @@ cpOutputTyCore suff modNm
 %%[(8 codegen) export(cpOutputCore)
 cpOutputCore :: EHCCompileRunner m => ASTFileContent -> String -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputCore how nmsuff suff modNm =
-    fmap (panicJust "cpOutputGrin.cpOutputSomeModule") $
+    fmap (panicJust "cpOutputCore.cpOutputSomeModule") $
       cpOutputSomeModule (^. ecuCore) astHandler'_Core how nmsuff suff modNm
 %%]
 

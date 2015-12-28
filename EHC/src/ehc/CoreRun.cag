@@ -59,6 +59,7 @@ CoreRun is a simplified Core intended for running it using an efficient as possi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 corerun) ag import({CoreRun/AbsSyn})
+DERIVING * : Generic
 %%]
 
 %%[(8 corerun) hs
@@ -206,7 +207,7 @@ data RRef
   | RRef_Dbg
       { rrefNm          :: !HsName
       }
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Generic)
 
 instance Show RRef where
   show _ = "RRef"
@@ -325,13 +326,36 @@ ref2nmUnion = Rel.union -- m1 m2 = \r -> m1 r <|> m2 r
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 corerun) hs
-instance Binary Mod where
-  put (Mod_Mod a b c d e f g h i) = put a >> put b >> put c >> put d >> put e >> put f >> put g >> put h >> put i
-  get = liftM9 Mod_Mod get get get get get get get get get
-
 instance Serialize Mod where
   sput = sputPlain
   sget = sgetPlain
+
+instance Binary RunPrim where
+  put = putEnum
+  get = getEnum
+
+instance Binary a => Binary (CRArray a) where
+  put = put . crarrayToList 
+  get = fmap crarrayFromList get
+%%]
+
+%%[(50 corerun) hs
+instance Binary Mod
+instance Binary Meta
+instance Binary Import
+instance Binary Export
+instance Binary DataCon
+instance Binary Exp
+instance Binary SExp
+instance Binary Alt
+instance Binary Pat
+instance Binary RRef
+%%]
+
+%%[(5050 corerun) hs
+instance Binary Mod where
+  put (Mod_Mod a b c d e f g h i) = put a >> put b >> put c >> put d >> put e >> put f >> put g >> put h >> put i
+  get = liftM9 Mod_Mod get get get get get get get get get
 
 instance Binary Meta where
   put (Meta_Data a b) = {- putWord8 0 >> -} put a >> put b
@@ -411,10 +435,6 @@ instance Binary Pat where
            case t of
              0 -> -} liftM  Pat_Con 		get
 
-instance Binary RunPrim where
-  put = putEnum
-  get = getEnum
-
 instance Binary RRef where
   put (RRef_Glb 		a b			) = putWord8 0 >> put a >> put b
   put (RRef_Loc 		a b			) = putWord8 1 >> put a >> put b
@@ -439,9 +459,6 @@ instance Binary RRef where
              8 -> liftM2 RRef_Exp 		get get
              9 -> liftM  RRef_Unr 		get
 
-instance Binary a => Binary (CRArray a) where
-  put = put . crarrayToList 
-  get = fmap crarrayFromList get
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

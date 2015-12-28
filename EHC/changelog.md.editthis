@@ -1,6 +1,8 @@
-- [core] pretty printing of Core AST (for debugging purposes)
+- [core] pretty printing/dump of Core AST (for debugging purposes), accessible via --coreopt=dump-ast
 - [uhc-util] move of LexScope encoding via RLList to separate module in uhc-util
 - [corerun] additional API calls
+- [grin] no longer .grin files generated, any whole grin progr stuff disabled (to be removed)
+- [serialize] serialization instances now mostly generically defined
 
 ## 1.1.9.2 - 20151027
 
