@@ -1378,7 +1378,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                then Nothing
                                else Just  ( foUpdTy (updTy $ [foTy pfo] `appArr` foTy fo)
 %%[[(9 codegen)
-                                          $ foUpdLRCoe (mkIdLRCoeWith n CMetaVal_Dict)
+                                          $ foUpdLRCoe (mkIdLRCoeWith n ())
 %%]]
 %%[[(9 codegen tycore)
                                           $ foUpdLRTCoe (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.1: " ++ show n)))
@@ -1396,7 +1396,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                                                       tpr1
 %%[[(9 codegen)
-                                                      (mkIdLRCoeWith n CMetaVal_Dict)
+                                                      (mkIdLRCoeWith n ())
 %%]]
 %%[[(9 codegen tycore)
                                                       (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.2: " ++ show n)))
@@ -1414,7 +1414,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                                                       tpr2
 %%[[(9 codegen)
-                                                      (mkIdLRCoeWith n CMetaVal_Dict)
+                                                      (mkIdLRCoeWith n ())
 %%]]
 %%[[(9 codegen tycore)
                                                       (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.3: " ++ show n)))

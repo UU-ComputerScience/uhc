@@ -691,12 +691,6 @@ acoreBind1MetasTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a)
 acoreBind1MetasTy n m t e = acoreBind1CatLevMetasTy (acoreBindcategDflt e) n metaLevVal m t e
 {-# INLINE acoreBind1MetasTy #-}
 
-{-
-acoreBind1Metas :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> (mbind,m) -> e -> b
-acoreBind1Metas n m e = aacoreBind1MetasTy n m acoreTyNone e
-{-# INLINE acoreBind1Metas #-}
--}
-
 acoreBind1CatMeta :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> m -> e -> b
 acoreBind1CatMeta cat n m e = acoreBind1CatLevMetaTy cat n metaLevVal m (acoreTyErr "acoreBind1CatMeta") e
 {-# INLINE acoreBind1CatMeta #-}

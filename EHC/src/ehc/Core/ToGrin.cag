@@ -103,7 +103,7 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 core)
-ATTR AllCodeNT - AllMeta [ | gUniq: UID | ]
+ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
@@ -603,10 +603,6 @@ SEM CAlt
 %%[(8 core grin)
 SEM CBound
   | Bind        loc         .   aspectKeyS  =   acbaspkeyNone
-                            .   isApply0    =   @bindMeta.isApply0
-                            .   grBindMeta  =   @bindMeta.grBindAnn
-  | Val         loc         .   isApply0    =   False               -- TBD: must take care of proper dealing with this meta stuff
-                            .   grBindMeta  =   GrBindAnnNormal
 %%]
 
 %%[(8 core grin)
@@ -620,16 +616,9 @@ ATTR AllBind [ | | grBindL   USE {++} {[]}: GrBindL
              ]
 
 SEM CBound
-  | Bind Val    (lhs.grBindL, lhs.grGlobalL)=   if   @isApply0
-                                                then let nm2 = case @expr.whatBelow of
-                                                                 ExprIsVar n -> n
-                                                                 _           -> error "ToGrin: RHS of Apply0-bind is not a variable"
-                                                     in  ( []
-                                                         , [GrGlobal_Global @nmAsp (GrVal_Node (GrTag_Fun nm2) [])]
-                                                         )
-                                                else     ( [GrBind_Bind @nmAsp @grBindMeta @expr.grLamArgL @expr.grLamBody]
-                                                         , []
-                                                         )
+  | Bind Val    (lhs.grBindL, lhs.grGlobalL)=   ( [GrBind_Bind @nmAsp GrBindAnnNormal @expr.grLamArgL @expr.grLamBody]
+                                                , []
+                                                )
 
 %%]
 
@@ -798,31 +787,4 @@ SEM CExpr
   | App         loc         .   grAppWrap   =   @func.grAppWrap . @arg.grValWrap
   | * - App Ann
   				lhs         .   grAppWrap   =   id
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bind meta
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
-%%[(8 core grin)
-ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn}  ]
-
-SEM CMetaVal
-  | Val          lhs        .   grBindAnn   =  GrBindAnnNormal
-%%[[9
-  | Dict         lhs        .   grBindAnn   =  GrBindAnnNormal
-  | DictClass    lhs        .   grBindAnn   =  GrBindAnnClass @tracks
-  | DictInstance lhs        .   grBindAnn   =  GrBindAnnInstance @tracks
-  | Track        lhs        .   grBindAnn   =  GrBindAnnNormal
-%%]]
-
-ATTR AllMetaBind [ | | isApply0 : Bool ]
-
-SEM CMetaBind
-  | Apply0       lhs 		. 	isApply0  	=  True
-  | * - Apply0   lhs 		. 	isApply0  	=  False
-
 %%]

@@ -805,7 +805,7 @@ ATTR AllNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBound
-  | Bind        lhs         .   cTrf            =   CBound_Bind @bindMeta.cTrf $ 
+  | Bind        lhs         .   cTrf            =   CBound_Bind $ 
                                                     dbgBind @lhs.opts @lhs.finalRVarMp @gathEnv $
                                                     annCoe @hereBindCoe @expr.cTrf
 

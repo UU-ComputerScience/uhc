@@ -1096,7 +1096,7 @@ SEM Decl
                                                      xStrict = hsnUniqifyEval x
                                                      -- vxStrict = acoreVar xStrict :: CExpr
                                                      mkSel n = acoreSatSelsCaseMetaTy
-                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just (xStrict,(acoreTyErr $ "EH.ToCore.Decl.Class.mkSel: " ++ show n))) CMetaVal_Dict vx @dictTag
+                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just (xStrict,(acoreTyErr $ "EH.ToCore.Decl.Class.mkSel: " ++ show n))) () vx @dictTag
                                                                  [(n,acoreTyErr $ "EH.ToCore.Decl.Class.mkSel: " ++ show n,{-n,-}cdictOffset n @clsTyRec)] Nothing (acoreVar n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
                                                              then (\f -> acore1App f vx)
@@ -1229,7 +1229,7 @@ mkNormalInstance
         ,[CBind]                            -- bindings for super + ctxt class related context reduction, only Assume
         )
      -> ( CExpr                             -- the instance
-        , CMetaVal                          -- the meta info about the instance
+        , ()                          -- the meta info about the instance
         )
 mkNormalInstance
       opts sysfEnv clgi dataGam dictTag
@@ -1239,7 +1239,7 @@ mkNormalInstance
       declsCBindL
       (chrDeclsCBindL,chrSuperProveCBindL,chrSuperCtxtAssumeCBindL)
   = ( bind4
-    , CMetaVal_DictInstance (TrackVarApply (ctagTyNm dictTag) [] : TrackVarApply dfltNm [] : instanceAndSuperTracks )
+    , ()
     )
   where dfltNm       = clgiDfltDictNm clgi
         rsltNm       = dictBuildNm
@@ -1259,7 +1259,7 @@ mkNormalInstance
         -- mkCTy = SysF.ty2TyC opts sysfEnv
 
         instanceBindingPairs= [ (nm,v)
-                              | CBind_Bind nm asps <- declsCBindL, CBound_Bind _ v <- asps
+                              | CBind_Bind nm asps <- declsCBindL, CBound_Bind v <- asps
                               ]
         instanceMbBodies    = map (flip lookup instanceBindingPairs) memberNames
         instanceMbNewNames  = let f _ Nothing  = Nothing
@@ -1268,16 +1268,16 @@ mkNormalInstance
         instanceMbNames     = let f _ Nothing  = Nothing
                                   f n (Just _) = Just n
                               in zipWith f memberNames instanceMbNewNames
-        instanceNameMapping = [ (nm, CMetaVal_Val, v)
+        instanceNameMapping = [ (nm, (), v)
                               | (Just nm,v) <- zip instanceMbNames memberNewVars
                               ]
-        instanceNewBindings = [ acoreBind1MetaTy nm CMetaVal_Val (acoreTyErr $ "EH.ToCore.mkNormalInstance.instanceNewBindings: " ++ show nm) v
+        instanceNewBindings = [ acoreBind1MetaTy nm () (acoreTyErr $ "EH.ToCore.mkNormalInstance.instanceNewBindings: " ++ show nm) v
                               | (nm,Just v) <- zip memberNewNames instanceMbBodies
                               ]
                               
         superNewVars        = map acoreVar superNmL
         superNameMapping    = zip3 superFldNmL
-                                   (repeat CMetaVal_Dict)
+                                   (repeat ())
                                    superNewVars
 
         superNameMapping2   = zip superFldNmL
@@ -1302,13 +1302,13 @@ mkNormalInstance
         instanceCHRBindings = chrSuperCtxtAssumeCBindL ++ chrSuperProveCBindL ++ chrDeclsCBindL
 
         dict1     = acore1App dfltVar rsltVar
-        bind1     = acoreBind1MetaTy dfltNmStrict CMetaVal_Dict instanceTy dict1
+        bind1     = acoreBind1MetaTy dfltNmStrict () instanceTy dict1
         
         dict2     = acoreLetBase (acoreBindcategStrict) [bind1] (mkSetFlds (superNameMapping ++ instanceNameMapping) dfltVarStrict)
-        bind2     = acoreBind1MetaTy rsltNmStrict (CMetaVal_Track TrackSelf) instanceTy dict2
+        bind2     = acoreBind1MetaTy rsltNmStrict () instanceTy dict2
                              
         dict3     = acoreLetBase (acoreBindcategPlain) [bind2] rsltVarStrict
-        bind3     = acoreBind1MetaTy rsltNm       (CMetaVal_Track TrackSelf) instanceTy dict3
+        bind3     = acoreBind1MetaTy rsltNm       () instanceTy dict3
 
         dict4     = acoreLetRec ([bind3] ++ instanceNewBindings ++ instanceCHRBindings) rsltVar
         bind4     = acoreLamTy (acoreTyErrLift "EH.ToCore.mkNormalInstance.dict4" contextArguments) dict4        
@@ -1382,10 +1382,10 @@ mkInstanceCBindL
                 (instanceFieldL,memberNames,memberNewNames,memberNewVars) 
                                     = mkInstanceNames opts sysfEnv dictNm instanceRecTy
 
-                lookupMeta n = if n `elem` superFldNmL then CMetaVal_Dict else CMetaVal_Val
+                lookupMeta n = if n `elem` superFldNmL then () else ()
           
                 defaultBindingPairs = [ (nm,v)
-                                      | CBind_Bind nm asps <- defaultBindings, CBound_Bind _ v <- asps
+                                      | CBind_Bind nm asps <- defaultBindings, CBound_Bind v <- asps
                                       ]
                 defaultMbBodies     = map (flip lookup defaultBindingPairs) memberNames
                 defaultMetas        = map lookupMeta                        memberNames
@@ -1402,13 +1402,13 @@ mkInstanceCBindL
                 defaultCHRBindings  = chrDeclsCBindL 
                                                    
                 dict5     = acoreTagTupTy dictTag (acoreTyErr "EH.ToCore.mkInstanceCBindL.dict5") memberNewVars -- acoreApp (CExpr_Tup dictTag) memberNewVars
-                bind5     = acoreBind1MetaTy rsltNm CMetaVal_Dict (acoreTyErr $ "EH.ToCore.mkInstanceCBindL.bind5: " ++ show rsltNm) dict5
+                bind5     = acoreBind1MetaTy rsltNm () (acoreTyErr $ "EH.ToCore.mkInstanceCBindL.bind5: " ++ show rsltNm) dict5
 
                 dict6     = acoreLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindings) rsltVar
                 bind6     = acoreLam1Ty selfNm (acoreTyErr $ "EH.ToCore.mkInstanceCBindL.bind6: " ++ show selfNm) dict6
 
             in  ( bind6
-                , CMetaVal_DictClass defaultTracks
+                , ()
                 )
 %%]
 
@@ -1418,7 +1418,7 @@ to set fields in a dictionary:
 - by matching and rebuilding a datatype 
 
 %%[(9 codegen) hs
-mkInstanceSetFlds :: EHCOpts -> DataGam -> CTag -> AssocL HsName (Ty,CTy) -> Ty -> [(HsName,CMetaVal,CExpr)] -> CExpr -> CExpr
+mkInstanceSetFlds :: EHCOpts -> DataGam -> CTag -> AssocL HsName (Ty,CTy) -> Ty -> [(HsName,(),CExpr)] -> CExpr -> CExpr
 mkInstanceSetFlds opts dataGam dictTag instanceFieldL instanceRecTy
   = if   ehcCfgClassViaRec opts 
     then mkSetFldsRec  
@@ -1430,7 +1430,7 @@ mkInstanceSetFlds opts dataGam dictTag instanceFieldL instanceRecTy
           where mkSet d n v = CExpr_TupUpd d dictTag n (acoreInt opts $ off n) v
 
         mkSetFldsData ts d0
-          = acoreSatSelsCaseMetaTy env Nothing CMetaVal_Dict d0 dictTag nmLblOffL Nothing sel
+          = acoreSatSelsCaseMetaTy env Nothing () d0 dictTag nmLblOffL Nothing sel
           where env = (emptyRCEEnv opts) {rceDataGam = dataGam}
                 fullListWithTrivialValues = [ (o, (o, t, acoreVar n)) 
                                             | (n,t,o) <- nmLblOffL 
@@ -1487,7 +1487,7 @@ SEM Decl
                 loc         .   lUniq_bind  :   UNIQUEREF gUniq
 %%]]
   | InstanceIntro
-                lhs         .   valCBindL   =   [acoreBind1MetaTy @dictNm CMetaVal_Dict (acoreTyErr $ "EH.ToCore.Decl.InstanceIntro.valCBindL: " ++ show @dictNm) @expr.cexpr]
+                lhs         .   valCBindL   =   [acoreBind1MetaTy @dictNm () (acoreTyErr $ "EH.ToCore.Decl.InstanceIntro.valCBindL: " ++ show @dictNm) @expr.cexpr]
 %%]
                                                                              -- , let (e,s) = mkWeaveExpr -- :: EHCOpts -> UID -> VarMp -> CSubst -> (CExpr->CExpr) -> CExpr -> [Coe] -> [Coe] -> (CExpr,CSubst)
                                                                              --                   @lhs.opts u @lhs.finTyVarMp @cSubstDecls
@@ -1497,13 +1497,13 @@ SEM Decl
 %%[(9 codegen) hs
 getBindRightVar :: CBind -> Maybe HsName
 
-getBindRightVar (CBind_Bind _ [CBound_Bind _ v]) = acoreExprMbVar v
+getBindRightVar (CBind_Bind _ [CBound_Bind v]) = acoreExprMbVar v
 getBindRightVar _ = Nothing
 
 
 getBindLeftAndRightVar :: CBind -> (HsName,HsName)
 
-getBindLeftAndRightVar (CBind_Bind nm1 [CBound_Bind _ (CExpr_Var ref2)]) = (nm1, acbrefNm ref2)
+getBindLeftAndRightVar (CBind_Bind nm1 [CBound_Bind (CExpr_Var ref2)]) = (nm1, acbrefNm ref2)
 getBindLeftAndRightVar _ = error "getBindLeftAndRightVar: not a bind"
 
 mbNameToTrack Nothing   = TrackNone

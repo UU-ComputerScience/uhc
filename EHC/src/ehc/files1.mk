@@ -69,7 +69,6 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \
 													$(addprefix VarMp/,Utils) \
-													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Opts/,Base CommandLine) \
 													$(addprefix Pred/,ToCHR Evidence EvidenceToCore EvidenceToTyCore Heuristics RedGraph) \
 													$(addprefix Base/,UnderDev Trace Range TermLike UID Parser Parser2 Pragma Strictness Target Fld Common HsName Debug CfgPP LaTeX HtmlCommon FileSearchLocation PackageDatabase ParseUtils Optimize) \
@@ -89,8 +88,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Core/SysF/,AsTy) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
 													$(addprefix TyCore/Trf/,Common) \
-													$(addprefix GrinCode/,Common SolveEqs) \
-													$(addprefix EHC/,Main Common FileSuffMp Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup ASTHandler ASTPipeline ASTTypes BuildFunction \
+													$(addprefix EHC/,Main Common FileSuffMp Environment CompileUnit CompileGroup CompileRun InitialSetup ASTHandler ASTPipeline ASTTypes BuildFunction \
 														$(addprefix Main/,Utils Compile) \
 														$(addprefix BuildFunction/,Run) \
 														$(addprefix ASTHandler/,Instances) \
@@ -331,7 +329,7 @@ EHC_ALL_LIB_FROMHS_HS					:= $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_SIG_DRV_HS) $
 EHC_ALL_LIB_FROMAG_HS					:= $(EHC_AG_ALL_MAIN_DRV_HS)
 
 # lib installed ag
-INS_EHC_LIB_ALL_AG_NAMES				:= HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn GrinByteCode/AbsSyn LLVM/AbsSyn Silly/AbsSyn
+INS_EHC_LIB_ALL_AG_NAMES				:= HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn GrinByteCode/AbsSyn LLVM/AbsSyn
 INS_EHC_LIB_ALL_AG						:= $(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%,$(INSTALL_VARIANT_LIB_AG_PREFIX)%,$(EHC_AG_D_DDPDS_DERIV_AG))
 INSABS_EHC_LIB_ALL_AG					:= $(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%,$(INSTALLABS_VARIANT_LIB_AG_PREFIX)%,$(EHC_AG_D_DDPDS_DERIV_AG))
 #INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INSTALL_VARIANT_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))

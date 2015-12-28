@@ -93,10 +93,6 @@ Translation to another AST
 %%[(8 codegen java) import({%{EH}CodeGen.Bits},{%{EH}JVMClass.ToBinary})
 %%]
 
--- Alternative backends
-%%[(8 codegen grin wholeprogAnal) import(qualified {%{EH}EHC.GrinCompilerDriver} as GRINC)
-%%]
-
 -- HI AST
 %%[(50 codegen grin) import(qualified {%{EH}HI} as HI)
 %%]
@@ -370,20 +366,6 @@ cpTranslateGrin2Bytecode modNm
         ; cpMsg modNm VerboseDebug ("cpTranslateGrin2Bytecode: stored bytecode")
         ; when (ehcOptErrAboutBytecode opts)
                (cpSetLimitErrsWhen 5 "Grin to ByteCode" errs)
-        }
-%%]
-
-%%[(8 codegen grin wholeprogAnal) export(cpTransformGrinHPTWholeProg)
--- This should be in Transformations
--- | Transform Grin using HPT and its results
-cpTransformGrinHPTWholeProg :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpTransformGrinHPTWholeProg modNm
-  =  do { cr <- get
-        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-               mbGrin = _ecuMbGrin ecu
-               grin   = panicJust "cpTransformGrinHPTWholeProg" mbGrin
-        ; when (isJust mbGrin)
-               (liftIO $ GRINC.doCompileGrin (Right (fp,grin)) opts)
         }
 %%]
 

@@ -229,7 +229,7 @@ DATA CExpr
 %%% Meta information
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 core)
+%%[(8888 core)
 TYPE CMetas 	= (CMetaBind,CMetaVal)
 
 DATA CMetaBind
@@ -303,13 +303,9 @@ DATA CBind
 -- | That which is bound, of which may be multiple, of which exist the below varieties
 DATA CBound
   -- default: binding used when (1) no specialized version is available, (2) the one passed higher order
-  | Bind        bindMeta        : CMetas
+  | Bind        -- bindMeta        : CMetas
                 expr            : CExpr
 
-  -- a (keyed) CMetas
-  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
-  				cmetas			: CMetas
-  
 %%[[(8 codegenanalysis)
   -- a (keyed) RelevTy
   | RelevTy		aspectKeyS		: {ACoreBindAspectKeyS}
@@ -468,7 +464,7 @@ SET AllExprBase
 
 SET AllExpr
   = AllExprBase
-    AllMeta
+    -- AllMeta
 
 SET AllNT
   = AllCodeNT

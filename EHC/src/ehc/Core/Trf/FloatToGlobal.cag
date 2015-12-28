@@ -93,15 +93,9 @@ Groups of bindings floated upwards are inserted when a particular Let is encount
 
 %%[(9 codegen)
 ATTR AllBind AllExprOnly   [ isLocalInInstance : {Bool} | | ]
-ATTR CMetaVal CMetas  [ | | isInstance : {Bool} ]
-
-SEM CMetaVal
-  | DictInstance        lhs         .   isInstance          =   True
-  | * - DictInstance    lhs         .   isInstance          =   False
 
 SEM CBound
-  | Bind                expr        .   isLocalInInstance   =   -- trace ("Bind " ++ show @nm ++ " passes " ++ show @bindMeta.isInstance)  $
-                                                                @bindMeta.isInstance || @lhs.isLocalInInstance
+  | Bind                expr        .   isLocalInInstance   =   @lhs.isLocalInInstance
   
   
 SEM CExpr

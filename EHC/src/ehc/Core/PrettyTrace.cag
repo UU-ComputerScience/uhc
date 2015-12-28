@@ -121,22 +121,6 @@ SEM CExpr
   | Integer		lhs     .  ppAST    =   ppNestTrPP ["CExpr","Integer"] [pp @integer] [] @trppHere
 %%]]
 
-SEM CMetaBind
-  | Plain		lhs     .  ppAST    =   ppNestTrPP ["CMetaBind","Plain"] [] [] @trppHere
-  | Function0	lhs     .  ppAST    =   ppNestTrPP ["CMetaBind","Function0"] [] [] @trppHere
-  | Function1	lhs     .  ppAST    =   ppNestTrPP ["CMetaBind","Function1"] [] [] @trppHere
-  | Apply0		lhs     .  ppAST    =   ppNestTrPP ["CMetaBind","Apply0"] [] [] @trppHere
-
-SEM CMetaVal
-  | Val			lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","Val"] [] [] @trppHere
-%%[[9
-  | Dict		lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","Dict"] [] [] @trppHere
-  | DictClass	lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","DictClass"] [ppCommas' @tracks] [] @trppHere
-  | DictInstance
-  				lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","DictInstance"] [ppCommas' @tracks] [] @trppHere
-  | Track		lhs     .  ppAST    =   ppNestTrPP ["CMetaVal","Track"] [pp @track] [] @trppHere
-%%]]
-
 SEM CExprAnn
   | Ty			lhs     .  ppAST    =   ppNestTrPP ["CExprAnn","Ty"] [pp @ty] [] @trppHere
   | Debug		lhs     .  ppAST    =   ppNestTrPP ["CExprAnn","Debug"] [pp @info] [] @trppHere
@@ -151,8 +135,7 @@ SEM CBind
   | Bind		lhs     .  ppAST    =   ppNestTrPP ["CBind","Bind"] [ppTrNm @nm] [@bindAspects.ppAST] @trppHere
 
 SEM CBound
-  | Bind		lhs     .  ppAST    =   ppNestTrPP ["CBound","Bind"] [] [@bindMeta.ppAST, @expr.ppAST] @trppHere
-  | Meta		lhs     .  ppAST    =   ppNestTrPP ["CBound","Meta"] [pp @aspectKeyS] [@cmetas.ppAST] @trppHere
+  | Bind		lhs     .  ppAST    =   ppNestTrPP ["CBound","Bind"] [] [@expr.ppAST] @trppHere
   | Val			lhs     .  ppAST    =   ppNestTrPP ["CBound","Val"] [pp @aspectKeyS, pp @mlev, pp @lbl] [@expr.ppAST] @trppHere
   | Ty			lhs     .  ppAST    =   ppNestTrPP ["CBound","Ty"] [pp @aspectKeyS, pp @ty] [] @trppHere
 %%[[(8 codegenanalysis)

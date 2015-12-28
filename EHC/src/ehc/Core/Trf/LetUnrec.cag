@@ -87,14 +87,14 @@ SEM CBound
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-type BindMp = Map.Map HsName (CExpr,CMetas)
+type BindMp = Map.Map HsName CExpr
 %%]
 
 %%[(8 codegen)
 ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: BindMp ]
 
 SEM CBound
-  | Bind        lhs         .   bindMp      =   @lhs.nm `Map.singleton` (@expr.cTrf,@bindMeta.cTrf)
+  | Bind        lhs         .   bindMp      =   @lhs.nm `Map.singleton` (@expr.cTrf)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,7 +107,7 @@ SEM CExpr
                                             =   if @categ == CBindCateg_Rec
                                                 then  let  h = Map.filterWithKey (\k e -> k `Map.member` @binds.bindMp) @binds.useMp
                                                            o = scc . Map.toList $ h
-                                                           mk c ns b = acoreLet c [ acoreBind1MetasTy n m (acoreTyErr "LetUnrec.CExpr.Let") e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
+                                                           mk c ns b = acoreLet c [ acoreBind1MetasTy n ((),()) (acoreTyErr "LetUnrec.CExpr.Let") e | n <- ns, (e) <- maybeToList (Map.lookup n @binds.bindMp) ] b
                                                            t = foldr (\bs b
                                                                          -> case bs of
                                                                                [n] | n `elem` Map.findWithDefault [] n h

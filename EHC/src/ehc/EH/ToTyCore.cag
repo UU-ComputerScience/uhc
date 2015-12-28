@@ -1404,10 +1404,10 @@ SEM Decl
                                                              instanceMbNames     = let f _ Nothing  = Nothing
                                                                                        f n (Just _) = Just n
                                                                                    in zipWith f memberNames instanceMbNewNames
-                                                             instanceNameMapping = [ (nm, CMetaVal_Val, v)
+                                                             instanceNameMapping = [ (nm, (), v)
                                                                                    | (Just nm,v) <- zip instanceMbNames memberNewVars
                                                                                    ]
-                                                             instanceNewBindings = [ C.mkValBind1Meta nm CMetaVal_Val v
+                                                             instanceNewBindings = [ C.mkValBind1Meta nm () v
                                                                                    | (nm,Just v) <- zip memberNewNames instanceMbBodies
                                                                                    ]
                                                                                    

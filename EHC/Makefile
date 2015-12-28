@@ -462,7 +462,7 @@ git-fixate-tagversion:
 	  cat $(CHANGELOG).tmp ; \
 	) > $(CHANGELOG).editthis
 	rm $(CHANGELOG).tmp
-	git tag "v$(EH_VERSION_FULL)"
+	git tag -a "v$(EH_VERSION_FULL)" -m "Version $(EH_VERSION_FULL)"
 	git ci -m "Fixate/tag v$(EH_VERSION_FULL)"
 	ghc-pkg hide uhc-light-$(EH_VERSION_FULL)
 	$(MAKE) uhc-light

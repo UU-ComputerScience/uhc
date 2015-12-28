@@ -11,10 +11,6 @@
 %%% Copy/Self
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
-ATTR AllMeta [ | | self: SELF ]
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CVarIntro's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,13 +19,12 @@ ATTR AllMeta [ | | self: SELF ]
 SEM CExpr
   | Lam         loc         .   cvi                 =   CVarIntro
                                                           { cviLev  = @lev
-                                                          , cviMeta = CMetaVal_Val -- @argMeta.self
+                                                          -- , cviMeta = () -- @argMeta.self
                                                           }
 
 SEM CBound
-  | Bind        loc         .   cmetaVal            =   cmetasVal @bindMeta.self
-                            .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev   , cviMeta = @cmetaVal }
-                            .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf, cviMeta = @cmetaVal }
+  | Bind        loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev    }
+                            .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf }
 
 SEM CAlt
   | Alt         loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lev }

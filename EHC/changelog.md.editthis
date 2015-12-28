@@ -1,3 +1,4 @@
+- [whole prog analysis] cleanup: removal of HPT analysis, Silly, Cil, last version still having this code tagged with 'lastversionwith-wholeproggrin'
 - [core] pretty printing/dump of Core AST (for debugging purposes), accessible via --coreopt=dump-ast
 - [uhc-util] move of LexScope encoding via RLList to separate module in uhc-util
 - [corerun] additional API calls

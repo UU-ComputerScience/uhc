@@ -31,8 +31,8 @@ WRAPPER CExpr CBind CBound
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(CSubst)
-type CSubstInfo = CSubstInfo' CExpr CMetaVal CBind CBound CTy
-type CSubst     = CSubst'     CExpr CMetaVal CBind CBound CTy
+type CSubstInfo = CSubstInfo' CExpr () CBind CBound CTy
+type CSubst     = CSubst'     CExpr () CBind CBound CTy
 %%]
 
 On CExpr
@@ -101,7 +101,7 @@ instance CSubstitutable CSubst where
 %%]
 
 %%[(8 codegen) hs
-instance CSubstitutable CExpr CMetaVal CBind CBound CTy CExpr where
+instance CSubstitutable CExpr () CBind CBound CTy CExpr where
   cSubstApp cs ce | Map.null cs
     =  ce
   cSubstApp cs ce

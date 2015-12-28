@@ -204,14 +204,6 @@ type LamArgMp = Map.Map HsName CVarIntroL
 
 %%[(8 codegen)
 ATTR AllBind CExpr [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
-ATTR AllMetaVal [ bindLamArgMp: LamArgMp | | ]
-
-SEM CBound
-  | Meta  		cmetas  	.	( bindLamArgMp
-%%[[9
-                                , envFinal
-%%]]
-                                ) 			=  	panicJust "LamGlobalAsArg.CBound.Meta.aspBindLamArgMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindLamArgMp
 %%]
 
 %%[(8 codegen)
@@ -228,14 +220,6 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Finding instance annotations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 codegen)
-ATTR CMetaVal CMetas [ | | isInstance: {Bool} ]
-
-SEM CMetaVal
-  | DictInstance    lhs.isInstance = True
-  | *-DictInstance  lhs.isInstance = False
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
@@ -260,11 +244,7 @@ SEM CBound
 %%[[8
   | Bind        lhs         .   cTrf        =   acoreBoundVal1Cat CBindCateg_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
-  | Bind        lhs         .   cTrf        =   --trace ("use of global: " ++ show @lhs.nm ++ " uses " ++ show @bindLamArgMp ++ "\n"
-                                                --      ++ (if @bindMeta.isInstance then ("instance " ++ show @lhs.nm ++ " finds " ++ show @expr.bindLamArgMp ++ "\n") else "")
-                                                --      ) $
-                                                (acoreBoundVal1Metas @lhs.nm @bindMeta.cTrf $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf)
-                bindMeta    . bindLamArgMp  =  @expr.bindLamArgMp
+  | Bind        lhs         .   cTrf        =   (acoreBoundVal1Metas @lhs.nm ((),()) $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf)
 %%]]
 %%]
 
@@ -327,10 +307,8 @@ SEM CPatFld
          offset.isDictClass = False
 
 SEM CBound
-  | Bind  expr.mbCtxCount = if @bindMeta.isDictInstance
-                            then Just 0
-                            else Nothing
-          expr.isDictClass = @bindMeta.isDictClass
+  | Bind  expr.mbCtxCount = Nothing
+          expr.isDictClass = False
   | Val   expr.mbCtxCount = Nothing						-- TBD
           expr.isDictClass = False						-- TBD
 
@@ -342,49 +320,15 @@ SEM CExpr
           body.isDictClass = False
 
 
-ATTR CMetaVal CMetas [ | | isDictClass:Bool isDictInstance:Bool ]
-
-SEM CMetaVal
-  | DictClass      lhs.isDictClass    = True
-  | *-DictClass    lhs.isDictClass    = False
-  | DictInstance   lhs.isDictInstance = True
-  | *-DictInstance lhs.isDictInstance = False
-
-
-
-ATTR CMetas CMetaVal [ | | mbTrack : {Maybe Track} ]
-ATTR CMetas CMetaVal [ envFinal:Env  | | ]
-
-
-SEM CMetaVal
-  | Track          lhs.mbTrack  =  Just @track
-  | *-Track        lhs.mbTrack  =  Nothing
-
-SEM CBound
-  | Bind  bindMeta.envFinal = @expr.envUp
-
-
 ATTR AllBind CExpr [ | | envUp USE {`Map.union`} {Map.empty} : Env ]
 
 SEM CBound
-  | Bind   lhs.envUp  =  maybe (Map.empty)
-                               (\t -> Map.singleton @lhs.nm t)
-                               @bindMeta.mbTrack
+  | Bind   lhs.envUp  =  Map.empty
 
 SEM CExpr
   | Let    lhs.envUp = Map.union @binds.envUp @body.envUp
-  | Lam    lhs.envUp = maybe (if @lhs.isDictClass
-                              then Map.insert @argNm TrackSelf @body.envUp
-                              else @body.envUp
-                             )
-                             (\n -> Map.insert @argNm (TrackCtx n) @body.envUp)
-                             @lhs.mbCtxCount
+  | Lam    lhs.envUp = @body.envUp
   | *-Let
       Lam  lhs.envUp = Map.empty
-
-
- SEM CMetaVal
-   |  DictClass      lhs.cTrf = CMetaVal_DictClass    (map (metaExtendTrack @lhs.bindLamArgMp @lhs.envFinal) @tracks)
-   |  DictInstance   lhs.cTrf = CMetaVal_DictInstance (map (metaExtendTrack @lhs.bindLamArgMp @lhs.envFinal) @tracks)
 
 %%]

@@ -739,8 +739,6 @@ ENABLE_CORE_ASINPOUTP
 ENABLE_TYCORE
 ENABLE_CLR
 ENABLE_LLVM
-ENABLE_WHOLEPROGANAL
-ENABLE_WHOLEPROGC
 ENABLE_CMM
 ENABLE_JS
 JAR_CMD
@@ -816,8 +814,6 @@ ac_user_opts='
 enable_option_checking
 enable_java
 enable_cmm
-enable_wholeprogC
-enable_wholeprogAnal
 enable_llvm
 enable_clr
 enable_tycore
@@ -1476,8 +1472,6 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
   --enable-cmm            include cmm code generation
-  --enable-wholeprogC     include C whole program code generation
-  --enable-wholeprogAnal  include C whole program code analysis
   --enable-llvm           include llvm code generation
   --enable-clr            include clr code generation
   --enable-tycore         include TyCore typed intermediate language
@@ -3112,28 +3106,6 @@ else
 fi
 
 ENABLE_CMM=$enableCmm
-
-
-### enable options: wholeprogC, the C whole program backend, default is no, temporary until development restarts
-# Check whether --enable-wholeprogC was given.
-if test "${enable_wholeprogC+set}" = set; then :
-  enableval=$enable_wholeprogC; enableWholeprogC=yes
-else
-  enableWholeprogC=no
-fi
-
-ENABLE_WHOLEPROGC=$enableWholeprogC
-
-
-### enable options: wholeprogAnal, whole program analysis, default is no, temporary until development restarts
-# Check whether --enable-wholeprogAnal was given.
-if test "${enable_wholeprogAnal+set}" = set; then :
-  enableval=$enable_wholeprogAnal; enableWholeprogAnal=yes
-else
-  enableWholeprogAnal=no
-fi
-
-ENABLE_WHOLEPROGANAL=$enableWholeprogAnal
 
 
 ### enable options: llvm, default is no

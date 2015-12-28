@@ -415,7 +415,6 @@ SEM ExprAnn
 SEM ValBind
   | Val         lhs         .   pp          =   ppDef (   @bind.pp -- ppNm @nm
                                                       >|< (if @mlev == 0 then empty else " @" >|< @mlev)
-                                                      >|< (maybe empty (\m -> " :" >#< m) @bindMeta.ppMb)
                                                       )
                                                       ({- "::" >#< @l1.pp >-< -} "=" >#< @l0.pp)
 

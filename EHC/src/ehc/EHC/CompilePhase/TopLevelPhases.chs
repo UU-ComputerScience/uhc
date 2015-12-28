@@ -1426,9 +1426,6 @@ cpProcessGrin modNm
        ; cpSeq (   (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
                 ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-099-final" modNm]  else [])
-%%[[(8 wholeprogAnal)
-                ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTransformGrinHPTWholeProg modNm] else [])
-%%]]
 %%[[(8 cmm)
                 ++ (if ehcOptIsViaCmm opts then [cpTranslateGrin2Cmm modNm] else [])
 %%]]
