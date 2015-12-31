@@ -18,8 +18,6 @@ EHC_ASPECTS								:= $(strip $(sort $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_LLVM),llvm,) \
 											 $(if $(ENABLE_CMM),cmm,) \
 											 $(if $(ENABLE_JS),javascript,) \
-											 $(if $(ENABLE_CLR),clr,) \
-											 $(if $(ENABLE_TYCORE),tycore,) \
 											 $(if $(ENABLE_CORESYSF),coresysf,) \
 											 $(if $(ENABLE_CORE_ASINPOUTP),corebackend corerun,) \
 											 $(if $(ENABLE_CORERUN_ASINPOUTP),corerunin,) \

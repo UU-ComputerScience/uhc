@@ -22,9 +22,6 @@
 %%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen tycore hmtyinfer) hs import(qualified {%{EH}TyCore.Full0} as C)
-%%]
-
 %%[(6_4 hmtyinfer || hmtyast) hs export(instCoExist)
 %%]
 

@@ -70,12 +70,12 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix AnaDomain/,Utils) \
 													$(addprefix VarMp/,Utils) \
 													$(addprefix Opts/,Base CommandLine) \
-													$(addprefix Pred/,ToCHR Evidence EvidenceToCore EvidenceToTyCore Heuristics RedGraph) \
+													$(addprefix Pred/,ToCHR Evidence EvidenceToCore Heuristics RedGraph) \
 													$(addprefix Base/,UnderDev Trace Range TermLike UID Parser Parser2 Pragma Strictness Target Fld Common HsName Debug CfgPP LaTeX HtmlCommon FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Base/HsName/,Builtin) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Ty EH HS Core CoreRun Foreign GrinCode) \
-													$(addsuffix /Trf,Core TyCore JavaScript Cmm) \
+													$(addsuffix /Trf,Core JavaScript Cmm) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Base Utils Instantiate Quantify Full ClGam AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam ClassDefaultGam) \
 													$(addprefix CodeGen/,CEnv BuiltinPrims BasicAnnot Bits BuiltinSizeInfo GenC Tag CVar ValAccess Const RefGenerator GenJavaLike ModuleImportExportImpl ImportUsedModules TrfUtils) \
@@ -86,8 +86,6 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix CoreRun/Run/Val/,RunImplStk RunExplStk Prim) \
 													$(addprefix Core/,Utils Merge FFI Coercion) \
 													$(addprefix Core/SysF/,AsTy) \
-													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
-													$(addprefix TyCore/Trf/,Common) \
 													$(addprefix EHC/,Main Common FileSuffMp Environment CompileUnit CompileGroup CompileRun InitialSetup ASTHandler ASTPipeline ASTTypes BuildFunction \
 														$(addprefix Main/,Utils Compile) \
 														$(addprefix BuildFunction/,Run) \

@@ -166,14 +166,6 @@ AC_SUBST(ENABLE_CMM,$enableCmm)
 AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])
 AC_SUBST(ENABLE_LLVM,$enableLlvm)
 
-### enable options: clr (Tom Lokhorsts CLR backend), default is no
-AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
-AC_SUBST(ENABLE_CLR,$enableClr)
-
-### enable options: tycore (Typed Core), default is no
-AC_ARG_ENABLE(tycore, AS_HELP_STRING([--enable-tycore],[include TyCore typed intermediate language]), [enableTyCore=yes], [enableTyCore=no])
-AC_SUBST(ENABLE_TYCORE,$enableTyCore)
-
 ### enable options: core-asinpoutp (Untyped Core), default is no
 AC_ARG_ENABLE(core-asinpoutp, AS_HELP_STRING([--enable-core-asinpoutp],[allow use of Core untyped intermediate language as a backend and source language]), [enableCoreAsInpOutp=yes], [enableCoreAsInpOutp=no])
 AC_SUBST(ENABLE_CORE_ASINPOUTP,$enableCoreAsInpOutp)

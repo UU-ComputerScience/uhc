@@ -23,8 +23,6 @@
 %%]
 %%[(50 codegen) hs import({%{EH}Core}, {%{EH}LamInfo})
 %%]
-%%[(50 codegen tycore) hs import(qualified {%{EH}TyCore} as C)
-%%]
 
 %%[(50 grin) hs import({%{EH}GrinCode})
 %%]

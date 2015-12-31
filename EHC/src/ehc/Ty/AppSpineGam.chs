@@ -10,8 +10,6 @@
 %%]
 %%[4 import({%{EH}Ty.FitsInCommon},{%{EH}Ty.FIEnv})
 %%]
-%%[(8 codegen tycore hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
-%%]
 %%[(9 codegen hmtyinfer) import({%{EH}AbstractCore},{%{EH}Core.Subst})
 %%]
 %%[(8 hmtyinfer) hs import(UHC.Util.Utils)
@@ -61,25 +59,15 @@ arrowAppSpineVertebraeInfoL env
                          -- c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
                          (c,s) = lrcoeForLamTyAppAsSubst opts u1 (foLRCoe ffo) (foLRCoe afo)
 %%]]
-%%[[(8 tycore)
-                         (tc,ts) = {- C.lrcoeForLamTyAppAsSubst -} fireqLRCoeForLamTyAppAsSubst fiReqs opts u1 (C.tyErr ("arrowAppSpineVertebraeInfoL: " ++ show u1)) (foLRTCoe ffo) (foLRTCoe afo)
-%%]]
                      in  afo { foUniq = u'
 %%[[(9 codegen)
                              , foLRCoe = c
                              , foCSubst = foCSubst afo `cSubstApp` s
 %%]]
-%%[[(8 tycore)
-                             , foLRTCoe = tc
-                             , foTCSubst = fireqCSubstAppSubst fiReqs (foTCSubst afo) ts
-%%]]
                              }
           )     )
 %%]]
     ]
-%%[[(8 tycore)
-  where fiReqs = feFIReqs env
-%%]]
 
 prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 prodAppSpineVertebraeInfoL

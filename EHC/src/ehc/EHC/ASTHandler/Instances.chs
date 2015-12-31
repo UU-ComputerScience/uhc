@@ -66,9 +66,6 @@
 -- Core output
 %%[(8 codegen coreout) import({%{EH}Core} as Core,{%{EH}Core.Pretty}, {%{EH}Core.PrettyTrace})
 %%]
--- TyCore output
-%%[(8 codegen tycore) import({%{EH}TyCore},{%{EH}TyCore.Pretty})
-%%]
 -- Grin input and output
 %%[(8 codegen grin) import({%{EH}GrinCode} as Grin,{%{EH}GrinCode.Pretty})
 %%]
@@ -116,9 +113,6 @@
 %%]
 -- CoreRun parser
 %%[(8 corerun) import(qualified {%{EH}CoreRun.Parser} as CoreRunPrs)
-%%]
--- TyCore parser
-%%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 -- Grin parser
 %%[(8 codegen grinparser) import(qualified {%{EH}GrinCode.Parser} as GrinParser)

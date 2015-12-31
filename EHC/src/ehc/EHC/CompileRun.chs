@@ -53,9 +53,6 @@ An EHC compile run maintains info for one compilation invocation
 -- Language syntax: CoreRun
 %%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
 %%]
--- Language syntax: TyCore
-%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
-%%]
 -- Language semantics: HS, EH
 %%[8 import(qualified {%{EH}EH.Main} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]

@@ -28,8 +28,6 @@
 %%]
 %%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
 %%]
-%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
-%%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)

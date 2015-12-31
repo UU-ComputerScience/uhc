@@ -76,10 +76,9 @@ class CfgPP' x where
 data CfgPP = forall x . CfgPP' x => CfgPP x
 %%]
 
-%%[8 export(CfgPP_Plain(..),CfgPP_Core(..),CfgPP_Grin(..),CfgPP_TyCore(..))
+%%[8 export(CfgPP_Plain(..),CfgPP_Core(..),CfgPP_Grin(..))
 data CfgPP_Plain   = CfgPP_Plain
 data CfgPP_Core    = CfgPP_Core
-data CfgPP_TyCore  = CfgPP_TyCore
 data CfgPP_Grin    = CfgPP_Grin
 %%]
 
@@ -100,13 +99,6 @@ instance CfgPP' CfgPP_Core where
   cfgppUID _       u 				= ppUIDParseable u
   cfgppVarHsName x _ (Just u) _ _ 	= cfgppUID x u
   cfgppVarHsName x mn mu mi mp      = cfgppVarHsNameFallback x mn mu mi mp
-%%]
-
-%%[8
-ppNmTyCore = ppHsnEscaped (Right $ Set.fromList ['0'..'9']) '$' (hsnEscapeeChars '$' tycoreScanOpts)
-
-instance CfgPP' CfgPP_TyCore where
-  cfgppHsName    _ = ppNmTyCore
 %%]
 
 %%[8

@@ -91,20 +91,6 @@ SEM Expr
                                                         $ evidKeyBindMpToCSubst @chrSolveEvidBindMp
 %%]
 
-TyCore version/clone:
-
-%%[(9 codegen tycore hmtyinfer)
-SEM Decl
-  | Instance    decls       .   tcSubst             =   cSubstApp @lhs.tcSubst
-                                                        $ E2C.evidKeyBindMpToSubst @chrEvidBindMpTC
-
-SEM Expr
-  | Let         decls       .   tcSubst             =   cSubstApp @lhs.tcSubst
-                                                        $ cSubstApp @prvArgTCSubst
-                                                        $ cSubstApp (acoreCSubstFromVarMpImpls @tmpoTyVarMp)
-                                                        $ E2C.evidKeyBindMpToSubst @chrSolveEvidBindMpTC
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bindings for preds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,13 +119,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   poiBindL            =   @chrAssumeBindL ++ @chrScopeBindL
-%%[[(9 tycore)
-                loc         .   poiBindLTC          =   @chrAssumeBindLTC ++ @chrScopeBindLTC   -- for TyCore clone
-%%]]
   | Let         loc         .   poiBindL            =   @chrAssumeBindL
-%%[[(9 tycore)
-                loc         .   poiBindLTC          =   @chrAssumeBindLTC                       -- for TyCore clone
-%%]]
 %%]
 
 

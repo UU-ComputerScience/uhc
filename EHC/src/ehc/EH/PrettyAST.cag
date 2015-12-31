@@ -728,62 +728,9 @@ SEM Expr
                                         ]
 %%]
 
-%%[(8 codegen tycore)
-SEM Decl
-  | Val         loc     .  info_8   :=  [ mkInfo1 "ctyExprKnTy" (C.ppTy @ctyExprKnTy)
-                                        , mkInfo1 "ctyExprTy" (C.ppTy @ctyExprTy)
-                                        , mkInfo1 "moutErrL moutExpr" (ppErrL $ C.moutErrL @moutExpr)
-                                        , mkInfo1 "tcSubstLamSpine" (ppAssocLV . Map.toList $ @tcSubstLamSpine)
-                                        ]
-
-SEM Expr
-  | Var         loc     .  info_8   :=  [ mkInfo1 "lhs.lamInstToL" (ppCommas @lhs.lamInstToL)
-                                        , mkInfo1 "ctyForMatch" (C.ppTy @ctyForMatch)
-                                        , mkInfo1 "cty" (C.ppTy @cty)
-                                        , mkInfo1 "ctyTyAppArgL" (ppCommas $ map C.ppTy @ctyTyAppArgL)
-                                        , mkInfo1 "ctyTyAppRes" (C.ppTy @ctyTyAppRes)
-                                        , mkInfo1 "moutErrL moutFun" (ppErrL $ C.moutErrL @moutFun)
-                                        , mkInfo1 "tcSubstAppSpine" (ppAssocLV . Map.toList $ @tcSubstAppSpine)
-                                        , mkInfo1 "tcSubstLamSpine" (ppAssocLV . Map.toList $ @tcSubstLamSpine)
-                                        ]
-  | App         loc     .  info_8   :=  [ mkInfo1 "ctyAppArg" (C.ppTy @ctyAppArg)
-                                        -- , mkInfo1 "ctyAppRes" (C.ppTy @ctyAppRes)
-                                        , mkInfo1 "func.ctyBotUp" (C.ppTy @func.ctyBotUp)
-                                        , mkInfo1 "ctyTyAppArgL" (ppCommas $ map C.ppTy @ctyTyAppArgL)
-                                        , mkInfo1 "ctyTyAppRes" (C.ppTy @ctyTyAppRes)
-                                        ]
-  | Lam         loc     .  info_8   :=  [ mkInfo1 "ctyTyLamArgL" (ppCommas $ map C.ppTy @ctyTyLamArgL)
-                                        , mkInfo1 "ctyLamArg" (C.ppTy @ctyLamArg)
-                                        , mkInfo1 "ctyLamArgHere" (C.ppTy @ctyLamArgHere)
-                                        , mkInfo1 "tcSubstLamSpine" (ppAssocLV . Map.toList $ @tcSubstLamSpine)
-                                        ]
-  | AppTop      loc     .  info_8   :=  [ mkInfo1 "expr.ctyBotUp" (C.ppTy @expr.ctyBotUp)
-                                        ]
-  | Rec         loc     .  info_8   :=  [ mkInfo1 "ctyTopDown" (C.ppTy @lhs.ctyTopDown)
-                                        ]
-
-SEM DataConstr
-  | Constr      loc     .  info_8   :=  [ mkInfo1 "foRInstToL" (ppCommas $ foRInstToL @fo_fin)
-                                        -- , mkInfo1 "ctyDataCon" (C.ppTy @ctyDataCon)
-                                        -- , mkInfo1 "moutErrL moutDataCon" (ppErrL $ C.moutErrL @moutDataCon)
-                                        -- , mkInfo1 "moutCSubst moutDataCon" (ppAssocLV . Map.toList $ C.moutCSubst @moutDataCon)
-                                        ]
-%%]
-
 %%[(8 codegen)
 SEM AGItf
   | AGItf       loc     .  info_8   :=  [ mkInfo1 "expr.cexpr" (pp @expr.cexpr)
-                                        ]
-%%]
-
-%%[(8 codegen tycore)
-SEM PatExpr
-  | AppTop Rec  loc     .  info_8   :=  [ mkInfo1 "ctyTopDown" (C.ppTy @lhs.ctyTopDown)
-                                        , mkInfo1 "ctyPat" (C.ppTy @ctyPat)
-                                        , mkInfo1 "tcSubstPatSpine" (ppAssocLV . Map.toList $ @tcSubstPatSpine)
-                                        , mkInfo1 "moutErrL moutPat" (ppErrL $ C.moutErrL @moutPat)
-                                        ]
-  | Var         loc     .  info_8   :=  [ mkInfo1 "ctyTopDown" (C.ppTy @lhs.ctyTopDown)
                                         ]
 %%]
 
@@ -860,10 +807,6 @@ SEM Expr
 %%[[(9 codegen)
                                         , mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (lrcoeLeftL  $ foLRCoe @fo_))
                                         , mkInfo1 "foRCoeL @fo_" (ppBracketsCommas (lrcoeRightL $ foLRCoe @fo_))
-%%]]
-%%[[(9 codegen tycore)
-                                        , mkInfo1 "foLTCoeL @fo_" (ppBracketsCommas (C.lrcoeLeftL  $ foLRTCoe @fo_))
-                                        , mkInfo1 "foRTCoeL @fo_" (ppBracketsCommas (C.lrcoeRightL $ foLRTCoe @fo_))
 %%]]
                                         -- , mkInfo1 "@fe" (pp @fe)
                                         ]

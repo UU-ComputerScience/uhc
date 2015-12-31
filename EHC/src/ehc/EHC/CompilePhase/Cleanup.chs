@@ -66,9 +66,6 @@ cpCleanupCore modNmL
   = cpSeq [cl m | m <- modNmL]
   where cl m = cpUpdCU m
                   (\e -> e { _ecuMbCore            = Nothing
-%%[[(99 tycore)
-                           , ecuMbTyCore          = Nothing
-%%]]
 %%[[(99 core grin)
                            , _ecuMbCoreSem         = Nothing
 %%]]

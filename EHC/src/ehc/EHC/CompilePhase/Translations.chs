@@ -63,12 +63,6 @@ Translation to another AST
 %%[(8 codegen) import({%{EH}Core.Trf.ElimNonCodegenConstructs})
 %%]
 
--- TyCore semantics
-%%[(8 codegen tycore grin) import(qualified {%{EH}TyCore.ToCore} as TyCore2Core)
-%%]
-%%[(8 codegen tycore grin) import(qualified {%{EH}TyCore.PrettyAST} as TyCoreSem)
-%%]
-
 -- Grin semantics
 %%[(8 codegen grin) import({%{EH}GrinCode.ToGrinByteCode}(grinMod2ByteCodeMod))
 %%]
@@ -203,22 +197,6 @@ cpTranslateEH2Core modNm
          }
 %%]
 
-%%[(8 codegen tycore) export(cpTranslateEH2TyCore)
-cpTranslateEH2TyCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpTranslateEH2TyCore modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbEHSem= _ecuMbEHSem ecu
-                 ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
-                 tycore = EHSem.tcmodule_Syn_AGItf ehSem
-         ;  when (isJust mbEHSem)
-                 (do { cpUpdCU modNm (ecuStoreTyCore tycore)
-                     ; when (ehcOptShowTyCore opts)
-                            (liftIO $ putPPLn (TyCoreSem.ppAST opts tycore))
-                     })
-         }
-%%]
-
 %%[(8 core grin) export(cpTranslateCore2Grin)
 cpTranslateCore2Grin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTranslateCore2Grin modNm
@@ -229,19 +207,6 @@ cpTranslateCore2Grin modNm
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
          ;  when (isJust mbCoreSem && ehcOptIsViaGrin opts)
                  (cpUpdCU modNm $! ecuStoreGrin $! grin)
-         }
-%%]
-
-%%[(8 codegen tycore grin) export(cpTranslateTyCore2Core)
-cpTranslateTyCore2Core :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpTranslateTyCore2Core modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbTyCore  = ecuMbTyCore ecu
-                 tycore    = panicJust "cpTranslateTyCore2Core" mbTyCore
-                 core      = TyCore2Core.tycore2core opts tycore
-         ;  when (isJust mbTyCore)
-                 (cpUpdCU modNm $! ecuStoreCore $! core)
          }
 %%]
 

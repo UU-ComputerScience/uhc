@@ -48,9 +48,6 @@ Folding over AST to compute semantics
 %%]
 %%[(50 codegen corerunin) import(qualified {%{EH}CoreRun.Check} as CoreRun2ChkSem)
 %%]
--- TyCore syntax and semantics
-%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
-%%]
 
 -- HI syntax and semantics
 %%[50 import(qualified {%{EH}HI} as HI)

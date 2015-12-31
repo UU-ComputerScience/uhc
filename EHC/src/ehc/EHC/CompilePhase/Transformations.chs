@@ -44,10 +44,6 @@ Interface/wrapper to various transformations for Core, TyCore, etc.
 %%[(8 codegen) import({%{EH}Core.Trf})
 %%]
 
--- TyCore transformations
-%%[(8 codegen tycore) import({%{EH}TyCore.Trf})
-%%]
-
 -- JavaScript transformations
 %%[(8 javascript) import({%{EH}JavaScript.Trf})
 %%]
@@ -150,56 +146,6 @@ cpTransformCore optimScope modNm
        ; cpSeq $ zipWith (\nm err -> cpSetLimitErrsWhen 5 ("Core errors: " ++ nm) err) nms errs
        }
 %%]
-
-
-%%[(8 codegen tycore) export(cpTransformTyCore)
-cpTransformTyCore :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
-cpTransformTyCore modNm
-  = do { cr <- get
-       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-       ; cpMsg' modNm VerboseALot "Transforming TyCore ..." Nothing fp
-       
-         -- transform
-       ; let  mbTyCore    = ecuMbTyCore ecu
-              trftycoreIn = emptyTrfTyCore
-                              { trftycoreTyCore        = panicJust "cpTransformTyCore" mbTyCore
-                              , trftycoreUniq          = crsi ^. crsiNextUID
-%%[[50
-                              , trftycoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
-%%]]
-%%[[99
-                              , trftycoreInhLamMp      = crsi ^. crsiCEnv ^. cenvLamMp
-%%]]
-                              }
-              trftycoreOut = trfTyCore opts modNm trftycoreIn
-       
-         -- put back result: TyCore
-       ; cpUpdCU modNm $! ecuStoreTyCore (trftycoreTyCore trftycoreOut)
-
-         -- dump intermediate stages, if any
-       ; cpSeq [ cpOutputTyCoreModule False ("-" ++ show n ++ "-" ++ nm) "tycore" modNm c
-               | (n,(nm,c)) <- zip [1..] (trftycoreTyCoreStages trftycoreOut)
-               ]
-
-         -- put back result: unique counter
-       ; cpSetUID (trftycoreUniq trftycoreOut)
-
-%%[[99
-         -- put back result: call info map (lambda arity, ...)
-       ; let hii   = ecu ^. ecuHIInfo
-             lamMp = HI.hiiLamMp hii
-       ; cpUpdCU modNm
-           ( ecuStoreHIInfo
-               (hii { HI.hiiLamMp = trftycoreGathLamMp trftycoreOut `Map.union` lamMp
-                    })
-           )
-       
-         -- put back result: additional hidden exports, it should be in a cpFlowXX variant
-       ; cpUpdHiddenExports modNm $ zip (Set.toList $ trftycoreExtraExports trftycoreOut) (repeat IdOcc_Val)
-%%]]
-       }
-%%]
-
 
 %%[(8 javascript) export(cpTransformJavaScript)
 cpTransformJavaScript :: EHCCompileRunner m => OptimizationScope -> HsName -> EHCompilePhaseT m ()

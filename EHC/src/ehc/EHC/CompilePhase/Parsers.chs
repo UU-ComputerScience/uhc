@@ -57,9 +57,6 @@ CompilePhase building blocks: parsers
 -- CoreRun parser
 %%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
 %%]
--- TyCore parser
-%%[(50 codegen tycore) import(qualified {%{EH}TyCore} as C)
-%%]
 -- Grin parser
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin)
 %%]

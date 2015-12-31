@@ -9,7 +9,6 @@ AnaDomain/Trf/Instantiate.cag
 AnaDomain/Trf/Subst.cag
 Ty/Ftv.cag
 Ty/UsedNames.cag
-Ty/ToTyCore.cag
 Ty/TreeTrieKey.cag
 Ty/Pretty.cag
 Ty/PrettyHTML.cag
@@ -21,11 +20,6 @@ Ty/Trf/MergePreds.cag
 Ty/Trf/Subst.cag
 Ty/Trf/FreshVar.cag
 Ty/Trf/ElimEqual.cag
-TyCore/Pretty.cag
-TyCore/PrettyAST.cag
-TyCore/ToCore.cag
-TyCore/SubstApply.cag
-TyCore/Check.cag
 JVMClass/ToBinary.cag
 JavaScript/Pretty.cag
 Error/Pretty.cag
@@ -81,15 +75,6 @@ GrinCode/Trf/UnusedNameElim.cag
 GrinCode/Trf/BasicAnnotAliasElim.cag
 GrinByteCode/ToC.cag
 LLVM/Pretty.cag
-TyCore/Trf/EliminateExplicitLaziness.cag
-TyCore/Trf/DefinitionSiteArityRaise1of2.cag
-TyCore/Trf/DefinitionSiteArityRaise2of2.cag
-TyCore/Trf/IntroduceExplicitLaziness.cag
-TyCore/Trf/IntroduceWeirdConstructs.cag
-TyCore/Trf/RemoveLazyFunctions1of2.cag
-TyCore/Trf/RemoveLazyFunctions2of2.cag
-TyCore/Trf/OptimizeStrictness1of2.cag
-TyCore/Trf/OptimizeStrictness2of2.cag
 Cmm/ToC
 Cmm/Pretty
 Cmm/Check
