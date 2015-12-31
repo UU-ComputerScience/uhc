@@ -61,10 +61,10 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   acoreTagTyTupBound :: CTag -> ty -> [bound] -> expr
   
   -- | a value binding, for a name to value + type + metas + meta level
-  acoreBind1CatLevMetasTy :: bindcateg -> HsName -> MetaLev -> (metabind,metaval) -> ty -> expr -> bind
+  acoreBind1CatLevTy :: bindcateg -> HsName -> MetaLev -> ty -> expr -> bind
   
   -- | a value binding aspect, for a name + value, optionally type + metas + meta level
-  acoreBoundVal1CatLevMetasTy :: bindcateg -> HsName -> MetaLev -> (metabind,metaval) -> ty -> expr -> bound
+  acoreBoundVal1CatLevTy :: bindcateg -> HsName -> MetaLev -> ty -> expr -> bound
   
   -- | a type for value binding aspect, for a name + type, optionally meta level
   acoreBoundValTy1CatLev :: bindcateg -> HsName -> MetaLev -> ty -> bound
@@ -73,7 +73,7 @@ class AbstractCore  expr metaval bind bound boundmeta bindcateg metabind ty pat 
   acoreBoundmeta :: ACoreBindAspectKeyS -> MetaLev -> CLbl -> boundmeta
   
   -- | a expr binding aspect, for a name, meta level and label
-  acoreBound1MetaVal :: boundmeta -> expr -> bound
+  acoreBound1Boundmeta :: boundmeta -> expr -> bound
   
   -- | a binding, for/from a single aspect (for now, later multiple)
   acoreBind1Asp :: HsName -> [bound] -> bind
@@ -328,7 +328,7 @@ instance {-# OVERLAPPABLE  #-} AbstractCore e m b bound boundmeta bcat mbind t p
   appVar        = acoreVar . mkHNm
   
 %%[[(8 coresysf)
-  app1MetaArr (mn,bm) a r = acorem1Arr (acoreBind1Asp1 (maybe hsnWild id mn) $ acoreBound1MetaVal bm a) r
+  app1MetaArr (mn,bm) a r = acorem1Arr (acoreBind1Asp1 (maybe hsnWild id mn) $ acoreBound1Boundmeta bm a) r
   appMb1ArrMk x = do (b,r) <- acoreExprMbArr x
                      let (n,(bo:_)) = acoreUnBind b
                      (bm,a) <- acoreBoundMbVal bo
@@ -352,7 +352,7 @@ instance {-# OVERLAPPABLE  #-} (AppLike e ACoreAppLikeMetaBound, HSNM bndnm, Abs
 
 %%[(8 codegen) hs
 instance {-# OVERLAPPABLE  #-} AbstractCore e m b bound boundmeta bcat mbind t p pr pf a => RecLike e boundmeta {- () () -} where
-  recRow _ fs   = acoreTagTyTupBound CTagRec (acoreTyErr "AbstractCore.RecLike.recRow") [ acoreBound1MetaVal (acoreBoundmeta acbaspkeyDefault 0 (CLbl_Nm n)) e | (n,e) <- fs ]
+  recRow _ fs   = acoreTagTyTupBound CTagRec (acoreTyErr "AbstractCore.RecLike.recRow") [ acoreBound1Boundmeta (acoreBoundmeta acbaspkeyDefault 0 (CLbl_Nm n)) e | (n,e) <- fs ]
   
   recMbRecRow  _= Nothing -- tyMbRecRowWithLkup (const Nothing)
   recUnRowExts e= (e,[])
@@ -648,23 +648,7 @@ acoreTag tg = acoreTagTup tg []
 %%% Derived functionality: binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreBind1CatLevMetaTyWith,acoreBind1CatLevMetaTy,acoreBind1CatLevTy,acoreBind1CatMetaTy,acoreBind1CatTy,acoreBind1Cat,acoreBind1LevTy,acoreBind1Ty,acoreBind1)
-acoreBind1CatLevMetaTyWith :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => (t->t) -> (e->e) -> bcat -> HsName -> MetaLev -> m -> t -> e -> b
-acoreBind1CatLevMetaTyWith mkT mkE cat n l m t e = acoreBind1CatLevMetasTy cat n l (acoreMetabindDflt,m) (mkT t) (mkE e)
-{-# INLINE acoreBind1CatLevMetaTyWith #-}
-
-acoreBind1CatLevMetaTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> m -> t -> e -> b
-acoreBind1CatLevMetaTy = acoreBind1CatLevMetaTyWith id id
-{-# INLINE acoreBind1CatLevMetaTy #-}
-
-acoreBind1CatLevTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> t -> e -> b
-acoreBind1CatLevTy cat n l t e = acoreBind1CatLevMetaTy cat n l acoreMetavalDflt t e
-{-# INLINE acoreBind1CatLevTy #-}
-
-acoreBind1CatMetaTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> m -> t -> e -> b
-acoreBind1CatMetaTy cat n m t e = acoreBind1CatLevMetaTy cat n metaLevVal m t e
-{-# INLINE acoreBind1CatMetaTy #-}
-
+%%[(8 codegen) export(acoreBind1CatTy,acoreBind1Cat,acoreBind1LevTy,acoreBind1Ty,acoreBind1)
 acoreBind1CatTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> t -> e -> b
 acoreBind1CatTy cat n t e = acoreBind1CatLevTy cat n metaLevVal t e
 {-# INLINE acoreBind1CatTy #-}
@@ -688,11 +672,11 @@ acoreBind1 n e = acoreBind1Cat (acoreBindcategDflt e) n e
 
 %%[(8 codegen) export(acoreBind1MetasTy,acoreBind1CatMeta,acoreBind1MetaTy)
 acoreBind1MetasTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> (mbind,m) -> t -> e -> b
-acoreBind1MetasTy n m t e = acoreBind1CatLevMetasTy (acoreBindcategDflt e) n metaLevVal m t e
+acoreBind1MetasTy n _ t e = acoreBind1CatLevTy (acoreBindcategDflt e) n metaLevVal t e
 {-# INLINE acoreBind1MetasTy #-}
 
 acoreBind1CatMeta :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> m -> e -> b
-acoreBind1CatMeta cat n m e = acoreBind1CatLevMetaTy cat n metaLevVal m (acoreTyErr "acoreBind1CatMeta") e
+acoreBind1CatMeta cat n _ e = acoreBind1CatLevTy cat n metaLevVal (acoreTyErr "acoreBind1CatMeta") e
 {-# INLINE acoreBind1CatMeta #-}
 
 acoreBind1MetaTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> m -> t -> e -> b
@@ -729,14 +713,10 @@ acoreBind1Nm1 n = acoreBind1Asp n []
 %%% Derived functionality: bound (previously: aka binding aspect)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreBoundVal1CatLevMetaTy,acoreBoundVal1CatLevTy,acoreBoundVal1CatMetaTy,acoreBoundVal1CatTy,acoreBoundVal1Cat)
+%%[(8 codegen) export(acoreBoundVal1CatLevMetaTy,acoreBoundVal1CatMetaTy,acoreBoundVal1CatTy,acoreBoundVal1Cat)
 acoreBoundVal1CatLevMetaTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> m -> t -> e -> bound
-acoreBoundVal1CatLevMetaTy bcat n mlev m t e = acoreBoundVal1CatLevMetasTy bcat n mlev (acoreMetabindDflt,m) t e
+acoreBoundVal1CatLevMetaTy bcat n mlev m t e = acoreBoundVal1CatLevTy bcat n mlev t e
 {-# INLINE acoreBoundVal1CatLevMetaTy #-}
-
-acoreBoundVal1CatLevTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> t -> e -> bound
-acoreBoundVal1CatLevTy cat n l t e = acoreBoundVal1CatLevMetaTy cat n l acoreMetavalDflt t e
-{-# INLINE acoreBoundVal1CatLevTy #-}
 
 acoreBoundVal1CatMetaTy :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> m -> t -> e -> bound
 acoreBoundVal1CatMetaTy cat n m t e = acoreBoundVal1CatLevMetaTy cat n metaLevVal m t e
@@ -753,7 +733,7 @@ acoreBoundVal1Cat cat n e = acoreBoundVal1CatTy cat n (acoreTyErr "acoreBoundVal
 
 %%[(8 codegen) export(acoreBoundVal1Metas,acoreBoundVal1Meta)
 acoreBoundVal1Metas :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> (mbind,m) -> e -> bound
-acoreBoundVal1Metas n m e = acoreBoundVal1CatLevMetasTy (acoreBindcategDflt e) n metaLevVal m (acoreTyErr "acoreBoundVal1Metas") e
+acoreBoundVal1Metas n m e = acoreBoundVal1CatLevTy (acoreBindcategDflt e) n metaLevVal (acoreTyErr "acoreBoundVal1Metas") e
 {-# INLINE acoreBoundVal1Metas #-}
 
 acoreBoundVal1Meta :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => HsName -> m -> e -> bound
@@ -764,18 +744,12 @@ acoreBoundVal1Meta n m e = acoreBoundVal1Metas n (acoreMetabindDflt,m) e
 
 %%[(8 codegen) export(acoreBound1AspkeyVal,acoreBound1Val)
 acoreBound1AspkeyVal :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => ACoreBindAspectKeyS -> e -> bound
-acoreBound1AspkeyVal a e = acoreBound1MetaVal (acoreBoundmeta a 0 CLbl_None) e
+acoreBound1AspkeyVal a e = acoreBound1Boundmeta (acoreBoundmeta a 0 CLbl_None) e
 {-# INLINE acoreBound1AspkeyVal #-}
 
 acoreBound1Val :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => e -> bound
 acoreBound1Val e = acoreBound1AspkeyVal acbaspkeyDefault e
 {-# INLINE acoreBound1Val #-}
-%%]
-
-%%[(8888 codegen) export(acoreBoundVal1CatLevMetaTy,acoreBoundVal1CatLevTy,acoreBoundVal1CatMetaTy,acoreBoundVal1CatTy,acoreBoundVal1Cat)
-acoreBoundValTy1 :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> t -> bound
-acoreBoundValTy1 bcat n mlev m t = acoreBoundValTy1CatLev (acoreBindcategDflt e) n metaLevVal t
-{-# INLINE acoreBoundValTy1 #-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -865,8 +839,8 @@ acoreLet1Strict nm e = acoreLet1StrictTy nm (acoreTyErr "acoreLet1Strict") e
 %%[(8 codegen) hs export(acoreLet1StrictInMetaTyWith,acoreLet1StrictInMetaTy,acoreLet1StrictInMeta,acoreLet1StrictIn,acoreLet1StrictInTy)
 -- | evaluate an expr, with a continuation for the evaluated expr
 acoreLet1StrictInMetaTyWith :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => (t->t) -> (e->e) -> HsName -> m -> t -> e -> (e -> e) -> e
-acoreLet1StrictInMetaTyWith mkT mkE nm m t e mkC
-  = acoreLetBase cat [acoreBind1CatMetaTy cat nm m (mkT t) (mkE e)] (mkC (acoreVar nm))
+acoreLet1StrictInMetaTyWith mkT mkE nm _ t e mkC
+  = acoreLetBase cat [acoreBind1CatTy cat nm (mkT t) (mkE e)] (mkC (acoreVar nm))
   where cat = acoreBindcategStrict
 
 acoreMbLet1StrictInMetaTyWith :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => (t->t) -> (e->e) -> Maybe (HsName,t) -> m -> e -> (e -> e) -> e

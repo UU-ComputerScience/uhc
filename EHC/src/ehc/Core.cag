@@ -582,25 +582,23 @@ instance AbstractCore CExpr () CBind CBound ACoreAppLikeMetaBound CBindCateg () 
   acoreLam1Bind b e                     = CExpr_Lam b e
   acoreTagTyTupBound   tg _ es          = acoreAppBound (CExpr_Tup tg) es
 %%[[(8 coresysf)
-  acoreBoundVal1CatLevMetasTy _ _ mlev _ (CTy_SysF t) e
-                    | mlev > metaLevVal = acoreBound1MetaVal (acoreBoundmeta acbaspkeyDefault mlev CLbl_None) e
+  acoreBoundVal1CatLevTy _ _ mlev (CTy_SysF t) e
+                    | mlev > metaLevVal = acoreBound1Boundmeta (acoreBoundmeta acbaspkeyDefault mlev CLbl_None) e
 %%][8
 %%]]
-  acoreBoundVal1CatLevMetasTy _ _ _ m _ e
-                                        = CBound_Bind e
+  acoreBoundVal1CatLevTy _ _ m _ e      = CBound_Bind e
   acoreBoundmeta a m l                  = (a,m,l)
-  acoreBound1MetaVal (a,m,l) e          = CBound_Val a m l e
+  acoreBound1Boundmeta (a,m,l) e        = CBound_Val a m l e
 %%[[(8 coresysf)
   acoreBoundValTy1CatLev _ _ mlev (CTy_SysF t)
-                                        = acoreBound1MetaVal (acoreBoundmeta acbaspkeyDefault mlev CLbl_None) t
+                                        = acoreBound1Boundmeta (acoreBoundmeta acbaspkeyDefault mlev CLbl_None) t
   acoreBoundValTy1CatLev _ _ _ (CTy_Ty t)
 %%][8
   acoreBoundValTy1CatLev _ _ _ t
 %%]]
                                         = CBound_Ty acbaspkeyDefaultTy t
   acoreBind1Asp n as                    = CBind_Bind n as
-  acoreBind1CatLevMetasTy bcat n mlev mb t e
-                                        = acoreBind1Asp n [acoreBoundValTy1CatLev bcat n (mlev+1) t, acoreBoundVal1CatLevMetasTy bcat n mlev mb t e]
+  acoreBind1CatLevTy bcat n mlev t e    = acoreBind1Asp n [acoreBoundValTy1CatLev bcat n (mlev+1) t, acoreBoundVal1CatLevTy bcat n mlev t e]
   acoreLetBase                          = CExpr_Let
 %%[[(8 coresysf)
   acoreCast (CTy_SysF t) e              = CExpr_Cast e t

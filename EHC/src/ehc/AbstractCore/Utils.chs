@@ -155,20 +155,20 @@ acoreAltOffsetL opts alt
 type MbPatRest' pr = Maybe (pr,Int) -- (pat rest, arity)
 %%]
 
-%%[(8 codegen) export(acoreStrictSatCaseMetaTy,acoreStrictSatCaseTy)
+%%[(8 codegen) export(acoreStrictSatCaseTy)
 -- | Make case expression from alternatives, saturating the alternatives w.r.t. all constructors
 -- | Either:
 -- |   - make a case expr from alternatives,
 -- |     saturating the alternatives with defaults for missing alternatives.
 -- |   - or, when only a single alternative binding a single field, bind it directly with a let
-acoreStrictSatCaseMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [a] -> e
-acoreStrictSatCaseMetaTy env mbNm meta e []
+acoreStrictSatCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> [a] -> e
+acoreStrictSatCaseTy env mbNm e []
   = rceCaseCont env         -- TBD: should be error message "scrutinizing datatype without constructors"
-acoreStrictSatCaseMetaTy env mbNm meta e [alt]
+acoreStrictSatCaseTy env mbNm e [alt]
   | isJust mbPatCon && length flds == 1 && not (ctagIsRec tg) && isJust mbDgi && dgiIsNewtype (fromJust mbDgi)
   = acoreLet cat
-      ( [ acoreBind1CatMetaTy cat pnm meta ty e ]
-        ++ maybe [] (\(n,ty) -> [ acoreBind1CatMetaTy cat n meta ty e ]) mbNm
+      ( [ acoreBind1CatTy cat pnm ty e ]
+        ++ maybe [] (\(n,ty) -> [ acoreBind1CatTy cat n ty e ]) mbNm
       ) ae
   where mbDgi = dataGamLookup (ctagTyNm tg) (rceDataGam env)
         (pat,ae) = acoreUnAlt alt
@@ -176,10 +176,10 @@ acoreStrictSatCaseMetaTy env mbNm meta e [alt]
         (_,pbind) = acoreUnPatFld fld
         (pnm,_) = acoreUnBind pbind
         cat = acoreBindcategPlain
-        ty = maybe (acoreTyErr "acoreStrictSatCaseMetaTy.ty") snd mbNm
-acoreStrictSatCaseMetaTy env mbNm meta e alts
+        ty = maybe (acoreTyErr "acoreStrictSatCaseTy.ty") snd mbNm
+acoreStrictSatCaseTy env mbNm e alts
   = case mbNm of
-      Just (n,ty)  -> acoreLet1StrictInMetaTy n meta ty e $ mk alts
+      Just (n,ty)  -> acoreLet1StrictInTy n ty e $ mk alts
       Nothing -> mk alts e
   where mk (alt:alts) n
           = acoreLet (acoreBindcategStrict) altOffBL (acoreCaseDflt n (acoreAltLSaturate env (alt':alts)) (Just undef))
@@ -188,16 +188,8 @@ acoreStrictSatCaseMetaTy env mbNm meta e alts
           = acoreCaseDflt n [] (Just undef) -- dummy case
         undef = acoreBuiltinUndefined (rceEHCOpts env)
 
-acoreStrictSatCaseMeta :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> m -> e -> [a] -> e
-acoreStrictSatCaseMeta env eNm m e alts = acoreStrictSatCaseMetaTy env (acoreTyErrLift "acoreStrictSatCaseMeta" eNm) m e alts
-{-# INLINE acoreStrictSatCaseMeta #-}
-
-acoreStrictSatCaseTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> e -> [a] -> e
-acoreStrictSatCaseTy env eNm e alts = acoreStrictSatCaseMetaTy env eNm acoreMetavalDflt e alts
-{-# INLINE acoreStrictSatCaseTy #-}
-
 acoreStrictSatCase :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName) -> e -> [a] -> e
-acoreStrictSatCase env eNm e alts = acoreStrictSatCaseMeta env eNm acoreMetavalDflt e alts
+acoreStrictSatCase env eNm e alts = acoreStrictSatCaseTy env (acoreTyErrLift "acoreStrictSatCase" eNm) e alts
 {-# INLINE acoreStrictSatCase #-}
 %%]
 
@@ -207,8 +199,8 @@ Export of the following group of defs can be removed after conversion of all uti
 -- | Make a case expr from non-saturated alternatives,
 -- | alternatives are given by their tag + fields (name/offset) + rest (for extensible records) + alt expr
 acoreSelsCasesMetaTy :: (Eq bcat, AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => RCEEnv' e m b ba t -> Maybe (HsName,t) -> m -> e -> [(CTag,[(HsName,t,{-HsName,-}e)],MbPatRest' pr,e)] -> e
-acoreSelsCasesMetaTy env mbNm meta e tgSels
-  = acoreStrictSatCaseMetaTy env mbNm meta e alts
+acoreSelsCasesMetaTy env mbNm _ e tgSels
+  = acoreStrictSatCaseTy env mbNm e alts
   where  alts = [ acoreAlt 
                     (acorePatCon ct
                        (mkRest mbRest ct)

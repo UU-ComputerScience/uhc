@@ -72,7 +72,7 @@ tyArrowInstQuArgsRes how instToL dropNrImpls t
           | ndrop > 0 = unArr (ndrop-1) m r
           | otherwise = (mkb n bm a, r)
           where ((n,bm),a,r) = maybe ((hsnWild,appDfltBoundmeta t),appDbg $ "tyArrowInstQuArgsRes." ++ m,t) id $ appMb1MetaArr t
-        mkb n bm a = acoreBind1Asp n [acoreBound1MetaVal bm a]
+        mkb n bm a = acoreBind1Asp n [acoreBound1Boundmeta bm a]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
