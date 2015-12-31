@@ -39,18 +39,6 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[4 hs export(TyQu(..)) 
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast) hs export(tyMbQu,tyIsQu,tyIsAlts) 
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) hs export(TyPlus(..),TyPlusL,tyPlusTy) 
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) hs export(TyHardness(..)) 
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) hs export(TyNeed(..)) 
-%%]
-
 %%[(6 hmtyinfer || hmtyast) hs export(kiStar) 
 %%]
 
@@ -130,9 +118,6 @@ type TyVarId    = VarId
 %%[(2 hmtyinfer || hmtyast).TyVarId.Rest hs export(TyVarIdL,TyVarIdS)
 type TyVarIdL   = [TyVarId]
 type TyVarIdS   = VarIdS
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) -1.TyL
 %%]
 
 %%[(7 hmtyinfer || hmtyast) hs export(FldTyL)
@@ -305,36 +290,6 @@ mkTvInfoPlain p = mkTvInfo TyVarCateg_Plain p
 %%[(4 hmtyinfer || hmtyast) hs export(TvCatMp,emptyTvCatMp) 
 type TvCatMp = Map.Map TyVarId TvInfo
 emptyTvCatMp = Map.empty
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Offered or required
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast) hs
-data TyNeed
-  = TyRequired | TyOffered | TyNoNeed
-  deriving (Eq,Ord)
-
-instance Show TyNeed where
-  show TyRequired    = "R"
-  show TyOffered     = "O"
-  show TyNoNeed      = "-"
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Hardness of type
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast) hs
-data TyHardness
-  = TyHard | TySoft TyVarId
-  deriving (Eq,Ord)
-
-instance Show TyHardness where
-  show TyHard          = "H"
-  show (TySoft     i)  = "S" -- "S:" ++ show i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -764,11 +719,6 @@ tvIsPlain :: TvCatMp -> TyVarId -> Bool
 tvIsPlain m v = maybe False (tvCatIsPlain . tvinfoCateg) $ Map.lookup v m
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast) hs
-tyIsAlts :: Ty -> Bool
-tyIsAlts t = case t of {Ty_Alts _ _ -> True; _ -> False}
-%%]
-
 %%[(10 hmtyinfer || hmtyast) hs export(tyIsEmptyRow)
 tyIsEmptyRow :: Ty -> Bool
 tyIsEmptyRow = maybe False (== hsnRowEmpty) . tyMbCon
@@ -1171,11 +1121,6 @@ tyMbQu t
 tyVar :: Ty -> TyVarId
 tyVar = maybe uidStart id . tyMbVar
 {-# INLINE tyVar #-}
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast).tyPlusTy hs
-tyPlusTy :: TyPlus -> Ty
-tyPlusTy (TyPlus_Ty t _ _) = t
 %%]
 
 %%[(9_1 hmtyinfer || hmtyast).tyPlusTy -4_1.tyPlusTy hs
@@ -1820,10 +1765,6 @@ polOpp pol | polIsCovariant     pol = polContravariant
 data FIMode  =  FitSubLR
              |  FitSubRL
              |  FitUnify
-%%[[4_2
-             |  FitMeet
-             |  FitJoin
-%%]]
              deriving (Eq,Ord)
 %%]
 
@@ -1833,10 +1774,6 @@ fimOpp m
   =  case m of
        FitSubLR  -> FitSubRL
        FitSubRL  -> FitSubLR
-%%[[4_2
-       FitMeet   -> FitJoin
-       FitJoin   -> FitMeet
-%%]]
        _         -> m
 %%]
 
@@ -1850,10 +1787,6 @@ instance Show FIMode where
   show FitSubLR  = "<="
   show FitSubRL  = ">="
   show FitUnify  = "=="
-%%[[4_2
-  show FitMeet   = "=^="
-  show FitJoin   = "=v="
-%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

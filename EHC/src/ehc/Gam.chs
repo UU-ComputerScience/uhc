@@ -49,12 +49,6 @@
 %%[(4444 hmtyinfer) import({%{EH}Ty.FitsInCommon})
 %%]
 
-%%[4_2 export(ErrGam)
-%%]
-
-%%[4_2 export(valGamInst1ExistsWithVarMp)
-%%]
-
 %%[7 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 

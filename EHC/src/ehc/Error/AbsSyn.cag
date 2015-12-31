@@ -106,14 +106,6 @@ DATA Err
                         ty         : {Ty}
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast)
-DATA Err
-  | InconsistentAlts    ty         : {Ty}
-                        tvar       : {TyVarId}
-                        tyL        : {TyL}
-                        fiMode     : FIMode
-%%]
-
 %%[5
 DATA Err
   | Newtype             tyNm       : {HsName}

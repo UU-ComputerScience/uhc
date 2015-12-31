@@ -138,12 +138,6 @@ SEM PatExpr
 %%]]
 %%]
 
-%%[4_2
-SEM Expr
-  | Lam         loc         .   gamErrL     =   rngLift @range gamErrToL @errGam
-                lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq, Seq.fromList @gamErrL]
-%%]
-
 -- should be removed later 
 %%[5
 SEM PatExpr

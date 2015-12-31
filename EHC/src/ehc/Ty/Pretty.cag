@@ -99,14 +99,6 @@ instance PP InstTo where
 %%]]
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast) hs
-instance PP TyHardness where
-  pp = pp . show
-
-instance PP TyNeed where
-  pp = pp . show
-%%]
-
 %%[(9 hmtyinfer || hmtyast) hs export(ppPredOccId')
 ppPredOccId' :: CfgPP' x => x -> PredOccId -> PP_Doc
 ppPredOccId' x poi
@@ -518,27 +510,6 @@ SEM Ty
                                                        (cfgppAside @lhs.cfg (@ppQu >#< @ppTvPre >|< @ppTv >|< @ppTvPost) ("." >#< @ty.pp))
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast)
-SEM Ty
-  | Alts            loc     .   o       =   "["
-                    loc     .   c       =   "]"
-  | Both            loc     .   o       =   "<"
-                    loc     .   c       =   ">"
-  | Alts Both       loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
-                                                       (maybe (pp @tv) id (tnLookupPP @tv @lhs.tnMap) >|< ppListSep @o @c ", " @tyL.ppL)
-
-SEM TyL [ | | ppL: {[PP_Doc]} ]
-  | Nil             lhs     .   ppL     =   []
-  | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
-
-SEM TyPlusL [ | | ppL: {[PP_Doc]} ]
-  | Nil             lhs     .   ppL     =   []
-  | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
-
-SEM TyPlus
-  | Ty              lhs     .   pp      =   @ty.pp >#< "::" >#<  pp @hardness >|< "/" >|< pp @offering
-%%]
-
 %%[(4 hmtyinfer || hmtyast)
 SEM TyQu
   | *   			lhs     .   pp      =   text (showTyQu @self)
@@ -759,19 +730,6 @@ SEM Ty
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
   | TBind       loc     .   parNeed             =   ParNotNeeded
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast)
-SEM TyL
-  | Cons        hd      .   parNeed             =   ParNotNeeded
-                        .   parNeedL            =   []
-
-SEM TyPlus
-  | Ty          ty      .   parNeed             =   ParNotNeeded
-                        .   parNeedL            =   []
-
-SEM Ty
-  | Alts Both   loc     .   parNeed             =   ParNotNeeded
 %%]
 
 %%[(7 hmtyinfer || hmtyast)

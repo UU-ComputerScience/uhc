@@ -53,9 +53,6 @@
 %%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Set(Set), Data.Map(Map))
 %%]
 
-%%[(4_2 hmtyinfer) hs import({%{EH}Gam.Utils},{%{EH}Ty.Trf.ElimAlts},{%{EH}Ty.Trf.FreshVar})
-%%]
-
 %%[(7 hmtyinfer) hs import({%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
 %%]
 

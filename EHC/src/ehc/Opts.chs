@@ -1164,17 +1164,6 @@ instFIOpts :: FIOpts
 instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%]
 
-%%[(4_2 hmtyinfer).FIOpts.defaults export(meetFIOpts,joinFIOpts,impredFIOpts)
-meetFIOpts :: FIOpts
-meetFIOpts = unifyFIOpts {fioMode = FitMeet}
-
-joinFIOpts :: FIOpts
-joinFIOpts = unifyFIOpts {fioMode = FitJoin}
-
-impredFIOpts :: FIOpts
-impredFIOpts = strongFIOpts {fioBindToTyAlts = True}
-%%]
-
 %%[(5 hmtyinfer) export(weakFIOpts)
 weakFIOpts :: FIOpts
 weakFIOpts = fioMkWeak strongFIOpts
