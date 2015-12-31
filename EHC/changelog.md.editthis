@@ -1,4 +1,4 @@
-- [impredicativity] Cleanup: variant 4_2 (impredicativity 2 pass analysis)
+- [impredicativity] Cleanup: variant 4_2 (impredicativity 2 pass analysis) removed
 - [annotations] Cleanup: variant 7_2 (annotations, strictness) mostly removed, utilities for html pretty printing left in, bit of AST as well
 - [whole prog analysis] Cleanup: removal of HPT analysis, Silly, Cil, last version still having this code tagged with 'lastversionwith-wholeproggrin'
 - [core] Pretty printing/dump of Core AST (for debugging purposes), accessible via --coreopt=dump-ast

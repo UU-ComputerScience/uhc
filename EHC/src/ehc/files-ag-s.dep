@@ -19,9 +19,7 @@ Ty/Trf/Instantiate.cag
 Ty/Trf/Quantify.cag
 Ty/Trf/MergePreds.cag
 Ty/Trf/Subst.cag
-Ty/Trf/ElimBoth.cag
 Ty/Trf/FreshVar.cag
-Ty/Trf/ElimAlts.cag
 Ty/Trf/ElimEqual.cag
 TyCore/Pretty.cag
 TyCore/PrettyAST.cag
