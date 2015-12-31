@@ -1,9 +1,10 @@
-- [whole prog analysis] cleanup: removal of HPT analysis, Silly, Cil, last version still having this code tagged with 'lastversionwith-wholeproggrin'
-- [core] pretty printing/dump of Core AST (for debugging purposes), accessible via --coreopt=dump-ast
-- [uhc-util] move of LexScope encoding via RLList to separate module in uhc-util
-- [corerun] additional API calls
-- [grin] no longer .grin files generated, any whole grin progr stuff disabled (to be removed)
-- [serialize] serialization instances now mostly generically defined
+- [annotations] Cleanup: variant 7_2 mostly removed, utilities for html pretty printing left in, bit of AST as well
+- [whole prog analysis] Cleanup: removal of HPT analysis, Silly, Cil, last version still having this code tagged with 'lastversionwith-wholeproggrin'
+- [core] Pretty printing/dump of Core AST (for debugging purposes), accessible via --coreopt=dump-ast
+- [uhc-util] Move of LexScope encoding via RLList to separate module in uhc-util
+- [corerun] Additional API calls
+- [grin] No longer .grin files generated, any whole grin progr stuff disabled (to be removed)
+- [serialize] Serialization instances now mostly generically defined
 
 ## 1.1.9.2 - 20151027
 

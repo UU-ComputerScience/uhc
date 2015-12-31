@@ -262,9 +262,6 @@ data EHCOpts
       ,  ehcOptExtensibleRecords
       						  ::  Bool
 %%]]
-%%[[7_2
-      ,  ehcOptUniqueness     ::  Bool
-%%]]
 %%[[8
       ,  ehcOptMbTarget       ::  MaybeOk Target            -- code generation target
       ,  ehcOptMbTargetFlavor ::  MaybeOk TargetFlavor      -- code generation target flavor
@@ -454,9 +451,6 @@ emptyEHCOpts
       ,  ehcOptExtensibleRecords=   True
 %%][99
       ,  ehcOptExtensibleRecords=   False
-%%]]
-%%[[7_2
-      ,  ehcOptUniqueness       =   True
 %%]]
 %%[[8
       ,  ehcOptMbTarget         =   JustOk defaultTarget

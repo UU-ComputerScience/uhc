@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[7_2
+%%[(7 html)
 
 ATTR AGItf [|| ppHTML : {String} ]
 SEM AGItf
@@ -17,7 +17,7 @@ SEM AGItf
 
 Pretty print to HTML for expressions
 
-%%[7_2
+%%[(7 html)
 
 ATTR AllExpr AllCase AllDecl AllPatExpr [|| ppInfos USE {++} {[]} : {[PP_Doc]} ]
 ATTR AllExpr [|| ppHTML : {PP_Doc} ]
@@ -89,7 +89,7 @@ SEM DataFieldExpr
 
 Pretty print to HTML for patterns
 
-%%[7_2
+%%[(7 html)
 
 ATTR AllPatExpr [|| ppHTML : {PP_Doc} ]
 
@@ -131,7 +131,7 @@ SEM DataFieldPatExpr
 
 Pretty print a subset of the declarations
 
-%%[7_2
+%%[(7 html)
 
 ATTR AllDecl AllDataConstr [|| ppHTML USE {>-<} {empty} : {PP_Doc} ]
 ATTR TyVars TyVar [|| ppHTML USE {>#<} {empty} : {PP_Doc} ]

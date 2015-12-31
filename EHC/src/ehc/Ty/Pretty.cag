@@ -19,9 +19,6 @@
 %%[(3 hmtyinfer || hmtyast) hs import(Data.Char)
 %%]
 
-%%[(7_2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
-%%]
-
 %%[(8888 hmtyinfer || hmtyast) hs import({%{EH}Scanner.Common(hiScanOpts)})
 %%]
 %%[(8 hmtyinfer || hmtyast) hs import({%{EH}Base.CfgPP})
@@ -108,11 +105,6 @@ instance PP TyHardness where
 
 instance PP TyNeed where
   pp = pp . show
-%%]
-
-%%[(7_2 hmtyinfer || hmtyast).annotation hs
-instance PP (Annotation a) where
-  pp = (>|<) "d" . pp . annUID
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(ppPredOccId')

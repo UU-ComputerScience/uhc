@@ -224,34 +224,6 @@ DATA CExpr
                 tag             : CTag
                 ty              : Expr
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Meta information
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 core)
-TYPE CMetas 	= (CMetaBind,CMetaVal)
-
-DATA CMetaBind
-  | Plain		-- by default a binding is Plain
-  | Function0   -- special case of Plain, indicating it is a nullary function on top level (that is, the RHS is the computational part for a CAF)
-  | Function1   -- special case of Plain, indicating it is a non-nullary function on top level (that is, the RHS is a lambda)
-  | Apply0	    -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
-
-DATA CMetaVal
-  | Val
-%%[[9
-  | Dict
-  | DictClass     tracks : {[Track]}
-  | DictInstance  tracks : {[Track]}
-  | Track         track  : {Track}
-%%]]
-
-SET AllMetaVal	= CMetaVal CMetas
-SET AllMetaBind = CMetaBind CMetas
-SET AllMeta		= CMetaVal CMetaBind CMetas
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Annotations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,8 +275,7 @@ DATA CBind
 -- | That which is bound, of which may be multiple, of which exist the below varieties
 DATA CBound
   -- default: binding used when (1) no specialized version is available, (2) the one passed higher order
-  | Bind        -- bindMeta        : CMetas
-                expr            : CExpr
+  | Bind        expr            : CExpr
 
 %%[[(8 codegenanalysis)
   -- a (keyed) RelevTy
@@ -338,60 +309,6 @@ TYPE CBoundL		=	[CBound]
 SET AllBound        =   CBound CBoundL
 SET AllBindOnly 	=   CBind CBindL
 SET AllBind     	=   AllBindOnly AllBound
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% 20100731 AD: this is brainstorming about allowing a binding to bind to multiple aspects, indexed by a aspect key
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
--- overriding
-%%[(8889 core)
-DATA CBind
-  | Bind        nm              : {HsName}
-                bindAspects     : CBindAspectL
-
-DATA CExpr
-  | Var         nm              : {HsName}			-- reference to the Val of a CBindAspect
-  				aspectKeyS		: {ACoreBindAspectKeyS}
-%%]
-
--- new
-%%[(8889 core)
-DATA CBindAspect
-  -- the classical binding to a CExpr; transitional
-  | Bind		bindMeta        : CMetas
-                expr            : CExpr
-  
-  -- + FFI/FFE stuff
-
-  -- binding to a runtime related value, keyed
-  | Val			aspectKeyS		: {ACoreBindAspectKeyS}
-  				encoding		: CValTy
-  				expr            : CExpr
-  
-  -- non-runtime binding info/annotation, keyed
-  | Meta		aspectKeyS		: {ACoreBindAspectKeyS}
-  				meta            : CMetas
-
-TYPE CBindAspectL	=	[CBindAspect]
-
-DATA CValTy
-  | Unknown											-- type yet to be determined, only for transition to this encoding
-  | Boxed		props			: {CValTyPropS}		-- boxed
-  				mbVal			: MbCValTy			-- perhaps we know more about the contents
-  | Fun			args			: CValTyLL			-- known calling convention, specifying arg/res arity/grouping, boxedness/evaluation
-  				res				: CValTyL
-  | Basic		basicannot		: {BasicAnnot}		-- unboxed (and evaluated), with additional annotation about its basic size & type
-  
-TYPE MbCValTy		=	MAYBE CValTy
-TYPE CValTyL		=	[CValTy ]
-TYPE CValTyLL		=	[CValTyL]
-
-DATA CValTyProp
-  | Evaluated
-
-TYPE CValTyPropS	=	SET CValTyProp
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

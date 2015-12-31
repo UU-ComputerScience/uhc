@@ -59,12 +59,6 @@
 %%[7777 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
 %%]
 
-%%[7_2 import(qualified Data.Map as Map, Data.Map(Map), Data.Set(Set))
-%%]
-
-%%[7_2 export(threadMap,Belowness(..), groupAllBy, mergeListMap)
-%%]
-
 %%[8 import (UHC.Util.FPath,System.IO,System.Environment,System.Exit,Data.Char,Data.Maybe,Numeric)
 %%]
 
@@ -361,21 +355,6 @@ ppParNeed locNeed globNeed p
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Belowness
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7_2
-data Belowness = Below | NotBelow | UnknownBelow deriving (Show,Eq,Ord)
-%%]
-
-%%[7_2
-instance PP Belowness where
-  pp Below        = pp "B+"
-  pp NotBelow     = pp "B-"
-  pp UnknownBelow = pp "B?"
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Label for expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -425,21 +404,6 @@ unions = foldr union []
 %%[4.listCombineUniq export(listCombineUniq)
 listCombineUniq :: Eq a => [[a]] -> [a]
 listCombineUniq = nub . concat
-%%]
-
-%%[7_2
-threadMap :: (a -> c -> (b, c)) -> c -> [a] -> ([b], c)
-threadMap f c = foldr (\a (bs, c) -> let (b, c') = f a c in (b:bs, c')) ([], c)
-%%]
-
-%%[7_2
-groupAllBy :: Ord b => (a -> b) -> [a] -> [[a]]
-groupAllBy f = Map.elems . foldr (\v -> Map.insertWith (++) (f v) [v]) Map.empty
-%%]
-
-%%[7_2
-mergeListMap :: Ord k => Map k [a] -> Map k [a] -> Map k [a]
-mergeListMap = Map.unionWith (++)
 %%]
 
 %%[8 export(replicateBy)

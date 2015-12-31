@@ -361,9 +361,6 @@ ehcCmdLineOpts = sortOptions $
 %%][100
 %%]]
 
-%%[[7_2
-     ,  Option ""   ["nounique"]            (NoArg oUnique)                         "do not compute uniqueness solution"
-%%]]
 %%[[(8 codegen)
      ,  Option "O"  ["optimise"]            (OptArg oOptimization ("0|1|2|3|<opt>[=" ++ boolArgStr ++ "]"))
                                                                                     ("optimise with level or specific <opt> by optim name: "
@@ -523,9 +520,6 @@ ehcCmdLineOpts = sortOptions $
 %%]]
                                       _   -> CompilePoint_All
                                 }
-%%[[7_2
-         oUnique         o =  o { ehcOptUniqueness    = False   }
-%%]]
 %%[[(8 grin)
          oTimeCompile    o =  o { ehcOptTimeGrinCompile       = True    }
 %%]]

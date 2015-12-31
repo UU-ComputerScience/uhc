@@ -3,10 +3,10 @@ Utility functions for HTML generation
 %%[1 hs module {%{EH}Base.HtmlCommon}
 %%]
 
-%%[7_2 hs import({%{EH}Base.Common}, UHC.Util.ParseUtils,  {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), UHC.Util.Pretty, Data.List(sortBy))
+%%[(7 htmlty) hs import({%{EH}Base.Common}, UHC.Util.ParseUtils,  {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), UHC.Util.Pretty, Data.List(sortBy))
 %%]
 
-%%[7_2 hs
+%%[(7 htmlty) hs
 
 ppEnclosingTag :: (PP a, PP b, PP c) => a -> b -> c -> PP_Doc
 ppEnclosingTag begin middle end
