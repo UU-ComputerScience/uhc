@@ -20,7 +20,10 @@
 %%[1 import(UHC.Util.Hashable) export (module UHC.Util.Hashable)
 %%]
 
-%%[8 import(GHC.Generics(Generic))
+%%[1 import(Data.Typeable(Typeable)) export(module Data.Typeable)
+%%]
+
+%%[1 import(GHC.Generics(Generic)) export(module GHC.Generics)
 %%]
 
 %%[1 import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin}) export(module {%{EH}Base.HsName})
@@ -33,9 +36,6 @@
 %%]
 
 %%[1 import(UHC.Util.AssocL) export(module UHC.Util.AssocL)
-%%]
-
-%%[1 import(Data.Typeable(Typeable), Data.Generics(Data)) export(module Data.Typeable, module Data.Generics)
 %%]
 
 %%[1 import(UHC.Util.Pretty, Data.List)

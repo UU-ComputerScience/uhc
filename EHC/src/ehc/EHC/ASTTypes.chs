@@ -16,7 +16,7 @@
 %%[8 import ({%{EH}Base.Common})
 %%]
 
-%%[8 import (Data.Typeable, GHC.Generics)
+%%[8888 import (Data.Typeable, GHC.Generics)
 %%]
 
 -- Language syntax: HS, EH, Core, TyCore, Grin, ...

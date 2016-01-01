@@ -14,9 +14,9 @@ An EHC compile run maintains info for one compilation invocation
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set, qualified Data.IntMap as IMap, Data.Maybe)
 %%]
-%%[8 import (Data.Typeable)
+%%[8888 import (Data.Typeable)
 %%]
-%%[8 import(GHC.Generics(Generic))
+%%[8888 import(GHC.Generics(Generic))
 %%]
 %%[8 import(qualified UHC.Util.RelMap as Rel, UHC.Util.Hashable)
 %%]

@@ -13,7 +13,7 @@ Environmental info required during code generation
 %%[8 hs module {%{EH}CodeGen.CEnv}
 %%]
 
-%%[8 hs import(Data.Typeable)
+%%[8 hs import({%{EH}Base.Common})
 %%]
 %%[8 hs import(UHC.Util.Lens)
 %%]

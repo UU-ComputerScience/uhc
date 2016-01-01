@@ -40,7 +40,10 @@
 %%[8 import (qualified UHC.Util.RelMap as Rel)
 %%]
 
-%%[8 import (Data.Typeable, GHC.Generics)
+%%[8 import (Data.Typeable)
+%%]
+
+%%[8888 import (GHC.Generics)
 %%]
 
 %%[8 import({%{EH}Base.ParseUtils})

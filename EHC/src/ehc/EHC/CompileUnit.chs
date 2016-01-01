@@ -20,7 +20,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[8 import(UHC.Util.Lens)
 %%]
 
-%%[8 import(Data.Typeable)
+%%[8888 import(Data.Typeable)
 %%]
 
 -- Language syntax: HS, EH

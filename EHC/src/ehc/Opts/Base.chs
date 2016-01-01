@@ -17,7 +17,10 @@
 %%[1 import(UHC.Util.Utils)
 %%]
 
-%%[1 import(Data.Typeable, Data.Maybe, qualified Data.Map as Map)
+%%[1111 import(Data.Typeable)
+%%]
+
+%%[1 import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
 %%[1 import({%{EH}Base.UnderDev})
@@ -29,7 +32,7 @@
 %%[7 import(qualified Data.Set as Set)
 %%]
 
-%%[8 import(GHC.Generics(Generic))
+%%[8888 import(GHC.Generics(Generic))
 %%]
 
 %%[8 import(Data.List,Data.Char,{%{EH}Base.HsName.Builtin})

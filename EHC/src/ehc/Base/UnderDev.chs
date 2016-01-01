@@ -8,7 +8,7 @@
 %%[1 import(UHC.Util.Utils)
 %%]
 
-%%[1 import(GHC.Generics(Generic), Data.Typeable)
+%%[1111 import(GHC.Generics(Generic), Data.Typeable)
 %%]
 
 %%[8888 import(Control.Monad, Control.Monad.IO.Class)

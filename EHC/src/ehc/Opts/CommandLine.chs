@@ -13,7 +13,7 @@
 %%[8 import(Data.List)
 %%]
 
-%%[8 import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[8 import(Data.Typeable(Typeable))
 %%]
 
 %%[50 import(UHC.Util.Binary, UHC.Util.Serialize)

@@ -17,7 +17,7 @@ Abstraction for dealing with AST formats
 %%[8 import ({%{EH}EHC.Common}, {%{EH}EHC.CompileUnit}, {%{EH}EHC.CompileRun.Base})
 %%]
 
-%%[8 import (Data.Typeable, GHC.Generics)
+%%[8888 import (Data.Typeable, GHC.Generics)
 %%]
 
 %%[8 import (qualified Data.Map as Map)

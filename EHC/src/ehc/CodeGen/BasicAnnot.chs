@@ -5,6 +5,9 @@
 %%[(8 codegen) hs module {%{EH}CodeGen.BasicAnnot}
 %%]
 
+%%[(8 codegen) hs import({%{EH}Base.Common})
+%%]
+
 %%[(8 codegen) hs import(qualified Data.Map as Map,Data.Bits, Data.List)
 %%]
 

@@ -20,7 +20,7 @@ Used by all compiler driver code
 %%[8 import(Data.Monoid)
 %%]
 
-%%[8 import(GHC.Generics)
+%%[8888 import(GHC.Generics)
 %%]
 
 %%[8 import(UHC.Util.Pretty, UHC.Util.FPath, UHC.Util.Utils)
