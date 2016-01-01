@@ -157,8 +157,8 @@ tyUnThunkTy = unTySeq . tyUnThunkTySeq
 ??
 
 %%[(8 codegen coresysf) hs export(CSubst)
-type CSubstInfo = CSubstInfo' C.CExpr () C.CBind C.CBound C.CTy
-type CSubst     = CSubst'     C.CExpr () C.CBind C.CBound C.CTy
+type CSubstInfo = CSubstInfo' C.CExpr C.CBind C.CBound C.CTy
+type CSubst     = CSubst'     C.CExpr C.CBind C.CBound C.CTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

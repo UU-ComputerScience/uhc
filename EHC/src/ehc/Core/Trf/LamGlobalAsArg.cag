@@ -244,7 +244,7 @@ SEM CBound
 %%[[8
   | Bind        lhs         .   cTrf        =   acoreBoundVal1Cat CBindCateg_Plain @lhs.nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
-  | Bind        lhs         .   cTrf        =   (acoreBoundVal1Metas @lhs.nm ((),()) $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf)
+  | Bind        lhs         .   cTrf        =   (acoreBoundVal1 @lhs.nm $ acoreLam [(n) | (n,cvi) <- @argNewL] @expr.cTrf)
 %%]]
 %%]
 

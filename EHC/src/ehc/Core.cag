@@ -575,7 +575,7 @@ cty f _ t = f t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 core) hs
-instance AbstractCore CExpr () CBind CBound ACoreAppLikeMetaBound CBindCateg () CTy CPat CPatRest CPatFld CAlt where
+instance AbstractCore CExpr CBind CBound ACoreAppLikeMetaBound CBindCateg CTy CPat CPatRest CPatFld CAlt where
   -- expr
   acore1AppBound   f a                  = CExpr_App f a
   -- acoreLam1Ty a _ e                  = CExpr_Lam (acoreBind1 a) e
@@ -661,11 +661,6 @@ instance AbstractCore CExpr () CBind CBound ACoreAppLikeMetaBound CBindCateg () 
 
   -- defaults
   acoreDfltBoundmeta                    = (acbaspkeyDefault,0,CLbl_None)
-  acoreMetavalDflt                      = ()
-%%[[9
-  acoreMetavalDfltDict                  = ()
-%%]]
-  acoreMetabindDflt                     = ()
   acoreTyErr s                          = acoreTy2ty emptyEHCOpts $ Ty_Dbg s
   acoreTyNone                           = acoreTyErr "Core.acoreTyNone"
   acoreTyChar o                         = acoreTy2ty o $ tyChar
