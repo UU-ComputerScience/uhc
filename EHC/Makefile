@@ -53,18 +53,11 @@ include $(MK_PREFIX)functions.mk
 include $(MK_PREFIX)shared.mk
 
 #include $(SRC_PREFIX)libutil/files.mk
--include $(SRC_PREFIX)top/files.mk
--include $(SRC_PREFIX)helium/files.mk
--include $(SRC_PREFIX)lvm/files.mk
 -include $(SRC_PREFIX)text2text/files.mk
 #include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 include $(SRC_PREFIX)gen/files.mk
 include $(SRC_PREFIX)ehc/files1.mk
--include $(SRC_PREFIX)grini/files.mk
-
--include $(SRC_PREFIX)experiments/files.mk
--include $(SRC_EXPERIMENTS_PREFIX)subst/files.mk
 
 include extlibs/files.mk
 ifeq ($(EHC_CFG_GMPLIB),gmp)
@@ -83,9 +76,6 @@ ifeq ($(ENABLE_JS),yes)
 -include $(SRC_PREFIX)javascript/files.mk
 endif
 include $(SRC_PREFIX)ehc/files2.mk
--include $(SRC_PREFIX)agprimer/files.mk
--include $(SRC_PREFIX)infer2pass/variant.mk
--include $(SRC_PREFIX)infer2pass/files.mk
 -include figs/files.mk
 -include text/files1.mk
 -include text/files-variants.mk

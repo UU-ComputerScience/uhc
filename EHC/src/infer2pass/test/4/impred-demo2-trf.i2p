@@ -1,7 +1,0 @@
-let  f   ::  (     forall a . (Int,a) -> (Int,a)
-             =&&=  forall b . (b,Int) -> (b,Int)
-             ) -> ...
-         =   \h ->  let  y1  = g1 h
-                         y2  = g2 h
-                    in   y2
-in   f id

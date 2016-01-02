@@ -1,6 +1,0 @@
-{
-module Helium.Syntax.UHA
-where
-}
-
-INCLUDE "UHA_Syntax.ag"
