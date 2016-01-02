@@ -1,4 +1,0 @@
-let id = \x -> x
-  ; v1 = id 3
-  ; v2 = id id
-in  v1

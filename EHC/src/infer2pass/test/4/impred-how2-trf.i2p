@@ -1,4 +1,0 @@
-let  f   ::  (forall a . a -> a) -> ...
-         =   \h ->  let  y   = g h
-                    in   y
-in   f id
