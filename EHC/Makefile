@@ -76,14 +76,6 @@ ifeq ($(ENABLE_JS),yes)
 -include $(SRC_PREFIX)javascript/files.mk
 endif
 include $(SRC_PREFIX)ehc/files2.mk
--include figs/files.mk
--include text/files1.mk
--include text/files-variants.mk
--include $(wildcard text/files1-*.mk)
--include text/files2.mk
--include text/files-targets.mk
--include $(wildcard text/files2-*.mk)
--include www/files.mk
 include ehclib/files2.mk
 include test/files.mk
 include test/benchmark/files.mk
@@ -132,18 +124,10 @@ explanation:
 	echo  "make <n>/rts             : make only the rts part of a library" ; \
 	echo  "make <n>/bare            : make bare source dir for variant <n> (in bare/)," ; \
 	echo  "                           then 'cd' to there and 'make'" ; \
-	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
 	echo  "" ; \
     echo  "Documentation" ; \
 	echo  "=============" ; \
 	echo  "make help                : print this help" ; \
-	echo  "make www                 : make www documentation: $(TEXT_WWW_DOC_PDFS)" ; \
-	echo  "make www-sync            : install www documentation in the EHC web (http://www.cs.uu.nl/wiki/Ehc/WebHome)" ; \
-	echo  "" ; \
-	echo  "make doc/<d>.pdf         : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
-	echo  "                           or (non-public): <d> in {$(TEXT_PRIV_VARIANTS)}" ; \
-	echo  "                           or (doc): <d> in {$(TEXT_DOCLTX_VARIANTS)}" ; \
-	echo  "                           only if text src available, otherwise already generated" ; \
 	echo  "" ; \
     echo  "Testing" ; \
 	echo  "===========" ; \
@@ -166,18 +150,6 @@ explanation:
     echo  "Other" ; \
 	echo  "=====" ; \
 	echo  "make ehcs                : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
-	echo  "make top                 : make Typing Our Programs library" ; \
-	echo  "make lvm                 : make Lazy Virtual Machine library" ; \
-	echo  "make helium              : make Helium library" ; \
-	echo  "make heliumdoc           : make Haddock documentation for Helium, Top and Lvm (in hdoc/)" ; \
-	echo  "" ; \
-    echo  "Obsolesence candidates" ; \
-	echo  "======================" ; \
-	echo  "make <n>/infer2pass      : make infer2pass demo version <n> (in bin/, where <n> in {$(INF2PS_VARIANTS)})" ; \
-	echo  "make <n>/grini           : make grin interpreter variant <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)}) (obsolete)" ; \
-	echo  "make <n>/hdoc            : make Haddock documentation for variant <n> (in hdoc/)" ; \
-	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
-	echo  "make uhc-dist            : make platform specific binary distribution from uhc build in $(DISTABS_PREFIX)" ; \
 	echo  "" ; \
 
 ###########################################################################################

@@ -9140,13 +9140,11 @@ ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
 
 ac_config_files="$ac_config_files test/benchmark/runbenchmark.pl"
 
-ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific.hs"
+ac_config_files="$ac_config_files src/ehc/Config.chs"
 
 # AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver]
 ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/uhcbase/include/MachDeps.h ehclib/uhcbase/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h"
 
-
-ac_config_files="$ac_config_files src/text2text/text2text.cabal"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -9842,7 +9840,6 @@ do
     "mk/shared.mk") CONFIG_FILES="$CONFIG_FILES mk/shared.mk" ;;
     "test/benchmark/runbenchmark.pl") CONFIG_FILES="$CONFIG_FILES test/benchmark/runbenchmark.pl" ;;
     "src/ehc/Config.chs") CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
-    "src/helium/Utils/OSSpecific.hs") CONFIG_FILES="$CONFIG_FILES src/helium/Utils/OSSpecific.hs" ;;
     "src/ehc/ConfigDefines.chs") CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
     "src/rts/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
     "src/rts/mm/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/mm/config.ch" ;;
@@ -9851,7 +9848,6 @@ do
     "ehclib/old-time/include/HsTimeConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/old-time/include/HsTimeConfig.h" ;;
     "ehclib/directory/include/HsDirectoryConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/directory/include/HsDirectoryConfig.h" ;;
     "ehclib/unix/include/HsUnixConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/unix/include/HsUnixConfig.h" ;;
-    "src/text2text/text2text.cabal") CONFIG_FILES="$CONFIG_FILES src/text2text/text2text.cabal" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

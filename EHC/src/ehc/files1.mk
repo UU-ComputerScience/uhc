@@ -141,12 +141,14 @@ EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG)
 EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort $(EHC_AG_D_DPDS_SRC_CAG) $(EHC_AG_S_DPDS_SRC_CAG))
 
 $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_EH_MAINAG_MAIN_SRC_AG)) \
-										: $(EHC_RULES_3_DRV_AG)
+										: $(if $(EHC_CFG_USE_RULER),$(EHC_RULES_3_DRV_AG))
 
 
 # all src
 EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
-EHC_ALL_SRC								:= $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
+EHC_ALL_SRC								:= $(EHC_ALL_CHUNK_SRC) \
+											$(if $(EHC_CFG_USE_RULER),$(EHC_RULES_ALL_SRC)) \
+											$(EHC_MKF)
 EHC_ALL_SRC_FIND						:= $(shell find $(call FUN_PREFIX2DIR,$(SRC_EHC_PREFIX)) \( -name '*.chs' -or -name '*.cag' \))
 EHC_ALL_SRC_GEN							:= $(if $(EHC_CFG_USE_RULER),$(EHC_RULES_3_DRV_CAG),)
 
@@ -473,7 +475,10 @@ $(EHC_HS_UTILCPP_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX
 	touch $@
 
 # signature of source code
-$(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
+$(EHC_HS_SIG_DRV_HS): \
+			$(EHC_ALL_CHUNK_SRC) \
+			$(if $(EHC_CFG_USE_RULER),$(EHC_RULES_ALL_SRC)) \
+			$(EHC_MKF)
 	@(echo "module $(LIB_EHC_QUAL_PREFIX)$(EHC_HS_SIG_MAIN) where" ; \
 	  echo "sig = \"`$(call FUN_MD5,$^)`\"" ; \
 	  echo "timestamp = \"`date '+%G%m%d %z %H%M%S'`\"" \

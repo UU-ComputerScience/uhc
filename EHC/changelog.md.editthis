@@ -1,3 +1,6 @@
+- [doc] Cleanup: doc moved to separate repo https://github.com/atzedijkstra/uhc-doc
+- [ruler] Cleanup: ruler based impl part and examples moved to separate repo https://github.com/atzedijkstra/ruler-uhc-examples
+- [experiments] Cleanup: unused/obsolete code/experiments moved to separate repo https://github.com/atzedijkstra/uhc-obsolete
 - [tycore] Cleanup: TyCore stuff removed
 - [impredicativity] Cleanup: variant 4_2 (impredicativity 2 pass analysis) removed
 - [annotations] Cleanup: variant 7_2 (annotations, strictness) mostly removed, utilities for html pretty printing left in, bit of AST as well
