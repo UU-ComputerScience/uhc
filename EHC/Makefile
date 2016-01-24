@@ -6,7 +6,8 @@
 # Location from which make is invoked
 ###########################################################################################
 
-TOP_PREFIX				:= 
+UHC_TOP_PREFIX			:= 
+TOP_PREFIX				:= $(UHC_TOP_PREFIX)
 
 ###########################################################################################
 # First (default) target just explains what can be done
@@ -48,16 +49,16 @@ $(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(LIB_EH_UTIL_INS_FLAG)
 ### END of Ruler1
 
 include src/files.mk
-include $(SRC_PREFIX)ehc/shared.mk
-include $(MK_PREFIX)functions.mk
-include $(MK_PREFIX)shared.mk
+include $(UHC_SRC_PREFIX)ehc/shared.mk
+include $(UHC_MK_PREFIX)functions.mk
+include $(UHC_MK_PREFIX)shared.mk
 
-#include $(SRC_PREFIX)libutil/files.mk
--include $(SRC_PREFIX)text2text/files.mk
-#include $(SRC_PREFIX)ruler2/files.mk
-include $(SRC_PREFIX)ehc/variant.mk
-include $(SRC_PREFIX)gen/files.mk
-include $(SRC_PREFIX)ehc/files1.mk
+#include $(UHC_SRC_PREFIX)libutil/files.mk
+-include $(UHC_SRC_PREFIX)text2text/files.mk
+#include $(UHC_SRC_PREFIX)ruler2/files.mk
+include $(UHC_SRC_PREFIX)ehc/variant.mk
+include $(UHC_SRC_PREFIX)gen/files.mk
+include $(UHC_SRC_PREFIX)ehc/files1.mk
 
 include extlibs/files.mk
 ifeq ($(EHC_CFG_GMPLIB),gmp)
@@ -68,19 +69,19 @@ include $(EXTLIBS_PREFIX)gmp/files.mk
 endif
 include $(EXTLIBS_PREFIX)ltm/files.mk
 include ehclib/files1.mk
-include $(SRC_PREFIX)rts/files.mk
+include $(UHC_SRC_PREFIX)rts/files.mk
 ifeq ($(ENABLE_JAVA),yes)
--include $(SRC_PREFIX)jazy/files.mk
+-include $(UHC_SRC_PREFIX)jazy/files.mk
 endif
 ifeq ($(ENABLE_JS),yes)
--include $(SRC_PREFIX)javascript/files.mk
+-include $(UHC_SRC_PREFIX)javascript/files.mk
 endif
-include $(SRC_PREFIX)ehc/files2.mk
+include $(UHC_SRC_PREFIX)ehc/files2.mk
 include ehclib/files2.mk
 include test/files.mk
 include test/benchmark/files.mk
 
-#-include $(MK_PREFIX)dist.mk
+#-include $(UHC_MK_PREFIX)dist.mk
 
 ###########################################################################################
 # all versions (as used by testing)
@@ -326,7 +327,7 @@ uhc-dist: uhc
 		config.guess config.sub \
 		$${distdir} && \
 	mkdir -p $${distdir}/mk && \
-	cp $(MK_PREFIX)functions.mk \
+	cp $(UHC_MK_PREFIX)functions.mk \
 		$${distdir}/mk && \
 	cd $${distdir} && \
 	autoconf && \

@@ -1,7 +1,7 @@
 # 20110913 NOTE: dependency on this lib has been removed, latest version used was 7.0
 
 # location of Boehm's garbage collector src
-SRC_EXTLIBS_BGC_PREFIX					:= $(TOP_PREFIX)extlibs/bgc/
+SRC_EXTLIBS_BGC_PREFIX					:= $(UHC_TOP_PREFIX)extlibs/bgc/
 SRCABS_EXTLIBS_BGC_PREFIX				:= $(TOPABS2_PREFIX)extlibs/bgc/
 
 # this file

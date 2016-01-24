@@ -90,9 +90,10 @@
 
 %%[99
 deriving instance Generic Version
-
-instance Hashable Version
 %%]
+
+-- with hashable-1.2.4 no longer necessary
+instance Hashable Version
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Printing of names with non-alpha numeric constants

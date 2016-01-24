@@ -2,7 +2,7 @@
 # location of these srcs
 ###########################################################################################
 
-SRC_JSCRIPT_PREFIX					:= $(SRC_PREFIX)javascript/
+SRC_JSCRIPT_PREFIX					:= $(UHC_SRC_PREFIX)javascript/
 
 ###########################################################################################
 # this file

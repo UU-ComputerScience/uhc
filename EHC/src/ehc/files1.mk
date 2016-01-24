@@ -28,22 +28,23 @@ EHC_FOR_UHCLIGHT_BLD_EXEC				:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EH
 # ehcr
 EHC_FOR_UHCRUN_BLD_EXEC					:= $(call FUN_EHCRUN_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHC_INSTALL_VARIANT))
 
-# sources + dpds, for .rul
-EHC_RULES_1_SRC_RUL						:= $(SRC_EHC_PREFIX)rules.rul
-EHC_RULES_2_SRC_RUL						:= $(SRC_EHC_PREFIX)rules2.rul
-EHC_RULES_3_SRC_RL2						:= $(SRC_EHC_RULES_PREFIX)EhcRulesOrig.rul
-
-EHC_RULER_RULES							:= EHRulerRules
-EHC_RULES_3_DRV_CAG						:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_RULER_RULES).cag
-EHC_RULES_3_DRV_AG						:= $(EHC_RULES_3_DRV_CAG:.cag=.ag)
-
-EHC_RULES_4_MAIN_SRC_RUL				:= $(patsubst %,$(SRC_EHC_RULES_PREFIX)%.rul,EhcRulesExpr2 EhcRulesTyMatch EhcRulesTyElimAlt)
-EHC_RULES_4_DPDS_SRC_RUL				:= $(patsubst %,$(SRC_EHC_RULES_PREFIX)%.rul, \
-													EhcRulesShared EhcRulesShared2 \
-													EhcRulesAST EhcRulesCommon \
-													EhcRulesRelations EhcRulesCommonSchemes EhcRulesSchemes EhcRulesSchemes2 \
-											)
-EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2) $(EHC_RULES_4_MAIN_SRC_RUL) $(EHC_RULES_4_DPDS_SRC_RUL)
+## sources + dpds, for .rul
+#EHC_RULES_1_SRC_RUL						:= $(SRC_EHC_PREFIX)rules.rul
+#EHC_RULES_2_SRC_RUL						:= $(SRC_EHC_PREFIX)rules2.rul
+#EHC_RULES_3_SRC_RL2						:= $(SRC_EHC_RULES_PREFIX)EhcRulesOrig.rul
+#
+#EHC_RULER_RULES							:= EHRulerRules
+#EHC_RULES_3_DRV_CAG						:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_RULER_RULES).cag
+#EHC_RULES_3_DRV_AG						:= $(EHC_RULES_3_DRV_CAG:.cag=.ag)
+#
+#EHC_RULES_4_MAIN_SRC_RUL				:= $(patsubst %,$(SRC_EHC_RULES_PREFIX)%.rul,EhcRulesExpr2 EhcRulesTyMatch EhcRulesTyElimAlt)
+#EHC_RULES_4_DPDS_SRC_RUL				:= $(patsubst %,$(SRC_EHC_RULES_PREFIX)%.rul, \
+#													EhcRulesShared EhcRulesShared2 \
+#													EhcRulesAST EhcRulesCommon \
+#													EhcRulesRelations EhcRulesCommonSchemes EhcRulesSchemes EhcRulesSchemes2 \
+#											)
+#EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2) $(EHC_RULES_4_MAIN_SRC_RUL) $(EHC_RULES_4_DPDS_SRC_RUL)
+#
 
 # library
 # derived stuff
@@ -429,9 +430,11 @@ $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PR
 	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
-$(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.ag: $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.cag $(SHUFFLE)
-	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
-	touch $@
+#ifeq($(EHC_CFG_USE_RULER),yes)
+#$(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.ag: $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.cag $(SHUFFLE)
+#	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+#	touch $@
+#endif
 
 $(EHC_AG_D_MAIN_DRV_HS) $(LIB_EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_DATA) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_$(EHC_VARIANT)) -P$(EHC_BLD_VARIANT_ASPECTS_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
@@ -485,7 +488,7 @@ $(EHC_HS_SIG_DRV_HS): \
 	) > $@
 
 # installation configuration
-$(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
+$(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(UHC_MK_SHARED_MKF)
 	@(echo "-- AUTO GENERATED MODULE - see files1.mk" ; \
 	  echo "module $(LIB_EHC_QUAL_PREFIX)$(EHC_HS_CFGINSTALL_MAIN) where" ; \
 	  echo "import $(LIB_EHC_QUAL_PREFIX)Opts.CommandLine" ; \

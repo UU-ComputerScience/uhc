@@ -3,7 +3,7 @@
 ###########################################################################################
 
 # Source location
-RTS_SRC_PREFIX := $(SRC_PREFIX)rts/
+RTS_SRC_PREFIX := $(UHC_SRC_PREFIX)rts/
 
 # Build location
 RTS_BLD_PREFIX := $(EHC_BLD_VARIANT_ASPECTS_PREFIX)rts/$(EHC_VARIANT_TARGET)/

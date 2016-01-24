@@ -505,7 +505,7 @@ then
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} base>=4.7&&<5"
             ;;
           hashable)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} hashable>=1.1&&<1.3"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} hashable>=1.2.4&&<1.3"
             ;;
           fgl)
             # with uhc-util >= 0.1.3.7 no longer necessary
