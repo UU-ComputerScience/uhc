@@ -88,6 +88,7 @@ cpFoldCore2Grin modNm
                                 , Core2GrSem.importUsedModules_Inh_CodeAGItf             = ecuImportUsedModules ecu
 %%]]
                                 })
+         ;  cpMsg modNm VerboseALot $ "cpFoldCore2Grin, has core " ++ show (isJust mbCore)
          ;  when (isJust mbCore)
                  (cpUpdCU modNm ( ecuStoreCoreSem coreSem
                                 ))

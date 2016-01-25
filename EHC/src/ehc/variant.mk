@@ -79,8 +79,8 @@ EHCRUN_INSTALL_VARIANT_ASPECTS_EXEC			:= $(call FUN_EHCRUN_INSTALL_VARIANT_ASPEC
 # code generation targets, leading to target dependend locations
 ###########################################################################################
 
-EHC_VARIANT_TARGETS						:= $(shell if test -x $(EHC_INSTALL_VARIANT_ASPECTS_EXEC); then $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-targets; else echo bc; fi)
-EHC_VARIANT_TARGET						:= $(shell if test -x $(EHC_INSTALL_VARIANT_ASPECTS_EXEC); then $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-target-default; else echo bc; fi)
+EHC_VARIANT_TARGETS						:= $(shell if test "$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)" -a -x $(EHC_INSTALL_VARIANT_ASPECTS_EXEC); then $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-targets; else echo bc; fi)
+EHC_VARIANT_TARGET						:= $(shell if test "$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)" -a -x $(EHC_INSTALL_VARIANT_ASPECTS_EXEC); then $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-target-default; else echo bc; fi)
 EHC_VARIANT_TARGET_PREFIX				:= $(EHC_VARIANT_TARGET)/
 
 # target info as passed as cpp flag

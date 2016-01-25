@@ -1127,6 +1127,7 @@ cpEhcCorePerModulePart2 modNm
 %%][50
              earlyMerge = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
 %%]]
+       ; cpMsg modNm VerboseDebug $ "cpEhcCorePerModulePart2"
        ; cpSeq [ when earlyMerge $ cpProcessCoreRest modNm
 %%[[(8 grin)
                , when (ehcOptIsViaGrin opts) (cpProcessGrin modNm)
@@ -1319,7 +1320,7 @@ cpProcessCoreFold modNm
 %%[[50
        ; cpFlowCoreSemBeforeFold modNm
 %%]]
-%%[[(50 grin)
+%%[[(8 grin)
        ; when (targetIsViaGrin (ehcOptTarget opts)) $
            cpFoldCore2Grin modNm
            -- void $ bcall $ FoldCore2Grin (mkPrevFileSearchKeyWithName modNm)
@@ -1423,6 +1424,7 @@ cpProcessGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessGrin modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
+       ; cpMsg modNm VerboseALot $ "cpProcessGrin, emit bc " ++ show (ehcOptEmitBytecode opts)
        ; cpSeq (   (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
                 ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-099-final" modNm]  else [])
