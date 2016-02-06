@@ -212,6 +212,7 @@ data DataGamInfo
       , dgiDataKi 			:: !Ty					-- the kind
 %%[[(8 counting)
       , dgiAnnVars      :: ![CA.Var]      -- all annatotation variables 
+      , dgiTyVars       :: ![HsName]      -- all tyvars
 %%]]
 %%[[50
       , dgiConstrNmL 		:: ![HsName]			-- all constructor names
@@ -277,7 +278,7 @@ mkDGI
      -> Maybe Int
 %%]]
 %%[[(8 counting)
-     -> [CA.Var]
+     -> [CA.Var] -> [HsName]
 %%]]
      -> DataGamInfo
 %%]]
@@ -286,14 +287,14 @@ mkDGI tyNm dty ki cNmL m nt
       mbGener
 %%]]
 %%[[(8 counting)
-      anns
+      anns tyvars
 %%]]
   = DataGamInfo
       tyNm
       dty
       ki
 %%[[(8 counting)
-      anns
+      anns tyvars
 %%]]
 %%[[50
       cNmL
@@ -329,7 +330,7 @@ mkDGIPlain tyNm dty dki cNmL m
           Nothing
 %%]]
 %%[[(8 counting)
-          []
+          [] []
 %%]]
 
 %%]

@@ -11,6 +11,8 @@ import Control.Arrow (second)
 import %%@{%{EH}%%}CountingAnalysis
 import %%@{%{EH}%%}Base.HsName (HsName, mkHNm)
 
+genEq :: ConstraintGeneration a => Var -> a -> a -> (Constraints, Var)
+genEq freshVars a1 a2 = runState (genEq' a1 a2) freshVars
 genAdd :: ConstraintGeneration a => Var -> a -> a -> a -> (Constraints, Var)
 genAdd freshVars a1 a2 a = runState (genAdd' a1 a2 a) freshVars
 genUnion :: ConstraintGeneration a => Var -> a -> a -> a -> (Constraints, Var)
@@ -33,6 +35,8 @@ genSup' = flip genSub'
 class ConstraintGeneration a where
   genC :: C a -> Constraint
   genC = undefined
+  genEq' :: a -> a -> State Var Constraints
+  genEq' a1 a2 = return [genC $ EqC a1 a2]
   genAdd' :: a -> a -> a -> State Var Constraints
   genAdd' a1 a2 a = return [genC $ PlusC a a1 a2]
   genUnion' :: a -> a -> a -> State Var Constraints
@@ -41,6 +45,23 @@ class ConstraintGeneration a where
   genTimes' a1 a2 a = return [genC $ TimesC a a1 a2]
   genCon' :: Annotation -> a -> a -> State Var Constraints
   genCon' a1 a2 a = return [genC $ ConC a a1 a2]
+
+instance ConstraintGeneration a => ConstraintGeneration [a] where
+  genEq' l1 l2 = do 
+    xss <- mapM (uncurry genEq') $  zip l1 l2
+    return $ concat xss
+  genAdd' l1 l2 l3 = do 
+    xss <- mapM (uncurry $ uncurry genAdd') $ zip (zip l1 l2) l3
+    return $ concat xss
+  genUnion' l1 l2 l3 = do 
+    xss <- mapM (uncurry $ uncurry genUnion') $ zip (zip l1 l2) l3
+    return $ concat xss
+  genTimes' a l2 l3 = do 
+    xss <- mapM (uncurry $ genTimes' a) $ zip l2 l3
+    return $ concat xss
+  genCon' a l2 l3 = do 
+    xss <- mapM (uncurry $ genCon' a) $ zip l2 l3
+    return $ concat xss
 
 instance ConstraintGeneration Annotation where
   genC = Constraint_AnnC . fromGC
@@ -52,6 +73,10 @@ instance ConstraintGeneration TyScheme where
   genC = Constraint_SchemeC . fromGC
 
 instance ConstraintGeneration a => ConstraintGeneration (Eta a) where
+  genEq' (Eta u1 v1) (Eta u2 v2) = do
+    c1 <- genEq' u1 u2
+    c2 <- genEq' v1 v2
+    return $ c1 ++ c2
   genAdd' (Eta u1 v1) (Eta u2 v2) (Eta u v) = do
     c1 <- genAdd' u1 u2 u
     c2 <- genAdd' v1 v2 v
@@ -70,6 +95,10 @@ instance ConstraintGeneration a => ConstraintGeneration (Eta a) where
     return $ c1 ++ c2
 
 instance ConstraintGeneration a => ConstraintGeneration (Rho a) where
+  genEq' (Rho u1 v1) (Rho u2 v2) = do
+    c1 <- genEq' u1 u2
+    c2 <- genEq' v1 v2
+    return $ c1 ++ c2
   genAdd' (Rho u1 v1) (Rho u2 v2) (Rho u v) = do
     c1 <- genAdd' u1 u2 u
     c2 <- genAdd' v1 v2 v
@@ -88,30 +117,41 @@ instance ConstraintGeneration a => ConstraintGeneration (Rho a) where
     return $ c1 ++ c2
 
 instance ConstraintGeneration EtaAnnotatedType where
+  genEq' a b = genEq' (toEta a) (toEta b)
   genAdd' a b c = genAdd' (toEta a) (toEta b) (toEta c)
   genUnion' a b c = genUnion' (toEta a) (toEta b) (toEta c)
   genTimes' a b c = genTimes' a (toEta b) (toEta c)
   genCon' a b c = genCon' a (toEta b) (toEta c)
 
 instance ConstraintGeneration RhoAnnotatedType where
+  genEq' a b = genEq' (toRho a) (toRho b)
   genAdd' a b c = genAdd' (toRho a) (toRho b) (toRho c)
   genUnion' a b c = genUnion' (toRho a) (toRho b) (toRho c)
   genTimes' a b c = genTimes' a (toRho b) (toRho c)
   genCon' a b c = genCon' a (toRho b) (toRho c)
 
 instance ConstraintGeneration EtaTyScheme where
+  genEq' a b = genEq' (toEta a) (toEta b)
   genAdd' a b c = genAdd' (toEta a) (toEta b) (toEta c)
   genUnion' a b c = genUnion' (toEta a) (toEta b) (toEta c)
   genTimes' a b c = genTimes' a (toEta b) (toEta c)
   genCon' a b c = genCon' a (toEta b) (toEta c)
 
 instance ConstraintGeneration RhoTyScheme where
+  genEq' a b = genEq' (toRho a) (toRho b)
   genAdd' a b c = genAdd' (toRho a) (toRho b) (toRho c)
   genUnion' a b c = genUnion' (toRho a) (toRho b) (toRho c)
   genTimes' a b c = genTimes' a (toRho b) (toRho c)
   genCon' a b c = genCon' a (toRho b) (toRho c)
 
 instance ConstraintGeneration Env where
+  genEq' env1 env2 = do 
+    y <- mapM (\x -> do
+      e1 <- envLookup' env1 x
+      e2 <- envLookup' env2 x
+      genEq' e1 e2) xs
+    return $ concat y
+    where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2
   genAdd' env1 env2 env = do 
     y <- mapM (\x -> do
       e1 <- envLookup' env1 x
@@ -387,6 +427,7 @@ instance Compute Env where
     return (concat c, M.fromList e)
     where xs = M.keys env2
 
+-- version used when combining environments
 envLookup :: Var -> Env -> HsName -> (RhoTyScheme, Var)
 envLookup v e h = runState (envLookup' e h) v
 
@@ -399,6 +440,22 @@ envLookup' env v = case M.lookup v env of
       (TyScheme_SForAll (S.singleton $ mkHNm $ "CA" ++ show y) 
         S.empty [] (AnnotatedType_TyVar $ mkHNm $ "CA" ++ show y)) 
       annZero) annZero
+
+-- version used when a certain variable needs to be constrained
+envLookupFresh :: Var -> Env -> HsName -> (RhoTyScheme, Var)
+envLookupFresh v e h = runState (envLookupFresh' e h) v
+
+envLookupFresh' :: Env -> HsName -> State Var (RhoTyScheme)
+envLookupFresh' env v = case M.lookup v env of
+  Just x -> return x
+  Nothing -> do 
+    y <- getFresh
+    v <- getFresh
+    d <- getFresh
+
+    return $ RhoTyScheme_Rho (EtaTyScheme_Eta
+      (TyScheme_SchemeVar $ SV y) (Annotation_AnnVar v)) 
+      (Annotation_AnnVar d)
 
 getFresh :: State Var Var
 getFresh = do

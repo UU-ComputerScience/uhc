@@ -317,7 +317,8 @@ trfCore opts optimScope dataGam modNm trfcore
 
 %%[[(8 counting)
         t_counting_analysis 
-                        = liftTrfModPlain  osm "counting-analysis"           $ cmodTrfAnalysisCounting dataGam
+                        = liftTrfModWithStateExtra osm "counting-analysis" lamMpPropagate
+                                                               $ \s -> cmodTrfAnalysisCounting dataGam (trfcoreInhLamMp $ trfstExtra s)
 %%]]
 
 %%[[(8 codegenanalysis)

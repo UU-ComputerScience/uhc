@@ -44,7 +44,7 @@ Currently the following is maintained:
 %%]
 %%[(8 codegen) import(UHC.Util.Utils)
 %%]
-%%[(8 counting) import({%{EH}CountingAnalysis (EtaAnnotatedType)})
+%%[(8 counting) import({%{EH}CountingAnalysis})
 %%]
 
 -- PP
@@ -167,6 +167,9 @@ emptyLamInfo'
 %%[[(8 grin)
             (Just emptyGrinByteCodeLamInfo)
 %%]]
+%%[[(8 counting)
+            (EtaAnnotatedType_Eta (AnnotatedType_TyError "Empty lamInfo" ) (Annotation_AnnVar (-1)))
+%%]]
             Map.empty
 
 emptyLamInfo :: LamInfo
@@ -174,6 +177,9 @@ emptyLamInfo
   = LamInfo 0 StackTraceInfo_None
 %%[[(8 grin)
             Nothing
+%%]]
+%%[[(8 counting)
+            (EtaAnnotatedType_Eta (AnnotatedType_TyError "Empty lamInfo" ) (Annotation_AnnVar (-1)))
 %%]]
             Map.empty
 %%]

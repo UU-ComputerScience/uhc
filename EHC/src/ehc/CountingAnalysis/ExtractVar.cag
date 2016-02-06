@@ -7,8 +7,15 @@
 %%[(8 counting) hs import({%{EH}CountingAnalysis})
 %%]
 
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
+%%]
+
 %%[(8 counting) ag import({CountingAnalysis/AbsSyn})
 WRAPPER *
+%%]
+
+%%[(99 counting)
+PRAGMA strictcase
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,9 +79,9 @@ instance ExtractVar Constraints where
 
 %%[(8 counting) ag
 
-ATTR ALL [ | | fav USE {Set.union} {Set.empty}: {Set Var} ]
-ATTR ALL [ | | ftv USE {Set.union} {Set.empty}: {Set HsName} ]
-ATTR ALL [ | | fsv USE {Set.union} {Set.empty}: {Set SchemeVar} ]
+ATTR ALLTYPES [ | | fav USE {Set.union} {Set.empty}: {Set Var} ]
+ATTR ALLTYPES [ | | ftv USE {Set.union} {Set.empty}: {Set HsName} ]
+ATTR ALLTYPES [ | | fsv USE {Set.union} {Set.empty}: {Set SchemeVar} ]
 
 
 SEM Annotation

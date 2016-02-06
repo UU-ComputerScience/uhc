@@ -9,13 +9,16 @@
 
 Implementation of Hidde's counting Analysis
 
-%%[(8 counting) hs module {%{EH}Core.Trf.CountingAnalysis} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map (Map),qualified Data.Map as Map)
+%%[(8 counting) hs module {%{EH}Core.Trf.CountingAnalysis} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map (Map),qualified Data.Map as Map,qualified Data.Map as Data.Map)
 %%]
 
-%%[(8 counting) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
+%%[(8 counting) hs import({%{EH}LamInfo},{%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 counting) hs import({%{EH}CountingAnalysis.ConstraintGeneration},{%{EH}CountingAnalysis.ConstraintSolver},{%{EH}CountingAnalysis})
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysis.ToCAModule})
 %%]
 
 %%[(8 counting) hs import(qualified {%{EH}CountingAnalysis.Substitution} as S)
@@ -31,9 +34,17 @@ Debugging
 %%[(8 counting) hs import(Debug.Trace)
 %%]
 
-%%[(8 counting).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/Trf/CommonStructureInfo},{Core/CommonBindNm})
-WRAPPER CodeAGItf
+%%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSyn})
+WRAPPER CAModule
 %%]
+
+
+-- %%[(8 counting).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonCtxtPred},{Core/Trf/CommonFv},{Core/Trf/CommonStructureInfo},{Core/CommonBindNm})
+-- WRAPPER CodeAGItf
+-- %%]
+
+-- %%[(8 counting) ag import({Core/CommonLamInfo},{Core/CommonGathLamInfo})
+-- %%]
 
 %%[(99 counting)
 PRAGMA strictcase
@@ -44,24 +55,108 @@ PRAGMA strictcase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) hs
-cmodTrfAnalysis :: Bool -> DataGam -> CModule -> CModule
-cmodTrfAnalysis s dataGam cmod
-  =  let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
-                            (Inh_CodeAGItf
-                             { dataGam_Inh_CodeAGItf = dataGam,
-                               subtyping_Inh_CodeAGItf = s
+cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
+cmodTrfAnalysis s dataGam lamMap cmod
+  =  let t = wrap_CAModule (sem_CAModule (traceShowId $ toCAModule cmod)) 
+                            (Inh_CAModule
+                             { dataGam_Inh_CAModule = dataGam
+                             , subtyping_Inh_CAModule = s
+                             , lamMp_Inh_CAModule = lamMap
                              })
-     in cTrf_Syn_CodeAGItf t
+     in ( cmod -- return the input module as nothing is changed
+        , gathLamMp_Syn_CAModule t
+        )
 %%]
 
 %%[(8 counting) hs export(cmodTrfAnalysisCounting)
-cmodTrfAnalysisCounting :: DataGam -> CModule -> CModule
+cmodTrfAnalysisCounting :: DataGam -> LamMp -> CModule -> (CModule, LamMp)
 cmodTrfAnalysisCounting = cmodTrfAnalysis True
 %%]
 
 %%[(8 counting) hs export(cmodTrfAnalysisCountingUnique)
-cmodTrfAnalysisCountingUnique :: DataGam -> CModule -> CModule
+cmodTrfAnalysisCountingUnique :: DataGam -> LamMp -> CModule -> (CModule, LamMp)
 cmodTrfAnalysisCountingUnique = cmodTrfAnalysis False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) hs 
+
+
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR
+  CAModule CAExpr
+    [ | | gathLamMp: LamMp ]
+
+SEM CAExpr
+  | Let
+          lhs         .   gathLamMp   =   @binds.bindLamMp `Map.union` @body.gathLamMp
+  | LetBang
+    lhs.gathLamMp = @b.bindLamMp `Map.union` @body.gathLamMp
+  | * - Let LetBang
+          lhs         .   gathLamMp   =   Map.empty
+%%]
+
+%%[(8 codegen)
+ATTR CABindings CABinding [ | | bindLamMp USE {`lamMpUnionBindAspMp`} {Map.empty}: LamMp ]
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Combining LamInfo for local (per module) use
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CAModule
+  | Module      loc         .   gathLamMp   =   lamMpMergeInto @howMergeLamInfo const @mod.gathLamMp @lhs.lamMp
+                mod         .   lamMp       =   @howUnionGathLamInfo @lhs.lamMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Distributing LamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR
+  ALLCAEXPR CAModule
+    [ lamMp: LamMp | | ]
+%%]
+
+%%[(8 codegen)
+SEM CAExpr
+  | Lam         body        .   lamMp       =   Map.delete @bind @lhs.lamMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo Hooks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting)
+SEM CAModule
+  | Module       
+    loc.howUnionGathLamInfo = Map.union @gathLamMp
+%%]
+
+%%[(8 counting)
+SEM CAModule
+  | Module       
+    loc.howMergeLamInfo = (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType=a})
+%%]
+
+%%[(8 counting)
+-- TODO
+-- SEM CBound
+--   | Bind        
+--     lhs.bindLamMp = traceShow (@lhs.nm, @expr.fety) $ Map.singleton @lhs.nm (emptyLamInfo {laminfoCaType = @expr.fety})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,10 +164,10 @@ cmodTrfAnalysisCountingUnique = cmodTrfAnalysis False
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) ag
-ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
-ATTR AllNT [ | | cTrf: SELF ]
-ATTR CodeAGItf [ | | cTrf: CModule ]
-ATTR CodeAGItf AllNT [ subtyping: Bool | | ]
+ATTR ALLCAEXPR CAModule [ dataGam: DataGam | | ]
+ATTR ALLCAEXPR [ | | cTrf: SELF ]
+ATTR CAModule [ | | cTrf: CAModule ]
+ATTR CAModule ALLCAEXPR [ subtyping: Bool | | ]
 
 %%]
 
@@ -81,146 +176,398 @@ ATTR CodeAGItf AllNT [ subtyping: Bool | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) ag
-ATTR AllNT [ solvedContraints: {Solution} | freshVar: {Var} | constrs USE {++} {[]}: {Constraints}]
-ATTR AllExprBase [ | env: Env | ety: {EtaAnnotatedType} fety: {EtaAnnotatedType}]
-ATTR CBind CBound [ | | name: HsName]
-ATTR AllExprBase [ isSeq: Bool | | ]
+ATTR ALLCAEXPR [ solvedContraints: {Solution} | freshVar: {Var} | constrs USE {++} {[]}: {Constraints}]
+ATTR CAExpr [ | | fety: {EtaAnnotatedType} ]
+ATTR CAExpr CAAlt CAAlts CAConVar CAConVars [ | | ety: {EtaAnnotatedType} ]
+ATTR ALLCAEXPR - CAPat [ | | env: Env ]
+ATTR CAConVars [ | | conVars: {[Rho AnnotatedType]} ]
+ATTR CAConVar [ | | conVar: {Rho AnnotatedType} ]
+ATTR CAAlt CAAlts CAPat [ | | dataTyName: {Maybe HsName} ]
+ATTR CAAlt CAAlts  [ | | numFields: {Int} ]
+ATTR CAPat [ | | fields: {[HsName]} ]
 
--- Ensure type is defined everywhere
--- SEM AllExprBase
---   | *
---     -- should be lazy but are not
---     loc.ety = Eta (TyError $ "Unsupported expression: " {-++ show @loc.cTrf-}) annBot
+SEM CAModule
+  | Module
+    mod.freshVar = 0
+    lhs.cTrf = CAModule_Module @mod.cTrf
+    loc.solvedContraints = traceShow ("Number of Constraints: " ++ (show $ length @mod.constrs)) $ solveConstraints @mod.freshVar @mod.constrs
+    mod.solvedContraints = @loc.solvedContraints
 
-SEM CodeAGItf
-  | AGItf
-    module.freshVar = 0
-    lhs.cTrf = {-traceShow ("Constraints: (", length @module.constrs,") ", @module.constrs, @loc.solvedContraints) $ -}@module.cTrf
-    loc.solvedContraints = solveConstraints @module.freshVar @module.constrs
-    module.solvedContraints = @loc.solvedContraints
-
-SEM AllExprBase
+SEM CAExpr
   | * 
-    lhs.fety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported fety") annBot
-
-SEM CModule
-  | *
-    expr.env = Map.empty
-    expr.isSeq = False
-
-SEM CBind
-  | Bind
-    lhs.name = @nm
-  | * - Bind
-    lhs.name = mkHNm $ "Not supported CBind alternative: " {-++ show @loc.cTrf-}
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBind alternative" {-++ show @loc.cTrf-}) annBot
-
-SEM CBound
-  | Bind
-    loc.ety = @expr.ety
-    lhs.name = case @expr.cTrf of
-                CExpr_Var (ACoreBindRef n _) -> n
-                _ -> panic "Code is not in ANormalForm"
-  | * - Bind
-    lhs.name = mkHNm $ "Not supported CBound alternative: " {-++ show @loc.cTrf-}
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBound alternative" {-++ show @loc.cTrf-}) annBot
-
-SEM CExpr
-  | * 
-    lhs.fety := S.substSolution @loc.ety @lhs.solvedContraints
+    lhs.fety = S.substSolution @loc.ety @lhs.solvedContraints
   | Var
     lhs.freshVar = @lhs.freshVar + 3
-    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 0)
+    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
     loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
     loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
-    lhs.constrs = [Constraint_InstC @loc.sigma @loc.tau]
-    lhs.env = Map.singleton (acbrefNm @ref) $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) annOne 
+    lhs.env = Map.singleton @v $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) annOne 
     loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
+    lhs.constrs = [Constraint_InstC @loc.sigma @loc.tau]
+  | Int Char Integer
+    lhs.env = Map.empty
+    lhs.freshVar = @lhs.freshVar + 1
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm @loc.dataName) [] []) $ Annotation_AnnVar @lhs.freshVar
+  | Char
+    loc.dataName = "Char"
+  | Int
+    loc.dataName = "Int"
+  | Integer
+    loc.dataName = "Integer"
+  | String
+    lhs.env = Map.empty
+    lhs.freshVar = @lhs.freshVar + 5
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm "UHC.Base.String") (map Annotation_AnnVar [@lhs.freshVar + 1 .. @lhs.freshVar + 4]) []) $ Annotation_AnnVar @lhs.freshVar
   | Lam
-    loc.nu2 = Annotation_AnnVar $ @lhs.freshVar + 0
+    -- loc.nu = Annotation_AnnVar @lhs.freshVar
+    -- loc.delta = Annotation_AnnVar $ @lhs.freshVar + 1
+    loc.nu2 = Annotation_AnnVar @lhs.freshVar
     loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)
-    ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind.name @body.env
-    bind.freshVar = @lhs.freshVar + 2
-    (loc.scheme, lhs.freshVar) = envLookup @loc.fv @body.env @bind.name
+    body.freshVar = @lhs.freshVar + 2
+    (loc.scheme, lhs.freshVar) = envLookupFresh @loc.fv @body.env @bind
+    ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind @body.env
     lhs.constrs = Constraint_SchemeC (CTyScheme_EqC (stripRhoEta $ toRho @loc.scheme) (TyScheme_SForAll Set.empty Set.empty [] @loc.tau)) : @body.constrs ++ @loc.c2
     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyFunc (fromRho $ fmap (const @loc.tau) $ toRho @loc.scheme) @body.ety) @loc.nu2 
   | App
-    ((loc.c2a, loc.tyArg), loc.fv1) = sub @func.freshVar True @func.ety
-    ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 @lhs.subtyping @arg.ety
-    func.freshVar = @lhs.freshVar + 3
-    loc.delta2 = Annotation_AnnVar $ @lhs.freshVar + 0
-    loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)) $ Annotation_AnnVar $ @lhs.freshVar + 2
-    ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ (Map.adjust (\(RhoTyScheme_Rho sigma4 _) -> RhoTyScheme_Rho sigma4 @loc.delta2) (@arg.name) @arg.env)
+    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
+    loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
+    loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
+    loc.delta2 = Annotation_AnnVar $ @lhs.freshVar + 3
+    loc.c2 = [Constraint_InstC @loc.sigma @loc.tau]
+    loc.nu1 = Annotation_AnnVar $ @lhs.freshVar + 4
+    
+    loc.sigma2' = EtaAnnotatedType_Eta @loc.tau @loc.nu
+    loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 5)) $ Annotation_AnnVar $ @lhs.freshVar + 6
+    loc.sigma4 = EtaTyScheme_Eta @loc.sigma @loc.nu
+    func.freshVar = @lhs.freshVar + 7
+    
+    ((loc.c2a, loc.sigma2), loc.fv1) = sub @func.freshVar @lhs.subtyping @loc.sigma2'
+    ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 True @func.ety
+    ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ Map.singleton @arg $ RhoTyScheme_Rho @loc.sigma4 @loc.delta2
     lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) : 
-                    Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.tyArg @loc.delta2) @loc.sigma3)) :
-                    @loc.c1a ++ @func.constrs ++ @loc.c2a ++ @arg.constrs ++ @loc.c3
+                    Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.sigma2 @loc.delta2) @loc.sigma3)) :
+                    @loc.c1a ++ @func.constrs ++ @loc.c2 ++ @loc.c2a ++ @loc.c3
     loc.ety = @loc.sigma3
   | Let
-    loc.isThisSeq = case @categ of
-                    CBindCateg_Strict -> True
-                    _ -> False
-    binds.isSeq = @loc.isThisSeq
-    loc.ety = @body.ety
-  | Tup -- How to deal with these as tuple, data constroctor
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Tup" {-++ show @loc.cTrf-}) annBot
+    -- todo
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported Let") annBot
+  | LetBang
+    -- todo
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported LetBang") annBot
+  | Con
+    loc.freshAnnVarsMap = Map.fromList $ zip (dgiAnnVars @loc.dataType) @loc.freshAnnVars
+    loc.freshTyVarsMap = Map.fromList $ zip (dgiTyVars @loc.dataType) @loc.freshTyVars
+    loc.dataType = fromJust $ dataGamLookup (@tyNm) @lhs.dataGam
+    loc.freshAnnVars = take (length $ dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar ..]
+    loc.freshTyVars = map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take (length $ dgiTyVars @loc.dataType) $ [@lhs.freshVar + length (dgiAnnVars @loc.dataType) ..]
+    loc.nu = Annotation_AnnVar $ @lhs.freshVar + (length $ dgiAnnVars @loc.dataType) + (length $ dgiTyVars @loc.dataType)
+    flds.freshVar = @lhs.freshVar + (length $ dgiAnnVars @loc.dataType) + (length $ dgiTyVars @loc.dataType) + 1
+
+    (loc.constrs, lhs.freshVar) = genEq @flds.freshVar @flds.conVars $ S.subst (dtiFldAnnTyL $ fromJust $ 
+                                    Map.lookup (@conNm) $ dgiConstrTagMp @loc.dataType)
+                                    @loc.freshAnnVarsMap @loc.freshTyVarsMap Map.empty
+    lhs.constrs = @loc.constrs ++ @flds.constrs
+    lhs.env = @flds.env
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData @tyNm @loc.freshAnnVars @loc.freshTyVars) @loc.nu
+  | Rec
+    lhs.constrs = @flds.constrs
+    lhs.env = @flds.env
+    loc.ety = @flds.ety
+
   | Case
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Case" {-++ show @loc.cTrf-}) annBot
-  | Int
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Int" {-++ show @loc.cTrf-}) annBot
-  | Char
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Char" {-++ show @loc.cTrf-}) annBot
-  | String
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression String" {-++ show @loc.cTrf-}) annBot
-%%[[(97 core)
-  | Integer
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Integer" {-++ show @loc.cTrf-}) annBot
-%%]]
-  -- not supported
+    loc.dataTyName = fromJust @alts.dataTyName
+    loc.dataType = fromJust $ dataGamLookup (@loc.dataTyName) @lhs.dataGam
+    loc.freshAnnVars = take (length $ dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar ..]
+    loc.freshTyVars = map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take (length $ dgiTyVars @loc.dataType) $ [@lhs.freshVar + length (dgiAnnVars @loc.dataType) ..]
+    e.freshVar = @lhs.freshVar + (length $ dgiAnnVars @loc.dataType) + (length $ dgiTyVars @loc.dataType) + @alts.numFields + 1
+
+    ((loc.c1a, loc.subEty), loc.fv1) = sub @alts.freshVar True @e.ety
+    loc.etyTyData = AnnotatedType_TyData @loc.dataTyName @loc.freshAnnVars @loc.freshTyVars
+    loc.c1 = Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.subEty) $
+              if @loc.isRec then @loc.etyRec else @loc.etyTyData)
+                
+    ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv1 @e.env @alts.env
+    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.subEty) annOne) : 
+                    @loc.c1 : @loc.c1a ++ @loc.c3 ++ @alts.constrs ++ @e.constrs
+
+    loc.freshRecTyVars = map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take @alts.numFields $ [@lhs.freshVar + (length $ dgiAnnVars @loc.dataType) + (length $ dgiTyVars @loc.dataType) ..]
+    loc.etyRec = AnnotatedType_TyRow @loc.freshRecTyVars
+    loc.isRec = isNothing  @alts.dataTyName
+    loc.ety = @alts.ety
   | FFI
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression FFI" {-++ show @loc.cTrf-}) annBot
-  | CaseAltFail
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression CaseAltFail " {-++ show @loc.cTrf-}) annBot
-  | TupDel
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupDel" {-++ show @loc.cTrf-}) annBot
-  | TupIns
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupIns" {-++ show @loc.cTrf-}) annBot
-  | TupUpd
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupUpd" {-++ show @loc.cTrf-}) annBot
-  | Dbg
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Dbg" {-++ show @loc.cTrf-}) annBot
-  | Hole
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Hole" {-++ show @loc.cTrf-}) annBot
-  | HoleLet
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression HoleLet" {-++ show @loc.cTrf-}) annBot
-  | CoeArg
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression CoeArg" {-++ show @loc.cTrf-}) annBot
-  | ImplsApp
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression ImplsApp" {-++ show @loc.cTrf-}) annBot
-  | ImplsLam
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression ImplsLam" {-++ show @loc.cTrf-}) annBot
-  | Ann
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Ann" {-++ show @loc.cTrf-}) annBot
+    lhs.env = Map.empty
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported FFI") annBot
+    -- todo
 
-SEM CExprAnn
-  | *
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CExprAnn" {-++ show @loc.cTrf-}) annBot
+SEM CAAlt
+  | Alt
+    lhs.dataTyName = @p.dataTyName
+    lhs.numFields = length @p.fields
 
-SEM CAltL CBindAnnL CBindL CBoundL CPatFldL
+SEM CAAlts
+  | Cons
+    lhs.dataTyName = @hd.dataTyName
+    lhs.numFields = @hd.numFields
+    loc.ety = @hd.ety
+    ((loc.c3, lhs.env), loc.fv1) = computeUnion @tl.freshVar @hd.env @tl.env
+    (loc.constrs, lhs.freshVar) = genEq @loc.fv1 @hd.ety @tl.ety
+    lhs.constrs = @loc.constrs ++ @hd.constrs ++ @tl.constrs ++ @loc.c3
   | Nil
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported Nil contructor" {-++ show @loc.cTrf-}) annBot
+    lhs.dataTyName = panic "No alts in case"
+    lhs.numFields = 0
+    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
+    loc.nu = Annotation_AnnVar $ @lhs.freshVar + 1
+    loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
+    lhs.freshVar = @lhs.freshVar + 2
 
-SEM CBindAnn
-  | Coe
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBindAnn Coe" {-++ show @loc.cTrf-}) annBot
-
-SEM CPat
-  | * 
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CPat" {-++ show @loc.cTrf-}) annBot
-
-SEM CPatRest
+SEM CAPat
   | *
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CPatRest" {-++ show @loc.cTrf-}) annBot
+    lhs.fields = @flds
+  | Pat
+    lhs.dataTyName = Just @tyNm
+  | RecPat
+    lhs.dataTyName = Nothing
 
+SEM CAConVars
+  | Cons
+    lhs.ety = case @tl.ety of EtaAnnotatedType_Eta (AnnotatedType_TyRec xs) ann -> EtaAnnotatedType_Eta (AnnotatedType_TyRec $ @hd.ety : xs) ann
+    ((loc.c2, lhs.env), lhs.freshVar) = computeAdd @tl.freshVar @hd.env @tl.env
+    lhs.constrs = @loc.c2 ++ @hd.constrs ++ @tl.constrs
+    lhs.conVars = @hd.conVar : @tl.conVars
+  | Nil
+    lhs.freshVar = @lhs.freshVar + 1
+    loc.nu = Annotation_AnnVar @lhs.freshVar
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyRec []) @loc.nu
+    lhs.conVars = []
+
+SEM CAConVars CAAlts CABindings
+  | Nil
+    lhs.env = Map.empty
+
+SEM CAConVar
+  | Var
+    lhs.freshVar = @lhs.freshVar + 4
+    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
+    loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
+    loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
+    loc.delta = Annotation_AnnVar $ @lhs.freshVar + 3
+    lhs.env = Map.singleton @v $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) @loc.delta 
+    loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
+    lhs.constrs = [Constraint_InstC @loc.sigma @loc.tau]
+    lhs.conVar = Rho (Eta @loc.tau @loc.nu) @loc.delta 
 
 %%]
+
+
+
+
+
+
+-- %%[(8 counting) ag
+-- ATTR AllNT [ solvedContraints: {Solution} | freshVar: {Var} | constrs USE {++} {[]}: {Constraints}]
+-- ATTR AllExprBase [ | | fety: {EtaAnnotatedType} ]
+-- ATTR AllExprBase CAlt CAltL [ | | ety: {EtaAnnotatedType} ]
+-- ATTR AllExprBase CPat CAlt CAltL CPatFld CPatFldL [ | env: Env | ]
+-- ATTR CBind CBound [ | | name: HsName]
+-- ATTR AllExprBase [ isSeq: Bool | | ]
+-- ATTR CPat CAlt CAltL [ | | dataType: {HsName} ]
+-- ATTR CAltL [ | | isNil: {Bool} ]
+-- ATTR CPatFld [ caseType: {Rho AnnotatedType} | | ]
+-- ATTR CPatFldL [ caseTypes: {[Rho AnnotatedType]} | | ]
+
+-- SEM CPatFldL
+--   | Cons
+--     hd.caseType = head @lhs.caseTypes
+--     tl.caseTypes = tail @lhs.caseTypes
+
+-- SEM CPat
+--   | * - Con Int Char
+--     -- this case should not happen but as it is al strict no error can be given
+--     lhs.dataType = mkHNm "Unsupported CPat for dataType"
+--   | Con
+--       loc.dataType = undefined --if (rec ctagTyNm $ traceShow ("Con", @tag) @tag
+--       loc.fullDataType = fromJust $ dataGamLookup @loc.dataType @lhs.dataGam
+--     binds.caseTypes = dtiFldAnnTyL $ fromJust $ Map.lookup (ctagNm @tag) (dgiConstrTagMp @loc.fullDataType) 
+--   | Int
+--     lhs.dataType = mkHNm "Int"
+--   | Char
+--     lhs.dataType = mkHNm "Char"
+
+-- SEM CPatFld
+--   | Fld
+--     lhs.env = let Rho (Eta ty ua) da = @lhs.caseType
+--               in Map.insert @lbl (RhoTyScheme_Rho (EtaTyScheme_Eta (TyScheme_SForAll Set.empty Set.empty [] ty) ua) da) @lhs.env
+
+-- SEM CAltL
+--   | Cons
+--     lhs.dataType = @hd.dataType
+--     lhs.env = Map.union @hd.env @tl.env
+--     lhs.ety = @hd.ety
+--     lhs.constrs = if @tl.isNil then @hd.constrs else 
+--                     Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @hd.ety) (getAnnEta $ toEta @tl.ety)) :
+--                     Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @hd.ety) (stripEta $ toEta @tl.ety)) :
+--                     @hd.constrs ++ @tl.constrs
+--     lhs.isNil = False
+--   | Nil
+--     lhs.dataType = mkHNm "Unsupported CAltL Nil for dataType"
+--     lhs.env = Map.empty
+--     lhs.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported CAltL Nil for dataType") annBot
+--     lhs.isNil = True
+
+-- SEM CodeAGItf
+--   | AGItf
+--     module.freshVar = 0
+--     lhs.cTrf = {-traceShow ("Constraints: (", length @module.constrs,") ", @module.constrs, @loc.solvedContraints) $ -}@module.cTrf
+--     loc.solvedContraints = traceShow ("Number of Constraints: " ++ (show $ length @module.constrs)) $ solveConstraints @module.freshVar @module.constrs
+--     module.solvedContraints = @loc.solvedContraints
+
+-- SEM AllExprBase
+--   | * 
+--     lhs.fety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported fety") annBot
+
+-- SEM CModule
+--   | *
+--     expr.isSeq = False
+--     expr.env = Map.empty
+
+-- SEM CBind
+--   | Bind
+--     lhs.name = @nm
+--   | * - Bind
+--     lhs.name = mkHNm $ "Not supported CBind alternative: " {-++ show @loc.cTrf-}
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBind alternative" {-++ show @loc.cTrf-}) annBot
+
+-- SEM CBound
+--   | Bind
+--     loc.ety = @expr.ety
+--     lhs.name = case @expr.cTrf of
+--                 CExpr_Var (ACoreBindRef n _) -> n
+--                 _ -> panic "Code is not in ANormalForm"
+--   | * - Bind
+--     lhs.name = mkHNm $ "Not supported CBound alternative: " {-++ show @loc.cTrf-}
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBound alternative" {-++ show @loc.cTrf-}) annBot
+
+-- SEM CExpr
+--   | * 
+--     lhs.fety := S.substSolution @loc.ety @lhs.solvedContraints
+--   | Var
+--     lhs.freshVar = @lhs.freshVar + 3
+--     loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 0)
+--     loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
+--     loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
+--     lhs.constrs = [Constraint_InstC @loc.sigma @loc.tau]
+--     lhs.env = Map.singleton (acbrefNm @ref) $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) annOne 
+--     loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
+--   | Lam
+--     loc.nu2 = Annotation_AnnVar $ @lhs.freshVar + 0
+--     loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)
+--     ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind.name @body.env
+--     bind.freshVar = @lhs.freshVar + 2
+--     (loc.scheme, lhs.freshVar) = envLookup @loc.fv @body.env @bind.name
+--     lhs.constrs = Constraint_SchemeC (CTyScheme_EqC (stripRhoEta $ toRho @loc.scheme) (TyScheme_SForAll Set.empty Set.empty [] @loc.tau)) : @body.constrs ++ @loc.c2
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyFunc (fromRho $ fmap (const @loc.tau) $ toRho @loc.scheme) @body.ety) @loc.nu2 
+--   | App
+--     ((loc.c2a, loc.tyArg), loc.fv1) = sub @func.freshVar True @func.ety
+--     ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 @lhs.subtyping @arg.ety
+--     func.freshVar = @lhs.freshVar + 3
+--     loc.delta2 = Annotation_AnnVar $ @lhs.freshVar + 0
+--     loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)) $ Annotation_AnnVar $ @lhs.freshVar + 2
+--     ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ (Map.adjust (\(RhoTyScheme_Rho sigma4 _) -> RhoTyScheme_Rho sigma4 @loc.delta2) (@arg.name) @arg.env)
+--     lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) : 
+--                     Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.tyArg @loc.delta2) @loc.sigma3)) :
+--                     @loc.c1a ++ @func.constrs ++ @loc.c2a ++ @arg.constrs ++ @loc.c3
+--     loc.ety = @loc.sigma3
+--   | Let
+--     loc.isThisSeq = case @categ of
+--                     CBindCateg_Strict -> True
+--                     _ -> False
+--     binds.isSeq = @loc.isThisSeq
+--     loc.ety = @body.ety
+--   | Tup -- How to deal with these as tuple, data constroctor
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Tup" {-++ show @loc.cTrf-}) annBot
+--     loc.freshData = S.subst @loc.ety @loc.freshAnnVars @loc.freshTyVars Map.empty
+--     loc.freshAnnVars = Map.fromList $ zip (dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar .. ]
+--     loc.freshTyVars = Map.fromList $ zip ([] :: [HsName]) {-list of tyvars?-} $ map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) [@lhs.freshVar + length (dgiAnnVars @loc.dataType) .. ]
+--     loc.dataType = fromJust $ dataGamLookup (ctagTyNm $ traceShow ("tup", @tag) @tag) @lhs.dataGam
+
+--   | Case -- totally ignore dflt. assume fully matched in alts
+--      loc.freshData = S.subst @loc.ety @loc.freshAnnVars @loc.freshTyVars Map.empty
+--      loc.freshAnnVars = Map.fromList $ zip (dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar .. ]
+--      loc.freshTyVars = Map.fromList $ zip ([] :: [HsName]) {-list of tyvars?-} $ map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) [@lhs.freshVar + length (dgiAnnVars @loc.dataType) .. ]
+--      loc.dataType = fromJust $ dataGamLookup @alts.dataType @lhs.dataGam
+--     expr.freshVar = @lhs.freshVar + Map.size @loc.freshAnnVars + Map.size @loc.freshTyVars
+--      loc.dt = AnnotatedType_TyData @alts.dataType (Map.elems @loc.freshAnnVars) (Map.elems @loc.freshTyVars)
+--     ((loc.c1a, loc.exprTy), loc.fv1) = sub @alts.freshVar True @expr.ety
+--     ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv1 @expr.env @alts.env
+--      lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.exprTy) annOne) : 
+--                     Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.exprTy) @loc.dt) :
+--                     @loc.c1a ++ @expr.constrs ++ @alts.constrs ++ @loc.c3
+--      loc.ety = @alts.ety
+--   | FFI
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression FFI" {-++ show @loc.cTrf-}) annBot
+--     -- loc.ety = EtaAnnotatedType_Eta @ty.annTy topAnn
+--   | Ann    -- maybe use CExprAnn.Ty for type signatures
+--     loc.ety = @expr.ety  
+--   | Char Int
+-- %%[[(97 core)
+--                     Integer
+-- %%]]
+--     lhs.freshVar = @lhs.freshVar + 1
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm @loc.dataName) [] []) $ Annotation_AnnVar @lhs.freshVar
+--   | Char
+--     loc.dataName = "Char"
+--   | Int
+--     loc.dataName = "Int"
+-- %%[[(97 core)
+--   | Integer
+--     loc.dataName = "Integer"
+-- %%]]
+--   | String
+--     lhs.freshVar = @lhs.freshVar + 5
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm "UHC.Base.String") (map Annotation_AnnVar [@lhs.freshVar + 1 .. @lhs.freshVar + 4]) []) $ Annotation_AnnVar @lhs.freshVar
+
+--   -- not supported
+--   | CaseAltFail
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression CaseAltFail " {-++ show @loc.cTrf-}) annBot
+--   | TupDel
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupDel" {-++ show @loc.cTrf-}) annBot
+--   | TupIns
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupIns" {-++ show @loc.cTrf-}) annBot
+--   | TupUpd
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupUpd" {-++ show @loc.cTrf-}) annBot
+--   | Dbg
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Dbg" {-++ show @loc.cTrf-}) annBot
+--   | Hole
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Hole" {-++ show @loc.cTrf-}) annBot
+--   | HoleLet
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression HoleLet" {-++ show @loc.cTrf-}) annBot
+--   | CoeArg
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression CoeArg" {-++ show @loc.cTrf-}) annBot
+--   | ImplsApp
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression ImplsApp" {-++ show @loc.cTrf-}) annBot
+--   | ImplsLam
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression ImplsLam" {-++ show @loc.cTrf-}) annBot
+
+-- SEM CExprAnn
+--   | *
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CExprAnn" {-++ show @loc.cTrf-}) annBot
+
+-- SEM CAltL CBindAnnL CBindL CBoundL CPatFldL
+--   | Nil
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported Nil contructor" {-++ show @loc.cTrf-}) annBot
+
+-- SEM CBindAnn
+--   | Coe
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBindAnn Coe" {-++ show @loc.cTrf-}) annBot
+
+-- SEM CPat
+--   | * 
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CPat" {-++ show @loc.cTrf-}) annBot
+
+-- SEM CPatRest
+--   | *
+--     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CPatRest" {-++ show @loc.cTrf-}) annBot
+
+
+-- %%]
 

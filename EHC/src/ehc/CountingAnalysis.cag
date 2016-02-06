@@ -13,8 +13,13 @@
 %%[(8 counting) hs import(Control.Monad)
 %%]
 
-%%[(8 core) ag import({CountingAnalysis/AbsSyn})
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
 %%]
+
+%%[(8 counting) ag import({CountingAnalysis/AbsSyn})
+%%]
+
+
 
 %%[(8 counting) hs
 type AnnVal = Set AnnPrim
@@ -32,11 +37,15 @@ data Solution = Solution
   , tySol :: TySol
   , schemeSol :: SchemeSol
   }
+  deriving (Eq, Show)
 %%]
 
 %%[(8 counting) ag
+DERIVING ALLTYPES
+  : Typeable, Ord, Data, Generic
+
 DERIVING *
-  : Typeable, Eq, Ord, Show, Data, Generic
+  : Eq, Show
 
 %%]
 

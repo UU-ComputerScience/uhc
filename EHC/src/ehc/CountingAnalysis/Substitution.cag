@@ -1,14 +1,21 @@
-%%[(8 counting) hs module {%{EH}CountingAnalysis.Substitution} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map,qualified Data.Map as Map)
+%%[(8 counting) hs module {%{EH}CountingAnalysis.Substitution} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map (Map),qualified Data.Map as Map, qualified Data.Map as Data.Map)
 %%]
 
-%%[(8 counting) hs import({%{EH}Base.HsName (HsName)})
+%%[(8 counting) hs import({%{EH}Base.HsName (HsName)}, {%{EH}Gam.DataGam})
 %%]
 
 %%[(8 counting) hs import({%{EH}CountingAnalysis})
 %%]
 
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
+%%]
+
 %%[(8 counting) ag import({CountingAnalysis/AbsSyn})
 WRAPPER *
+%%]
+
+%%[(99 counting)
+PRAGMA strictcase
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,6 +76,48 @@ instance Subst TyScheme where
   subst a am tm sm = subst_Syn_TyScheme $ wrap_TyScheme (sem_TyScheme a) 
     (Inh_TyScheme am sm tm)
 
+instance Subst [Rho AnnotatedType] where
+  subst xs am tm sm = map (\x -> toRho $ subst (fromRho x) am tm sm) xs
+
+-- instance Subst DataGamInfo where
+--   subst a@DataGamInfo{..} am tm sm = a 
+--     { dgiAnnVars = substAnn dgiAnnVars am
+--     , dgiTyVars = substTy dgiTyVars tm
+--     , dgiConstrTagMp = subst dgiConstrTagMp am tm sm
+--     }
+
+-- instance Subst [Var] where
+--   subst as am _ _ = map (flip substAnn am) as
+
+-- instance Subst Var where
+--   subst v am _ _ = fromMaybe v $ do
+--     mv <- Map.lookup v am
+--     getAnnVar mv
+
+-- instance Subst [HsName] where
+--   subst as _ tm _ = map (flip substTy tm) as
+
+-- instance Subst HsName where
+--   subst v _ tm _ = fromMaybe v $ do
+--     mv <- Map.lookup v tm
+--     getTyVar mv
+    
+-- getAnnVar :: Annotation -> Maybe Var
+-- getAnnVar (Annotation_AnnVar v) = Just v
+-- getAnnVar _ = Nothing
+
+-- getTyVar :: AnnotatedType -> Maybe HsName
+-- getTyVar (AnnotatedType_TyVar v) = Just v
+-- getTyVar _ = Nothing
+
+-- instance Subst (Map.Map HsName DataTagInfo) where
+--   subst m am tm sm = Map.map (\x -> subst x am tm sm) m
+
+-- instance Subst DataTagInfo where
+--   subst a@DataTagInfo{..} am tm sm = a 
+--     { dtiFldAnnTyL = map toRho $ subst_Syn_RhoAnnotatedTypeL $ wrap_RhoAnnotatedTypeL (sem_RhoAnnotatedTypeL $ map fromRho dtiFldAnnTyL) 
+--       (Inh_RhoAnnotatedTypeL am sm tm)
+--     }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

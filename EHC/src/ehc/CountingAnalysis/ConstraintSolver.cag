@@ -19,6 +19,9 @@
 %%[(8 counting) hs import(Data.Proxy (Proxy))
 %%]
 
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
+%%]
+
 Debugging
 %%[(8 counting) hs import(Debug.Trace)
 %%]
@@ -69,7 +72,7 @@ solveConstraints' v cs = solveConstraintsFix $ Syn_Root
   }
 
 solveConstraintsFix :: Syn_Root -> Syn_Root
-solveConstraintsFix syn = if useFull == [] then finalSyn else solveConstraintsFix finalSyn
+solveConstraintsFix syn = if finished then finalSyn else solveConstraintsFix finalSyn
   where (nc, sc, ic) = splitConstraints $ useFullConstraints_Syn_Root syn
         (bc, tc) | nc /= [] = (nc, sc ++ ic)
                  | sc /= [] = (sc, ic)
@@ -77,9 +80,10 @@ solveConstraintsFix syn = if useFull == [] then finalSyn else solveConstraintsFi
         syn' = syn {useFullConstraints_Syn_Root = bc}
         resSyn = singleSolveRun syn'
         phase2Syn = getUseFullConstraints syn $ resSyn {notUseFullConstraints_Syn_Root = notUseFullConstraints_Syn_Root syn}
-        useFull = useFullConstraints_Syn_Root syn ++ useFullConstraints_Syn_Phase2Root phase2Syn ++ tc
+        useFull = useFullConstraints_Syn_Root resSyn ++ useFullConstraints_Syn_Phase2Root phase2Syn ++ tc
         notUseFull = notUseFullConstraints_Syn_Root syn ++ notUseFullConstraints_Syn_Phase2Root phase2Syn
         finalSyn = resSyn { useFullConstraints_Syn_Root = useFull, notUseFullConstraints_Syn_Root = notUseFull}
+        finished = useFull == [] || rootSynSolution syn == rootSynSolution finalSyn
 
 -- old syn, new syn
 getUseFullConstraints :: Syn_Root -> Syn_Root -> Syn_Phase2Root
@@ -132,8 +136,8 @@ SEM Root
 
 %%[(8 counting) ag
 
-ATTR ALL Root [ | freshVar: Var | ]
-ATTR ALL [ | | copy: SELF]
+ATTR ALLTYPES Root [ | freshVar: Var | ]
+ATTR ALLTYPES [ | | copy: SELF]
 
 %%]
 
@@ -331,8 +335,8 @@ solveTySchemeConstraint fresh constr = case constr of
 
 %%[(8 counting) ag
 
-ATTR ALL Root [ | annPartSol: {AnnPartSol} annSol: {AnnSol} tySol: {TySol} schemeSol: {SchemeSol} | ]
-ATTR ALL [ | newConststraints: Constraints | ]
+ATTR ALLTYPES Root [ | annPartSol: {AnnPartSol} annSol: {AnnSol} tySol: {TySol} schemeSol: {SchemeSol} | ]
+ATTR ALLTYPES [ | newConststraints: Constraints | ]
 
 SEM Root
   | Root
@@ -418,10 +422,10 @@ SEM Constraint
 
 %%[(8 counting) ag
 
-ATTR ALL Root Phase2Root [ | | useFullConstraints USE {(++)} {[]}: Constraints notUseFullConstraints USE {(++)} {[]}: Constraints ]
-ATTR ALL Phase2Root [ changedAnnVars: {Set Var} changedTyVars: {Set HsName} changedSchemeVars: {Set SchemeVar} | | ]
-ATTR ALL Phase2Root [ finalAnnSol: {AnnSol} finalAnnPartSol: {AnnPartSol}  finalTySol: {TySol} finalSchemeSol: {SchemeSol} | | ]
-ATTR ALL [ solving: Bool | | ]
+ATTR ALLTYPES Root Phase2Root [ | | useFullConstraints USE {(++)} {[]}: Constraints notUseFullConstraints USE {(++)} {[]}: Constraints ]
+ATTR ALLTYPES Phase2Root [ changedAnnVars: {Set Var} changedTyVars: {Set HsName} changedSchemeVars: {Set SchemeVar} | | ]
+ATTR ALLTYPES Phase2Root [ finalAnnSol: {AnnSol} finalAnnPartSol: {AnnPartSol}  finalTySol: {TySol} finalSchemeSol: {SchemeSol} | | ]
+ATTR ALLTYPES [ solving: Bool | | ]
 
 SEM Root
   | Root
@@ -446,7 +450,7 @@ SEM Phase2Root
     cs.solving = False
     cs.tySol = M.empty
 
-SEM ALL
+SEM ALLTYPES
   | *
     loc.finalSubst = S.subst @loc.copy @lhs.finalAnnSol @lhs.finalTySol @lhs.finalSchemeSol
 

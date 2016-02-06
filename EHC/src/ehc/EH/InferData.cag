@@ -98,7 +98,7 @@ SEM AGItf
 ATTR AGItf [ dataGam: DataGam | | ]
 
 SEM AGItf
-  | AGItf       expr        .   dataGam             =   (specialtrace @expr.gathDataGam) `gamUnion` @lhs.dataGam
+  | AGItf       expr        .   dataGam             =   ({-specialtrace-} @expr.gathDataGam) `gamUnion` @lhs.dataGam
 
 {
 specialtrace :: DataGam -> DataGam
@@ -127,6 +127,19 @@ ATTR TyExpr [ | |  caIsFunc: {Maybe Bool}]
 ATTR DataFields TyExprs RowTyExpr [ | | caAnnTyList: {[CA.AnnotatedType]}]
 ATTR DataFields [ | | caLength: {Int} ]
 -- ATTR AllDataConstr AllDataField AllTyExpr [ caBaseDataTypeName: HsName caBaseAnnDataType: {CA.AnnotatedType} | | ]
+
+ATTR TyVars [ | | caTyVars: {[HsName]} ]
+ATTR TyVar [ | | caTyVar: {HsName} ]
+
+SEM TyVars
+  | Cons
+    lhs.caTyVars = @hd.caTyVar : @tl.caTyVars
+  | Nil
+    lhs.caTyVars = []
+
+SEM TyVar
+  | Var
+    lhs.caTyVar = @nm
 
 SEM AGItf
   | AGItf
@@ -175,16 +188,17 @@ SEM DataConstr
 
 SEM Decl
   | Data
-    lhs.caLocalDataNamesGath = traceShow ("DataDecl: ", @tyNm) $ Set.singleton @tyNm
+    lhs.caLocalDataNamesGath = {-traceShow ("DataDecl: ", @tyNm) $ -}Set.singleton @tyNm
     lhs.caLocalAnnVarsGath = [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
     -- lhs.caLocalAnnVarsGath = @loc.caLocalAnnVarsGath
     lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
     -- constrs.caLocalDataGam = @lhs.caLocalDataGam
+    loc.caTyVars = @tyVars.caTyVars
   | Type
-    lhs.caLocalDataNamesGath = traceShow ("TypeDecl: ", @tyNm) $ Set.singleton @tyNm
+    lhs.caLocalDataNamesGath = {-traceShow ("TypeDecl: ", @tyNm) $ -}Set.singleton @tyNm
     lhs.caLocalAnnVarsGath = [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
     -- lhs.caLocalAnnVarsGath = @loc.caLocalAnnVarsGath
-    lhs.caLocalDataGamGath = traceShow ("TypeTy: ", @tyNm, @tyExpr.caAnnTy) $ Map.singleton @tyNm (length @lhs.caLocalAnnVars)
+    lhs.caLocalDataGamGath = {-traceShow ("TypeTy: ", @tyNm, @tyExpr.caAnnTy) $ -}Map.singleton @tyNm (length @lhs.caLocalAnnVars)
     -- constrs.caLocalDataGam = @lhs.caLocalDataGam
 
 SEM TyExpr
@@ -203,12 +217,12 @@ SEM TyExpr
                     _ -> Nothing
     loc.isFunc = fromMaybe False @loc.ismFunc
     lhs.caFreshVar = if @lhs.caDeeper || @loc.isFunc then @lhs.caFreshVar else @lhs.caFreshVar + @loc.caNumAnn
-    loc. (caIsType, caNumAnn) = traceShow' @nm $ fromJust $ @loc.caNumFunc <|> @loc.caNumLoc <|> @loc.caNumLdg <|> @loc.caNumIdg <|> @loc.caNumTy <|> @loc.caNumPanic
-       . caNumFunc = if @loc.isFunc then traceShow ("isFunc: ",@nm) Just (False, 0) else Nothing
-       . caNumLdg = fmap (\x -> traceShow ("module: ",@nm) (False,x)) $ Map.lookup @nm @lhs.caLocalDataGam
-       . caNumIdg = fmap (traceShow ("gam: ",@nm) . (\x -> (False,x)) . length . dgiAnnVars) $ @nm `dataGamLookup` @lhs.caDataGam
-       . caNumLoc = if @loc.localGroup then traceShow ("local: ",@nm) (Just (False, 0)) else Nothing
-       . caNumTy = fmap (traceShow ("type: ",@nm) . (\x -> (True,x)) . length . tgiAnnVars) $ @nm `tyGamLookup` @lhs.caTyGam
+    loc. (caIsType, caNumAnn) = {-traceShow' @nm $ -}fromJust $ @loc.caNumFunc <|> @loc.caNumLoc <|> @loc.caNumLdg <|> @loc.caNumIdg <|> @loc.caNumTy <|> @loc.caNumPanic
+       . caNumFunc = if @loc.isFunc then {-traceShow ("isFunc: ",@nm)-} Just (False, 0) else Nothing
+       . caNumLdg = fmap (\x -> {-traceShow ("module: ",@nm) -}(False,x)) $ Map.lookup @nm @lhs.caLocalDataGam
+       . caNumIdg = fmap ({-traceShow ("gam: ",@nm) . -}(\x -> (False,x)) . length . dgiAnnVars) $ @nm `dataGamLookup` @lhs.caDataGam
+       . caNumLoc = if @loc.localGroup then {-traceShow ("local: ",@nm)-} (Just (False, 0)) else Nothing
+       . caNumTy = fmap ({-traceShow ("type: ",@nm) . -}(\x -> (True,x)) . length . tgiAnnVars) $ @nm `tyGamLookup` @lhs.caTyGam
        . caNumPanic = panic $ "Could not find data type " ++ show @nm
     -- loc.caTypeLookup = @nm `tyGamLookup` @lhs.caTyGam
     lhs.caAnnTy = if @loc.localGroup then CA.AnnotatedType_TyData @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
@@ -373,6 +387,7 @@ SEM Decl
 %%]]
 %%[[(8 counting)
                                                               @lhs.caLocalAnnVars
+                                                              @loc.caTyVars
 %%]]
                 lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 

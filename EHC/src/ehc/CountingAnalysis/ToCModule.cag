@@ -1,0 +1,50 @@
+%%[(8 counting) hs module {%{EH}CountingAnalysis.ToCModule} import(Data.Maybe,Data.Set (Set),qualified Data.Set as S,Data.Map (Map),qualified Data.Map as M, qualified Data.Map as Data.Map)
+%%]
+
+%%[(8 counting) hs import({%{EH}LamInfo},{%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysis})
+%%]
+
+%%[(8 counting) hs import(UHC.Util.Utils)
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
+%%]
+
+Debugging
+%%[(8 counting) hs import(Debug.Trace)
+%%]
+
+%%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSyn})
+WRAPPER CAModule
+%%]
+
+
+%%[(99 counting)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) hs export(toCModule)
+toCModule :: CAModule -> CModule
+toCModule = undefined
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) ag
+
+ATTR CAModule [ | | trf: {CModule} ]
+
+SEM CAModule
+  | Module
+    lhs.trf = undefined
+
+%%]

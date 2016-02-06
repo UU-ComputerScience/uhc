@@ -1,3 +1,7 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(8 counting) ag
 TYPE Constraints = [Constraint]
 TYPE Annotations = [Annotation]
@@ -6,6 +10,7 @@ TYPE CAnnotations = [CAnnotation]
 TYPE CAnnotatedTypes = [CAnnotatedType]
 TYPE CTySchemes = [CTyScheme]
 TYPE Env = MAP {HsName} RhoTyScheme
+TYPE RhoAnnotatedTypeL = [RhoAnnotatedType]
 
 DATA AnnPrim 
   | Zero 
@@ -21,6 +26,7 @@ DATA AnnotatedType
   | TyData n : {HsName} as : Annotations ts : AnnotatedTypes
   | TyFunc t1 : RhoAnnotatedType t2 : EtaAnnotatedType
   | TyRow ts : AnnotatedTypes
+  | TyRec ts : {[EtaAnnotatedType]}
   -- If this is ever inspected then something is wrong in the algorithm
   -- But at the moment it is needed as the AG needs a type in every expression
   -- even unused ones
@@ -77,8 +83,8 @@ DATA CTyScheme
 
 SET CAL = CAnnotations CAnnotatedTypes CTySchemes
 SET CA = CAnnotation CAnnotatedType CTyScheme
-SET EA = EtaAnnotatedType EtaTyScheme
-SET RA = RhoAnnotatedType RhoTyScheme
+SET RHO = RhoTyScheme RhoAnnotatedType
+SET ETA = EtaTyScheme EtaAnnotatedType
 
 -- Filter/Special nodes
 
@@ -99,7 +105,62 @@ DATA Phase2Root
 --   | Constr c : Constraint
 
 SET SPEC = Root Phase2Root
-SET ALL = * - SPEC
-SET RHO = RhoTyScheme RhoAnnotatedType
-SET ETA = EtaTyScheme EtaAnnotatedType
+SET ALLTYPES = Constraint AnnPrim Annotation 
+  AnnotatedType TyScheme Constraints
+  Annotations AnnotatedTypes CAnnotations
+  CAnnotatedTypes CTySchemes Env RhoAnnotatedTypeL
+  CAL RHO CA ETA
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expressions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) ag
+
+TYPE CABindings = [CABinding]
+TYPE CAAlts = [CAAlt]
+TYPE CAConVars = [CAConVar]
+
+DATA CAExpr
+  | Var v : {HsName}
+  | Int c : {Int}
+  | Char c : {Char}
+  | String c : {String}
+  | Integer c : {Integer}
+  | Let binds : CABindings body : CAExpr
+  | LetBang b : CABinding body : CAExpr
+  | Con tyNm : {HsName} conNm : {HsName} flds : CAConVars
+  | Rec flds : CAConVars
+  | App func : CAExpr  arg : {HsName}
+  | Lam bind : {HsName} body : CAExpr
+  | Case e : CAExpr alts : CAAlts
+  -- what to do with this
+  | FFI         callconv        : {FFIWay}
+                safety          : {String}
+%%[[8
+                impEnt          : {String}
+%%][90
+                impEnt          : {ForeignEnt}
+%%]]
+                ty              : {Ty}
+
+DATA CAConVar
+  | Var v: {HsName}
+
+DATA CABinding
+  | Bind n : {HsName} e : CAExpr
+
+DATA CAAlt
+  | Alt p : CAPat e : CAExpr
+
+DATA CAPat
+  | Pat tyNm : {HsName} conNm : {HsName} flds : {[HsName]}
+  | RecPat flds : {[HsName]}
+
+DATA CAModule 
+  | Module mod : CAExpr
+
+SET ALLCAEXPR = CAExpr CABinding CABindings CAAlt CAAlts CAPat CAConVar CAConVars
+
 %%]
