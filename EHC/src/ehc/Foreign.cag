@@ -37,7 +37,8 @@
 %%[90
 DERIVING AllForeign ForeignExpr
   : Show, Eq
-  , Typeable, Generic
+  , Typeable
+  , Generic
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,6 +142,15 @@ data ForeignDirection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[90 hs
+instance Serialize ForeignExpr
+instance Serialize ForeignEnt
+instance Serialize CCall
+instance Serialize PlainCall
+instance Serialize PrimCall
+instance Serialize JavaScriptCall
+%%]
+
+%%[9090 hs
 instance Serialize ForeignExpr where
   -- sput (ForeignExpr_Ent         ) = sputWord8 0
   -- sput (ForeignExpr_EntNm    a  ) = sputWord8 1  >> sput a

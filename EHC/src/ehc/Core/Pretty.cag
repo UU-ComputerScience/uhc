@@ -37,9 +37,6 @@ WRAPPER
 %%[[(8 coresysf)
   CBind
 %%]]
-%%[[9
-  CMetas
-%%]]
 %%]
 
 %%[(8 coreout) hs export(ppCModule)
@@ -139,18 +136,6 @@ ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]
 
-%%[(9 coreout) hs
-ppOptCMetas :: CMetas -> PP_Doc
-ppOptCMetas x
-  =  let  t = wrap_CMetas (sem_CMetas x)
-                          (Inh_CMetas
-                             { {- lamMp_Inh_CMetas = Map.empty
-                             , -} opts_Inh_CMetas = emptyEHCOpts
-                             , mlev_Inh_CMetas = metaLevVal
-                             })
-     in   (pp_Syn_CMetas t)
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Config
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,7 +164,7 @@ ppCBindL :: CBindL -> PP_Doc
 ppCBindL
   = ppAssocL
   . map (\b -> case b of
-                 CBind_Bind n [CBound_Bind m v] -> (n,v >|< ppOptCMetas m)
+                 CBind_Bind n [CBound_Bind v] -> (n,pp v)
                  CBind_Bind n a -> (n, vlist a)
         )
 %%]
@@ -249,7 +234,7 @@ howHor  = HowPP  (>#<)  (>#<)  ppSpaces  ppListSep
 %%]
 
 %%[(8 coreout)
-ATTR AllMetaNT AllExpr CModule - AllMeta [ ppHow: HowPP | | ]
+ATTR AllMetaNT AllExpr CModule [ ppHow: HowPP | | ]
 
 SEM CodeAGItf
   | AGItf       loc         .   ppHow       =   howVert
@@ -409,12 +394,11 @@ SEM CBind
                                                 in  def
 
 SEM CBound
-  | Bind        loc         .   ppBound     =   whenMore @lhs.opts @bindMeta.pp >-< @expr.pp
+  | Bind        loc         .   ppBound     =   @expr.pp
   | Ty          loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
 %%[[(8 codegenanalysis)
   | RelevTy     loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @tyPP -- pp @relevTy
 %%]]
-  | Meta        loc         .   ppBound     =   ppACBaspKeyS @aspectKeyS >#< @cmetas.pp
   | Val         loc         .   (ppBound,lev,mustPar)
                                             =   let asp | Set.null @aspectKeyS || ACoreBindAspectKey_Default `Set.member` @aspectKeyS
                                                                                 = id
@@ -459,33 +443,6 @@ SEM CPatRest
 
   | TupSplit    lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
                                                 >|< ppParens (@pat.pp >#< "|">#< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
-
-%%[(8 coreout)
-ATTR CMetaVal [ | | optPP : PP_Doc ]
-
-SEM CMetas
-  | Tuple       loc         .   pp          =   ppCurlysCommas [@x1.pp,@x2.pp]
-
-SEM CMetaBind
-  | Plain       loc         .   pp          =   pp "BINDPLAIN"
-  | Function0   loc         .   pp          =   pp "BINDFUNCTION0"
-  | Function1   loc         .   pp          =   pp "BINDFUNCTION1"
-  | Apply0      loc         .   pp          =   pp "BINDAPPLY0"
-
-SEM CMetaVal
-  | Val         loc         .   pp          =   pp "VAL"
-%%[[9
-  | Dict        loc         .   pp          =   pp "DICT"
-  | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlyList ppTrack @tracks
-  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlyList ppTrack @tracks
-  | Track        loc        .   pp          =   pp "TRACK"        >|< ppCurlys (show @track)
-%%]]
-
-SEM CMetaVal
-  | Val         loc         .   optPP       =   empty
-  | * - Val     loc         .   optPP       =   " :" >#< @pp
-
-%%]
 
 %%[(8 coreout)
 SEM CExpr
@@ -538,7 +495,6 @@ SEM CBound
 %%[[(8 codegenanalysis)
   | RelevTy     loc         .   sep         =   "::R"
 %%]]
-  | Meta        loc         .   sep         =   "::M"
   | Val         loc         .   sep         =   (if @mlevHere == @lhs.minMetaLev then "=" else "::") ++ (if @mlevHere > @lhs.mlev then @lev else "")
 %%[[90
   | FFE         loc         .   sep         =   "="

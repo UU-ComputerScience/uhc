@@ -1,7 +1,7 @@
 # 20110913 NOTE: dependency on this lib has been removed, latest version used was 4.2.1
 
 # location of GMP's src
-SRC_EXTLIBS_GMP_PREFIX					:= $(TOP_PREFIX)extlibs/gmp/
+SRC_EXTLIBS_GMP_PREFIX					:= $(UHC_TOP_PREFIX)extlibs/gmp/
 SRCABS_EXTLIBS_GMP_PREFIX				:= $(TOPABS2_PREFIX)extlibs/gmp/
 
 # this file

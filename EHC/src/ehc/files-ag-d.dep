@@ -4,14 +4,12 @@ Ty
 Core
 CountingAnalysis
 CoreRun
-TyCore
 JVMClass
 JavaScript
 Foreign
 GrinCode
 GrinByteCode
 LLVM
-Silly
 Error
 AnaDomain
 Cmm

@@ -34,7 +34,7 @@ In principle such files reside in directories or packages.
 %%[99 import(UHC.Util.Hashable)
 %%]
 
-%%[99 import(GHC.Generics)
+%%[9999 import(GHC.Generics)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

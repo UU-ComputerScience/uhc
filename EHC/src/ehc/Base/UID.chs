@@ -21,13 +21,10 @@
 %%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
 %%]
 
-%%[1 import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[1 import(Data.Typeable(Typeable), GHC.Generics(Generic))
 %%]
 
 %%[50 import(Control.Monad, UHC.Util.Binary as B, UHC.Util.Serialize)
-%%]
-
-%%[1 import(GHC.Generics)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})

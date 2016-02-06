@@ -20,9 +20,6 @@ Creation of values that are not needed further downstream the code are eliminate
 %%[(8 codegen grin) hs import({%{EH}Base.HsName.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
 
-%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common})
-%%]
-
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar})
 %%]
 

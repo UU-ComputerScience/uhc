@@ -98,6 +98,10 @@ instance ForceEval ClGamInfo where
 %%]
 
 %%[(50 hmtyinfer)
+instance Serialize ClGamInfo
+%%]
+
+%%[(5050 hmtyinfer)
 instance Serialize ClGamInfo where
 -- %%[[50
 --   sput (ClGamInfo a b c d) = sput a >> sput b >> sput c >> sput d

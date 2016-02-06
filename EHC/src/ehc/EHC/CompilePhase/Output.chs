@@ -53,9 +53,6 @@ Output generation, on stdout or file
 %%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
 %%]
 
--- TyCore output
-%%[(8 codegen tycore) import({%{EH}TyCore},{%{EH}TyCore.Pretty})
-%%]
 -- Cmm output
 %%[(8888 codegen cmm) import({%{EH}Cmm} as Cmm,{%{EH}Cmm.ToC}(cmmMod2C), {%{EH}Cmm.Pretty})
 %%]
@@ -153,42 +150,10 @@ cpOutputSomeModule getMod astHdlr how nmsuff suff modNm
 %%% Compile actions: specific output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen tycore) export(cpOutputTyCoreModule,cpOutputTyCore)
-cpOutputTyCoreModule :: EHCCompileRunner m => Bool -> String -> String -> HsName -> Module -> EHCompilePhaseT m ()
-cpOutputTyCoreModule binary nmsuff suff modNm tyMod
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 fpC = mkOutputFPath opts modNm fp (suff ++ nmsuff) -- for now nmsuff after suff, but should be inside name
-                 fnC    = fpathToStr fpC
-%%[[8
-         ;  liftIO $ putPPFPath fpC (ppModule opts tyMod) 100
-%%][50
-         ;  liftIO (if binary
-                  then do { fpathEnsureExists fpC		-- should be in FPath equivalent of putSerializeFile
-                          ; putSerializeFile fnC tyMod
-                          }
-                  else putPPFPath fpC (ppModule opts tyMod) 100
-                 )
-%%]]
-         }
-
-cpOutputTyCore :: EHCCompileRunner m => String -> HsName -> EHCompilePhaseT m ()
-cpOutputTyCore suff modNm
-  =  do  {  cr <- get
-         -- part 1: current .tycore
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbTyCore = ecuMbTyCore ecu
-                 cMod   = panicJust "cpOutputTyCore" mbTyCore
-                 fpC = mkOutputFPath opts modNm fp suff
-         ;  cpMsg modNm VerboseALot "Emit TyCore"
-         ;  liftIO $ putPPFPath fpC (ppModule opts cMod) 100
-         }
-%%]
-
 %%[(8 codegen) export(cpOutputCore)
 cpOutputCore :: EHCCompileRunner m => ASTFileContent -> String -> String -> HsName -> EHCompilePhaseT m FPath
 cpOutputCore how nmsuff suff modNm =
-    fmap (panicJust "cpOutputGrin.cpOutputSomeModule") $
+    fmap (panicJust "cpOutputCore.cpOutputSomeModule") $
       cpOutputSomeModule (^. ecuCore) astHandler'_Core how nmsuff suff modNm
 %%]
 

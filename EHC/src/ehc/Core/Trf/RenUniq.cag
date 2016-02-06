@@ -308,7 +308,6 @@ ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 ATTR AllExprOnly 
      AllAlt 
      AllBind    [ protectedBindingNames : {[HsName]} | | ]
-ATTR AllMetaVal [ | | protectableBindingNames : {[HsName]} ]
 %%]
 
 %%[(8 codegen)
@@ -371,13 +370,7 @@ SEM CPatRest
 
 %%[(9 codegen)
 SEM CBound
-  | Bind         expr.protectedBindingNames  =   @bindMeta.protectableBindingNames ++ @lhs.protectedBindingNames
-
-SEM CMetaVal
-  | DictClass
-    DictInstance lhs.protectableBindingNames   =   [ nm  | TrackVarApply nm _ <- @tracks ]
-  | Dict         lhs.protectableBindingNames  =   []
-  | Val Track    lhs.protectableBindingNames   =   []
+  | Bind         expr.protectedBindingNames  =   @lhs.protectedBindingNames
   
 SEM CModule
   | Mod          expr.protectedBindingNames  =   []

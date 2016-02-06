@@ -172,7 +172,7 @@ SEM CBound
                                             =   case @mbStackTrace of
                                                   StackTraceInfo_HasStackTraceEquiv dbNm | @isTraceCandidate
                                                     -> ( [ acoreBind1Cat CBindCateg_Plain dbNm (acoreLam1 @nmStackTrace @expr.cTrf) 
-                                                         , acoreBind1MetasTy @lhs.nm @bindMeta.cTrf (acoreTyErr "ExplicitStackTrace.CBound.Bind")
+                                                         , acoreBind1Ty @lhs.nm (acoreTyErr "ExplicitStackTrace.CBound.Bind")
                                                            $ acoreLam   @expr.traceCandidateLamArgs
                                                            $ acoreApp   (acoreVar dbNm)
                                                                         ( acoreVar (ehcOptBuiltin @lhs.opts ehbnDataListAltNil)

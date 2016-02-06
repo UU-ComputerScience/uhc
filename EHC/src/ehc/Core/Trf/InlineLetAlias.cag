@@ -244,7 +244,7 @@ SEM CPatFld
   
 SEM CBound
   | Bind  expr.allowTrfToCon  =  not (@lhs.nm `Set.member` @lhs.noTrfToConNmS)
-          expr.noTrfToConNmS  =  @lhs.noTrfToConNmS `Set.union` @bindMeta.nameS
+          expr.noTrfToConNmS  =  @lhs.noTrfToConNmS
   
 %%]
 
@@ -305,37 +305,6 @@ SEM CBound
 
 %%[(9 codegen)
 ATTR CExpr           [ | | bindNmMp     USE {`Map.union`} {Map.empty}: NmMp ]
-
-ATTR AllMetaVal      [ bindNmMp: NmMp | | nameS: HsNameS ]
-
-SEM CBound
-  | Bind  		bindMeta	.	bindNmMp  	=  	@expr.bindNmMp
-  | Meta  		cmetas  	.	bindNmMp  	=  	panicJust "InlineLetAlias.CBound.Meta.aspBindNmMp" $ Map.lookup acbaspkeyDefault @lhs.aspBindNmMp
-
-SEM CMetaVal
-  | Dict
-    Val             lhs.nameS = Set.empty
-  | DictClass       
-    DictInstance    lhs.nameS =  Set.fromList (concatMap trackNames @tracks)
-  | * - Dict Val DictClass DictInstance
-  					lhs.nameS =  Set.empty
-  
-SEM CMetaVal
-  | DictClass       lhs.cTrf  =  CMetaVal_DictClass    (map (substTrack @lhs.bindNmMp) @tracks)
-  | DictInstance    lhs.cTrf  =  CMetaVal_DictInstance (map (substTrack @lhs.bindNmMp) @tracks)
-
-
-{
-trackNames :: Track -> [HsName]
-trackNames (TrackSelect n t) = trackNames t
-trackNames (TrackVarApply x ts) = x : concatMap trackNames ts
-trackNames _ = []
-    
-substTrack :: NmMp -> Track -> Track
-substTrack m (TrackSelect n t) = TrackSelect n (substTrack m t)
-substTrack m (TrackVarApply x ts) = TrackVarApply (maybe x (fromJust . cexprMbVar) (Map.lookup x m)) (map (substTrack m) ts)
-substTrack _ t = t
-}
 
 
 %%]

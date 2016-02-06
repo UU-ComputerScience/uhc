@@ -48,12 +48,6 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[4 import({%{EH}Error})
 %%]
 
-%%[(4_2) import(Maybe) export(varmpDelAlphaRename,varmpFilterAlphaRename,varmpFilterTyAltsMappedBy)
-%%]
-
-%%[(4_2) export(tyAsVarMp',varmpTyRevUnit)
-%%]
-
 %%[6 import(UHC.Util.VarMp) export(module UHC.Util.VarMp)
 %%]
 
@@ -373,11 +367,6 @@ varmpTyUnit :: Ord k => k -> Ty -> VarMp' k VarMpInfo
 varmpTyUnit = varmpMetaLevTyUnit metaLevVal
 %%]
 
-%%[4_2.varmpTyRevUnit
-varmpTyRevUnit :: TyVarId -> Ty -> (Ty,VarMp)
-varmpTyRevUnit tv t = maybe (t,varmpTyUnit tv t) (\v -> let t' = mkTyVar tv in (t',varmpTyUnit v t')) . tyMbVar $ t
-%%]
-
 %%[(9 hmtyinfer || hmtyast) export(varmpImplsUnit,assocImplsLToVarMp,varmpScopeUnit,varmpPredUnit,varmpAssNmUnit)
 varmpImplsUnit :: ImplsVarId -> Impls -> VarMp
 varmpImplsUnit v i = mkVarMp (Map.fromList [(v,VMIImpls i)])
@@ -607,6 +596,10 @@ instance PP VarMpInfo where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 hmtyinfer || hmtyast)
+instance Serialize VarMpInfo
+%%]
+
+%%[(5050 hmtyinfer || hmtyast)
 instance Serialize VarMpInfo where
   -- sput (VMITy      a) = sputWord8 0  >> sput a
   -- sput (VMIImpls   a) = sputWord8 1  >> sput a

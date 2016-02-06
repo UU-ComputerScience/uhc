@@ -39,18 +39,6 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[4 hs export(TyQu(..)) 
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast) hs export(tyMbQu,tyIsQu,tyIsAlts) 
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) hs export(TyPlus(..),TyPlusL,tyPlusTy) 
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) hs export(TyHardness(..)) 
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) hs export(TyNeed(..)) 
-%%]
-
 %%[(6 hmtyinfer || hmtyast) hs export(kiStar) 
 %%]
 
@@ -58,15 +46,6 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%]
 
 %%[(7 hmtyinfer || hmtyast) hs import(Data.List) export(kiRow) 
-%%]
-
-%%[(7_2 hmtyinfer || hmtyast) hs import(Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
-%%]
-
-%%[(7_2 hmtyinfer || hmtyast) hs export(tyInsertAnnRec, tyReplaceAnnRec, touchAnn, touchAnnTy, addAnn, mkTruncArrow, rightmostResultAnnotation, annotationsStar, mkAnnArrow, addTrunc, tyAnnSubst)
-%%]
-
-%%[(7_2 hmtyinfer || hmtyast) hs export(TyExpConstr(..),TyExpConstrs,TyExpFields,TyExpField(..),Annotations,Annotation(..), DecomposedAnnMap)
 %%]
 
 %%[(8 hmtyinfer || hmtyast) hs export(tyRecOffset) 
@@ -84,7 +63,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[(9 hmtyinfer || hmtyast) hs export(tyEnsureNonAnyImpl)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(qualified UHC.Util.RLList as RLL)
+%%[(9 hmtyinfer || hmtyast) hs import(qualified UHC.Util.RLList.LexScope as LexScope)
 %%]
 
 %%[(9_1 hmtyinfer || hmtyast) hs export(TyPlusId)
@@ -112,7 +91,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 DERIVING *
   : Show, Eq, Ord
 %%[[50
-  , Typeable, Data, Generic
+  , Typeable, Generic
 %%]]
 
 DERIVING TyVarCateg
@@ -139,9 +118,6 @@ type TyVarId    = VarId
 %%[(2 hmtyinfer || hmtyast).TyVarId.Rest hs export(TyVarIdL,TyVarIdS)
 type TyVarIdL   = [TyVarId]
 type TyVarIdS   = VarIdS
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) -1.TyL
 %%]
 
 %%[(7 hmtyinfer || hmtyast) hs export(FldTyL)
@@ -317,36 +293,6 @@ emptyTvCatMp = Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Offered or required
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast) hs
-data TyNeed
-  = TyRequired | TyOffered | TyNoNeed
-  deriving (Eq,Ord)
-
-instance Show TyNeed where
-  show TyRequired    = "R"
-  show TyOffered     = "O"
-  show TyNoNeed      = "-"
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Hardness of type
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4_2 hmtyinfer || hmtyast) hs
-data TyHardness
-  = TyHard | TySoft TyVarId
-  deriving (Eq,Ord)
-
-instance Show TyHardness where
-  show TyHard          = "H"
-  show (TySoft     i)  = "S" -- "S:" ++ show i
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Label offset
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -374,12 +320,12 @@ instance Show LabelOffset where
 
 %%[(9 hmtyinfer || hmtyast) hs export(PredScope(..),initPredScope)
 data PredScope
-  = PredScope_Lev !(RLL.RLList Int)
+  = PredScope_Lev !LexScope.LexScope
   | PredScope_Var !TyVarId
   deriving (Eq,Ord)
 
 initPredScope :: PredScope
-initPredScope = PredScope_Lev RLL.empty
+initPredScope = PredScope_Lev LexScope.empty
 %%]
 
 %%[(50 hmtyinfer || hmtyast) hs
@@ -401,10 +347,10 @@ instance Show PredScope where
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpEnter,pscpLeave)
 pscpEnter :: Int -> PredScope -> (Int,PredScope)
-pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (s `RLL.concat` RLL.singleton x))
+pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (x `LexScope.enter` s))
 
 pscpLeave :: PredScope -> PredScope
-pscpLeave (PredScope_Lev s) = PredScope_Lev $ fst $ fromJust $ RLL.initLast s
+pscpLeave (PredScope_Lev s) = PredScope_Lev $ fromJust $ LexScope.leave s
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpEnter',pscpLeave',pscpMk')
@@ -435,27 +381,18 @@ pscpMk' yesEnter x s
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpIsVisibleIn,pscpCommon)
 pscpIsVisibleIn :: PredScope -> PredScope -> Bool
-pscpIsVisibleIn (PredScope_Lev sOuter) (PredScope_Lev sInner) = sOuter `RLL.isPrefixOf` sInner
+pscpIsVisibleIn (PredScope_Lev sOuter) (PredScope_Lev sInner) = sOuter `LexScope.isVisibleIn` sInner
 pscpIsVisibleIn _                      _                      = False
 
 pscpCommon :: PredScope -> PredScope -> Maybe PredScope
-pscpCommon (PredScope_Lev s1) (PredScope_Lev s2)
-  = Just $ PredScope_Lev $ commonPrefix s1 s2
-  where commonPrefix xxs     yys     | isJust ht1 && isJust ht2 && x == y     = RLL.singleton x `RLL.concat` commonPrefix xs ys
-                                     | otherwise                              = RLL.empty
-                                     where ht1 = RLL.headTail xxs
-                                           ht2 = RLL.headTail yys
-                                           (x,xs) = fromJust ht1
-                                           (y,ys) = fromJust ht2
-        -- commonPrefix _       _                    = RLL.empty
-pscpCommon _                  _                  
-  = Nothing        
+pscpCommon (PredScope_Lev s1) (PredScope_Lev s2) = Just $ PredScope_Lev $ LexScope.common s1 s2
+pscpCommon _                  _                  = Nothing        
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpParents)
 pscpParents :: PredScope -> [PredScope]
-pscpParents (PredScope_Lev s) | not (RLL.null s) = map PredScope_Lev $ RLL.inits $ RLL.init s
-pscpParents _                                   = []
+pscpParents (PredScope_Lev s) = map PredScope_Lev $ LexScope.parents s
+pscpParents _                 = []
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpCmp,pscpCmpByLen)
@@ -464,7 +401,7 @@ pscpCmp (PredScope_Lev s) (PredScope_Lev t) = Just $ s `compare` t
 pscpCmp _                 _                 = Nothing                 
 
 pscpCmpByLen :: PredScope -> PredScope -> Ordering                  
-pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = (RLL.length s) `compare` (RLL.length t)                    
+pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = s `LexScope.compareByLength` t                 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -539,7 +476,7 @@ data CHRPredOccCxt
       { cpocxScope			:: !PredScope			-- default, only allowed value for occurring preds
       --											-- others for solving and CHR's only
       }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
 
 %%]
 
@@ -557,7 +494,7 @@ data CHRPredOcc' p
        , cpoRange            :: !Range
 %%]]
        }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
 
 type CHRPredOcc = CHRPredOcc' Pred
 
@@ -781,11 +718,6 @@ tyIsVarPlain = maybe False (tvCatIsPlain . snd) . tyMbVar'
 
 tvIsPlain :: TvCatMp -> TyVarId -> Bool
 tvIsPlain m v = maybe False (tvCatIsPlain . tvinfoCateg) $ Map.lookup v m
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast) hs
-tyIsAlts :: Ty -> Bool
-tyIsAlts t = case t of {Ty_Alts _ _ -> True; _ -> False}
 %%]
 
 %%[(10 hmtyinfer || hmtyast) hs export(tyIsEmptyRow)
@@ -1190,11 +1122,6 @@ tyMbQu t
 tyVar :: Ty -> TyVarId
 tyVar = maybe uidStart id . tyMbVar
 {-# INLINE tyVar #-}
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast).tyPlusTy hs
-tyPlusTy :: TyPlus -> Ty
-tyPlusTy (TyPlus_Ty t _ _) = t
 %%]
 
 %%[(9_1 hmtyinfer || hmtyast).tyPlusTy -4_1.tyPlusTy hs
@@ -1747,7 +1674,7 @@ data TyKiKey
 %%[[(6 hmtyinfer || hmtyast)
   | TyKiKey_TyVar   !TyVarId
 %%]]
-  deriving (Eq,Ord, Generic)
+  deriving (Eq,Ord,Generic)
 
 instance Show TyKiKey where
   show (TyKiKey_Name  n) = show n
@@ -1783,197 +1710,8 @@ data TyCtxt = TyCtxt_Ty | TyCtxt_Pred | TyCtxt_Class deriving (Show,Eq)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Annotations
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-An annotation is an immutable, opaque value attached to certain components of a type. Each
-annotation is globally distinguishable and can be used as a key to some property in an
-environment. This is a design decision: we could have stored properties directly on the
-annotation, but that requires updating of the annotation of the type, and we rather keep
-an annotation immutable, and propably it's also easier to add new properties to an
-annotation by introducing yet another environment, than adding and maintaining an
-additional field to the Annotation data type.
-
-The phantom parameter is intended to reflect the type the annotation is put on,
-such that we can restrict certain operations on annotations to specific
-annotations. And make sure that we do not, by accident, mix annotations of
-different type.
-
-%%[(7_2 hmtyinfer || hmtyast).annotation hs
-
-type Annotations a = Set (Annotation a)
-data Annotation a
-  = Annotation { annUID      :: UID
-               , annInstFrom :: Maybe (Annotation a)
-               , annOnRefTp  :: Maybe (Annotation a)
-               }
-
-instance Eq (Annotation a) where
-  a == b = annUID a == annUID b
-  a /= b = annUID a /= annUID b
-
-instance Ord (Annotation a) where
-  a <= b = annUID a <= annUID b
-  a >= b = annUID a >= annUID b
-  a < b  = annUID a <  annUID b
-  a > b  = annUID a >  annUID b
-  compare a b = compare (annUID a) (annUID b)
-
-instance Show (Annotation a) where
-  show = ('d' :) . show . annUID
-
-type DecomposedAnnMap = Map HsName Ty
-
-touchAnn :: Annotation Ty
-touchAnn = Annotation { annUID      = uidNull
-                      , annInstFrom = Nothing
-                      , annOnRefTp  = Nothing
-                      }
-
-addAnn :: UID -> Ty -> Ty
-addAnn uid ty
-  = case ty of
-      Ty_App tl tr      -> addAnn uid tl `Ty_App` tr
-      Ty_TBind qu var t -> Ty_TBind qu var (addAnn uid t)
-      _                 -> Ty_Ann (Annotation uid Nothing Nothing) ty
-
-touchAnnTy :: Ty
-touchAnnTy = Ty_Ann touchAnn Ty_Any
-
-mkTruncArrow :: Ty -> Ty -> Ty
-mkTruncArrow a b
-  = Ty_App (Ty_App (Ty_TruncTyCon Set.empty (appCon hsnArrow)) a) b
-
-%%]
-
-
-Get the rightmost result annotation. I.e. when applied to a kind:
-get the annotation on the rightmost star.
-
-%%[(7_2 hmtyinfer || hmtyast) hs
-
-rightmostResultAnnotation :: Ty -> Annotation Ty
-rightmostResultAnnotation kind
-  = rec kind
-  where
-    rec kind
-      = case kind of
-          Ty_Ann ann _   -> ann
-          Ty_TBind _ _ k -> rec k
-          Ty_App _ k     -> rec k
-          _              -> error ("rightmostResultAnnotation: no such annotation: " ++ show kind)
-
-annotationsStar :: Ty -> [Annotation Ty]
-annotationsStar
-  = fst . anns_
-  where
-    anns_ kind
-      = case kind of
-          Ty_Ann ann k   -> (if snd (anns_ k) then [ann] else [], False)
-          Ty_TBind _ _ k -> anns_ k
-          Ty_Con hsn     -> ([], hsn == hsnKindStar || hsn == hsnKindRow)
-          Ty_Var _ _     -> ([], False)
-          Ty_App f a     -> let (af, _) = anns_ f
-                                (aa, _) = anns_ a
-                             in (af ++ aa, False)
-          _              -> error ("anns_: don't know how to deal with: " ++ show kind)
-
-%%]
-
-
-%%[(7_2 hmtyinfer || hmtyast) hs
-
-mkAnnArrow :: Ty -> TyL -> UID -> Ty
-mkAnnArrow ty tyL uid
-  = fst (foldr mkArr (ty, uid) tyL)
-  where
-    mkArr :: Ty -> (Ty, UID) -> (Ty, UID)
-    mkArr arg (res, uid)
-      = let (uid', aUid) = mkNewLevUID uid
-            res' = addAnn aUid (arg `mkTruncArr` res)
-         in (res', uid')
-    
-    mkTruncArr :: Ty -> Ty -> Ty
-    mkTruncArr arg res
-      = Ty_App (Ty_App (Ty_TruncTyCon Set.empty (appCon hsnArrow)) arg) res
-
-%%]
-
-
-%%[(7_2 hmtyinfer || hmtyast) hs
-
-addTrunc :: Annotations Ty -> Ty -> Ty
-addTrunc anns
-  = rec
-  where
-    rec ty
-      = case ty of
-          Ty_App tl tr      -> rec tl `Ty_App` tr
-          Ty_TBind qu var t -> Ty_TBind qu var (rec t)
-          Ty_Ann ann t      -> Ty_Ann ann (Ty_TruncTyCon anns t)
-
-%%]
-
-
-Some utility functions to combine annotated records.
-
-%%[(7_2 hmtyinfer || hmtyast).annRecUtils hs
-
-tyInsertAnnRec :: Ty -> Maybe HsName -> Ty -> Ty
-tyInsertAnnRec (Ty_App tyInit tyExts) mbNm addTy
-  = let (tyEmpty, exts) = recUnRowExts tyExts
-        exts' = insert mbNm exts
-     in tyInit `Ty_App` (tyEmpty `recRow` exts')
-  where
-    insert Nothing   exts = (mkHNmPos (1 + maxHnPos exts), addTy) : exts
-    insert (Just nm) exts = (nm, addTy) : exts
-tyInsertAnnRec _ _ _ = Ty_Any
-
-maxHnPos :: AssocL HsName a -> Int
-maxHnPos l = maximum (0 : [n | (mkHNmPos n, _) <- l ])
-
-tyReplaceAnnRec :: Ty -> HsName -> Ty -> Ty
-tyReplaceAnnRec (Ty_App tyInit tyExts) nm replTy
-  = let (tyEmpty, exts) = recUnRowExts tyExts
-        exts' = replace exts
-     in tyInit `Ty_App` (tyEmpty `recRow` exts')
-  where
-    replace (x@(n, t) : xs) | n == nm   = (nm, replTy) : xs
-                            | otherwise = x : replace xs
-    replace []            = []
-tyReplaceAnnRec _ _ _ = Ty_Any
-
-%%]
-
-Substitution on an annotated type.
-
-%%[(7_2 hmtyinfer || hmtyast) hs
-
-tyAnnSubst :: Map (Annotation Ty) (Annotation Ty) -> Ty -> Ty
-tyAnnSubst mp
-  = rec
-  where
-    rec (Ty_App f a)            = Ty_App (rec f) (rec a)
-    rec (Ty_Ann a t)            = Ty_Ann (repl a) (rec t)
-    rec (Ty_TBind tv cat ty)    = Ty_TBind tv cat (rec ty)
-    rec (Ty_TruncTyCon anns ty) = Ty_TruncTyCon (Set.map repl anns) (rec ty)
-    rec (Ty_ExpTyCon cs as ty)  = Ty_ExpTyCon (map recCon cs) as (rec ty)
-    rec t                       = t
-
-    recCon (TyExpConstr_Constr nm fs)
-      = TyExpConstr_Constr nm (map recFld fs)
-    recFld (TyExpField_Field ty)
-      = TyExpField_Field (rec ty)
-
-    repl a = Map.findWithDefault a a mp
-
-%%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Co/Contra variance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Polarities, construction + inspection
@@ -2028,10 +1766,6 @@ polOpp pol | polIsCovariant     pol = polContravariant
 data FIMode  =  FitSubLR
              |  FitSubRL
              |  FitUnify
-%%[[4_2
-             |  FitMeet
-             |  FitJoin
-%%]]
              deriving (Eq,Ord)
 %%]
 
@@ -2041,10 +1775,6 @@ fimOpp m
   =  case m of
        FitSubLR  -> FitSubRL
        FitSubRL  -> FitSubLR
-%%[[4_2
-       FitMeet   -> FitJoin
-       FitJoin   -> FitMeet
-%%]]
        _         -> m
 %%]
 
@@ -2058,10 +1788,6 @@ instance Show FIMode where
   show FitSubLR  = "<="
   show FitSubRL  = ">="
   show FitUnify  = "=="
-%%[[4_2
-  show FitMeet   = "=^="
-  show FitJoin   = "=v="
-%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2127,6 +1853,10 @@ tyErr = appDbg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50 hs
+instance Serialize TyKiKey
+%%]
+
+%%[5050 hs
 instance Serialize TyKiKey where
 --   sput (TyKiKey_Name  a) = sputWord8 0 >> sput a
 -- %%[[(50 hmtyinfer || hmtyast)
@@ -2200,6 +1930,16 @@ instance Serialize TyQu where
 %%]
 
 %%[(50 hmtyinfer || hmtyast) hs
+instance Serialize Ty
+instance Serialize TyAnn
+instance Serialize Pred
+instance Serialize Label
+instance Serialize PredSeq
+instance Serialize Impls
+instance Serialize CHRPredOcc
+%%]
+
+%%[(5050 hmtyinfer || hmtyast) hs
 instance Serialize Ty where
   -- sput (Ty_Con   a      ) = sputWord8 0  >> sput a
   -- sput (Ty_App   a b    ) = sputWord8 1  >> sput a >> sput b
@@ -2236,13 +1976,6 @@ instance Serialize TyAnn where
   --             1 -> return TyAnn_Mono
   --             2 -> liftM  TyAnn_Strictness sget
 
-instance Binary TyVarCateg where
-  put = putEnum8
-  get = getEnum8
-
-instance Serialize TyVarCateg where
-  sput = sputPlain
-  sget = sgetPlain
 
 instance Serialize Pred where
 --   sput (Pred_Class  a  ) = sputWord8 0 >> sput a
@@ -2323,5 +2056,15 @@ instance Serialize Impls where
 --                     liftM6 Impls_Cons  sget sget sget sget sget sget
 -- %%]]
 
+%%]
+
+%%[(50 hmtyinfer || hmtyast) hs
+instance Binary TyVarCateg where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize TyVarCateg where
+  sput = sputPlain
+  sget = sgetPlain
 %%]
 

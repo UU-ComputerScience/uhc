@@ -223,7 +223,8 @@ data RedHowAnnotation
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable , Generic
+    , Typeable
+    , Generic
 %%]]
     )
 %%]
@@ -275,7 +276,7 @@ data ByScopeRedHow
   deriving
     ( Eq, Ord
 %%[[50
-    , Typeable , Generic
+    , Typeable, Generic
 %%]]
     )
 
@@ -426,10 +427,19 @@ instance (PP p, PP info) => PP (Constraint' p info) where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 hmtyinfer || hmtyast)
+instance (Serialize p, Serialize i) => Serialize (Constraint' p i)
+%%]
+
+%%[(5050 hmtyinfer || hmtyast)
 instance (Serialize p, Serialize i) => Serialize (Constraint' p i) where
 %%]
 
 %%[(50 hmtyinfer)
+instance Serialize ByScopeRedHow
+instance Serialize RedHowAnnotation
+%%]
+
+%%[(5050 hmtyinfer)
 instance Serialize ByScopeRedHow where
 instance Serialize RedHowAnnotation where
 %%]

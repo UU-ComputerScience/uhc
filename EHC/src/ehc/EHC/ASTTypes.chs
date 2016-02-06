@@ -16,7 +16,7 @@
 %%[8 import ({%{EH}Base.Common})
 %%]
 
-%%[8 import (Data.Typeable, GHC.Generics)
+%%[8888 import (Data.Typeable, GHC.Generics)
 %%]
 
 -- Language syntax: HS, EH, Core, TyCore, Grin, ...
@@ -27,8 +27,6 @@
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
 %%]
 %%[(8 corerun) import( qualified {%{EH}CoreRun} as CoreRun)
-%%]
-%%[(8 codegen tycore) import(qualified {%{EH}TyCore} as C)
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]

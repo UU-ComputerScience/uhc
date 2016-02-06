@@ -32,8 +32,6 @@ If this is going to be avoided, the eagerness must be avoided, or use of subsump
 %%]
 %%[(8 codegen) import({%{EH}AbstractCore})
 %%]
-%%[(8 hmtyinfer tycore) import(qualified {%{EH}TyCore.Full0} as C)
-%%]
 %%[(9 hmtyinfer) import({%{EH}Ty})
 %%]
 %%[(10 hmtyinfer) import(UHC.Util.Utils)
@@ -63,9 +61,6 @@ data FIEnv
 %%[[8
         ,   feEHCOpts       :: !EHCOpts				-- compiler options
 %%]]
-%%[[(8 tycore)
-        ,   feFIReqs        :: !FitsInRequires		-- functions required by fitsIn
-%%]]
 %%[[9
         ,   feDontBind      :: !TyVarIdS			-- inhibit type var binding for ...
         ,   fePredScope     :: !PredScope			-- the scope used by predicate resolution
@@ -91,9 +86,6 @@ emptyFE
         {   feAppSpineGam   =   emptyGam
 %%[[8
         ,   feEHCOpts       =   defaultEHCOpts
-%%]]
-%%[[(8 tycore)
-        ,   feFIReqs        =	emptyFitsInRequires -- panic "FIEnv.feFIReqs: no way we can define this"
 %%]]
 %%[[9
         ,   feDontBind      =   Set.empty
@@ -127,35 +119,5 @@ instance PP FIEnv where
              >-< pp (feTyGam e)
 %%]]
              )
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FitsInRequires
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 hmtyinfer tycore) export(FitsInRequires(..))
-data FitsInRequires
-  =   FitsInRequires
-        { fireqCSubstAppExpr 			:: C.CSubst -> C.Expr -> C.Expr
-        , fireqCSubstAppSubst 			:: C.CSubst -> C.CSubst -> C.CSubst
-        , fireqLRCoeForLamTyAppAsSubst	:: EHCOpts -> UID -> C.Ty -> C.LRCoe -> C.LRCoe -> (C.LRCoe,C.CSubst)
-%%[[10
-        , fireqCoeEvalOnAsSubst       	:: {- FIEnv -> -} UID -> C.Coe -> C.Expr -> (C.Expr,C.CSubst)
-        , fireqLRCoeWipeWeaveAsSubst	:: EHCOpts -> UID -> VarMp -> C.LRCoe -> (C.Coe,C.CSubst)
-%%]]
-        }
-%%]
-
-%%[(8 hmtyinfer tycore) export(emptyFitsInRequires)
-emptyFitsInRequires
-  =   FitsInRequires
-        { fireqCSubstAppExpr			= \_ a       -> a
-        , fireqCSubstAppSubst			= \_ a       -> a
-        , fireqLRCoeForLamTyAppAsSubst  = \_ _ _ _ _ -> (C.emptyLRCoe,emptyCSubst)
-%%[[10
-        , fireqCoeEvalOnAsSubst       	= \{- _ -} _ _ _   -> (C.Expr_Err "emptyFitsInRequires",emptyCSubst)
-        , fireqLRCoeWipeWeaveAsSubst	= \_ _ _ _   -> (acoreCoeId,emptyCSubst)
-%%]]
-        }
 %%]
 

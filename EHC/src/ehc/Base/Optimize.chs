@@ -5,7 +5,7 @@
 %%[8 module {%{EH}Base.Optimize}
 %%]
 
-%%[8 import(GHC.Generics)
+%%[8888 import(GHC.Generics)
 %%]
 
 %%[8 import({%{EH}Base.Common})

@@ -10,9 +10,6 @@
 %%[(4 hmtyinfer) module {%{EH}Gam.Utils} import(Data.List,{%{EH}Base.Common},{%{EH}Opts},{%{EH}Ty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.FitsIn},{%{EH}Error},{%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(4_2 hmtyinfer) import({%{EH}Ty.Trf.ElimAlts})
-%%]
-
 %%[(50 hmtyinfer) import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 

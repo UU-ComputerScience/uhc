@@ -8,7 +8,7 @@
 %%[1 import(UHC.Util.Pretty, UHC.Util.Utils)
 %%]
 
-%%[1 import(GHC.Generics(Generic), Data.Typeable)
+%%[1111 import(GHC.Generics(Generic), Data.Typeable)
 %%]
 
 %%[1 import(Control.Monad, Control.Monad.IO.Class)
@@ -106,4 +106,26 @@ trOn :: (Monad m, MonadIO m) => (TraceOn -> Bool) -> TraceOn -> [String] -> m ()
 trOn onTr ton ms = trOnPP onTr ton $ map pp ms
 {-# INLINE trOn #-}
 %%]
+
+%%[1 export(ppNestTrPP, ppTrNm)
+-- | PP AST in a nested fashion with tracing info
+ppNestTrPP
+  :: PP a
+  => [a]		-- ^ names of node type, child
+  -> [PP_Doc]	-- ^ attribute info
+  -> [PP_Doc]	-- ^ children
+  -> TrPP		-- ^ trace info
+  -> PP_Doc
+ppNestTrPP nms attrs ps trpp
+  = ppListSep "" "" "_" nms
+    >#< (   (if null attrs then empty else ppSpaced attrs)
+        >-< trpp
+        )
+    >-< indent 2 (vlist ps)
+
+-- | PP for a name
+ppTrNm :: HsName -> PP_Doc
+ppTrNm = text . show . show
+%%]
+
 

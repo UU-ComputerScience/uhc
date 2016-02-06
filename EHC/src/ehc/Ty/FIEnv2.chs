@@ -14,8 +14,6 @@ This must be done in a separate module because of the module cycles it solves to
 
 %%[(8 codegen) import({%{EH}AbstractCore})
 %%]
-%%[(8 hmtyinfer tycore) import(qualified {%{EH}TyCore.Full1} as C)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Filling in
@@ -25,18 +23,6 @@ This must be done in a separate module because of the module cycles it solves to
 defaultFIEnv
   =   emptyFE
         { feAppSpineGam = mkAppSpineGam defaultFIEnv
-%%[[(8 tycore)
-        , feFIReqs
-            = FitsInRequires
-                { fireqLRCoeForLamTyAppAsSubst	= C.lrcoeForLamTyAppAsSubst
-                , fireqCSubstAppExpr			= cSubstApp
-                , fireqCSubstAppSubst			= cSubstApp
-%%[[10
-                , fireqCoeEvalOnAsSubst 		= C.coeEvalOnAsSubst
-                , fireqLRCoeWipeWeaveAsSubst 	= C.lrcoeWipeWeaveAsSubst
-%%]]
-                }
-%%]]
         }
 %%]
 

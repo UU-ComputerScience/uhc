@@ -3,7 +3,7 @@
 ###########################################################################################
 
 # this location
-SRC_GEN_PREFIX							:= $(SRC_PREFIX)gen/
+SRC_GEN_PREFIX							:= $(UHC_SRC_PREFIX)gen/
 SRC_GEN_RTSGBCCALL_PREFIX				:= $(SRC_GEN_PREFIX)
 
 # this file

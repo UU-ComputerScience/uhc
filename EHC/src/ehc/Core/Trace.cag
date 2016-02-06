@@ -1,0 +1,19 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing, shared AG intended to be included
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- See EH/Trace for usage examples (all is still empty here)
+
+%%[8 ag
+-- Local tracing, meant to be overridden, meant to be used by PrettyTrace as well (currently (20151228) only by PrettyTrace)
+SEM CodeAGItf AllNT
+  | *				loc		.	trppHere	=	trppEmpty
+%%]
+
+%%[8 ag
+ATTR AllNT [ tr : {TraceOn -> [PP_Doc] -> TrPP} | | ]
+
+SEM CodeAGItf
+ | AGItf            loc     .   tr          =   trPP (`Set.member` ehcOptTraceOn @lhs.opts)
+%%]
+

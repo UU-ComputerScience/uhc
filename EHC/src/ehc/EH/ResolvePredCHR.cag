@@ -320,11 +320,6 @@ simplify
         , PredScopeToCBindMap                                                               -- map from predscope to binding, per predscope opening/intro
         , EvidKeyToCExprMap                                                                 -- map from occurrence to expr + additional nesting info, for debug only
 %%]]
-%%[[(9 codegen tycore)
-        , E2C.EvidKeyToValBindMap                                                           -- TyCore variants from the above 3 results
-        , E2C.PredScopeToValBindMap
-        , E2C.EvidKeyToExprMap                                                              -- for debug only
-%%]]
         )
 simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOthers toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
   = {- Debug.tr "simplify"
@@ -352,11 +347,6 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
     , chrSolveEvidCBindL
     , chrSolveEvidBindMp, chrSolveScopeBindMp
     , chrSolveEvidCoreMp        -- for debug only
-%%]]
-%%[[(9 codegen tycore)
-    -- TyCore variant
-    , chrSolveEvidBindMpTC, chrSolveScopeBindMpTC
-    , chrSolveEvidCoreMpTC      -- for debug only
 %%]]
     )
   where opts                        =   feEHCOpts $ fiEnv env
@@ -387,13 +377,6 @@ simplify simplifyHow env chrStore clDfGam heur partitionUnresolved2AmbigAndOther
         -- overlapping errors; 20120209: is empty, detection done earlier
         -- overlapErrs = if null overlapEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ overlapevidPredOcc a,map pp $ overlapevidInfos a) | a <- overlapEvids]]
         overlapErrs = []
-%%]]
-        -- TyCore variant
-%%[[(9 codegen tycore)
-        (chrSolveEvidCoreMpTC,overlapEvidsTC)
-          = E2C.evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
-        (chrSolveEvidBindMpTC,chrSolveScopeBindMpTC)
-          = E2C.evidKeyCoreMpToBinds chrSolveEvidCoreMpTC
 %%]]
 %%[[9
         range = emptyRange
@@ -427,9 +410,6 @@ SEM AGItf
 %%[[(9 codegen)
                                 ,chrSolveMainEvidCBindL,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,chrSolveMainEvidCoreMp
 %%]]
-%%[[(9 codegen tycore)
-                                ,chrSolveMainEvidBindMpTC,chrSolveMainScopeBindMpTC,chrSolveMainEvidCoreMpTC
-%%]]
                                 )
                                                     =   ehcOptTrace @lhs.opts "AGItf.simplify" $ 
                                                         simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq_9_simplify}) @chrStore @clDfGam (heurScopedEHC @chrProveFIIn) (\x -> (x,[])) Map.empty @toProveHereCnstrMp emptySimplifyResult
@@ -452,9 +432,6 @@ SEM Expr
 %%[[(9 codegen)
                                 ,chrSolve1EvidCBindL,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,chrSolve1EvidCoreMp
 %%]]
-%%[[(9 codegen tycore)
-                                ,chrSolve1EvidBindMpTC,chrSolve1ScopeBindMpTC,chrSolve1EvidCoreMpTC
-%%]]
                                 )
                                                     =   ehcOptTrace @lhs.opts "Expr.Let.simplify1" $ 
                                                         simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq5}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) @doPredAmbigSplitForSimplify Map.empty @toProveHereCnstrMp emptySimplifyResult
@@ -472,9 +449,6 @@ SEM Expr
 %%[[(9 codegen)
                                 ,chrSolve2EvidCBindL,chrSolve2EvidBindMp,chrSolve2ScopeBindMp,chrSolve2EvidCoreMp
 %%]]
-%%[[(9 codegen tycore)
-                                ,chrSolve2EvidBindMpTC,chrSolve2ScopeBindMpTC,chrSolve2EvidCoreMpTC
-%%]]
                                 )
                                                     =   if @secondProofIsNeeded
                                                         then ehcOptTrace @lhs.opts "Expr.Let.simplify2"
@@ -483,9 +457,6 @@ SEM Expr
                                                         else ( emptyCnstrMp, @chrSolve1RemCnstrMp, emptyCnstrMp, emptyVarMp, [], @chrSimplifyResult1, @chrSolve1EvidMp
 %%[[(9 codegen)
                                                              , @chrSolve1EvidCBindL, @chrSolve1EvidBindMp, @chrSolve1ScopeBindMp, @chrSolve1EvidCoreMp
-%%]]
-%%[[(9 codegen tycore)
-                                                             , @chrSolve1EvidBindMpTC, @chrSolve1ScopeBindMpTC, @chrSolve1EvidCoreMpTC
 %%]]
                                                              )
                             .   (chrSolve2State,chrSolve2RedGraph,chrSolve2DoneConstraints,chrSolve2Trace,chrSolve2RedAlts,chrSolve2RedTrees,_)
@@ -502,9 +473,6 @@ SEM Decl
 %%[[(9 codegen)
                                 ,chrSolveDeclsEvidCBindL,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,_
 %%]]
-%%[[(9 codegen tycore)
-                                ,chrSolveDeclsEvidBindMpTC,chrSolveDeclsScopeBindMpTC,_
-%%]]
                                 )
                                                     =   ehcOptTrace @lhs.opts "Decl.Instance.simplify1" $ 
                                                         simplify [SimplifyHow_Canonicalize] (@chrProveFIIn {fiUniq = @lUniq7}) @lhs.chrStore @lhs.clDfGam (heurScopedEHC @chrProveFIIn) @doPredAmbigSplitForSimplify Map.empty @toProveDeclsCnstrMp emptySimplifyResult
@@ -515,9 +483,6 @@ SEM Decl
                             .   (_,chrSolveSuperRemCnstrMp,cannotResSuperCnstrMp,chrSolveSuperSimpTyVarMp,chrSolveSuperErrs,chrSuperSimplifyResult,_
 %%[[(9 codegen)
                                 ,chrSolveSuperEvidCBindL,chrSolveSuperEvidBindMp,chrSolveSuperScopeBindMp,_
-%%]]
-%%[[(9 codegen tycore)
-                                ,chrSolveSuperEvidBindMpTC,chrSolveSuperScopeBindMpTC,_
 %%]]
                                 )
                                                     =   ehcOptTrace @lhs.opts "Decl.Instance.simplify2" $ 
@@ -577,14 +542,6 @@ SEM Expr
                 loc         .   lUniq6              :   UNIQUEREF gUniq
 %%]
 
-TyCore variant/clone:
-
-%%[(9 hmtyinfer tycore)
-SEM Expr
-  | Let         loc         .   prvArgTCSubst       =   let mk a = (mkHNm a)
-                                                        in  acoreCSubstFromUidImplsL [ (occ, ([acoreCoeAppNbyName $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Propagation of bindings resulting from assumptions downwards
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -606,25 +563,6 @@ SEM Expr
                             .   chrSolveScopeBindMp =   @chrSolve2ScopeBindMp
                             .   chrLetScopeBindMp   =   ehcOptTrace @lhs.opts "Expr.Let.loc.chrLetScopeBindMp" $ 
                                                         @chrSolveScopeBindMp `predScopeToBindMapUnion` @lhs.chrScopeBindMp
-%%]
-
-TyCore variant/clone:
-
-%%[(9 codegen tycore hmtyinfer)
-ATTR NTPrf [ chrEvidBindMpTC: {E2C.EvidKeyToValBindMap}   chrScopeBindMpTC: {E2C.PredScopeToValBindMap} | | ]
-
-SEM AGItf
-  | AGItf       loc         .   chrEvidBindMpTC     =   @chrSolveMainEvidBindMpTC
-
-SEM Decl
-  | Instance    loc         .   chrEvidBindMpTC     =   @chrSolveDeclsEvidBindMpTC `E2C.evidKeyToValBindMapUnion` @lhs.chrEvidBindMpTC
-                            .   chrScopeBindMpTC    =   @chrSolveDeclsScopeBindMpTC `E2C.predScopeToValBindMapUnion` @lhs.chrScopeBindMpTC
-
-SEM Expr
-  | Let         loc         .   chrSolveEvidBindMpTC=   @chrSolve2EvidBindMpTC
-                            .   chrEvidBindMpTC     =   @chrSolveEvidBindMpTC `E2C.evidKeyToValBindMapUnion` @lhs.chrEvidBindMpTC
-                            .   chrSolveScopeBindMpTC=  @chrSolve2ScopeBindMpTC
-                            .   chrLetScopeBindMpTC =   @chrSolveScopeBindMpTC `E2C.predScopeToValBindMapUnion` @lhs.chrScopeBindMpTC
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -663,40 +601,6 @@ SEM Expr
                                                     =   mkScopeBindings False @predScope @lhs.chrScopeBindMp
 %%]
 
-TyCore variant/clone:
-
-%%[(9 codegen tycore hmtyinfer) hs
-mkScopeValBinds :: Bool -> PredScope -> E2C.PredScopeToValBindMap -> ([C.ValBind],E2C.PredScopeToValBindMap)
-mkScopeValBinds alsoOuter sc mp
-  = (concatMap f scs,foldr Map.delete mp scs)
-  where f sc = Map.findWithDefault [] sc mp
-        scs  = [sc] ++ (if alsoOuter then pscpParents sc else [])
-%%]
-
-%%[(9 codegen tycore hmtyinfer)
-SEM AGItf
-  | AGItf       loc         .   (chrScopeMainBindLTC,chrScopeBindMpTC)
-                                                    =   mkScopeValBinds True @predScope @chrSolveMainScopeBindMpTC
-
-SEM Decl
-  | Instance    loc         .   (chrScopeSuperBindLTC,_)
-                                                    =   mkScopeValBinds True @predScope @chrSolveSuperScopeBindMpTC
-                            .   (chrScopeDeclsBindLTC,_)
-                                                    =   mkScopeValBinds True @predScope @chrSolveDeclsScopeBindMpTC
-  | Val         loc         .   (chrScopeValBindLTC,chrScopeBindMpTC)
-                                                    =   mkScopeValBinds False @predScope @lhs.chrScopeBindMpTC
-
-SEM Expr
-  | Let         loc         .   (chrScopeBindLTC,chrScopeBindMpTC)
-                                                    =   mkScopeValBinds True @predScope @chrLetScopeBindMpTC
-  | AppTop Rec Lam
-%%[[12
-    LamImpl
-%%]]
-                loc         .   (chrScopeBindLTC,chrScopeBindMpTC)
-                                                    =   mkScopeValBinds False @predScope @lhs.chrScopeBindMpTC
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bindings for assumed preds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -704,12 +608,6 @@ SEM Expr
 %%[(9 codegen hmtyinfer) hs
 mkAssumeBindings :: [UID] -> EvidKeyToCBindMap -> [CBind]
 mkAssumeBindings ids mp
-  = concat [ maybe [] id $ Map.lookup i mp | i <- ids ]
-%%]
-
-%%[(9 codegen tycore hmtyinfer) hs
-mkAssumeValBinds :: [UID] -> E2C.EvidKeyToValBindMap -> [C.ValBind]
-mkAssumeValBinds ids mp
   = concat [ maybe [] id $ Map.lookup i mp | i <- ids ]
 %%]
 
@@ -725,7 +623,4 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   chrAssumeBindL      =   mkAssumeBindings (map poiId @poiL) @lhs.chrEvidBindMp
-%%[[(9 tycore)
-                loc         .   chrAssumeBindLTC    =   mkAssumeValBinds (map poiId @poiL) @lhs.chrEvidBindMpTC -- for TyCore
-%%]]
 %%]

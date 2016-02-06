@@ -204,20 +204,24 @@ unboxedTyMp2 opts
 deriving instance Typeable UnboxedTy
 
 deriving instance Typeable Boxing
+
+instance Serialize Boxing
+%%]
+
+%%[(5050 codegen) hs
+instance Serialize Boxing where
+  sput (Boxing_UnboxedTy          a) = sputWord8 0 >> sput a
+  sput (Boxing_Enum            	   ) = sputWord8 1
+  sput (Boxing_Opaque              ) = sputWord8 2
+  sget = do
+    t <- sgetWord8
+    case t of
+      0 -> liftM  Boxing_UnboxedTy 			sget
+      1 -> return Boxing_Enum
+      2 -> return Boxing_Opaque
 %%]
 
 %%[(50 codegen) hs
-instance Serialize Boxing where
-  -- sput (Boxing_UnboxedTy          a) = sputWord8 0 >> sput a
-  -- sput (Boxing_Enum            	   ) = sputWord8 1
-  -- sput (Boxing_Opaque              ) = sputWord8 2
-  -- sget = do
-  --   t <- sgetWord8
-  --   case t of
-  --     0 -> liftM  Boxing_UnboxedTy 			sget
-  --     1 -> return Boxing_Enum
-  --     2 -> return Boxing_Opaque
-
 instance Serialize UnboxedTy where
   sput = sputEnum8
   sget = sgetEnum8

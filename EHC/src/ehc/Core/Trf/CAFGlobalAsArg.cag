@@ -131,7 +131,7 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
 
 SEM CBound
   | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @lhs.nm
-                            .   cTrfVar     =   acoreBind1MetasTy @lhs.nm @bindMeta.cTrf (acoreTyErr "CAFGlobalAsArg.CBound.Bind.cTrfVar")
+                            .   cTrfVar     =   acoreBind1Ty @lhs.nm (acoreTyErr "CAFGlobalAsArg.CBound.Bind.cTrfVar")
                                                 $ acoreApp (acoreVar @nmLam)
                                                 $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n)) @argOldL
                             .   cTrfLam     =   acoreBind1CatTy CBindCateg_Plain @nmLam (acoreTyErr "CAFGlobalAsArg.CBound.Bind.cTrfLam")

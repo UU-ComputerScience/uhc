@@ -52,7 +52,6 @@ ATTR
 SEM CBound
   | Val         loc         .   isSelected      =   selVal     @lhs.boundsel @aspectKeyS @mlev @lbl
   | Bind        loc         .   isSelected      =   selBind    @lhs.boundsel
-  | Meta        loc         .   isSelected      =   selMeta    @lhs.boundsel @aspectKeyS
 %%[[(8 codegenanalysis)
   | RelevTy     loc         .   isSelected      =   selRelevTy @lhs.boundsel @aspectKeyS @relevTy
 %%]]

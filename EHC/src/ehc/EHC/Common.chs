@@ -18,7 +18,7 @@ Used by all compiler driver code
 %%]
 %%[1 import({%{EH}Error},{%{EH}Error.Pretty}) export(module {%{EH}Error},module {%{EH}Error.Pretty})
 %%]
-%%[8 import(GHC.Generics)
+%%[8888 import(GHC.Generics)
 %%]
 
 %%[8 import({%{EH}EHC.ASTPipeline}) export(module {%{EH}EHC.ASTPipeline})

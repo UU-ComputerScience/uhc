@@ -233,14 +233,14 @@ Post processing involves the following:
 cpEhcFullProgPostModulePhases :: EHCCompileRunner m => EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhaseT m ()
 cpEhcFullProgPostModulePhases opts modNmL modSpl
   | ehcOptOptimizationScope opts >= OptimizationScope_WholeCore = cpEhcCoreFullProgPostModulePhases opts modNmL modSpl
-%%[[(50 grin)
+%%[[(5050 grin)
   | otherwise                                                   = cpEhcGrinFullProgPostModulePhases opts modNmL modSpl
 %%][50
   | otherwise                                                   = return ()
 %%]]
 %%]
 
-%%[(50 codegen grin)
+%%[(5050 codegen grin)
 cpEhcGrinFullProgPostModulePhases :: EHCCompileRunner m => EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhaseT m ()
 cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpEnsureGrin m | m <- modNmL]
@@ -1127,6 +1127,7 @@ cpEhcCorePerModulePart2 modNm
 %%][50
              earlyMerge = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
 %%]]
+       ; cpMsg modNm VerboseDebug $ "cpEhcCorePerModulePart2"
        ; cpSeq [ when earlyMerge $ cpProcessCoreRest modNm
 %%[[(8 grin)
                , when (ehcOptIsViaGrin opts) (cpProcessGrin modNm)
@@ -1319,7 +1320,7 @@ cpProcessCoreFold modNm
 %%[[50
        ; cpFlowCoreSemBeforeFold modNm
 %%]]
-%%[[(50 grin)
+%%[[(8 grin)
        ; when (targetIsViaGrin (ehcOptTarget opts)) $
            cpFoldCore2Grin modNm
            -- void $ bcall $ FoldCore2Grin (mkPrevFileSearchKeyWithName modNm)
@@ -1362,7 +1363,7 @@ cpProcessCoreRest modNm
        ; cpSeq (   []
 %%[[(8 grin)
                 ++ [ cpTranslateCore2Grin modNm ]
-                ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin ASTFileContent_Binary "" modNm] else [])
+                -- ++ (if ehcOptIsViaGrin opts then [void $ cpOutputGrin ASTFileContent_Binary "" modNm] else [])
 %%]]
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
@@ -1370,6 +1371,9 @@ cpProcessCoreRest modNm
 %%[[(8 javascript)
                 ++ (if ehcOptIsViaCoreJavaScript opts then [ cpTranslateCore2JavaScript modNm ] else [])
 %%]]
+                ++ (if CoreOpt_DumpAST `elem` ehcOptCoreOpts opts
+                    then [void $ cpOutputCore ASTFileContent_ASTText {-[]-} "" Cfg.suffixDotlessOutputTextualCoreAST modNm]
+                    else [])
 %%[[(8 coreout)
                 ++ (if CoreOpt_Dump `elem` ehcOptCoreOpts opts
                     then [void $ cpOutputCore ASTFileContent_Text {-[]-} "" Cfg.suffixDotlessOutputTextualCore modNm]
@@ -1420,12 +1424,10 @@ cpProcessGrin :: EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpProcessGrin modNm 
   = do { cr <- get
        ; let (_,_,opts,_) = crBaseInfo modNm cr
+       ; cpMsg modNm VerboseALot $ "cpProcessGrin, emit bc " ++ show (ehcOptEmitBytecode opts)
        ; cpSeq (   (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
                 ++ (if ehcOptDumpGrinStages opts then [void $ cpOutputGrin ASTFileContent_Text "-099-final" modNm]  else [])
-%%[[(8 wholeprogAnal)
-                ++ (if targetDoesHPTAnalysis (ehcOptTarget opts) then [cpTransformGrinHPTWholeProg modNm] else [])
-%%]]
 %%[[(8 cmm)
                 ++ (if ehcOptIsViaCmm opts then [cpTranslateGrin2Cmm modNm] else [])
 %%]]

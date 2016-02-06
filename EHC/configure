@@ -736,11 +736,7 @@ ENABLE_TAUPHI
 ENABLE_CORESYSF
 ENABLE_CORERUN_ASINPOUTP
 ENABLE_CORE_ASINPOUTP
-ENABLE_TYCORE
-ENABLE_CLR
 ENABLE_LLVM
-ENABLE_WHOLEPROGANAL
-ENABLE_WHOLEPROGC
 ENABLE_CMM
 ENABLE_JS
 JAR_CMD
@@ -816,11 +812,7 @@ ac_user_opts='
 enable_option_checking
 enable_java
 enable_cmm
-enable_wholeprogC
-enable_wholeprogAnal
 enable_llvm
-enable_clr
-enable_tycore
 enable_core_asinpoutp
 enable_corerun_asinpoutp
 enable_coresysf
@@ -1476,11 +1468,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
   --enable-cmm            include cmm code generation
-  --enable-wholeprogC     include C whole program code generation
-  --enable-wholeprogAnal  include C whole program code analysis
   --enable-llvm           include llvm code generation
-  --enable-clr            include clr code generation
-  --enable-tycore         include TyCore typed intermediate language
   --enable-core-asinpoutp allow use of Core untyped intermediate language as a
                           backend and source language
   --enable-corerun-asinpoutp
@@ -3114,28 +3102,6 @@ fi
 ENABLE_CMM=$enableCmm
 
 
-### enable options: wholeprogC, the C whole program backend, default is no, temporary until development restarts
-# Check whether --enable-wholeprogC was given.
-if test "${enable_wholeprogC+set}" = set; then :
-  enableval=$enable_wholeprogC; enableWholeprogC=yes
-else
-  enableWholeprogC=no
-fi
-
-ENABLE_WHOLEPROGC=$enableWholeprogC
-
-
-### enable options: wholeprogAnal, whole program analysis, default is no, temporary until development restarts
-# Check whether --enable-wholeprogAnal was given.
-if test "${enable_wholeprogAnal+set}" = set; then :
-  enableval=$enable_wholeprogAnal; enableWholeprogAnal=yes
-else
-  enableWholeprogAnal=no
-fi
-
-ENABLE_WHOLEPROGANAL=$enableWholeprogAnal
-
-
 ### enable options: llvm, default is no
 # Check whether --enable-llvm was given.
 if test "${enable_llvm+set}" = set; then :
@@ -3145,28 +3111,6 @@ else
 fi
 
 ENABLE_LLVM=$enableLlvm
-
-
-### enable options: clr (Tom Lokhorsts CLR backend), default is no
-# Check whether --enable-clr was given.
-if test "${enable_clr+set}" = set; then :
-  enableval=$enable_clr; enableClr=yes
-else
-  enableClr=no
-fi
-
-ENABLE_CLR=$enableClr
-
-
-### enable options: tycore (Typed Core), default is no
-# Check whether --enable-tycore was given.
-if test "${enable_tycore+set}" = set; then :
-  enableval=$enable_tycore; enableTyCore=yes
-else
-  enableTyCore=no
-fi
-
-ENABLE_TYCORE=$enableTyCore
 
 
 ### enable options: core-asinpoutp (Untyped Core), default is no
@@ -4039,7 +3983,7 @@ then
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           uhc-util)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.4&&<0.1.7"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.5&&<0.1.7"
             ;;
           uulib)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"
@@ -4048,7 +3992,7 @@ then
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} base>=4.7&&<5"
             ;;
           hashable)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} hashable>=1.1&&<1.3"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} hashable>=1.2.4&&<1.3"
             ;;
           fgl)
             # with uhc-util >= 0.1.3.7 no longer necessary
@@ -9196,13 +9140,11 @@ ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
 
 ac_config_files="$ac_config_files test/benchmark/runbenchmark.pl"
 
-ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific.hs"
+ac_config_files="$ac_config_files src/ehc/Config.chs"
 
 # AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver]
 ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/uhcbase/include/MachDeps.h ehclib/uhcbase/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h"
 
-
-ac_config_files="$ac_config_files src/text2text/text2text.cabal"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -9898,7 +9840,6 @@ do
     "mk/shared.mk") CONFIG_FILES="$CONFIG_FILES mk/shared.mk" ;;
     "test/benchmark/runbenchmark.pl") CONFIG_FILES="$CONFIG_FILES test/benchmark/runbenchmark.pl" ;;
     "src/ehc/Config.chs") CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
-    "src/helium/Utils/OSSpecific.hs") CONFIG_FILES="$CONFIG_FILES src/helium/Utils/OSSpecific.hs" ;;
     "src/ehc/ConfigDefines.chs") CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
     "src/rts/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
     "src/rts/mm/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/mm/config.ch" ;;
@@ -9907,7 +9848,6 @@ do
     "ehclib/old-time/include/HsTimeConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/old-time/include/HsTimeConfig.h" ;;
     "ehclib/directory/include/HsDirectoryConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/directory/include/HsDirectoryConfig.h" ;;
     "ehclib/unix/include/HsUnixConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/unix/include/HsUnixConfig.h" ;;
-    "src/text2text/text2text.cabal") CONFIG_FILES="$CONFIG_FILES src/text2text/text2text.cabal" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

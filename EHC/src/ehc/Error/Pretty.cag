@@ -288,19 +288,6 @@ SEM Err
 %%]]
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast)
-SEM Err
-  | InconsistentAlts    lhs     .  pp   =   ppMsgErr    "Inconsistent type alternatives for type variable"
-                                                        (    "in type :" >#< pp @ty
-                                                         >-< "for tvar:" >#< pp @tvar
-                                                         >-< "types   :" >#< vlist (map ppTy @tyL)
-                                                         >-< "fit mode:" >#< text (show @fiMode)
-                                                        )
-%%[[99
-                                                        @range
-%%]]
-%%]
-
 %%[5
 SEM Err
   | Newtype             lhs     .  pp   =   ppMsgErr    ("Newtype must have exactly 1 constructor with 1 field")

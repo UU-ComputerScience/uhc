@@ -34,14 +34,6 @@ SEM Ty
 SEM Ty
   | Var         loc         .   frTvS       =   Set.singleton @tv
 
-%%[(4_2 hmtyinfer || hmtyast)
-SEM TyL
-  | Nil         lhs         .   frTvSL      =   []
-
-SEM TyPlusL
-  | Nil         lhs         .   frTvSL      =   []
-%%]
-
 %%[(7 hmtyinfer || hmtyast)
 SEM Ty
   | Ext         loc         .   frTvSL      =   @extTy.frTvSL ++ @ty.frTvSL

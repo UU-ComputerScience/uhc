@@ -2,22 +2,22 @@
 %%% Pretty print a type to HTML
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 ag module {%{EH}Ty.PrettyHTML}
+%%[(7 htmlty) ag module {%{EH}Ty.PrettyHTML}
 %%]
 
-%%[7_2 hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), UHC.Util.Pretty)
+%%[(7 htmlty) hs import({%{EH}Base.Common},{%{EH}Base.HsName.Builtin}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), UHC.Util.Pretty)
 %%]
 
-%%[7_2 hs import({%{EH}Base.HtmlCommon})
+%%[(7 htmlty) hs import({%{EH}Base.HtmlCommon})
 %%]
 
-%%[7_2 ag import({Ty/AbsSyn})
+%%[(7 htmlty) ag import({Ty/AbsSyn})
 %%]
 
-%%[7_2 hs export(ppTyHTML)
+%%[(7 htmlty) hs export(ppTyHTML)
 %%]
 
-%%[7_2 hs
+%%[(7 htmlty) hs
 
 ppTyHTML :: (Annotation Ty -> PP_Doc) -> Ty -> PP_Doc
 ppTyHTML annPPF ty
@@ -29,7 +29,7 @@ ppTyHTML annPPF ty
 %%]
 
 
-%%[7_2
+%%[(7 htmlty)
 
 WRAPPER TyAGItf
 

@@ -134,7 +134,7 @@ projBuiltinNm opts proj
 
 %%[(92 hmtyinfer && (codegen || coresysf))
 -- | builtin var of constructor
-projBuiltinVar :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a) => EHCOpts -> Proj -> e
+projBuiltinVar :: (AbstractCore e b bound boundmeta bcat t p pr pf a) => EHCOpts -> Proj -> e
 projBuiltinVar opts proj
   = acoreVar $ projBuiltinNm opts proj
 %%]
@@ -151,9 +151,9 @@ nmLForCase nL = zipWith (\n o -> (n,acoreTyErr $ "nmLForCase: " ++ show n,{-n,-}
 %%[(92 hmtyinfer && (codegen || coresysf)) export(projFrom)
 -- | from function, starting with a top level proj
 projFrom
-  :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, Eq bcat)
+  :: (AbstractCore e b bound boundmeta bcat t p pr pf a, Eq bcat)
      => EHCOpts
-     -> RCEEnv' e m b ba t
+     -> RCEEnv' e b ba t
      -> Proj        	-- projection descriptor
      -> e       		-- resulting function
 projFrom
@@ -204,9 +204,9 @@ projFrom
 %%[(92 hmtyinfer && (codegen || coresysf)) export(projTo)
 -- | from function, starting with a top level proj
 projTo
-  :: (AbstractCore e m b bound boundmeta bcat mbind t p pr pf a, Eq bcat)
+  :: (AbstractCore e b bound boundmeta bcat t p pr pf a, Eq bcat)
      => EHCOpts
-     -> RCEEnv' e m b ba t
+     -> RCEEnv' e b ba t
      -> Proj        	-- projection descriptor
      -> e		       	-- resulting function
 projTo

@@ -2,8 +2,8 @@
 # this file
 ###########################################################################################
 
-MK_PREFIX									:= $(TOP_PREFIX)mk/
-MK_CONFIG_MKF								:= $(MK_PREFIX)config.mk
+UHC_MK_PREFIX								:= $(UHC_TOP_PREFIX)mk/
+MK_CONFIG_MKF								:= $(UHC_MK_PREFIX)config.mk
 
 ###########################################################################################
 # current date

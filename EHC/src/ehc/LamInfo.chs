@@ -85,7 +85,8 @@ data FusionRole
   | FusionRole_BuildLeft	-- role of g in 'convert g,h'
   | FusionRole_BuildRight	-- role of h in 'convert g,h'
   deriving ( Enum, Show
-           , Typeable, Generic
+           , Typeable
+           , Generic
            )
 %%]
 
@@ -219,7 +220,12 @@ lamMpUnionsBindAspMp = foldr lamMpUnionBindAspMp Map.empty
 
 %%[(8 codegen) hs export(lamMpMergeInto)
 -- propagate from new (left) to prev (right), adding new entries if necessary, combining with mergeL2RInfo, finally combining/choosing maps with mergeL2RMp
-lamMpMergeInto :: (LamInfo -> LamInfo -> LamInfo) -> (LamMp -> LamMp -> LamMp) -> LamMp -> LamMp -> LamMp
+lamMpMergeInto
+  :: (LamInfo -> LamInfo -> LamInfo)		-- ^ 'mergeL2RInfo', merge info
+  -> (LamMp -> LamMp -> LamMp)				-- ^ 'mergeL2RMp', merge map
+  -> LamMp									-- ^ new map
+  -> LamMp									-- ^ prev map
+  -> LamMp
 lamMpMergeInto mergeL2RInfo mergeL2RMp newMp prevMp
   = mergeL2RMp newMpMerge prevMp
   where newMpMerge
@@ -363,6 +369,12 @@ instance Serialize FusionRole where
 %%]
 
 %%[(50 codegen) hs
+instance Serialize LamInfoBindAsp
+instance Serialize LamInfo
+instance Serialize StackTraceInfo
+%%]
+
+%%[(5050 codegen) hs
 instance Serialize LamInfoBindAsp where
 --   sput (LamInfoBindAsp_RelevTy  	a) = sputWord8 0 >> sput a
 --   sput (LamInfoBindAsp_Ty 			a) = sputWord8 1 >> sput a

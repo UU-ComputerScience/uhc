@@ -318,39 +318,6 @@ corerunScanOpts -- opts
         }
 %%]
 
-Todo:
-
-%%[8
-tycoreScanOpts :: ScanOpts
-tycoreScanOpts
-  =  defaultScanOpts
-        {   scoKeywordsTxt      =   (Set.fromList $
-                                        [ "let", "in", "case", "of", "rec", "foreign", "uniq"
-                                        , "Int", "Char", "String", "Tag", "Rec"
-                                        , "module", "default"
-                                        , "BINDPLAIN", "BINDFUNCTION0", "BINDFUNCTION1", "BINDAPPLY0"
-                                        , "VAL"
-%%[[9
-                                        , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
-%%]]
-%%[[50
-                                        , "Integer"
-%%]]
-%%[[90
-                                        , "foreignexport"
-%%]]
-                                        ])
-        ,   scoKeywordsOps      =   Set.fromList [ "->", "=", ":", "::", "|", "\\" ]
-        ,   scoSpecChars        =   Set.fromList "();{},[]"
-        ,   scoOpChars          =   Set.fromList "|\\:=-<>"
-        ,   scoDollarIdent      =   True
-        }
-%%]
-
-                "();,[]{}`"
-        ,   scoOpChars          = Set.fromList $
-                "!#$%&*+/<=>?@\\^|-:.~"
-
 %%[8
 grinScanOpts :: ScanOpts
 grinScanOpts

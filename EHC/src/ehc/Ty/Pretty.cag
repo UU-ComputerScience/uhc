@@ -19,9 +19,6 @@
 %%[(3 hmtyinfer || hmtyast) hs import(Data.Char)
 %%]
 
-%%[(7_2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
-%%]
-
 %%[(8888 hmtyinfer || hmtyast) hs import({%{EH}Scanner.Common(hiScanOpts)})
 %%]
 %%[(8 hmtyinfer || hmtyast) hs import({%{EH}Base.CfgPP})
@@ -30,7 +27,7 @@
 %%[(9 hmtyinfer || hmtyast) hs export(ppTyPr)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(qualified UHC.Util.RLList as RLL)
+%%[(9 hmtyinfer || hmtyast) hs import(qualified UHC.Util.RLList.LexScope as LexScope)
 %%]
 
 %%[(1 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
@@ -102,19 +99,6 @@ instance PP InstTo where
 %%]]
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast) hs
-instance PP TyHardness where
-  pp = pp . show
-
-instance PP TyNeed where
-  pp = pp . show
-%%]
-
-%%[(7_2 hmtyinfer || hmtyast).annotation hs
-instance PP (Annotation a) where
-  pp = (>|<) "d" . pp . annUID
-%%]
-
 %%[(9 hmtyinfer || hmtyast) hs export(ppPredOccId')
 ppPredOccId' :: CfgPP' x => x -> PredOccId -> PP_Doc
 ppPredOccId' x poi
@@ -157,7 +141,7 @@ instance PP CHRPredOcc where
             ]
 
 instance PP PredScope where
-  pp (PredScope_Lev l) = ppListSep "<" ">" "," $ RLL.toList l
+  pp (PredScope_Lev l) = ppListSep "<" ">" "," $ LexScope.toList l
   pp (PredScope_Var v) = "<sc_" >|< v >|< ">"
 
 instance PP ImplsProveOcc where
@@ -526,27 +510,6 @@ SEM Ty
                                                        (cfgppAside @lhs.cfg (@ppQu >#< @ppTvPre >|< @ppTv >|< @ppTvPost) ("." >#< @ty.pp))
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast)
-SEM Ty
-  | Alts            loc     .   o       =   "["
-                    loc     .   c       =   "]"
-  | Both            loc     .   o       =   "<"
-                    loc     .   c       =   ">"
-  | Alts Both       loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
-                                                       (maybe (pp @tv) id (tnLookupPP @tv @lhs.tnMap) >|< ppListSep @o @c ", " @tyL.ppL)
-
-SEM TyL [ | | ppL: {[PP_Doc]} ]
-  | Nil             lhs     .   ppL     =   []
-  | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
-
-SEM TyPlusL [ | | ppL: {[PP_Doc]} ]
-  | Nil             lhs     .   ppL     =   []
-  | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
-
-SEM TyPlus
-  | Ty              lhs     .   pp      =   @ty.pp >#< "::" >#<  pp @hardness >|< "/" >|< pp @offering
-%%]
-
 %%[(4 hmtyinfer || hmtyast)
 SEM TyQu
   | *   			lhs     .   pp      =   text (showTyQu @self)
@@ -767,19 +730,6 @@ SEM Ty
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
   | TBind       loc     .   parNeed             =   ParNotNeeded
-%%]
-
-%%[(4_2 hmtyinfer || hmtyast)
-SEM TyL
-  | Cons        hd      .   parNeed             =   ParNotNeeded
-                        .   parNeedL            =   []
-
-SEM TyPlus
-  | Ty          ty      .   parNeed             =   ParNotNeeded
-                        .   parNeedL            =   []
-
-SEM Ty
-  | Alts Both   loc     .   parNeed             =   ParNotNeeded
 %%]
 
 %%[(7 hmtyinfer || hmtyast)

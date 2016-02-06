@@ -53,9 +53,6 @@
 %%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Set(Set), Data.Map(Map))
 %%]
 
-%%[(4_2 hmtyinfer) hs import({%{EH}Gam.Utils},{%{EH}Ty.Trf.ElimAlts},{%{EH}Ty.Trf.FreshVar})
-%%]
-
 %%[(7 hmtyinfer) hs import({%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
@@ -70,10 +67,6 @@
 %%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.FFI},{%{EH}Core.Utils})
 %%]
 %%[(8 codegen coreout) hs import({%{EH}Core.Pretty})
-%%]
-%%[(8 codegen tycore) hs import(qualified {%{EH}TyCore.Full2} as C)
-%%]
-%%[(8 codegen tycore hmtyinfer) hs import({%{EH}Ty.Utils2})
 %%]
 %%[(8 codegen) hs import({%{EH}Foreign.Extract})
 %%]
@@ -114,11 +107,6 @@
 %%]
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
-%%]
-%%[(9 codegen) hs import({%{EH}Pred.Evidence(InfoToEvidenceMap)})
-%%]
-
-%%[(9 codegen tycore) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
 %%]
 %%[(9 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
 %%]
@@ -235,8 +223,6 @@ WRAPPER AGItf
 %%[(8 codegen) ag import({EH/ToCore})
 %%]
 %%[(8 hmtyinfer codegen) ag import({EH/SysfTy},{EH/SysfEnv})
-%%]
-%%[(8 codegen tycore) ag import({EH/ToTyCore})
 %%]
 
 %%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})

@@ -139,6 +139,7 @@ instance Show CoreOpt where
 %%]]
   show CoreOpt_DumpAlsoNonParseable	= "whendump-alsononparseable"
 %%]]
+  show CoreOpt_DumpAST             	= "dump-ast"
 %%[[(8 corerun)
   show CoreOpt_Run            	    = "run"
   show CoreOpt_LoadOnly            	= "loadonly"
@@ -166,23 +167,6 @@ instance Show CoreRunOpt where
 
 coreRunOptMp :: Map.Map String CoreRunOpt
 coreRunOptMp = str2stMp
-%%]
-
-%%[(8 codegen tycore)
-instance Show TyCoreOpt where
-  show TyCoreOpt_Sugar      = "sugar"       -- first letters of alternatives must be unique
-  show TyCoreOpt_Unicode    = "unicode"
-
-tycoreOpts :: [TyCoreOpt]
-tycoreOpts = [TyCoreOpt_Sugar, TyCoreOpt_Unicode]
-
-tycoreOptMp :: Map.Map String TyCoreOpt
-tycoreOptMp
-  = Map.fromList $ concat
-    $ [ [ (s, o), ([head s], o) ]
-      | o <- tycoreOpts
-      , let s = show o
-      ]
 %%]
 
 %%[(8 codegen cmm)
@@ -286,17 +270,6 @@ ehcOptEmitCore opts
   = ehcOptWholeProgHPTAnalysis opts || targetIsCoreVariation (ehcOptTarget opts)
 %%]
 
-%%[(8 codegen tycore) export(ehcOptEmitTyCore,ehcOptTyCore)
--- generate TyCore
-ehcOptEmitTyCore :: EHCOpts -> Bool
-ehcOptEmitTyCore opts
-  = {- ehcOptWholeProgHPTAnalysis opts || -} targetIsTyCore (ehcOptTarget opts)
-
-ehcOptTyCore :: EHCOpts -> Bool
-ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
-
-%%]
-
 %%[(8 codegen) export(ehcOptOptimizes)
 -- | optimizes a particular option
 ehcOptOptimizes :: Optimize -> EHCOpts -> Bool
@@ -337,11 +310,7 @@ ehcCmdLineOpts = sortOptions $
      ,  Option ""   ["target-flavor"]       (ReqArg oTargetFlavor (showAllTargetFlavors' "|"))
                                                                                     ("generate code for target flavor, default=" ++ show defaultTargetFlavor)
 %%]]
-%%[[1
      ,  Option "p"  ["pretty"]              (OptArg oPretty "hs|eh|ast|-")          "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
-%%][(8 codegen tycore)
-     ,  Option "p"  ["pretty"]              (OptArg oPretty "hs|eh|ast|ty|-")       "show pretty printed source, EH abstract syntax tree or TyCore ast, default=eh, -=off, (downstream only)"
-%%]]
      ,  Option "d"  ["debug"]               (NoArg oDebug)                          "show debug information"
      ,  Option ""   ["priv"]                (boolArg oPriv)                         "private flag, used during development of 2 impls of 1 feature"
      ,  Option ""   ["underdev"]            (ReqArg oUnderDev "opt[,...]")          ("opts (specific) for flipping (on/off) under development features: " ++ showStr2stMp allUnderDevMp ++ ", on: " ++ (concat $ intersperse " " $ map show $ Set.toList $ ehcOptUnderDev emptyEHCOpts))
@@ -360,9 +329,6 @@ ehcCmdLineOpts = sortOptions $
 %%][100
 %%]]
 
-%%[[7_2
-     ,  Option ""   ["nounique"]            (NoArg oUnique)                         "do not compute uniqueness solution"
-%%]]
 %%[[(8 codegen)
      ,  Option "O"  ["optimise"]            (OptArg oOptimization ("0|1|2|3|<opt>[=" ++ boolArgStr ++ "]"))
                                                                                     ("optimise with level or specific <opt> by optim name: "
@@ -471,9 +437,6 @@ ehcCmdLineOpts = sortOptions $
      ,  Option ""   ["pgmP"]                (ReqArg (oPgmExec PgmExec_CPP)          "alternate program for cmd")
                                                                                     "pgm: alternate executable used by compiler, currently only P (preprocessing)"
 %%]]
-%%[[(8 codegen tycore)
-     ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")         ("temporary/development: use (specific) typed core. opts: " ++ showStr2stMp tycoreOptMp)
-%%]]
 %%[[(8 codegen cmm)
      ,  Option ""   ["cmm"]                 (OptArg oUseCmm "opt[,...]")            ("temporary/development: use (specific) cmm. opts: " ++ showStr2stMp cmmOptMp)
      ,  Option ""   ["cmmopt"]              (ReqArg oOptCmm "opt[,...]")            ("opts (specific) for cmm: " ++ showStr2stMp cmmOptMp)
@@ -491,9 +454,6 @@ ehcCmdLineOpts = sortOptions $
                                 Just "hs"    -> o { ehcOptShowHS       = True      }
                                 Just "eh"    -> o { ehcOptShowEH       = True      }
                                 Just "pp"    -> o { ehcOptShowEH       = True      }
-%%[[(8 codegen tycore)
-                                Just "ty"    -> o { ehcOptShowTyCore   = True      }
-%%]]
 %%[[1
                                 Just "ast"   -> o { ehcOptShowAst      = True      }
 %%][100
@@ -522,9 +482,6 @@ ehcCmdLineOpts = sortOptions $
 %%]]
                                       _   -> CompilePoint_All
                                 }
-%%[[7_2
-         oUnique         o =  o { ehcOptUniqueness    = False   }
-%%]]
 %%[[(8 grin)
          oTimeCompile    o =  o { ehcOptTimeGrinCompile       = True    }
 %%]]
@@ -533,13 +490,6 @@ ehcCmdLineOpts = sortOptions $
 %%]]
 %%[[(8 codegen javascript)
          oOptJavaScript s o = o { ehcOptJavaScriptOpts = optOpts javaScriptOptMp s }
-%%]]
-%%[[(8 codegen tycore)
-         oUseTyCore ms   o =  case ms of
-                                Just s -> o { ehcOptUseTyCore = Just opts2 }
-                                       where opts1 = optOpts tycoreOptMp s
-                                             opts2 = if TyCoreOpt_Unicode `elem` opts1 then ([TyCoreOpt_Sugar] ++ opts1) else opts1
-                                _      -> o { ehcOptUseTyCore = Just [] }
 %%]]
 %%[[(8 codegen cmm)
          oUseCmm ms   o =  case ms of
@@ -575,8 +525,6 @@ ehcCmdLineOpts = sortOptions $
 %%[[(8 codegen)
                                 Just "-"     -> o -- { ehcOptEmitCore         = False  }
                                 Just "core"  -> o { ehcOptMbTarget         = JustOk Target_None_Core_AsIs
-                                                  }
-                                Just "tycore"-> o { ehcOptMbTarget         = JustOk Target_None_TyCore_None
                                                   }
 %%]]
 %%[[(8888 codegen java)
@@ -1167,17 +1115,6 @@ unifyFIOpts = strongFIOpts {fioMode = FitUnify}
 
 instFIOpts :: FIOpts
 instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
-%%]
-
-%%[(4_2 hmtyinfer).FIOpts.defaults export(meetFIOpts,joinFIOpts,impredFIOpts)
-meetFIOpts :: FIOpts
-meetFIOpts = unifyFIOpts {fioMode = FitMeet}
-
-joinFIOpts :: FIOpts
-joinFIOpts = unifyFIOpts {fioMode = FitJoin}
-
-impredFIOpts :: FIOpts
-impredFIOpts = strongFIOpts {fioBindToTyAlts = True}
 %%]
 
 %%[(5 hmtyinfer) export(weakFIOpts)

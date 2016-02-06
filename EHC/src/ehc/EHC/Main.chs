@@ -271,7 +271,7 @@ doCompileRun filename opts
                           ; when (ehcOptShowTopTyPP opts)
                                  (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
 %%]]
-%%[[7_2
+%%[[(7 html)
                           ; when (not (null filename) && ehcOptUniqueness opts)
                                  (writeFile (filename ++ ".html") (EHSem.ppHTML_Syn_AGItf wrRes))
 %%]]

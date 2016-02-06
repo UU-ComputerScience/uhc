@@ -27,9 +27,6 @@ parameterised with a function telling whether a node represents an unboxed value
 %%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
 
-%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common})
-%%]
-
 %%[(8 codegen grin) hs export(grMayLiveUnboxed)
 grMayLiveUnboxed :: (GrTag -> Unbox) -> GrModule -> GrModule
 grMayLiveUnboxed tagAllowsUnboxedLife grmod

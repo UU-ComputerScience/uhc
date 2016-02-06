@@ -17,7 +17,10 @@
 %%[1 import(UHC.Util.Utils)
 %%]
 
-%%[1 import(Data.Typeable, Data.Maybe, qualified Data.Map as Map)
+%%[1111 import(Data.Typeable)
+%%]
+
+%%[1 import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
 %%[1 import({%{EH}Base.UnderDev})
@@ -29,7 +32,7 @@
 %%[7 import(qualified Data.Set as Set)
 %%]
 
-%%[8 import(GHC.Generics(Generic))
+%%[8888 import(GHC.Generics(Generic))
 %%]
 
 %%[8 import(Data.List,Data.Char,{%{EH}Base.HsName.Builtin})
@@ -141,6 +144,7 @@ data CoreOpt
   | CoreOpt_Readable			-- when there is a choice, make it more readable
 %%]]
   | CoreOpt_Dump
+  | CoreOpt_DumpAST
   | CoreOpt_DumpBinary
   | CoreOpt_DumpAlsoNonParseable-- dump also the parts which are not parseable
 %%[[(8 corerun)
@@ -187,15 +191,6 @@ instance Show JavaScriptOpt where
 %%]]
 %%]
 
-%%[(8 codegen tycore) export(TyCoreOpt(..))
--- | TyCore options
-data TyCoreOpt
-  = TyCoreOpt_Sugar         -- produce/accept sugared version
-  | TyCoreOpt_Unicode       -- produce/accept unicode, implies sugar
-  deriving Eq
-
-%%]
-
 %%[(8 codegen cmm) export(CmmOpt(..))
 -- | Cmm options
 data CmmOpt
@@ -238,9 +233,6 @@ data EHCOpts
       ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
       ,  ehcOptEhOpts         ::  [EhOpt]  	    	-- EH options
-%%[[(8 codegen tycore)
-      ,  ehcOptShowTyCore     ::  Bool              -- show TyCore ast on stout
-%%]]
       ,  ehcOptUnderDev		  ::  Set.Set UnderDev  -- turning on something under development (available options change according to whim and weather)
       ,  ehcOptPriv           ::  Bool              -- privately used (in general during switch between 2 impls of 1 feature)
       ,  ehcOptHsChecksInEH   ::  Bool              -- do checks in EH which already have been done in HS (usually related to name absence/duplication). This is used for EH compilation only.
@@ -260,9 +252,6 @@ data EHCOpts
 %%[[7
       ,  ehcOptExtensibleRecords
       						  ::  Bool
-%%]]
-%%[[7_2
-      ,  ehcOptUniqueness     ::  Bool
 %%]]
 %%[[8
       ,  ehcOptMbTarget       ::  MaybeOk Target            -- code generation target
@@ -292,9 +281,6 @@ data EHCOpts
 %%]]
 %%[[(8 javascript)
       ,  ehcOptDumpJavaScriptStages ::  Bool              -- dump intermediate JavaScript transformation stages
-%%]]
-%%[[(8 codegen tycore)
-      ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
 %%[[(8 codegen)
       ,  ehcOptGenTrampoline_ ::  Bool              -- gen trampoline with (tail) calls
@@ -418,9 +404,6 @@ emptyEHCOpts
       ,  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
       ,  ehcOptShowHS           =   False
       ,  ehcOptEhOpts           =   []
-%%[[(8 codegen tycore)
-      ,  ehcOptShowTyCore       =   False
-%%]]
       ,  ehcOptPriv             =   False
       ,  ehcOptUnderDev         =   Set.fromList
       									[ UnderDev_NameAnalysis		-- 20150924
@@ -454,9 +437,6 @@ emptyEHCOpts
 %%][99
       ,  ehcOptExtensibleRecords=   False
 %%]]
-%%[[7_2
-      ,  ehcOptUniqueness       =   True
-%%]]
 %%[[8
       ,  ehcOptMbTarget         =   JustOk defaultTarget
       ,  ehcOptMbTargetFlavor   =   JustOk defaultTargetFlavor
@@ -483,9 +463,6 @@ emptyEHCOpts
 %%[[(8 javascript)
       ,  ehcOptDumpJavaScriptStages
                                 =   False
-%%]]
-%%[[(8 codegen tycore)
-      ,  ehcOptUseTyCore        =   Nothing
 %%]]
 %%[[(8 codegen)
       ,  ehcOptGenTrampoline_  	=	False

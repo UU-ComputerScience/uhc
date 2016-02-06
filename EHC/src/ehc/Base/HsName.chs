@@ -19,10 +19,7 @@ HsNameUniqifier to guarantee such an invariant.
 %%[1 module {%{EH}Base.HsName} import(UHC.Util.Utils,UHC.Util.Pretty, Data.List)
 %%]
 
-%%[1 import(Data.Typeable(Typeable), Data.Generics(Data))
-%%]
-
-%%[1 import(GHC.Generics)
+%%[1 import(Data.Typeable(Typeable), GHC.Generics(Generic))
 %%]
 
 %%[1 import({%{EH}Base.UID})
@@ -1117,6 +1114,8 @@ data Track
   | TrackVarApply HsName [Track]
   deriving (Eq, Ord, Show, Generic)
 
+instance PP Track where
+  pp = pp . show
 %%]
 
 %%[(50 codegen) hs

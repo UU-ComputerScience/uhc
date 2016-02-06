@@ -44,9 +44,6 @@ Previously, the |x'| did not sit in between, so this transformation removes it f
 %%[(8 codegen grin) hs import({%{EH}Base.HsName.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
 
-%%[(8 codegen grin wholeprogAnal) hs import({%{EH}GrinCode.Common})
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

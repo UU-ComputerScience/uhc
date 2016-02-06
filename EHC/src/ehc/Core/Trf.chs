@@ -46,8 +46,6 @@
 %%]
 %%[(8 counting) import({%{EH}Core.Trf.CountingAnalysis})
 %%]
-%%[(8 codegen wholeprogAnal) import({%{EH}Core.Trf.FindNullaries})
-%%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
 %%]
 %%[(8 codegenanalysis) import({%{EH}Core.Trf.AnaRelevance})
@@ -57,8 +55,6 @@
 %%[(8 codegenanalysis) import({%{EH}Core.Trf.OptimizeStrictness})
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EraseExtractTysigCore})
-%%]
-%%[(9 codegen wholeprogAnal) import({%{EH}Core.Trf.FixDictFields})
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
 %%]
@@ -230,10 +226,6 @@ trfCore opts optimScope dataGam modNm trfcore
 				   ; t_anormal u1
                    }
 
-%%[[(9 wholeprogAnal)
-               ; when (not isFromCoreSrc && targetDoesHPTAnalysis (ehcOptTarget opts))
-                      t_fix_dictfld
-%%]]
                
                ; when (isNotLamLifted && not isUnOptimCoreTarget) $ do
                    {
@@ -251,11 +243,6 @@ trfCore opts optimScope dataGam modNm trfcore
 					 -- from now on INVARIANT: no local lambdas
 					 --             ASSUME   : 
                    }
-
-%%[[(8 wholeprogAnal)
-               ; when (targetDoesHPTAnalysis (ehcOptTarget opts))
-                      t_find_null
-%%]]
 
 %%[[(8 counting)
                ; t_counting_analysis
@@ -311,9 +298,6 @@ trfCore opts optimScope dataGam modNm trfcore
         t_lam_asarg     = liftTrfModPlain  osm "lam-asarg"          $ cmodTrfLamGlobalAsArg
         t_caf_asarg     = liftTrfModPlain  osm "caf-asarg"          $ cmodTrfCAFGlobalAsArg
         t_float_glob    = liftTrfModPlain  osm "float-glob"         $ cmodTrfFloatToGlobal
-%%[[(8 wholeprogAnal)
-        t_find_null     = liftTrfModPlain  osm "find-null"          $ cmodTrfFindNullaries
-%%]]
 
 %%[[(8 counting)
         t_counting_analysis 
@@ -327,9 +311,6 @@ trfCore opts optimScope dataGam modNm trfcore
                                                                $ \s -> cmodTrfAnaRelevance opts dataGam (trfcoreInhLamMp $ trfstExtra s)
         t_opt_strict    = liftTrfModWithStateExtra osm "optim-strict" lamMpPropagate
                                                                $ \s -> cmodTrfOptimizeStrictness opts (trfcoreInhLamMp $ trfstExtra s)
-%%]]
-%%[[(9 wholeprogAnal)
-        t_fix_dictfld   = liftTrfModPlain  osm "fix-dictfld"        $ cmodTrfFixDictFields
 %%]]
 %%[[99        
         t_expl_trace    = liftTrfModWithStateExtra osm "expl-sttrace"

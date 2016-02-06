@@ -121,7 +121,8 @@ data DataTagInfo
 %%[[91
       , dtiMbFixityPrio 	:: !(Maybe (Int,Fixity))	-- if defined as infix, with priority
 %%]]
-      } deriving (Generic)
+      }
+    deriving Generic
 
 instance Show DataTagInfo where
   show _ = "DataTagInfo"
@@ -231,7 +232,8 @@ data DataGamInfo
       , dgiMbGenerInfo		:: !(Maybe Int)			-- max kind arity for generic behavior, currently \in {0,1}
 %%]]
       }
-  deriving Generic
+    deriving Generic
+%%]]
 
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
@@ -462,6 +464,10 @@ deriving instance Data DataGamInfoVariant
 %%]
 
 %%[(90 hmtyinfer)
+instance Serialize DataGamInfoVariant
+%%]
+
+%%[(9090 hmtyinfer)
 instance Serialize DataGamInfoVariant where
 --   sput (DataGamInfoVariant_Plain    ) = sputWord8 0
 --   sput (DataGamInfoVariant_Newtype a) = sputWord8 1 >> sput a
@@ -487,6 +493,15 @@ instance Serialize DataConFldAnnInfo where
   -- sput (DataConFldAnnInfo a) = sput a
   -- sget = liftM DataConFldAnnInfo sget
 
+instance Serialize DataFldInConstr where
+%%]
+
+%%[(50 hmtyinfer)
+instance Serialize DataTagInfo
+instance Serialize DataGamInfo
+%%]
+
+%%[(5050 hmtyinfer)
 instance Serialize DataTagInfo where
 -- %%[[(50 counting)
 --   sput (DataTagInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
@@ -501,10 +516,6 @@ instance Serialize DataTagInfo where
 --   sput (DataTagInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
 --   sget = liftM8 DataTagInfo sget sget sget sget sget sget sget sget
 -- %%]]
-
-instance Serialize DataFldInConstr where
-  -- sput (DataFldInConstr a) = sput a
-  -- sget = liftM DataFldInConstr sget
 
 instance Serialize DataGamInfo where
 -- %%[[(50 counting)

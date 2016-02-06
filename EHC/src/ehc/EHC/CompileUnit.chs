@@ -20,7 +20,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[8 import(UHC.Util.Lens)
 %%]
 
-%%[8 import(Data.Typeable)
+%%[8888 import(Data.Typeable)
 %%]
 
 -- Language syntax: HS, EH
@@ -136,9 +136,6 @@ data EHCompileUnit
 %%[[(8 codegen corerunin)
       , _ecuMbCoreRunSemMod  :: !(Maybe AST_CoreRun_Sem_Mod)
       , _ecuMbCoreRunSemChk  :: !(Maybe AST_CoreRun_Sem_Check)
-%%]]
-%%[[(8 codegen tycore)
-      , ecuMbTyCore          :: !(Maybe C.Module)
 %%]]
 %%[[(8 grin)
       , _ecuMbGrin           :: !(Maybe AST_Grin)
@@ -338,9 +335,6 @@ emptyECU
 %%[[(8 codegen corerunin)
       , _ecuMbCoreRunSemMod  = Nothing
       , _ecuMbCoreRunSemChk  = Nothing
-%%]]
-%%[[(8 codegen tycore)
-      , ecuMbTyCore          = Nothing
 %%]]
 %%[[(8 grin)
       , _ecuMbGrin           = Nothing
@@ -618,11 +612,6 @@ ecuStoreCoreRunSemMod x ecu = ecu { _ecuMbCoreRunSemMod = Just x }
 %%[(8 codegen corerun) export(ecuStoreCore2CoreRunSem)
 ecuStoreCore2CoreRunSem :: EcuUpdater AST_Core_Sem_ToCoreRun
 ecuStoreCore2CoreRunSem x ecu = ecu { _ecuMbCore2CoreRunSem = Just x }
-%%]
-
-%%[(8 codegen tycore) export(ecuStoreTyCore)
-ecuStoreTyCore :: EcuUpdater C.Module
-ecuStoreTyCore x ecu = ecu { ecuMbTyCore = Just x }
 %%]
 
 %%[(8 jazy) export(ecuStoreJVMClassL)

@@ -137,7 +137,7 @@ mkTyThunk t = t -- mkTyArrow1Ty [] t
 %%[(8 codegen coresysf) hs export(tyUnThunkTySeq,tyUnThunkTy)
 tyUnThunkTySeq :: Ty -> TySeq
 -- tyUnThunkTySeq (Expr_Arrow (Expr_Seq []) r) = r
-tyUnThunkTySeq t                            = t -- tyErr "TyCore.tyUnThunkTySeq"
+tyUnThunkTySeq t                            = t -- tyErr "Core.SysF.AsTy.tyUnThunkTySeq"
 {-# INLINE tyUnThunkTySeq #-}
 
 tyUnThunkTy :: Ty -> Ty
@@ -157,8 +157,8 @@ tyUnThunkTy = unTySeq . tyUnThunkTySeq
 ??
 
 %%[(8 codegen coresysf) hs export(CSubst)
-type CSubstInfo = CSubstInfo' C.CExpr C.CMetaVal C.CBind C.CBound C.CTy
-type CSubst     = CSubst'     C.CExpr C.CMetaVal C.CBind C.CBound C.CTy
+type CSubstInfo = CSubstInfo' C.CExpr C.CBind C.CBound C.CTy
+type CSubst     = CSubst'     C.CExpr C.CBind C.CBound C.CTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -246,12 +246,6 @@ tcMergeArgTypeSeqAndCode' mka ts as
         merge ((ExprSeq1_L1Bind v   k:ts):tss)                 as  = (mkExprLam1Ki' mka v     k          . body,         args)
                                                                    where (body,args) = merge (ts:tss) as
         merge (_                         :tss)                 as  =                   merge     tss  as
-
-%%[(8888 codegen tycore) hs export(tcMergeArgTypeSeqAndCode)
-tcMergeArgTypeSeqAndCode :: [TySeq1L] -> [(HsName,Expr->Expr)] -> Expr -> Expr
-tcMergeArgTypeSeqAndCode ts as
-  = fst $ tcMergeArgTypeSeqAndCode' mkTySeq ts as
-%%]
 
 %%[(8 codegen coresysf) hs export(tcMergeLamTySeqAndArgNms,tcMergeLamTySeq1AndArgNms)
 tcMergeLamTySeqAndArgNms' :: (Ty -> TySeq) -> (Ty -> TySeq) -> Ty -> [HsName] -> (C.CExpr->C.CExpr,([TySeq],TySeq))

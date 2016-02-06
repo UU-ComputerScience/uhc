@@ -162,25 +162,9 @@ AC_SUBST(ENABLE_JS,$enableJavaScript)
 AC_ARG_ENABLE(cmm, AS_HELP_STRING([--enable-cmm],[include cmm code generation]), [enableCmm=yes], [enableCmm=no])
 AC_SUBST(ENABLE_CMM,$enableCmm)
 
-### enable options: wholeprogC, the C whole program backend, default is no, temporary until development restarts
-AC_ARG_ENABLE(wholeprogC, AS_HELP_STRING([--enable-wholeprogC],[include C whole program code generation]), [enableWholeprogC=yes], [enableWholeprogC=no])
-AC_SUBST(ENABLE_WHOLEPROGC,$enableWholeprogC)
-
-### enable options: wholeprogAnal, whole program analysis, default is no, temporary until development restarts
-AC_ARG_ENABLE(wholeprogAnal, AS_HELP_STRING([--enable-wholeprogAnal],[include C whole program code analysis]), [enableWholeprogAnal=yes], [enableWholeprogAnal=no])
-AC_SUBST(ENABLE_WHOLEPROGANAL,$enableWholeprogAnal)
-
 ### enable options: llvm, default is no
 AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])
 AC_SUBST(ENABLE_LLVM,$enableLlvm)
-
-### enable options: clr (Tom Lokhorsts CLR backend), default is no
-AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
-AC_SUBST(ENABLE_CLR,$enableClr)
-
-### enable options: tycore (Typed Core), default is no
-AC_ARG_ENABLE(tycore, AS_HELP_STRING([--enable-tycore],[include TyCore typed intermediate language]), [enableTyCore=yes], [enableTyCore=no])
-AC_SUBST(ENABLE_TYCORE,$enableTyCore)
 
 ### enable options: core-asinpoutp (Untyped Core), default is no
 AC_ARG_ENABLE(core-asinpoutp, AS_HELP_STRING([--enable-core-asinpoutp],[allow use of Core untyped intermediate language as a backend and source language]), [enableCoreAsInpOutp=yes], [enableCoreAsInpOutp=no])
@@ -512,7 +496,7 @@ then
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           uhc-util)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.4&&<0.1.7"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.5&&<0.1.7"
             ;;
           uulib)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"
@@ -521,7 +505,7 @@ then
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} base>=4.7&&<5"
             ;;
           hashable)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} hashable>=1.1&&<1.3"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} hashable>=1.2.4&&<1.3"
             ;;
           fgl)
             # with uhc-util >= 0.1.3.7 no longer necessary
@@ -1286,11 +1270,10 @@ AC_SUBST(EXIT_IF_ABSENT_LIB_OR_TOOL, $exitIfAbsentLibOrTool)
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([test/benchmark/runbenchmark.pl])
-AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
+AC_CONFIG_FILES([src/ehc/Config.chs])
 # AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver]
 AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/uhcbase/include/MachDeps.h ehclib/uhcbase/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h])
 
-AC_CONFIG_FILES([src/text2text/text2text.cabal])
 AC_OUTPUT
 
 echo

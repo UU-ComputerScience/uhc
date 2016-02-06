@@ -143,12 +143,6 @@ pCExprBase
   <|> pOPAREN *> (pCExpr {- <**> pCExprAnn -}) <* pCPAREN
 
 {-
-pCExprBaseMeta :: CParser (CExpr,CMetaVal)
-pCExprBaseMeta
-  =   (\v m -> (acoreVar v, m))<$> pDollNm <*> pCMetaValOpt
-  <|> (\n   -> (n, CMetaVal_Val)  ) <$> pCNumber
-  <|> pOPAREN *> pCExpr P.<+> pCMetaValOpt <* pCPAREN
-
 pCExprSelSuffix :: CParser (CExpr -> CExpr)
 pCExprSelSuffix
   =   (\(t,o,l)    e -> CExpr_TupDel e t l o   ) <$ pKeyTk "-=" <*> pS
@@ -200,11 +194,6 @@ pCExpr
 
 
 {-
-pTrack          ::   CParser Track
-pTrack          =    (\x -> TrackVarApply x [])  <$> pDollNm     -- TODO: this is just a mockup, should do real track parsing
--}
-
-{-
 pMbDollNm :: CParser (Maybe HsName)
 pMbDollNm
   =  f <$> pDollNm
@@ -223,38 +212,9 @@ pManyDollNm
           f ns        = ns
 -}
 
-{-
-pCMetas :: CParser CMetas
-pCMetas
-  =   (,) <$ pOCURLY <*> pCMetaBind <* pCOMMA <*> pCMetaVal <* pCCURLY
-
-pCMetasOpt :: CParser CMetas
-pCMetasOpt
-  =   pMaybe cmetasDefault id pCMetas
-
-pCMetaBind :: CParser CMetaBind
-pCMetaBind
-  =   CMetaBind_Plain       <$ pKeyTk "BINDPLAIN"
-  <|> CMetaBind_Function0   <$ pKeyTk "BINDFUNCTION0"
-  <|> CMetaBind_Function1   <$ pKeyTk "BINDFUNCTION1"
-  <|> CMetaBind_Apply0      <$ pKeyTk "BINDAPPLY0"
-
-pCMetaVal :: CParser CMetaVal
-pCMetaVal
-  =   CMetaVal_Val          <$ pKeyTk "VAL"
-  <|> CMetaVal_Dict         <$ pKeyTk "DICT"
-  <|> CMetaVal_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pTrack <* pCCURLY
-  <|> CMetaVal_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pList1Sep pCOMMA pTrack <* pCCURLY
-  -- TODO: parse Track
-
-pCMetaValOpt :: CParser CMetaVal
-pCMetaValOpt
-  =   pMaybe CMetaVal_Val id (pCOLON *> pCMetaVal)
--}
-
 pCBound :: CParser CBound
 pCBound
-  = CBound_Bind cmetasDefault <$> pCExpr
+  = CBound_Bind <$> pCExpr
 
 pCBind :: CParser CBind
 pCBind

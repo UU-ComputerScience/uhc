@@ -20,7 +20,10 @@
 %%[1 import(UHC.Util.Hashable) export (module UHC.Util.Hashable)
 %%]
 
-%%[8 import(GHC.Generics(Generic))
+%%[1 import(Data.Typeable(Typeable)) export(module Data.Typeable)
+%%]
+
+%%[1 import(GHC.Generics(Generic)) export(module GHC.Generics)
 %%]
 
 %%[1 import({%{EH}Base.HsName},{%{EH}Base.HsName.Builtin}) export(module {%{EH}Base.HsName})
@@ -33,9 +36,6 @@
 %%]
 
 %%[1 import(UHC.Util.AssocL) export(module UHC.Util.AssocL)
-%%]
-
-%%[1 import(Data.Typeable(Typeable), Data.Generics(Data)) export(module Data.Typeable, module Data.Generics)
 %%]
 
 %%[1 import(UHC.Util.Pretty, Data.List)
@@ -57,12 +57,6 @@
 %%]
 
 %%[7777 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
-%%]
-
-%%[7_2 import(qualified Data.Map as Map, Data.Map(Map), Data.Set(Set))
-%%]
-
-%%[7_2 export(threadMap,Belowness(..), groupAllBy, mergeListMap)
 %%]
 
 %%[8 import (UHC.Util.FPath,System.IO,System.Environment,System.Exit,Data.Char,Data.Maybe,Numeric)
@@ -87,12 +81,6 @@
 %%[50 import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
-%%[9999 import(UHC.Util.RLList) export(module UHC.Util.RLList)
-%%]
-
-%%[9999 import({%{EH}Base.ForceEval})
-%%]
-
 %%[99 import(Data.Version)
 %%]
 
@@ -102,9 +90,10 @@
 
 %%[99
 deriving instance Generic Version
-
-instance Hashable Version
 %%]
+
+-- with hashable-1.2.4 no longer necessary
+instance Hashable Version
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Printing of names with non-alpha numeric constants
@@ -367,21 +356,6 @@ ppParNeed locNeed globNeed p
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Belowness
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7_2
-data Belowness = Below | NotBelow | UnknownBelow deriving (Show,Eq,Ord)
-%%]
-
-%%[7_2
-instance PP Belowness where
-  pp Below        = pp "B+"
-  pp NotBelow     = pp "B-"
-  pp UnknownBelow = pp "B?"
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Label for expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -395,7 +369,7 @@ data CLbl
   | CLbl_Tag
       { clblTag		:: !CTag
       }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
 
 clbl :: a -> (HsName -> a) -> (CTag -> a) -> CLbl -> a
 clbl f _ _  CLbl_None   = f
@@ -431,21 +405,6 @@ unions = foldr union []
 %%[4.listCombineUniq export(listCombineUniq)
 listCombineUniq :: Eq a => [[a]] -> [a]
 listCombineUniq = nub . concat
-%%]
-
-%%[7_2
-threadMap :: (a -> c -> (b, c)) -> c -> [a] -> ([b], c)
-threadMap f c = foldr (\a (bs, c) -> let (b, c') = f a c in (b:bs, c')) ([], c)
-%%]
-
-%%[7_2
-groupAllBy :: Ord b => (a -> b) -> [a] -> [[a]]
-groupAllBy f = Map.elems . foldr (\v -> Map.insertWith (++) (f v) [v]) Map.empty
-%%]
-
-%%[7_2
-mergeListMap :: Ord k => Map k [a] -> Map k [a] -> Map k [a]
-mergeListMap = Map.unionWith (++)
 %%]
 
 %%[8 export(replicateBy)
@@ -687,7 +646,7 @@ data VarUIDHsName
   = VarUIDHs_Name       { vunmId :: !UID, vunmNm' :: !HsName }
   | VarUIDHs_UID        { vunmId :: !UID }
   | VarUIDHs_Var        !UID
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 vunmNm :: VarUIDHsName -> HsName
 vunmNm (VarUIDHs_Name _ n) = n
@@ -1223,9 +1182,14 @@ instance Serialize KnownPrim where
   sget = sgetPlain
 
 instance Serialize TagDataInfo where
-  -- sput (TagDataInfo a b) = sput a >> sput b
-  -- sget = liftM2 TagDataInfo sget sget
+%%]
 
+%%[50
+instance Serialize VarUIDHsName
+instance Serialize CLbl
+%%]
+
+%%[5050
 instance Serialize VarUIDHsName where
   -- sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
   -- sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
@@ -1237,15 +1201,17 @@ instance Serialize VarUIDHsName where
   --             2 -> liftM  VarUIDHs_Var  sget
 
 instance Serialize CLbl where
-  -- sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
-  -- sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
-  -- sput (CLbl_None    ) = sputWord8 2
-  -- sget = do t <- sgetWord8
-  --           case t of
-  --             0 -> liftM  CLbl_Nm 	sget
-  --             1 -> liftM  CLbl_Tag  sget
-  --             2 -> return CLbl_None
+  sput (CLbl_Nm   a  ) = sputWord8 0 >> sput a
+  sput (CLbl_Tag  a  ) = sputWord8 1 >> sput a
+  sput (CLbl_None    ) = sputWord8 2
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM  CLbl_Nm 	sget
+              1 -> liftM  CLbl_Tag  sget
+              2 -> return CLbl_None
+%%]
 
+%%[50
 instance Binary Fixity where
   put = putEnum8
   get = getEnum8

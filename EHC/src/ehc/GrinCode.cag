@@ -58,20 +58,12 @@
 %%[(8 grin) ag import({GrinCode/AbsSyn})
 DERIVING * - GrTag
   : Show, Eq
-%%[[8
   , Typeable
-%%]]
-%%[[50
   , Generic
-%%]]
 DERIVING GrTag
   : Show
-%%[[8
   , Typeable
-%%]]
-%%[[50
   , Generic
-%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,7 +87,7 @@ data GrTagAnn
       { gtannArity 		:: !Int
       , gtannMaxArity 	:: !Int
       }
-  deriving (Generic)
+    deriving Generic
 
 instance Eq GrTag where
   GrTag_Con _ _ x1 == GrTag_Con _ _ x2 = x1==x2
@@ -165,7 +157,7 @@ data GrBindAnn
   | GrBindAnnInstance [Track]
 %%]]
   | GrBindAnnSpecialized HsName Int [Maybe HsName]
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Generic)
 
 %%]
 
@@ -190,7 +182,7 @@ data GrAltAnn
   | GrAltAnnIdent
   | GrAltAnnCalling Int HsName
   | GrAltAnnReenter
-  deriving (Eq,Ord,Show, Generic)
+  deriving (Eq,Ord,Show,Generic)
 
 %%]
 
@@ -491,10 +483,27 @@ data EntryInfo' str
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(50 grin) hs
--- instance Serialize GrInl
+instance Serialize GrInl
+instance Serialize GrExpr
+instance Serialize GrType
+instance Serialize GrTypeBase
+instance Serialize GrAlt
+instance Serialize GrTag
+instance Serialize GrPatLam
+instance Serialize GrVal
+instance Serialize GrPatAlt
+instance Serialize GrVar
+instance Serialize GrAltAnn
+instance Serialize GrTagAnn
+instance Serialize GrBind
+instance Serialize GrModule
+instance Serialize GrGlobal
+instance Serialize GrBindAnn
+instance Serialize GrAdapt
+instance Serialize GrSplit
 %%]
 
-%%[(50 grin) hs
+%%[(5050 grin) hs
 instance Serialize GrInl where
   -- sput (GrInl_Call a b) = sputWord8  0 >> sput a >> sput b
   -- sput (GrInl_CAF  a  ) = sputWord8  1 >> sput a
@@ -711,18 +720,6 @@ instance Serialize GrGlobal where
   --          0  -> liftM2 GrGlobal_Global sget sget
 
 
-
-%%]
-
-%%[(99 grin) hs
-instance Serialize GrFFIAnnot where
-  sput (GrFFIAnnot_IsResEval a) = sputWord8 0  >> sput a 
-  sget = do t <- sgetWord8
-            case t of
-              0  -> liftM GrFFIAnnot_IsResEval sget
-%%]
-
-%%[(50 grin) hs
 instance Serialize GrBindAnn where
   sput (GrBindAnnNormal           ) = sputWord8 0
   sput (GrBindAnnClass       a    ) = sputWord8 1 >> sput a
@@ -736,3 +733,17 @@ instance Serialize GrBindAnn where
            2 -> liftM  GrBindAnnInstance      sget
            4 -> liftM3 GrBindAnnSpecialized   sget sget sget
 %%]
+
+%%[(99 grin) hs
+instance Serialize GrFFIAnnot
+%%]
+
+%%[(9999 grin) hs
+instance Serialize GrFFIAnnot where
+  sput (GrFFIAnnot_IsResEval a) = sputWord8 0  >> sput a 
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM GrFFIAnnot_IsResEval sget
+%%]
+
+

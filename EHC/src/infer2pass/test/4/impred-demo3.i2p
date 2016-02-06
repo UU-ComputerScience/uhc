@@ -1,9 +1,0 @@
-let  g1  ::  (forall a . a -> a) -> Int
-         =   \f -> f 3
-  ;  g2  ::  (Int -> Int) -> Int
-         =   \f -> f 3
-  ;  id  =   \x -> x
-  ;  f   =   \h  ->  let  x1  =  g1 h
-                       ;  x2  =  g2 h
-                     in   x2
-in   f id

@@ -13,6 +13,14 @@ Here the elaborate instructions for getting started and downloading can
 be found.
 
 
+Platforms
+===================
+
+UHC currently compiles/runs on MacOSX (10.11) with GHC 7.10.
+Compiling on other Unix platforms in general does not give problems,
+but is somewhat unpredictable due the great variation in combinations.
+
+
 Installation
 ============
 

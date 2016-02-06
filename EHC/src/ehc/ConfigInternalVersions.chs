@@ -43,7 +43,7 @@ internalVersionCodeGen = mkInternalVersion 1
 internalVersionHI = mkInternalVersion 2
 
 -- | For binary/serialized Core .cr/.bcr/.tcr etc files
-internalVersionCore = mkInternalVersion 1
+internalVersionCore = mkInternalVersion 2
 
 -- | For binary/serialized CoreRun .crr/.bcrr./tcrr etc files
 internalVersionCoreRun = mkInternalVersion 1

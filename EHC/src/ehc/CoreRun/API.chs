@@ -35,6 +35,8 @@ module %%@{%{EH}%%}CoreRun.API
   , mkImpRef
   , mkExpRef
   , mkModRef
+  , mkTagRef
+  , mkFldRef
   
   -- ** Expressions
   , mkExp
