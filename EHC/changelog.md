@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.9.3 - 20160219
+
+- [libs] Updated version lowerbound for hashable and fclabels, via uhc-util
+- [chr] Prep for new CHR solver, via uhc-util
+- [doc] Cleanup: doc moved to separate repo https://github.com/atzedijkstra/uhc-doc
+- [ruler] Cleanup: ruler based impl part and examples moved to separate repo https://github.com/atzedijkstra/ruler-uhc-examples
+- [experiments] Cleanup: unused/obsolete code/experiments moved to separate repo https://github.com/atzedijkstra/uhc-obsolete
+- [tycore] Cleanup: TyCore stuff removed
+- [impredicativity] Cleanup: variant 4_2 (impredicativity 2 pass analysis) removed
+- [annotations] Cleanup: variant 7_2 (annotations, strictness) mostly removed, utilities for html pretty printing left in, bit of AST as well
+- [whole prog analysis] Cleanup: removal of HPT analysis, Silly, Cil, last version still having this code tagged with 'lastversionwith-wholeproggrin'
+- [core] Pretty printing/dump of Core AST (for debugging purposes), accessible via --coreopt=dump-ast
+- [uhc-util] Move of LexScope encoding via RLList to separate module in uhc-util
+- [corerun] Additional API calls
+- [grin] No longer .grin files generated, any whole grin progr stuff disabled (to be removed)
+- [serialize] Serialization instances now mostly generically defined
+
 ## 1.1.9.2 - 20151027
 
 - [corerun] CoreRun specific options via --corerunopt=...

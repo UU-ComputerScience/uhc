@@ -1,3 +1,9 @@
+- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
+
+## 1.1.9.3 - 20160219
+
+- [libs] Updated version lowerbound for hashable and fclabels, via uhc-util
+- [chr] Prep for new CHR solver, via uhc-util
 - [doc] Cleanup: doc moved to separate repo https://github.com/atzedijkstra/uhc-doc
 - [ruler] Cleanup: ruler based impl part and examples moved to separate repo https://github.com/atzedijkstra/ruler-uhc-examples
 - [experiments] Cleanup: unused/obsolete code/experiments moved to separate repo https://github.com/atzedijkstra/uhc-obsolete
