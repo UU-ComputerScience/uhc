@@ -304,5 +304,7 @@ instance CHRCheckable FIIn Guard VarMp where
 instance IsCHRConstraint FIIn Constraint VarMp
 
 instance IsCHRGuard FIIn Guard VarMp
+
+-- instance IsCHRPrio FIIn Prio VarMp
 %%]
 

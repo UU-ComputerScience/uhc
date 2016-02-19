@@ -21,20 +21,20 @@ Assumptions (to be documented further)
 %%]
 
 %%[(9 hmtyinfer) import(UHC.Util.CHR.Solve.TreeTrie.Mono hiding(IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore), qualified UHC.Util.CHR.Solve.TreeTrie.Mono as Mono) export(module UHC.Util.CHR.Solve.TreeTrie.Mono, IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore', CHRSolverConstraint)
-instance Mono.IsCHRSolvable FIIn Constraint Guard VarMp
+instance Mono.IsCHRSolvable FIIn Constraint Guard Prio VarMp
 
 type CHRSolverConstraint = Constraint
 
 -- | (Class alias) API for solving requirements, hiding Mono/Poly differences
-class ( Mono.IsCHRSolvable env c g s
-      ) => IsCHRSolvable env c g s
+class ( Mono.IsCHRSolvable env c g p s
+      ) => IsCHRSolvable env c g p s
 
-instance IsCHRSolvable FIIn Constraint Guard VarMp
+instance IsCHRSolvable FIIn Constraint Guard Prio VarMp
 
-type CHRStore'  e c g s = Mono.CHRStore   c g
-type SolveState e c g s = Mono.SolveState c g s
-type SolveTrace e c g s = Mono.SolveTrace c g s
-type SolveStep  e c g s = Mono.SolveStep  c g s
+type CHRStore'  e c g p s = Mono.CHRStore   c g p
+type SolveState e c g p s = Mono.SolveState c g p s
+type SolveTrace e c g p s = Mono.SolveTrace c g p s
+type SolveStep  e c g p s = Mono.SolveStep  c g p s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,16 +51,16 @@ type instance ExtrValVarKey (CHRGuard FIIn VarMp) = TyVarId
 
 -- | (Class alias) API for solving requirements, hiding Mono/Poly differences
 class ( Poly.IsCHRSolvable env s
-      ) => IsCHRSolvable env c g s
+      ) => IsCHRSolvable env c g p s
 
-instance IsCHRSolvable FIIn Constraint Guard VarMp
+instance IsCHRSolvable FIIn Constraint Guard Prio VarMp
 
 type instance TTKey (CHRConstraint FIIn VarMp) = TTKey Constraint
 
-type CHRStore'  e c g s = Poly.CHRStore   e s
-type SolveState e c g s = Poly.SolveState e s
-type SolveTrace e c g s = Poly.SolveTrace e s
-type SolveStep  e c g s = Poly.SolveStep  e s
+type CHRStore'  e c g p s = Poly.CHRStore   e s
+type SolveState e c g p s = Poly.SolveState e s
+type SolveTrace e c g p s = Poly.SolveTrace e s
+type SolveStep  e c g p s = Poly.SolveStep  e s
 %%]
 
 %%[(9999 hmtyinfer) import(Control.Monad, Data.Typeable, UHC.Util.Serialize)
@@ -85,8 +85,12 @@ instance Serialize (CHRRule FIIn VarMp) where
 %%% For both variants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(CHRStore)
-type CHRStore = CHRStore' FIIn Constraint Guard VarMp
+%%[(9 hmtyinfer) export(CHRStore, Prio)
+-- dummy (for now)
+type Prio = ()
+-- type CHRPrio = Prio
+
+type CHRStore = CHRStore' FIIn Constraint Guard Prio VarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

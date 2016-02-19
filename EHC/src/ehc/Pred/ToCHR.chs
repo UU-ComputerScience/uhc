@@ -210,7 +210,7 @@ mkClassSimplChrs :: FIIn -> CHRStore -> CHRClassDecl -> CHRStore
 mkClassSimplChrs env rules (context, head, infos)
   = simps
   where simps        = chrStoreFromElems $ mapTrans (Set.fromList [head1]) [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
-        (superClassesWork, superClassesDone, _ :: SolveTrace FIIn Constraint Guard VarMp)
+        (superClassesWork, superClassesDone, _ :: SolveTrace FIIn Constraint Guard Prio VarMp)
                      = chrSolve' env rules (map (\p -> toSolverConstraint $ mkAssume $ mkCHRPredOcc p sc1) context)
         superClasses = superClassesWork ++ superClassesDone
         graph        = mkRedGraphFromReductions $ filterMb fromSolverConstraint superClasses
@@ -279,9 +279,9 @@ mkInstanceChr (context, hd, i, s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(SimplifyResult, SimplifyResult''(..),emptySimplifyResult)
-data SimplifyResult'' p i g s
+data SimplifyResult'' p i g pr s
   = SimplifyResult
-      { simpresSolveState		:: SolveState FIIn (Constraint' p i) g s
+      { simpresSolveState		:: SolveState FIIn (Constraint' p i) g pr s
       , simpresRedGraph			:: RedGraph' p i
 
       -- for debugging only:
@@ -291,7 +291,7 @@ data SimplifyResult'' p i g s
       , simpresRemPredL         :: [p]							-- remaining pred occurrences, which cannot be proven, as a list
       }
 
-type SimplifyResult' g s = SimplifyResult'' CHRPredOcc RedHowAnnotation g s
+type SimplifyResult' g s = SimplifyResult'' CHRPredOcc RedHowAnnotation g Prio s
 
 type SimplifyResult = SimplifyResult' Guard VarMp
 
