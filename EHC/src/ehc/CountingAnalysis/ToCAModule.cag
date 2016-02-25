@@ -45,9 +45,11 @@ toCAModule cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) hs
-getVarName :: CAExpr -> HsName
-getVarName (CAExpr_Var v) = v
-getVarName e = panic $ "extracting var failed from: " ++ show e
+
+getConVar :: CAExpr -> CAConVar
+getConVar (CAExpr_Var v) = CAConVar_Var v
+getConVar (CAExpr_Const c) = CAConVar_Const c
+getConVar e = panic $ "getting app bound failed from: " ++ show e
 
 %%]
 
@@ -57,7 +59,7 @@ ATTR CodeAGItf [ | | trf: {CAModule} ]
 ATTR CModule [ | | trf: {CAModule} ]
 ATTR CExpr [ | | trf: {CAExpr} ]
 ATTR CPat [ | | trf: {CAPat} ]
-ATTR CBind [ | | trf: {CABinding} ]
+ATTR CBind [ | | trf: {Either CABinding HsName} ]
 ATTR CBound [ | | trf: {CAExpr} ]
 ATTR CAlt [ | | trf: {CAAlt} ]
 ATTR CBindL [ | | trf: {CABindings} ]
@@ -75,14 +77,14 @@ SEM CExpr
   | Var
     lhs.trf = CAExpr_Var $ acbrefNm @ref
   | Int
-    lhs.trf = CAExpr_Int @int
+    lhs.trf = CAExpr_Const $ CAConst_Int @int
   | Char
-    lhs.trf = CAExpr_Char @char
+    lhs.trf = CAExpr_Const $ CAConst_Char @char
   | String 
-    lhs.trf = CAExpr_String @str
+    lhs.trf = CAExpr_Const $ CAConst_String @str
 %%[[(97 core)
   | Integer
-    lhs.trf = CAExpr_Integer @integer
+    lhs.trf = CAExpr_Const $ CAConst_Integer @integer
 %%]] 
   | Let
     lhs.trf = (if @loc.isStrict then 
@@ -97,15 +99,20 @@ SEM CExpr
     loc.isRec = ctagIsRec @tag
   | Lam
     lhs.trf = CAExpr_Lam @loc.arg @body.trf
-    loc.arg = case @bind.trf of CABinding_Bind n _ -> n
+    loc.arg = case @bind.trf of 
+                Right n -> n
+                Left (CABinding_Bind n _) -> n
     -- totally ignore dflt
   | Case
     lhs.trf = CAExpr_Case @expr.trf @alts.trf
   | App
     lhs.trf = case @func.trf of
-                CAExpr_Con tn cn flds -> CAExpr_Con tn cn $ flds ++ [CAConVar_Var $ getVarName @arg.trf]
-                CAExpr_Rec flds -> CAExpr_Rec $ flds ++ [CAConVar_Var $ getVarName @arg.trf]
-                _ -> CAExpr_App @func.trf $ getVarName @arg.trf
+                CAExpr_Con tn cn flds -> CAExpr_Con tn cn $ flds ++ [getConVar @arg.trf]
+                CAExpr_Rec flds -> CAExpr_Rec $ flds ++ [getConVar @arg.trf]
+                _ -> case getConVar @arg.trf of
+                  CAConVar_Var v -> CAExpr_App @func.trf v
+                  CAConVar_Const c -> CAExpr_AppConst @func.trf c
+
   | FFI
     -- TODO
     lhs.trf = CAExpr_FFI @callconv 
@@ -123,8 +130,16 @@ SEM CPat
                 if @loc.isRec then CAPat_RecPat @binds.trf else CAPat_Pat (ctagTyNm @tag) (ctagNm @tag) @binds.trf
               else panic "CPatRest not empty"
     loc.isRec = ctagIsRec @tag
-  | * - Con
-    lhs.trf = panic "Unsupported CPat alternative"
+  | Var
+    lhs.trf = panic "Unsupported CPat alternative Var"
+  | Int
+    lhs.trf = CAPat_Int @int
+  | Char
+    lhs.trf = CAPat_Char @char
+%%[[(97 core)
+  | BoolExpr
+    lhs.trf = panic "Unsupported CPat alternative BoolExpr"
+%%]]
 
 SEM CPatRest
   | Var
@@ -134,32 +149,45 @@ SEM CPatRest
 
 SEM CPatFld
   | Fld
-    lhs.trf = case @bind.trf of CABinding_Bind n _ -> n
+    lhs.trf = case @bind.trf of 
+                Right n -> n
+                Left b -> panic $ "No var in CPatFld: " ++ show b
 
 SEM CBind
   | Bind
-    lhs.trf = CABinding_Bind @nm $ if length @bindAspects.trf == 1 then 
-                head @bindAspects.trf else panic "Multiple bounds for single bind"
+    lhs.trf = case length @bindAspects.trf of
+                0 -> Right @nm
+                1 -> Left $ CABinding_Bind @nm $ head @bindAspects.trf 
+                _ -> traceShow (@bindAspects.trf) $ panic $ "Multiple bounds for single bind: " ++ show @nm
 
 SEM CBound
-  | Bind 
+  | Bind Val
     lhs.trf = @expr.trf
-  | Meta
-    lhs.trf = panic "Unsupported CBound Alternative Meta" 
 %%[[(8 codegenanalysis)
   | RelevTy
     lhs.trf = panic "Unsupported CBound Alternative RelevTy" 
 %%]]
-  | Val
-    lhs.trf = panic "Unsupported CBound Alternative Val" 
   | Ty
-    lhs.trf = panic "Unsupported CBound Alternative Ty" 
- 
+    lhs.trf = CAExpr_Error "Unsupported CBound Alternative Ty" 
+%%[[90
+  | FFE
+    lhs.trf = panic "Unsupported CBound Alternative FFE" 
+%%]]
+
 SEM CAlt
   | Alt
     lhs.trf = CAAlt_Alt @pat.trf @expr.trf
 
-SEM CBindL CBoundL CAltL CPatFldL
+SEM CBindL
+  | Cons
+    lhs.trf = @loc.bind : @tl.trf
+    loc.bind = case @hd.trf of
+                Left b -> b
+                Right n -> panic "Empty BoundL in BindL" 
+  | Nil
+    lhs.trf = []
+
+SEM CBoundL CAltL CPatFldL
   | Cons
     lhs.trf = @hd.trf : @tl.trf
   | Nil

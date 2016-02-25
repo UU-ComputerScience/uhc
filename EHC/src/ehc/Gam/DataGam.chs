@@ -233,7 +233,6 @@ data DataGamInfo
 %%]]
       }
     deriving Generic
-%%]]
 
 instance Show DataGamInfo where
   show _ = "DataGamInfo"

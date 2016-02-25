@@ -7,10 +7,13 @@
 %%[(8 counting) hs import({%{EH}Base.HsName (HsName, hsnIsNr)})
 %%]
 
-%%[(8 counting) hs import(UHC.Util.Binary, UHC.Util.Serialize)
+%%[(8 counting) hs import(UHC.Util.Binary, UHC.Util.Serialize, UHC.Util.Pretty)
 %%]
 
 %%[(8 counting) hs import(Control.Monad)
+%%]
+
+%%[(8 counting) hs import(qualified Data.Sequence as Seq, qualified Data.Foldable as Fold)
 %%]
 
 %%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
@@ -19,7 +22,37 @@
 %%[(8 counting) ag import({CountingAnalysis/AbsSyn})
 %%]
 
+%%[(8 counting) hs
+-- type GatherConstraints = Seq.Seq Constraint
 
+-- toConstraints :: GatherConstraints -> Constraints
+-- toConstraints = Fold.toList
+
+-- fromConstraints :: Constraints -> GatherConstraints
+-- fromConstraints = Seq.fromList
+
+-- infixr 5 <|
+-- (<|) :: Constraint -> GatherConstraints -> GatherConstraints
+-- (<|) = (Seq.<|)
+
+-- singleton :: Constraint -> GatherConstraints
+-- singleton = Seq.singleton
+
+type GatherConstraints = Constraints
+
+toConstraints :: GatherConstraints -> Constraints
+toConstraints = id
+
+fromConstraints :: Constraints -> GatherConstraints
+fromConstraints = id
+
+infixr 5 <|
+(<|) :: Constraint -> GatherConstraints -> GatherConstraints
+(<|) = (:)
+
+singleton :: Constraint -> GatherConstraints
+singleton x = [x]
+%%]
 
 %%[(8 counting) hs
 type AnnVal = Set AnnPrim
@@ -215,5 +248,46 @@ getAnnRho (Rho _ a) = a
 
 getAnnEta :: Eta a -> Annotation
 getAnnEta (Eta _ a) = a
+
+-- Pretty printing
+
+instance PP CAModule where
+  pp (CAModule_Module mod) = pp mod
+
+instance PP CAExpr where
+  pp (CAExpr_Var v) = pp v
+  pp (CAExpr_Const c) = pp c
+  pp (CAExpr_Let binds body) = "let" >-< indent 2 (vlist binds) >-< "in" >#< body
+  pp (CAExpr_LetBang b body) = "let" >#< b >-< "in" >#< body
+  pp (CAExpr_Con _ conNm flds) = conNm >#< ppSpaces flds 
+  pp (CAExpr_Rec flds) = ppParensCommas flds
+  pp (CAExpr_App func arg) = func >#< arg
+  pp (CAExpr_AppConst func arg) = func >#< arg
+  pp (CAExpr_Lam bind body) = "\\" >|< bind >#< "->" >-< indent 2 body
+  pp (CAExpr_Case e alts) = "case" >#< e >#< "of" >-< indent 2 (vlist alts)
+  pp (CAExpr_FFI{}) = text "FFI"
+  pp (CAExpr_Error e) = pp e
+
+instance PP CAConVar where
+  pp (CAConVar_Var v) = pp v
+  pp (CAConVar_Const c) = pp c
+
+instance PP CABinding where
+  pp (CABinding_Bind n e) = n >#< "=" >#< e
+
+instance PP CAAlt where
+  pp (CAAlt_Alt p e) = p >#< "->" >#< e
+
+instance PP CAPat where
+  pp (CAPat_Pat _ conNm flds) = conNm >#< ppSpaces flds 
+  pp (CAPat_RecPat flds) = ppParensCommas flds
+  pp (CAPat_Int c) = pp c
+  pp (CAPat_Char c) = pp c
+
+instance PP CAConst where
+  pp (CAConst_Int c) = pp c
+  pp (CAConst_Char c) = pp c
+  pp (CAConst_String c) = pp c
+  pp (CAConst_Integer c) = pp c
 
 %%]

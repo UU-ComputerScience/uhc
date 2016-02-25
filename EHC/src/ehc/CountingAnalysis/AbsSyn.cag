@@ -124,16 +124,14 @@ TYPE CAConVars = [CAConVar]
 
 DATA CAExpr
   | Var v : {HsName}
-  | Int c : {Int}
-  | Char c : {Char}
-  | String c : {String}
-  | Integer c : {Integer}
+  | Const c: CAConst
+  | Lam bind : {HsName} body : CAExpr
+  | App func : CAExpr  arg : {HsName}
+  | AppConst func : CAExpr  arg : CAConst
   | Let binds : CABindings body : CAExpr
-  | LetBang b : CABinding body : CAExpr
+  | LetBang bind : CABinding body : CAExpr
   | Con tyNm : {HsName} conNm : {HsName} flds : CAConVars
   | Rec flds : CAConVars
-  | App func : CAExpr  arg : {HsName}
-  | Lam bind : {HsName} body : CAExpr
   | Case e : CAExpr alts : CAAlts
   -- what to do with this
   | FFI         callconv        : {FFIWay}
@@ -144,9 +142,11 @@ DATA CAExpr
                 impEnt          : {ForeignEnt}
 %%]]
                 ty              : {Ty}
+  | Error e : {String}
 
 DATA CAConVar
-  | Var v: {HsName}
+  | Var v : {HsName}
+  | Const c : CAConst
 
 DATA CABinding
   | Bind n : {HsName} e : CAExpr
@@ -157,10 +157,18 @@ DATA CAAlt
 DATA CAPat
   | Pat tyNm : {HsName} conNm : {HsName} flds : {[HsName]}
   | RecPat flds : {[HsName]}
+  | Int c : {Int}
+  | Char c : {Char}
+
+DATA CAConst
+  | Int c : {Int}
+  | Char c : {Char}
+  | String c : {String}
+  | Integer c : {Integer}
 
 DATA CAModule 
   | Module mod : CAExpr
 
-SET ALLCAEXPR = CAExpr CABinding CABindings CAAlt CAAlts CAPat CAConVar CAConVars
+SET ALLCAEXPR = CAExpr CABinding CABindings CAAlt CAAlts CAPat CAConVar CAConVars CAConst
 
 %%]

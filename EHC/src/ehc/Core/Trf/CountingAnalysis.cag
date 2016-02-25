@@ -24,10 +24,13 @@ Implementation of Hidde's counting Analysis
 %%[(8 counting) hs import(qualified {%{EH}CountingAnalysis.Substitution} as S)
 %%]
 
-%%[(8 counting) hs import(UHC.Util.Utils)
+%%[(8 counting) hs import(UHC.Util.Utils, UHC.Util.Pretty)
 %%]
 
-%%[(8 counting) hs import(Data.Proxy (Proxy))
+%%[(8 counting) hs import(Control.Monad (foldM), Control.Monad.State)
+%%]
+
+%%[(8 counting) hs import(Data.Monoid ((<>)))
 %%]
 
 Debugging
@@ -57,7 +60,7 @@ PRAGMA strictcase
 %%[(8 counting) hs
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
 cmodTrfAnalysis s dataGam lamMap cmod
-  =  let t = wrap_CAModule (sem_CAModule (traceShowId $ toCAModule cmod)) 
+  =  let t = wrap_CAModule (sem_CAModule ({-(\x -> traceShow (pp x) x) $-} toCAModule cmod)) 
                             (Inh_CAModule
                              { dataGam_Inh_CAModule = dataGam
                              , subtyping_Inh_CAModule = s
@@ -84,8 +87,105 @@ cmodTrfAnalysisCountingUnique = cmodTrfAnalysis False
 
 %%[(8 counting) hs 
 
+type LetFreshVarMap = (LetFreshVar0Map, LetFreshVarIMap)
+type LetFreshVar0Map = Map Int Fresh0
+type LetFreshVarIMap = Map Int FreshI
 
+data Fresh0 = Fresh0
+  { fresh0_indexI :: Int
+  , fresh0_sigma :: TyScheme
+  , fresh0_delta :: Annotation
+  , fresh0_nu :: Annotation
+  }
 
+data FreshI = FreshI
+  { freshI_indexI :: Int
+  , freshI_delta :: Annotation
+  , freshI_nu :: Annotation
+  , freshI_tau :: AnnotatedType
+  , freshI_flds :: Map Int FreshIJ
+  }
+
+data FreshIJ = FreshIJ
+  { freshIJ_indexI :: Int
+  , freshIJ_indexJ :: Int
+  , freshIJ_delta :: Annotation
+  , freshIJ_nu :: Annotation
+  , freshIJ_tau :: AnnotatedType
+  }
+
+makeLetFreshVarMaps :: Var -> Int -> (LetFreshVarMap, Var)
+makeLetFreshVarMaps v numBinds = runState (makeLetFreshVarMaps' numBinds) v
+
+makeLetFreshVarMaps' :: Int -> State Var LetFreshVarMap
+makeLetFreshVarMaps' numBinds = do
+  m0 <- mapM mkFresh0 [1 .. numBinds]
+  mi <- mapM (mkFreshI numBinds) [1 .. numBinds]
+  return (Map.fromList m0, Map.fromList mi)
+
+-- mkFresh0 :: i -> State Var (i, Fresh0)
+mkFresh0 :: Int -> State Var (Int, Fresh0)
+mkFresh0 i = do
+  d <- getFresh
+  n <- getFresh
+  t <- getFresh
+  return (i, Fresh0
+    { fresh0_indexI = i
+    , fresh0_sigma = TyScheme_SchemeVar $ SV t 
+    , fresh0_delta = Annotation_AnnVar d
+    , fresh0_nu = Annotation_AnnVar n
+    })
+
+-- mkFreshI :: maxJ -> i -> State Var (i, FreshI)
+mkFreshI :: Int -> Int -> State Var (Int, FreshI)
+mkFreshI numBinds i = do
+  d <- getFresh
+  n <- getFresh
+  t <- getFresh
+  f <- mapM (mkFreshIJ i) [1 .. numBinds]
+  return (i, FreshI
+    { freshI_indexI = i
+    , freshI_delta = Annotation_AnnVar d
+    , freshI_nu = Annotation_AnnVar n
+    , freshI_tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ show t 
+    , freshI_flds = Map.fromList f
+    })
+
+-- mkFreshIJ :: i -> j -> State Var (j, FreshIJ)
+mkFreshIJ :: Int -> Int -> State Var (Int, FreshIJ)
+mkFreshIJ i j = do
+  d <- getFresh
+  n <- getFresh
+  t <- getFresh
+  return (j, FreshIJ
+    { freshIJ_indexI = i
+    , freshIJ_indexJ = j
+    , freshIJ_delta = Annotation_AnnVar d
+    , freshIJ_nu = Annotation_AnnVar n
+    , freshIJ_tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ show t 
+    })
+
+-- getFresh :: State Var Var
+-- getFresh = do
+--   x <- get
+--   put $ x + 1
+--   return x
+
+-- mkTimes :: LetFreshVarIMap -> i -> delta/nu/tau -> results
+mkTimes :: Compute a => Var -> LetFreshVarIMap -> Int -> (FreshIJ -> a) -> ((GatherConstraints, a), Var)
+mkTimes v fm i f = runState (mkTimes' fm i f) v
+
+mkTimes' :: Compute a => LetFreshVarIMap -> Int -> (FreshIJ -> a) -> State Var (GatherConstraints, a)
+mkTimes' fm i f = do
+  a <- getFresh
+  let (hd:tl) = Map.elems $ freshI_flds $ fm Map.! i
+  b <- computeTimes' (freshI_delta $ fm Map.! freshIJ_indexJ hd) $ f hd
+  foldM g b tl
+  where -- g :: (GatherConstraints, a) -> a -> State Var (GatherConstraints, a)
+        g (c, a) b = do
+          (c2, r1) <- computeTimes' (freshI_delta $ fm Map.! freshIJ_indexJ b) $ f b
+          (c3, r2) <- computeAdd' r1 a
+          return (c <> c2 <> c3, r2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,13 +201,13 @@ SEM CAExpr
   | Let
           lhs         .   gathLamMp   =   @binds.bindLamMp `Map.union` @body.gathLamMp
   | LetBang
-    lhs.gathLamMp = @b.bindLamMp `Map.union` @body.gathLamMp
+    lhs.gathLamMp = @bind.bindLamMp `Map.union` @body.gathLamMp
   | * - Let LetBang
           lhs         .   gathLamMp   =   Map.empty
 %%]
 
 %%[(8 codegen)
-ATTR CABindings CABinding [ | | bindLamMp USE {`lamMpUnionBindAspMp`} {Map.empty}: LamMp ]
+ATTR CABindings CABinding CAExpr [ | | bindLamMp USE {`lamMpUnionBindAspMp`} {Map.empty}: LamMp ]
 
 %%]
 
@@ -153,10 +253,13 @@ SEM CAModule
 %%]
 
 %%[(8 counting)
--- TODO
--- SEM CBound
---   | Bind        
---     lhs.bindLamMp = traceShow (@lhs.nm, @expr.fety) $ Map.singleton @lhs.nm (emptyLamInfo {laminfoCaType = @expr.fety})
+SEM CAExpr
+  | Lam        -- probalby incorrect
+    lhs.bindLamMp = {-traceShow (@bind, @loc.fety) $-} Map.insert @bind (emptyLamInfo {laminfoCaType = @loc.fety}) @body.bindLamMp
+
+SEM CABinding
+  | Bind
+    lhs.bindLamMp = {-traceShow (@n, @e.fety) $-} Map.singleton @n (emptyLamInfo {laminfoCaType = @e.fety})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,26 +279,29 @@ ATTR CAModule ALLCAEXPR [ subtyping: Bool | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) ag
-ATTR ALLCAEXPR [ solvedContraints: {Solution} | freshVar: {Var} | constrs USE {++} {[]}: {Constraints}]
+ATTR ALLCAEXPR [ solvedContraints: {Solution} | freshVar: {Var} | constrs USE {(<>)} {mempty}: {GatherConstraints}]
 ATTR CAExpr [ | | fety: {EtaAnnotatedType} ]
-ATTR CAExpr CAAlt CAAlts CAConVar CAConVars [ | | ety: {EtaAnnotatedType} ]
+ATTR CAExpr CAAlt CAAlts CAConVar CAConVars CAConst CABinding [ | | ety: {EtaAnnotatedType} ]
 ATTR ALLCAEXPR - CAPat [ | | env: Env ]
 ATTR CAConVars [ | | conVars: {[Rho AnnotatedType]} ]
 ATTR CAConVar [ | | conVar: {Rho AnnotatedType} ]
-ATTR CAAlt CAAlts CAPat [ | | dataTyName: {Maybe HsName} ]
+ATTR CAAlt CAAlts CAPat [ | | dataTyName: {Maybe HsName} isType: {Bool} ]
 ATTR CAAlt CAAlts  [ | | numFields: {Int} ]
 ATTR CAPat [ | | fields: {[HsName]} ]
+ATTR CABindings [ | | bindNames: {[HsName]} c2: {GatherConstraints} ]
+ATTR CABinding [ | | bindName: {HsName} ]
+ATTR CABinding CABindings [ freshVar0Map: {LetFreshVar0Map} freshVarIMap: {LetFreshVarIMap} indexI: {Int} allBindNames: {[HsName]} | | ]
 
 SEM CAModule
   | Module
     mod.freshVar = 0
     lhs.cTrf = CAModule_Module @mod.cTrf
-    loc.solvedContraints = traceShow ("Number of Constraints: " ++ (show $ length @mod.constrs)) $ solveConstraints @mod.freshVar @mod.constrs
+    loc.solvedContraints = traceShow ("Number of Constraints: " ++ (show $ length @mod.constrs)) $ solveConstraints @mod.freshVar $ toConstraints @mod.constrs
     mod.solvedContraints = @loc.solvedContraints
 
 SEM CAExpr
   | * 
-    lhs.fety = S.substSolution @loc.ety @lhs.solvedContraints
+    loc.fety = S.substSolution @loc.ety @lhs.solvedContraints
   | Var
     lhs.freshVar = @lhs.freshVar + 3
     loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
@@ -203,21 +309,9 @@ SEM CAExpr
     loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
     lhs.env = Map.singleton @v $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) annOne 
     loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
-    lhs.constrs = [Constraint_InstC @loc.sigma @loc.tau]
-  | Int Char Integer
-    lhs.env = Map.empty
-    lhs.freshVar = @lhs.freshVar + 1
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm @loc.dataName) [] []) $ Annotation_AnnVar @lhs.freshVar
-  | Char
-    loc.dataName = "Char"
-  | Int
-    loc.dataName = "Int"
-  | Integer
-    loc.dataName = "Integer"
-  | String
-    lhs.env = Map.empty
-    lhs.freshVar = @lhs.freshVar + 5
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm "UHC.Base.String") (map Annotation_AnnVar [@lhs.freshVar + 1 .. @lhs.freshVar + 4]) []) $ Annotation_AnnVar @lhs.freshVar
+    lhs.constrs = {-traceShow ("var", @v, "varInstC:", [Constraint_InstC @loc.sigma @loc.tau]) $-} singleton $ Constraint_InstC @loc.sigma @loc.tau
+  | Const
+    loc.ety = @c.ety
   | Lam
     -- loc.nu = Annotation_AnnVar @lhs.freshVar
     -- loc.delta = Annotation_AnnVar $ @lhs.freshVar + 1
@@ -226,33 +320,67 @@ SEM CAExpr
     body.freshVar = @lhs.freshVar + 2
     (loc.scheme, lhs.freshVar) = envLookupFresh @loc.fv @body.env @bind
     ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind @body.env
-    lhs.constrs = Constraint_SchemeC (CTyScheme_EqC (stripRhoEta $ toRho @loc.scheme) (TyScheme_SForAll Set.empty Set.empty [] @loc.tau)) : @body.constrs ++ @loc.c2
+    -- lhs.env = traceShow ("nu2: ", @loc.nu2, "Env1: ", Map.delete @bind @body.env, "computedEnv: ", @loc.env, "AppC2: ", @loc.c2) @loc.env
+    lhs.constrs = Constraint_SchemeC (CTyScheme_EqC (stripRhoEta $ toRho @loc.scheme) (TyScheme_SForAll Set.empty Set.empty [] @loc.tau)) <| @body.constrs <> {-traceShow ("lamC2: ", @loc.c2)-} @loc.c2
     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyFunc (fromRho $ fmap (const @loc.tau) $ toRho @loc.scheme) @body.ety) @loc.nu2 
   | App
     loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
     loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
     loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
     loc.delta2 = Annotation_AnnVar $ @lhs.freshVar + 3
-    loc.c2 = [Constraint_InstC @loc.sigma @loc.tau]
-    loc.nu1 = Annotation_AnnVar $ @lhs.freshVar + 4
-    
+    loc.c2 = {-traceShow ("AppInstC:",[Constraint_InstC @loc.sigma @loc.tau]) $-} singleton $ Constraint_InstC @loc.sigma @loc.tau
+
     loc.sigma2' = EtaAnnotatedType_Eta @loc.tau @loc.nu
-    loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 5)) $ Annotation_AnnVar $ @lhs.freshVar + 6
+    loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 4)) $ Annotation_AnnVar $ @lhs.freshVar + 5
     loc.sigma4 = EtaTyScheme_Eta @loc.sigma @loc.nu
-    func.freshVar = @lhs.freshVar + 7
+    func.freshVar = @lhs.freshVar + 6
     
     ((loc.c2a, loc.sigma2), loc.fv1) = sub @func.freshVar @lhs.subtyping @loc.sigma2'
     ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 True @func.ety
     ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ Map.singleton @arg $ RhoTyScheme_Rho @loc.sigma4 @loc.delta2
-    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) : 
-                    Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.sigma2 @loc.delta2) @loc.sigma3)) :
-                    @loc.c1a ++ @func.constrs ++ @loc.c2 ++ @loc.c2a ++ @loc.c3
+    -- lhs.env = traceShow ("funcEnv: ", @func.env, "varEnv: ", Map.singleton @arg $ RhoTyScheme_Rho @loc.sigma4 @loc.delta2, "computedEnv: ", @loc.env1, "AppC3: ", @loc.c3) @loc.env1
+    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) <| 
+                    Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.sigma2 @loc.delta2) @loc.sigma3)) <|
+                    -- traceShow ("AppC1a: ", @loc.c1a, "AppC2: ", @loc.c2, "AppC2a: ", @loc.c2a, "AppC3: ", @loc.c3) 
+                    @loc.c1a <> @func.constrs <> @loc.c2 <> @loc.c2a <> @loc.c3
+    loc.ety = @loc.sigma3
+  | AppConst
+    loc.delta2 = Annotation_AnnVar @lhs.freshVar    
+    loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)) $ Annotation_AnnVar $ @lhs.freshVar + 2
+    func.freshVar = @lhs.freshVar + 3
+    
+    ((loc.c2a, loc.sigma2), loc.fv1) = sub @func.freshVar @lhs.subtyping @arg.ety
+    ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 True @func.ety
+    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) <|
+                    Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.sigma2 @loc.delta2) @loc.sigma3)) <|
+                    @loc.c1a <> @func.constrs <> @loc.c2a 
     loc.ety = @loc.sigma3
   | Let
-    -- todo
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported Let") annBot
+    loc.numBinds = length @binds.bindNames
+    binds.allBindNames = @binds.bindNames
+    binds.indexI = 1
+    ((loc.freshVar0Map, loc.freshVarIMap), binds.freshVar) = makeLetFreshVarMaps @lhs.freshVar @loc.numBinds
+
+    loc.env0 = foldr Map.delete @body.env @binds.bindNames
+    loc.ty0 = map (\x -> RhoTyScheme_Rho (EtaTyScheme_Eta (fresh0_sigma x) $ fresh0_nu x) $ fresh0_delta x) $ Map.elems @loc.freshVar0Map
+    (loc.tyEnv0, loc.fv2) = envLookupFreshList @body.freshVar @body.env @binds.bindNames
+    (loc.c0, loc.fv3) = genEq @loc.fv2 @loc.ty0 @loc.tyEnv0
+
+    ((loc.c2, loc.env), loc.fv4) = computeAdd @loc.fv3 @loc.env0 @binds.env
+
+    loc.c6 = fromConstraints $ map (\x -> let freshI = @loc.freshVarIMap Map.! fresh0_indexI x 
+              in Constraint_GenC (RhoAnnotatedType_Rho (EtaAnnotatedType_Eta (freshI_tau freshI) $ freshI_nu freshI) $ freshI_delta freshI) 
+                (toConstraints @binds.constrs) @loc.env $ RhoTyScheme_Rho (EtaTyScheme_Eta (fresh0_sigma x) $ fresh0_nu x) $ fresh0_delta x) 
+              $ Map.elems @loc.freshVar0Map
+
+    lhs.constrs = @loc.c0 <> @loc.c2 <> @binds.c2 <> @loc.c6
+    loc.ety = @body.ety
   | LetBang
+    bind.allBindNames = [@bind.bindName]
+    bind.indexI = 1
     -- todo
+    bind.freshVar0Map = Map.empty
+    bind.freshVarIMap = Map.empty
     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported LetBang") annBot
   | Con
     loc.freshAnnVarsMap = Map.fromList $ zip (dgiAnnVars @loc.dataType) @loc.freshAnnVars
@@ -266,20 +394,19 @@ SEM CAExpr
     (loc.constrs, lhs.freshVar) = genEq @flds.freshVar @flds.conVars $ S.subst (dtiFldAnnTyL $ fromJust $ 
                                     Map.lookup (@conNm) $ dgiConstrTagMp @loc.dataType)
                                     @loc.freshAnnVarsMap @loc.freshTyVarsMap Map.empty
-    lhs.constrs = @loc.constrs ++ @flds.constrs
+    lhs.constrs = {-traceShow ("ConConstrs: ", @loc.constrs)-} @loc.constrs <> @flds.constrs
     lhs.env = @flds.env
     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData @tyNm @loc.freshAnnVars @loc.freshTyVars) @loc.nu
   | Rec
     lhs.constrs = @flds.constrs
     lhs.env = @flds.env
     loc.ety = @flds.ety
-
   | Case
     loc.dataTyName = fromJust @alts.dataTyName
     loc.dataType = fromJust $ dataGamLookup (@loc.dataTyName) @lhs.dataGam
-    loc.freshAnnVars = take (length $ dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar ..]
-    loc.freshTyVars = map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take (length $ dgiTyVars @loc.dataType) $ [@lhs.freshVar + length (dgiAnnVars @loc.dataType) ..]
-    e.freshVar = @lhs.freshVar + (length $ dgiAnnVars @loc.dataType) + (length $ dgiTyVars @loc.dataType) + @alts.numFields + 1
+    loc.freshAnnVars = if @alts.isType || @loc.isRec then [] else take (length $ dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar ..]
+    loc.freshTyVars = if @alts.isType || @loc.isRec then [] else map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take (length $ dgiTyVars @loc.dataType) $ [@lhs.freshVar + length (dgiAnnVars @loc.dataType) ..]
+    e.freshVar = @lhs.freshVar + (length @loc.freshAnnVars) + (length @loc.freshRecTyVars) + @alts.numFields + 1
 
     ((loc.c1a, loc.subEty), loc.fv1) = sub @alts.freshVar True @e.ety
     loc.etyTyData = AnnotatedType_TyData @loc.dataTyName @loc.freshAnnVars @loc.freshTyVars
@@ -287,17 +414,74 @@ SEM CAExpr
               if @loc.isRec then @loc.etyRec else @loc.etyTyData)
                 
     ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv1 @e.env @alts.env
-    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.subEty) annOne) : 
-                    @loc.c1 : @loc.c1a ++ @loc.c3 ++ @alts.constrs ++ @e.constrs
+    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.subEty) annOne) <|
+                    -- traceShow ("CaseC1a: ", @loc.c1a, "CaseC1: ", @loc.c1, "CaseC3: ", @loc.c3) 
+                    @loc.c1 <| @loc.c1a <> @loc.c3 <> @alts.constrs <> @e.constrs
 
-    loc.freshRecTyVars = map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take @alts.numFields $ [@lhs.freshVar + (length $ dgiAnnVars @loc.dataType) + (length $ dgiTyVars @loc.dataType) ..]
+    loc.freshRecTyVars = map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take @alts.numFields $ [@lhs.freshVar + (length @loc.freshAnnVars) + (length @loc.freshTyVars) ..]
     loc.etyRec = AnnotatedType_TyRow @loc.freshRecTyVars
     loc.isRec = isNothing  @alts.dataTyName
     loc.ety = @alts.ety
   | FFI
+    -- todo
     lhs.env = Map.empty
     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported FFI") annBot
-    -- todo
+  | Error
+    loc.ety = panic $ "Error constructor found: " ++ @e
+    lhs.env = Map.empty
+
+SEM CABindings
+  | Cons
+    lhs.bindNames = @hd.bindName : @tl.bindNames
+    tl.indexI = @lhs.indexI + 1
+    loc.freshI = @lhs.freshVarIMap Map.! @lhs.indexI
+
+    loc.envi = foldr Map.delete @hd.env @lhs.allBindNames
+    loc.tyi = map (\x -> RhoTyScheme_Rho (EtaTyScheme_Eta (TyScheme_SForAll Set.empty Set.empty [] $ freshIJ_tau x) $ freshIJ_nu x) $ freshIJ_delta x) $ Map.elems $ freshI_flds @loc.freshI
+    (loc.tyEnvi, loc.fv1) = envLookupFreshList @tl.freshVar @hd.env @lhs.allBindNames
+    (loc.c1ia, loc.fv2) = genEq @loc.fv1 @loc.tyi @loc.tyEnvi
+    (loc.c1ib, loc.fv3) = genEq @loc.fv2 @hd.ety @loc.ety
+    loc.ety = EtaAnnotatedType_Eta (freshI_tau @loc.freshI) $ freshI_nu @loc.freshI
+
+    ((loc.c2a, loc.timesEnv), loc.fv4) = computeTimes @loc.fv3 (freshI_delta @loc.freshI) @loc.envi
+    ((loc.c2b, lhs.env), loc.fv5) = computeAdd @loc.fv4 @loc.timesEnv @tl.env
+
+    ((loc.c3ia, loc.d), loc.fv6) = mkTimes @loc.fv5 @lhs.freshVarIMap @lhs.indexI freshIJ_delta
+    (loc.c3ib, loc.fv7) = genAdd @loc.fv6 (fresh0_delta $ @lhs.freshVar0Map Map.! @lhs.indexI) @loc.d $ freshI_delta @loc.freshI
+
+    ((loc.c4ia, loc.n), loc.fv8) = mkTimes @loc.fv7 @lhs.freshVarIMap @lhs.indexI freshIJ_nu
+    (loc.c4ib, loc.fv9) = genAdd @loc.fv8 (fresh0_nu $ @lhs.freshVar0Map Map.! @lhs.indexI) @loc.n $ freshI_nu @loc.freshI
+
+    ((loc.c5ia, loc.t), loc.fv10) = mkTimes @loc.fv9 @lhs.freshVarIMap @lhs.indexI freshIJ_tau
+    (loc.c5ib, lhs.freshVar) = genEq @loc.fv10 @loc.t $ freshI_tau @loc.freshI
+    
+    lhs.c2 = @loc.c2a <> @loc.c2b
+    lhs.constrs = @hd.constrs <> @tl.constrs <> @loc.c1ia <> @loc.c1ib
+                    <> @loc.c3ia <> @loc.c3ib <> @loc.c4ia <> @loc.c4ib <> @loc.c5ia <> @loc.c5ib 
+  | Nil
+    lhs.bindNames = []
+    lhs.c2 = mempty
+
+SEM CABinding
+  | Bind
+    lhs.bindName = @n
+    -- lhs.ety = e.ety
+
+SEM CAConst
+  | *
+    lhs.env = Map.empty
+  | Int Char Integer
+    lhs.freshVar = @lhs.freshVar + 1
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm @loc.dataName) [] []) $ Annotation_AnnVar @lhs.freshVar
+  | Char
+    loc.dataName = "Char"
+  | Int
+    loc.dataName = "Int"
+  | Integer
+    loc.dataName = "Integer"
+  | String
+    lhs.freshVar = @lhs.freshVar + 5
+    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm "UHC.Base.String") (map Annotation_AnnVar [@lhs.freshVar + 1 .. @lhs.freshVar + 4]) []) $ Annotation_AnnVar @lhs.freshVar
 
 SEM CAAlt
   | Alt
@@ -311,7 +495,9 @@ SEM CAAlts
     loc.ety = @hd.ety
     ((loc.c3, lhs.env), loc.fv1) = computeUnion @tl.freshVar @hd.env @tl.env
     (loc.constrs, lhs.freshVar) = genEq @loc.fv1 @hd.ety @tl.ety
-    lhs.constrs = @loc.constrs ++ @hd.constrs ++ @tl.constrs ++ @loc.c3
+    lhs.constrs = -- traceShow ("CAAltsCons : ", @loc.constrs, "AppC3: ", @loc.c3) 
+                    @loc.constrs <> @hd.constrs <> @tl.constrs <> @loc.c3
+    lhs.isType = @hd.isType
   | Nil
     lhs.dataTyName = panic "No alts in case"
     lhs.numFields = 0
@@ -319,20 +505,29 @@ SEM CAAlts
     loc.nu = Annotation_AnnVar $ @lhs.freshVar + 1
     loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
     lhs.freshVar = @lhs.freshVar + 2
+    lhs.isType = False
 
 SEM CAPat
-  | *
+  | Pat RecPat
     lhs.fields = @flds
+    lhs.isType = False
+  | Int Char
+    lhs.fields = []
+    lhs.isType = True
   | Pat
     lhs.dataTyName = Just @tyNm
   | RecPat
     lhs.dataTyName = Nothing
+  | Int 
+    lhs.dataTyName = Just $ mkHNm "Int"
+  | Char 
+    lhs.dataTyName = Just $ mkHNm "Char"
 
 SEM CAConVars
   | Cons
     lhs.ety = case @tl.ety of EtaAnnotatedType_Eta (AnnotatedType_TyRec xs) ann -> EtaAnnotatedType_Eta (AnnotatedType_TyRec $ @hd.ety : xs) ann
     ((loc.c2, lhs.env), lhs.freshVar) = computeAdd @tl.freshVar @hd.env @tl.env
-    lhs.constrs = @loc.c2 ++ @hd.constrs ++ @tl.constrs
+    lhs.constrs = {-traceShow ("CAConVarsCons: ", @loc.c2) -}@loc.c2 <> @hd.constrs <> @tl.constrs
     lhs.conVars = @hd.conVar : @tl.conVars
   | Nil
     lhs.freshVar = @lhs.freshVar + 1
@@ -353,221 +548,10 @@ SEM CAConVar
     loc.delta = Annotation_AnnVar $ @lhs.freshVar + 3
     lhs.env = Map.singleton @v $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) @loc.delta 
     loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
-    lhs.constrs = [Constraint_InstC @loc.sigma @loc.tau]
-    lhs.conVar = Rho (Eta @loc.tau @loc.nu) @loc.delta 
-
+    lhs.constrs = {-traceShow ("Convar", @v, "ConVarInstC:", [Constraint_InstC @loc.sigma @loc.tau])-} singleton $ Constraint_InstC @loc.sigma @loc.tau
+    lhs.conVar = Rho (Eta @loc.tau @loc.nu) @loc.delta
+  | Const
+    loc.delta = Annotation_AnnVar @lhs.freshVar
+    lhs.conVar = Rho (toEta $ @c.ety) @loc.delta
+    -- copy rules
 %%]
-
-
-
-
-
-
--- %%[(8 counting) ag
--- ATTR AllNT [ solvedContraints: {Solution} | freshVar: {Var} | constrs USE {++} {[]}: {Constraints}]
--- ATTR AllExprBase [ | | fety: {EtaAnnotatedType} ]
--- ATTR AllExprBase CAlt CAltL [ | | ety: {EtaAnnotatedType} ]
--- ATTR AllExprBase CPat CAlt CAltL CPatFld CPatFldL [ | env: Env | ]
--- ATTR CBind CBound [ | | name: HsName]
--- ATTR AllExprBase [ isSeq: Bool | | ]
--- ATTR CPat CAlt CAltL [ | | dataType: {HsName} ]
--- ATTR CAltL [ | | isNil: {Bool} ]
--- ATTR CPatFld [ caseType: {Rho AnnotatedType} | | ]
--- ATTR CPatFldL [ caseTypes: {[Rho AnnotatedType]} | | ]
-
--- SEM CPatFldL
---   | Cons
---     hd.caseType = head @lhs.caseTypes
---     tl.caseTypes = tail @lhs.caseTypes
-
--- SEM CPat
---   | * - Con Int Char
---     -- this case should not happen but as it is al strict no error can be given
---     lhs.dataType = mkHNm "Unsupported CPat for dataType"
---   | Con
---       loc.dataType = undefined --if (rec ctagTyNm $ traceShow ("Con", @tag) @tag
---       loc.fullDataType = fromJust $ dataGamLookup @loc.dataType @lhs.dataGam
---     binds.caseTypes = dtiFldAnnTyL $ fromJust $ Map.lookup (ctagNm @tag) (dgiConstrTagMp @loc.fullDataType) 
---   | Int
---     lhs.dataType = mkHNm "Int"
---   | Char
---     lhs.dataType = mkHNm "Char"
-
--- SEM CPatFld
---   | Fld
---     lhs.env = let Rho (Eta ty ua) da = @lhs.caseType
---               in Map.insert @lbl (RhoTyScheme_Rho (EtaTyScheme_Eta (TyScheme_SForAll Set.empty Set.empty [] ty) ua) da) @lhs.env
-
--- SEM CAltL
---   | Cons
---     lhs.dataType = @hd.dataType
---     lhs.env = Map.union @hd.env @tl.env
---     lhs.ety = @hd.ety
---     lhs.constrs = if @tl.isNil then @hd.constrs else 
---                     Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @hd.ety) (getAnnEta $ toEta @tl.ety)) :
---                     Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @hd.ety) (stripEta $ toEta @tl.ety)) :
---                     @hd.constrs ++ @tl.constrs
---     lhs.isNil = False
---   | Nil
---     lhs.dataType = mkHNm "Unsupported CAltL Nil for dataType"
---     lhs.env = Map.empty
---     lhs.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported CAltL Nil for dataType") annBot
---     lhs.isNil = True
-
--- SEM CodeAGItf
---   | AGItf
---     module.freshVar = 0
---     lhs.cTrf = {-traceShow ("Constraints: (", length @module.constrs,") ", @module.constrs, @loc.solvedContraints) $ -}@module.cTrf
---     loc.solvedContraints = traceShow ("Number of Constraints: " ++ (show $ length @module.constrs)) $ solveConstraints @module.freshVar @module.constrs
---     module.solvedContraints = @loc.solvedContraints
-
--- SEM AllExprBase
---   | * 
---     lhs.fety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported fety") annBot
-
--- SEM CModule
---   | *
---     expr.isSeq = False
---     expr.env = Map.empty
-
--- SEM CBind
---   | Bind
---     lhs.name = @nm
---   | * - Bind
---     lhs.name = mkHNm $ "Not supported CBind alternative: " {-++ show @loc.cTrf-}
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBind alternative" {-++ show @loc.cTrf-}) annBot
-
--- SEM CBound
---   | Bind
---     loc.ety = @expr.ety
---     lhs.name = case @expr.cTrf of
---                 CExpr_Var (ACoreBindRef n _) -> n
---                 _ -> panic "Code is not in ANormalForm"
---   | * - Bind
---     lhs.name = mkHNm $ "Not supported CBound alternative: " {-++ show @loc.cTrf-}
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBound alternative" {-++ show @loc.cTrf-}) annBot
-
--- SEM CExpr
---   | * 
---     lhs.fety := S.substSolution @loc.ety @lhs.solvedContraints
---   | Var
---     lhs.freshVar = @lhs.freshVar + 3
---     loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 0)
---     loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
---     loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
---     lhs.constrs = [Constraint_InstC @loc.sigma @loc.tau]
---     lhs.env = Map.singleton (acbrefNm @ref) $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) annOne 
---     loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
---   | Lam
---     loc.nu2 = Annotation_AnnVar $ @lhs.freshVar + 0
---     loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)
---     ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind.name @body.env
---     bind.freshVar = @lhs.freshVar + 2
---     (loc.scheme, lhs.freshVar) = envLookup @loc.fv @body.env @bind.name
---     lhs.constrs = Constraint_SchemeC (CTyScheme_EqC (stripRhoEta $ toRho @loc.scheme) (TyScheme_SForAll Set.empty Set.empty [] @loc.tau)) : @body.constrs ++ @loc.c2
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyFunc (fromRho $ fmap (const @loc.tau) $ toRho @loc.scheme) @body.ety) @loc.nu2 
---   | App
---     ((loc.c2a, loc.tyArg), loc.fv1) = sub @func.freshVar True @func.ety
---     ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 @lhs.subtyping @arg.ety
---     func.freshVar = @lhs.freshVar + 3
---     loc.delta2 = Annotation_AnnVar $ @lhs.freshVar + 0
---     loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)) $ Annotation_AnnVar $ @lhs.freshVar + 2
---     ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ (Map.adjust (\(RhoTyScheme_Rho sigma4 _) -> RhoTyScheme_Rho sigma4 @loc.delta2) (@arg.name) @arg.env)
---     lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) : 
---                     Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.tyArg @loc.delta2) @loc.sigma3)) :
---                     @loc.c1a ++ @func.constrs ++ @loc.c2a ++ @arg.constrs ++ @loc.c3
---     loc.ety = @loc.sigma3
---   | Let
---     loc.isThisSeq = case @categ of
---                     CBindCateg_Strict -> True
---                     _ -> False
---     binds.isSeq = @loc.isThisSeq
---     loc.ety = @body.ety
---   | Tup -- How to deal with these as tuple, data constroctor
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Tup" {-++ show @loc.cTrf-}) annBot
---     loc.freshData = S.subst @loc.ety @loc.freshAnnVars @loc.freshTyVars Map.empty
---     loc.freshAnnVars = Map.fromList $ zip (dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar .. ]
---     loc.freshTyVars = Map.fromList $ zip ([] :: [HsName]) {-list of tyvars?-} $ map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) [@lhs.freshVar + length (dgiAnnVars @loc.dataType) .. ]
---     loc.dataType = fromJust $ dataGamLookup (ctagTyNm $ traceShow ("tup", @tag) @tag) @lhs.dataGam
-
---   | Case -- totally ignore dflt. assume fully matched in alts
---      loc.freshData = S.subst @loc.ety @loc.freshAnnVars @loc.freshTyVars Map.empty
---      loc.freshAnnVars = Map.fromList $ zip (dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar .. ]
---      loc.freshTyVars = Map.fromList $ zip ([] :: [HsName]) {-list of tyvars?-} $ map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) [@lhs.freshVar + length (dgiAnnVars @loc.dataType) .. ]
---      loc.dataType = fromJust $ dataGamLookup @alts.dataType @lhs.dataGam
---     expr.freshVar = @lhs.freshVar + Map.size @loc.freshAnnVars + Map.size @loc.freshTyVars
---      loc.dt = AnnotatedType_TyData @alts.dataType (Map.elems @loc.freshAnnVars) (Map.elems @loc.freshTyVars)
---     ((loc.c1a, loc.exprTy), loc.fv1) = sub @alts.freshVar True @expr.ety
---     ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv1 @expr.env @alts.env
---      lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.exprTy) annOne) : 
---                     Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.exprTy) @loc.dt) :
---                     @loc.c1a ++ @expr.constrs ++ @alts.constrs ++ @loc.c3
---      loc.ety = @alts.ety
---   | FFI
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression FFI" {-++ show @loc.cTrf-}) annBot
---     -- loc.ety = EtaAnnotatedType_Eta @ty.annTy topAnn
---   | Ann    -- maybe use CExprAnn.Ty for type signatures
---     loc.ety = @expr.ety  
---   | Char Int
--- %%[[(97 core)
---                     Integer
--- %%]]
---     lhs.freshVar = @lhs.freshVar + 1
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm @loc.dataName) [] []) $ Annotation_AnnVar @lhs.freshVar
---   | Char
---     loc.dataName = "Char"
---   | Int
---     loc.dataName = "Int"
--- %%[[(97 core)
---   | Integer
---     loc.dataName = "Integer"
--- %%]]
---   | String
---     lhs.freshVar = @lhs.freshVar + 5
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm "UHC.Base.String") (map Annotation_AnnVar [@lhs.freshVar + 1 .. @lhs.freshVar + 4]) []) $ Annotation_AnnVar @lhs.freshVar
-
---   -- not supported
---   | CaseAltFail
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression CaseAltFail " {-++ show @loc.cTrf-}) annBot
---   | TupDel
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupDel" {-++ show @loc.cTrf-}) annBot
---   | TupIns
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupIns" {-++ show @loc.cTrf-}) annBot
---   | TupUpd
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression TupUpd" {-++ show @loc.cTrf-}) annBot
---   | Dbg
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Dbg" {-++ show @loc.cTrf-}) annBot
---   | Hole
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression Hole" {-++ show @loc.cTrf-}) annBot
---   | HoleLet
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression HoleLet" {-++ show @loc.cTrf-}) annBot
---   | CoeArg
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression CoeArg" {-++ show @loc.cTrf-}) annBot
---   | ImplsApp
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression ImplsApp" {-++ show @loc.cTrf-}) annBot
---   | ImplsLam
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported expression ImplsLam" {-++ show @loc.cTrf-}) annBot
-
--- SEM CExprAnn
---   | *
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CExprAnn" {-++ show @loc.cTrf-}) annBot
-
--- SEM CAltL CBindAnnL CBindL CBoundL CPatFldL
---   | Nil
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported Nil contructor" {-++ show @loc.cTrf-}) annBot
-
--- SEM CBindAnn
---   | Coe
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CBindAnn Coe" {-++ show @loc.cTrf-}) annBot
-
--- SEM CPat
---   | * 
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CPat" {-++ show @loc.cTrf-}) annBot
-
--- SEM CPatRest
---   | *
---     loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError $ "Unsupported CPatRest" {-++ show @loc.cTrf-}) annBot
-
-
--- %%]
-

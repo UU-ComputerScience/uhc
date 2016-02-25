@@ -10,6 +10,10 @@
 %%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
 %%]
 
+Debugging
+%%[(8 counting) hs import(Debug.Trace)
+%%]
+
 %%[(8 counting) ag import({CountingAnalysis/AbsSyn})
 WRAPPER *
 %%]
@@ -35,6 +39,10 @@ class Subst a where
   substSolution a (Solution as ts ss) = subst a as ts ss
 
   subst :: a -> AnnSol -> TySol -> SchemeSol -> a
+
+instance Subst Annotation where
+  subst a am tm sm = subst_Syn_Annotation $ wrap_Annotation (sem_Annotation a) 
+    (Inh_Annotation am sm tm)
 
 instance Subst AnnotatedType where
   subst a am tm sm = subst_Syn_AnnotatedType $ wrap_AnnotatedType (sem_AnnotatedType a) 
@@ -130,15 +138,14 @@ ATTR * [ substAnnMap: AnnSol substTyMap: TySol substSchemeMap: SchemeSol | | sub
 
 SEM Annotation
   | AnnVar
-    lhs.subst = fromMaybe @loc.subst $ Map.lookup @v @lhs.substAnnMap
+    lhs.subst = {-traceShow ("start sub ann", @loc.subst, @lhs.substAnnMap) $-} maybe @loc.subst (\x -> {-traceShow "Rec annSubst" $-} subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substAnnMap
 
 SEM AnnotatedType
   | TyVar
-    lhs.subst = fromMaybe @loc.subst $ Map.lookup @v @lhs.substTyMap
+    lhs.subst = {-traceShow "start sub TyVar" $-} maybe @loc.subst (\x -> {-traceShow "Rec tySubst" $-} subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substTyMap
 
 SEM TyScheme
   | SchemeVar
-    lhs.subst = fromMaybe @loc.subst $ Map.lookup @v @lhs.substSchemeMap
-
+    lhs.subst = {-traceShow "start sub SchemeVar" $-} maybe @loc.subst (\x -> {-traceShow "Rec schemeSubst" $-} subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substSchemeMap
 
 %%]

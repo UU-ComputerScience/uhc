@@ -200,6 +200,8 @@ instance PP CBindCateg where
 
 %%[(50 core) hs
 deriving instance Typeable CBindCateg
+deriving instance Generic CBindCateg
+instance Serialize CBindCateg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -91,7 +91,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 DERIVING *
   : Show, Eq, Ord
 %%[[50
-  , Typeable, Generic
+  , Typeable, Data, Generic
 %%]]
 
 DERIVING TyVarCateg

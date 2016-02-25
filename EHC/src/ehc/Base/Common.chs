@@ -369,7 +369,7 @@ data CLbl
   | CLbl_Tag
       { clblTag		:: !CTag
       }
-  deriving (Show,Eq,Ord,Generic)
+  deriving (Show,Eq,Ord)
 
 clbl :: a -> (HsName -> a) -> (CTag -> a) -> CLbl -> a
 clbl f _ _  CLbl_None   = f
@@ -646,7 +646,7 @@ data VarUIDHsName
   = VarUIDHs_Name       { vunmId :: !UID, vunmNm' :: !HsName }
   | VarUIDHs_UID        { vunmId :: !UID }
   | VarUIDHs_Var        !UID
-  deriving (Eq, Ord, Generic)
+  deriving (Eq, Ord)
 
 vunmNm :: VarUIDHsName -> HsName
 vunmNm (VarUIDHs_Name _ n) = n
