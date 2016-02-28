@@ -1,4 +1,7 @@
-- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
+- [compiler driver] check for writeability of directory is now on dest dir, not src dir
+- [pragmas] bangpatterns pragma turned off by default
+- [pragmas] bangpatterns pragma propagation to parser fixed
+- [options] fixed -O0 option
 
 ## 1.1.9.3 - 20160219
 

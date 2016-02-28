@@ -795,7 +795,10 @@ data LinkingStyle
 %%[[99
   | LinkingStyle_Pkg			-- ^ package linking
 %%]]
-  deriving (Eq,Ord,Enum,Bounded)
+  deriving (Eq, Ord, Show, Enum, Bounded, Generic)
+
+instance Hashable LinkingStyle
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

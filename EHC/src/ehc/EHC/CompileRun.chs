@@ -249,7 +249,7 @@ cpGetMetaInfo gm modNm
 %%[[50
          ;  when (GetMeta_Dir `elem` gm) $
                  wr opts ecu ecuStoreDirIsWritable fp
-                 -- void $ bcall $ DirOfModIsWriteable modNm
+                 -- void $ bcall $ DirOfModIsWriteable modNm (ehcOptLinkingStyle opts)
 %%]]
          }
   where -- dfltPrev astty modNm ecu = void $ bcall $ ModfTimeOfFile (mkPrevFileSearchKeyWithName modNm) astty (ASTFileContent_Binary, ASTFileUse_Cache) ASTFileTiming_Prev
@@ -271,8 +271,14 @@ cpGetMetaInfo gm modNm
                }
 %%[[50
         wr opts ecu store fp
-          = do { pm <- liftIO $ getPermissions (maybe "." id $ fpathMbDir fp)
-               -- ; liftIO $ putStrLn (fpathToStr fp ++ " writ " ++ show (writable pm))
+          = do { pm <- liftIO $ getPermissions $ 
+%%[[99
+                   case mkOutputMbDir (if ehcOptLinkingStyle opts == LinkingStyle_Pkg then OutputFor_Pkg else OutputFor_Module) opts of
+                     Just d -> d
+                     _ ->
+%%]]
+                       maybe "." id $ fpathMbDir fp
+               -- ; liftIO $ putStrLn $ fpathToStr fp ++ " writ " ++ show (writable pm)
                ; cpUpdCU modNm $ store (writable pm)
                }
 %%]]

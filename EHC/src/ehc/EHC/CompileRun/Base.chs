@@ -345,6 +345,7 @@ data BFun' m res where
   --- | Get writeability of the dir a module resides in
   DirOfModIsWriteable
     :: !PrevFileSearchKey							--- ^ module name and possibly known path
+    -> !LinkingStyle
     -> BFun' m Bool
 
   --- | Can compile a src module
@@ -634,7 +635,7 @@ bfunCompare f1 f2 = case (f1,f2) of
     (ModfTimeOfFile         	a1 b1 c1 d1			, ModfTimeOfFile			a2 b2 c2 d2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
     (ASTFileIsValid         	a1 b1 c1 d1			, ASTFileIsValid			a2 b2 c2 d2			) -> lexico [a1 `compare` a2, b1 `compare` b2, c1 `compare` c2, d1 `compare` d2]
     (ASTFileIsNewerThan        	a1 b1   			, ASTFileIsNewerThan		a2 b2 	 			) -> lexico [a1 `compare` a2, b1 `compare` b2]
-    (DirOfModIsWriteable		a1   				, DirOfModIsWriteable		a2   				) ->         a1 `compare` a2
+    (DirOfModIsWriteable		a1 b1				, DirOfModIsWriteable		a2 b2				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (CanCompile					a1 					, CanCompile				a2 					) ->         a1 `compare` a2
     (IsTopMod					a1 					, IsTopMod					a2 					) ->         a1 `compare` a2
 %%]]
@@ -710,7 +711,7 @@ instance Hashable (BFun' m res) where
 	ModfTimeOfFile				a b	c d		-> salt `hashWithSalt` (23::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
 	ASTFileIsValid				a b	c d		-> salt `hashWithSalt` (24::Int) `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
 	ASTFileIsNewerThan			a b			-> salt `hashWithSalt` (25::Int) `hashWithSalt` a `hashWithSalt` b
-	DirOfModIsWriteable 		a 			-> salt `hashWithSalt` (26::Int) `hashWithSalt` a
+	DirOfModIsWriteable 		a b			-> salt `hashWithSalt` (26::Int) `hashWithSalt` a `hashWithSalt` b
 	CanCompile		 			a 			-> salt `hashWithSalt` (27::Int) `hashWithSalt` a
 	IsTopMod			 		a 			-> salt `hashWithSalt` (29::Int) `hashWithSalt` a
 %%]]

@@ -447,6 +447,19 @@ showShellCmd (cmd,args) = concat $ intersperse " " $ [cmd] ++ args
 %%% Name of in/output + possible dir which is preprended
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[99 export(mkOutputMbDir)
+-- | Get the output dir
+mkOutputMbDir :: InOrOutputFor -> EHCOpts -> Maybe String
+mkOutputMbDir inoutputfor opts =
+    case inoutputfor of
+        OutputFor_Module   -> f ehcOptOutputDir
+        OutputFor_Pkg      -> f ehcOptOutputDir -- ehcOptOutputPkgLibDir
+        InputFrom_Loc l
+          | filelocIsPkg l -> f (const Nothing)
+          | otherwise      -> f ehcOptOutputDir
+  where f g = fmap filePathUnPrefix $ g opts
+%%]
+
 %%[8 export(mkInOrOutputFPathDirFor)
 mkInOrOutputFPathDirFor :: FPATH nm => InOrOutputFor -> EHCOpts -> nm -> FPath -> String -> (FPath,Maybe String)
 mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
@@ -454,6 +467,15 @@ mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
   = (fpathSetSuff suffix fp', Nothing)
   where fp' = fp
 %%][99
+  = (fpathSetSuff suffix fp', d)
+  where (fp', d) = maybe (fp, Nothing) (\(fp,d) -> (fp, Just d)) $ do
+          d <- mkOutputMbDir inoutputfor opts
+          return ( fpathPrependDir d
+                   $ fpathSetBase (fpathBase fp)	-- ensure possibly adapted name in filesys is used
+                   $ mkFPath modNm	                -- includes module hierarchy into filename
+                 , d
+                 )
+{-       
   = (fpathSetSuff suffix fp', d)
   where (fp',d) = case inoutputfor of
                     OutputFor_Module   -> f ehcOptOutputDir
@@ -469,6 +491,7 @@ mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
                               )
                            where d' = filePathUnPrefix d
                     _      -> (fp,Nothing)
+-}
 %%]]
 %%]
 
