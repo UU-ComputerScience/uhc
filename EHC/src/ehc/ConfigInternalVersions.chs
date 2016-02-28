@@ -30,9 +30,10 @@ internalVersionCombined =
   .|. (internalVersionTySys 	`shiftL` 18)
   .|. (internalVersionCodeGen 	`shiftL` 24)
   .|. (internalVersionEH 	    `shiftL` 30)
+  .|. (internalVersionHS 	    `shiftL` 36)
 %%]
 
-%%[50 hs export(internalVersionTySys, internalVersionCodeGen, internalVersionHI, internalVersionCore, internalVersionCoreRun)
+%%[50 hs export(internalVersionTySys, internalVersionCodeGen, internalVersionHI, internalVersionCore, internalVersionCoreRun, internalVersionHS)
 -- | For variation in type inferencing
 internalVersionTySys = mkInternalVersion 1
 
@@ -50,6 +51,9 @@ internalVersionCoreRun = mkInternalVersion 1
 
 -- | For binary/serialized EH intermediate structures
 internalVersionEH = mkInternalVersion 2
+
+-- | For HS frontend differences
+internalVersionHS = mkInternalVersion 1
 
 %%]
 

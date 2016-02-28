@@ -9,6 +9,7 @@ For arrays with GC content see UHC.BoxArray.
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# EXCLUDE_IF_TARGET cr #-}
+{-# LANGUAGE BangPatterns #-}
 
 module UHC.ByteArray
   ( MutableByteArray

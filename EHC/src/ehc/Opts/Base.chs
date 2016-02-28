@@ -438,9 +438,13 @@ emptyEHCOpts
       ,  ehcOptExtensibleRecords=   False
 %%]]
 %%[[8
+      ,  ehcOptBangPatterns		= 	True
+%%][99
+      ,  ehcOptBangPatterns		= 	False
+%%]]
+%%[[8
       ,  ehcOptMbTarget         =   JustOk defaultTarget
       ,  ehcOptMbTargetFlavor   =   JustOk defaultTargetFlavor
-      ,  ehcOptBangPatterns		= 	True
       ,  ehcOptOptimizationLevel=   OptimizationLevel_Normal
       ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
 %%]]

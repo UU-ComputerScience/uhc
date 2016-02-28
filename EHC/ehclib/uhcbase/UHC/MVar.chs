@@ -11,6 +11,7 @@ In GHC MVar is offered by module GHC.Conc
 
 %%[99
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE BangPatterns #-}
 
 module UHC.MVar
   ( MVar

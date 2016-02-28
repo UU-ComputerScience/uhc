@@ -89,10 +89,11 @@ cpParseWithFPath
 cpParseWithFPath
       astHdlr popts mbFp modNm
  = do { cr <- get
-      ; let (_,opts) 	= crBaseInfo' cr
+      ; let (_,_,opts,_)= crBaseInfo modNm cr
             sopts    	= _asthdlrParseScanOpts astHdlr opts popts
             description = "Parse (" ++ (if ScanUtils.scoLitmode sopts then "Literate " else "") ++ _asthdlrName astHdlr ++ " syntax) of module `" ++ show modNm ++ "`"
             seterrs 	= cpSetLimitErrsWhen 5 description
+      -- ; liftIO $ putStrLn $ "cpParseWithFPath: ehcOptBangPatterns=" ++ show (ehcOptBangPatterns opts)
       ; case _asthdlrParser astHdlr opts popts of
           Just (ASTParser p) -> do
                (res,errs) <- parseWithFPath sopts popts p (maybe (ecuFilePath (crCU modNm cr)) id mbFp)
