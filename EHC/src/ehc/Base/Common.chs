@@ -89,7 +89,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+#if __GLASGOW_HASKELL__ < 800
 deriving instance Generic Version
+#endif
 %%]
 
 -- with hashable-1.2.4 no longer necessary
