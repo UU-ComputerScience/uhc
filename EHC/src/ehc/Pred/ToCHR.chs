@@ -211,7 +211,7 @@ mkClassSimplChrs env rules (context, head, infos)
   = simps
   where simps        = chrStoreFromElems $ mapTrans (Set.fromList [head1]) [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
         (superClassesWork, superClassesDone, _ :: SolveTrace FIIn Constraint Guard Prio VarMp)
-                     = chrSolve' env rules (map (\p -> toSolverConstraint $ mkAssume $ mkCHRPredOcc p sc1) context)
+                     = chrSolve' [] env rules (map (\p -> toSolverConstraint $ mkAssume $ mkCHRPredOcc p sc1) context)
         superClasses = superClassesWork ++ superClassesDone
         graph        = mkRedGraphFromReductions $ filterMb fromSolverConstraint superClasses
         head1        = mkCHRPredOcc head sc1
@@ -271,7 +271,7 @@ mkInstanceChr (context, hd, i, s)
   where constraint = mkCHRPredOcc hd sc1
         body = map (\p -> mkCHRPredOcc p sc1) context
 %%]
-  where superClasses = (\(w,d,t) -> trp "XX" (ppCHRStore' rules >-< context >#< ":" >#< (w++d) >-< ppSolveTrace t) (w++d)) $ chrSolve' env rules (map (\p -> mkAssume $ mkCHRPredOcc p sc1) context)
+  where superClasses = (\(w,d,t) -> trp "XX" (ppCHRStore' rules >-< context >#< ":" >#< (w++d) >-< ppSolveTrace t) (w++d)) $ chrSolve' [] env rules (map (\p -> mkAssume $ mkCHRPredOcc p sc1) context)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Simplification result which can be used as the starting point for further simplification
@@ -448,7 +448,7 @@ chrSimplifySolveToRedGraph env chrStore cnstrInfoMpPrev cnstrInfoMp prevRes
         }
     )
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
-        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (map toSolverConstraint $ Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
+        solveState = chrSolve'' [] (env {fiUniq = u1}) chrStore (map toSolverConstraint $ Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
         cnstrInfoMpAll = cnstrMpUnion cnstrInfoMp cnstrInfoMpPrev
         redGraph
           = addToRedGraphFromReductions (filterMb fromSolverConstraint $ chrSolveStateDoneConstraints solveState)

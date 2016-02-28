@@ -188,11 +188,11 @@ trfCore opts optimScope dataGam modNm trfcore
 
                  -- flattening of nested strictness
                ; t_let_flatstr
+                 -- removal of unnecessary constructs: aliases
+               ; t_inl_letali
 
                ; unless noOptims $ do
                    {
-                     -- removal of unnecessary constructs: aliases
-                   ; t_inl_letali
 
                      -- removal of unnecessary constructs: trival function applications
                    ; t_elim_trivapp
@@ -208,12 +208,12 @@ trfCore opts optimScope dataGam modNm trfcore
                           -- ; t_ren_uniq
                           })
 %%]]
+                 -- removal of unnecessary constructs: constants
+               ; t_const_prop
 
                ; unless noOptims $ do
-                   {
-                     -- removal of unnecessary constructs: constants
-                   ; t_const_prop
-                   ; t_inl_letali
+                   { -- inline aliases
+                     t_inl_letali
                    ; t_elim_trivapp
                    }
 
