@@ -60,6 +60,7 @@ data Constraint' p info
 type Constraint = Constraint' CHRPredOcc RedHowAnnotation
 
 type instance TTKey (Constraint' p info) = TTKey p
+type instance TrTrKey (Constraint' p info) = TTKey p
 %%]
 
 %%[(50 hmtyinfer || hmtyast)

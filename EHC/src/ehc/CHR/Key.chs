@@ -135,9 +135,9 @@ instance Keyable x => TrieKeyable x Key where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-type instance TrTrKey x = TTKey x
+-- type instance TrTrKey x = TTKey x
 
-instance TTKeyable x => TreeTrieKeyable x where
+instance (TrTrKey x ~ TTKey x, TTKeyable x) => TreeTrieKeyable x where
   toTreeTrieKey = toTTKey
 %%]
 
