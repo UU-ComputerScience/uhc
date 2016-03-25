@@ -21,20 +21,20 @@ Assumptions (to be documented further)
 %%]
 
 %%[(9 hmtyinfer) import(UHC.Util.CHR.Solve.TreeTrie.Mono hiding(IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore), qualified UHC.Util.CHR.Solve.TreeTrie.Mono as Mono) export(module UHC.Util.CHR.Solve.TreeTrie.Mono, IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore', CHRSolverConstraint)
-instance Mono.IsCHRSolvable FIIn Constraint Guard Prio VarMp
+instance Mono.IsCHRSolvable FIIn Constraint Guard VarMp
 
 type CHRSolverConstraint = Constraint
 
 -- | (Class alias) API for solving requirements, hiding Mono/Poly differences
-class ( Mono.IsCHRSolvable env c g p s
+class ( Mono.IsCHRSolvable env c g s
       ) => IsCHRSolvable env c g p s
 
 instance IsCHRSolvable FIIn Constraint Guard Prio VarMp
 
-type CHRStore'  e c g p s = Mono.CHRStore   c g p
-type SolveState e c g p s = Mono.SolveState c g p s
-type SolveTrace e c g p s = Mono.SolveTrace c g p s
-type SolveStep  e c g p s = Mono.SolveStep  c g p s
+type CHRStore'  e c g p s = Mono.CHRStore   c g 
+type SolveState e c g p s = Mono.SolveState c g s
+type SolveTrace e c g p s = Mono.SolveTrace c g s
+type SolveStep  e c g p s = Mono.SolveStep  c g s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
