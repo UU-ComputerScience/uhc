@@ -85,9 +85,9 @@ instance Serialize (CHRRule FIIn VarMp) where
 %%% For both variants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(CHRStore, Prio)
+%%[(9 hmtyinfer) export(CHRStore)
 -- dummy (for now)
-type Prio = ()
+-- type Prio = ()
 -- type CHRPrio = Prio
 
 type CHRStore = CHRStore' FIIn Constraint Guard Prio VarMp

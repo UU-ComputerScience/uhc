@@ -86,6 +86,10 @@ instance (CHRMatchable env p s, TTKey p ~ Key) => CHRMatchable env (Constraint' 
          ; (_,p2,_) <- cnstrReducablePart c2
          ; chrMatchTo env s p1 p2
          }
+
+-- not yet supported
+instance (CHREmptySubstitution s, VarLookupCmb s s) => CHRBuiltinSolvable env (Constraint' p info) s where
+  chrBuiltinSolve e s x = Nothing
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
