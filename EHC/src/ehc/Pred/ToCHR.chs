@@ -151,9 +151,9 @@ initCHRStore
         s2s1         = mkCHRPredOcc pr1 sc1
         s3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
         predSeq1     = [mkProve s1s1]
-                         <==> [mkProve s2s1, mkProve s3s1]
+                         <=> [mkProve s2s1, mkProve s3s1]
         predSeq2     = [mkProve $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
-                         <==> ([] :: [Constraint])
+                         <=> ([] :: [Constraint])
 %%]]
 %%[[41
         eqT1T2s1 = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
