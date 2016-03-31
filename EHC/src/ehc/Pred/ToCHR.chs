@@ -211,9 +211,9 @@ mkClassSimplChrs env rules (context, head, infos)
   = simps
   where simps        = chrStoreFromElems $ mapTrans (Set.fromList [head1]) [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
         (superClassesWork, superClassesDone, _ :: SolveTrace FIIn Constraint Guard Prio VarMp)
-                     = chrSolve' [] env rules (map (\p -> toSolverConstraint $ mkAssume $ mkCHRPredOcc p sc1) context)
+                     = chrSolve' [] env rules (map (\p -> {- toSolverConstraint $ -} mkAssume $ mkCHRPredOcc p sc1) context)
         superClasses = superClassesWork ++ superClassesDone
-        graph        = mkRedGraphFromReductions $ filterMb fromSolverConstraint superClasses
+        graph        = mkRedGraphFromReductions {- $ filterMb fromSolverConstraint -} superClasses
         head1        = mkCHRPredOcc head sc1
         head2        = mkCHRPredOcc head sc2
         head3        = mkCHRPredOcc head sc3
@@ -448,10 +448,10 @@ chrSimplifySolveToRedGraph env chrStore cnstrInfoMpPrev cnstrInfoMp prevRes
         }
     )
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
-        solveState = chrSolve'' [] (env {fiUniq = u1}) chrStore (map toSolverConstraint $ Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
+        solveState = chrSolve'' [] (env {fiUniq = u1}) chrStore ({- map toSolverConstraint $ -} Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
         cnstrInfoMpAll = cnstrMpUnion cnstrInfoMp cnstrInfoMpPrev
         redGraph
-          = addToRedGraphFromReductions (filterMb fromSolverConstraint $ chrSolveStateDoneConstraints solveState)
+          = addToRedGraphFromReductions ({- filterMb fromSolverConstraint $ -} chrSolveStateDoneConstraints solveState)
             $ addToRedGraphFromAssumes cnstrInfoMpAll
             $ simpresRedGraph prevRes
 %%]

@@ -41,6 +41,8 @@ type SolveStep  e c g p s = Mono.SolveStep  c g s
 %%% For Poly variant
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+-- 20160331 AD: no longer supported, support removed from uhc-util lib
+
 %%[(9999 hmtyinfer) import(UHC.Util.CHR.Solve.TreeTrie.Poly hiding(IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore), qualified UHC.Util.CHR.Solve.TreeTrie.Poly as Poly) export(module UHC.Util.CHR.Solve.TreeTrie.Poly, IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore', CHRSolverConstraint)
 instance Poly.IsCHRSolvable FIIn VarMp
 

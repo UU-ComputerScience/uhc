@@ -361,7 +361,7 @@ varmpTyUnit = varmpSingleton
 
 %%[(6 hmtyinfer || hmtyast).VarMp.varmpTyUnit -2.VarMp.varmpTyUnit export(varmpMetaLevTyUnit,varmpTyUnit)
 varmpMetaLevTyUnit :: Ord k => MetaLev -> k -> Ty -> VarMp' k VarMpInfo
-varmpMetaLevTyUnit mlev v t = varmpMetaLevSingleton mlev v (VMITy t)
+varmpMetaLevTyUnit mlev v t = varlookupSingletonWithMetaLev mlev v (VMITy t)
 
 varmpTyUnit :: Ord k => k -> Ty -> VarMp' k VarMpInfo
 varmpTyUnit = varmpMetaLevTyUnit metaLevVal

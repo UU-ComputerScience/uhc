@@ -35,7 +35,7 @@ gathMentrelFilterMpFromSimplifyResult :: HsName -> SimplifyResult -> ModEntRelFi
 gathMentrelFilterMpFromSimplifyResult moduleNm simpRes
   = mentrelFilterMpUnions
       [ mentrelFilterMpSingleton [moduleNm] IdOcc_Val nm
-      | (Reduction {cnstrInfo=RedHow_ByInstance nm _ _}) <- (filterMb fromSolverConstraint $ chrSolveStateDoneConstraints $ simpresSolveState simpRes :: [Constraint])
+      | (Reduction {cnstrInfo=RedHow_ByInstance nm _ _}) <- ({- filterMb fromSolverConstraint $ -} chrSolveStateDoneConstraints $ simpresSolveState simpRes :: [Constraint])
       ]
 %%]
 
