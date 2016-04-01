@@ -671,7 +671,7 @@ bfunCompare f1 f2 = case (f1,f2) of
     (FPathPreprocessedWithCPP	a1 b1 				, FPathPreprocessedWithCPP	a2 b2 				) -> lexico [a1 `compare` a2, b1 `compare` b2]
     (ExposedPackages								, ExposedPackages								) -> EQ
 %%]]
-  where lexico = orderingLexic
+  where lexico = orderingLexicList
   
 instance Ord (BFun' m res) where
   compare = bfunCompare
