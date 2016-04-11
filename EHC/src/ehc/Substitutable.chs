@@ -144,8 +144,10 @@ instance (Ord (SubstVarKey subst), VarUpdatable vv subst) => VarUpdatable [vv] s
                   where (l,m) = unzip $ map (varUpdCyc s) l
 %%]]
 
+{- 20160411: in uhc-util
 instance (VarExtractable vv) => VarExtractable [vv] where
   varFreeSet      l   =   Set.unions $ map varFreeSet l
+-}
 %%]
 
 %%[(2 hmtyinfer || hmtyast).SubstitutableVarMp

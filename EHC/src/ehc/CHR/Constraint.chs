@@ -86,7 +86,7 @@ instance (CHRMatchable env p s, TTKey p ~ Key) => CHRMatchable env (Constraint' 
          ; (_,p2,_) <- cnstrReducablePart c2
          ; chrMatchTo env s p1 p2
          }
-  chrBuiltinSolve e s x = Nothing
+  -- chrBuiltinSolve e s x = Nothing
 
 {-
 -- not yet supported

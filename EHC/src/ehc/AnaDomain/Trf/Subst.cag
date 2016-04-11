@@ -25,6 +25,9 @@ Substitution for AnaDomain.
 WRAPPER TyAGItf QualAGItf CoeAGItf
 %%]
 
+%%[(8 codegenanalysis) hs
+%%]
+
 %%[(8 codegenanalysis) hs export(relevtyAppVarLookup)
 relevtyAppVarLookup :: VarLookup m UID RVarMpInfo => m -> RelevTy -> RelevTy
 relevtyAppVarLookup varmp ty
