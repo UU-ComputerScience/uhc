@@ -48,7 +48,7 @@ Initial values
 %%]
 
 -- CHR solver
-%%[(50 hmtyinfer) import({%{EH}Pred.ToCHR}(initCHRStore))
+%%[(50 hmtyinfer) import({%{EH}Pred.CtxtRedOnly.ToCHR}(initCHRStore))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

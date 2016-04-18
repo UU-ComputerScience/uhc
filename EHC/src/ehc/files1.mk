@@ -66,12 +66,12 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics NameAspect DerivationTree Pred HI LamInfo AbstractCore \
 													Config ConfigInternalVersions ConfigCabal Paths_uhc_light \
 													$(addprefix EH/,Main) \
-													$(addprefix CHR/,Key Constraint Guard Solve Instances) \
+													$(addprefix CHR/CtxtRedOnly/,Key Constraint Guard Solve Instances) \
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \
 													$(addprefix VarMp/,Utils) \
 													$(addprefix Opts/,Base CommandLine) \
-													$(addprefix Pred/,ToCHR Evidence EvidenceToCore Heuristics RedGraph) \
+													$(addprefix Pred/CtxtRedOnly/,ToCHR Evidence EvidenceToCore Heuristics RedGraph) \
 													$(addprefix Base/,UnderDev Trace Range TermLike UID Parser Parser2 Pragma Strictness Target Fld Common HsName Debug CfgPP LaTeX HtmlCommon FileSearchLocation PackageDatabase ParseUtils Optimize) \
 													$(addprefix Base/HsName/,Builtin) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \

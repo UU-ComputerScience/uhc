@@ -99,10 +99,10 @@
 %%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}CHR.Guard},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.CtxtRedOnly.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Constraint},{%{EH}CHR.CtxtRedOnly.Guard},{%{EH}Pred.CtxtRedOnly.ToCHR},{%{EH}Pred.CtxtRedOnly.Heuristics},{%{EH}Pred.CtxtRedOnly.Evidence},{%{EH}CHR.CtxtRedOnly.Solve})
 %%]
 
-%%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
+%%[(9 codegen) hs import({%{EH}Pred.CtxtRedOnly.EvidenceToCore})
 %%]
 %%[(9 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
 %%]

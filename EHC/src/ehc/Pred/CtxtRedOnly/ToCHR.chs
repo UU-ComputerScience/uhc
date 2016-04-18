@@ -6,16 +6,16 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.ToCHR} import({%{EH}Opts},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(9 hmtyinfer) module {%{EH}Pred.CtxtRedOnly.ToCHR} import({%{EH}Opts},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer) import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(9 hmtyinfer) import(UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}CHR.Guard},{%{EH}CHR.Solve},{%{EH}CHR.Key})
+%%[(9 hmtyinfer) import(UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Constraint},{%{EH}CHR.CtxtRedOnly.Guard},{%{EH}CHR.CtxtRedOnly.Solve},{%{EH}CHR.CtxtRedOnly.Key})
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
+%%[(9 hmtyinfer) import({%{EH}Pred.CtxtRedOnly.Heuristics},{%{EH}Pred.CtxtRedOnly.Evidence},{%{EH}Pred.CtxtRedOnly.RedGraph})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})

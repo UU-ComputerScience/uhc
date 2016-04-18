@@ -54,7 +54,7 @@
 %%]
 %%[(9 codegen coreout hmtyinfer) import({%{EH}Core.Pretty})
 %%]
-%%[(9 hmtyinfer) import({%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) import({%{EH}CHR.CtxtRedOnly.Constraint})
 %%]
 %%[(9 hmtyinfer) export(fitsIn')
 %%]

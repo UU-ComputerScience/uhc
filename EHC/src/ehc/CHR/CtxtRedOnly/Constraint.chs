@@ -6,10 +6,10 @@
 %%% Constraint Handling Rules: Constraint language
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint}
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.CtxtRedOnly.Constraint}
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Ty},UHC.Util.CHR,{%{EH}CHR.Key},UHC.Util.TreeTrie,{%{EH}Substitutable})
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Ty},UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Key},UHC.Util.TreeTrie,{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(UHC.Util.Pretty as PP, UHC.Util.Utils)

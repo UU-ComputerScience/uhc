@@ -4,10 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.Heuristics}
+%%[(9 hmtyinfer) module {%{EH}Pred.CtxtRedOnly.Heuristics}
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, UHC.Util.CHR,{%{EH}VarMp},{%{EH}Pred.Evidence},{%{EH}CHR.Key},{%{EH}CHR.Constraint},{%{EH}CHR.Guard},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, UHC.Util.CHR,{%{EH}VarMp},{%{EH}Pred.CtxtRedOnly.Evidence},{%{EH}CHR.CtxtRedOnly.Key},{%{EH}CHR.CtxtRedOnly.Constraint},{%{EH}CHR.CtxtRedOnly.Guard},{%{EH}CHR.CtxtRedOnly.Solve})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})

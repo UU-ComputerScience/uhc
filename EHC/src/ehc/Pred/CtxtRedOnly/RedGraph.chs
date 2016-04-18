@@ -4,13 +4,13 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.RedGraph} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp}, Data.Maybe)
+%%[(9 hmtyinfer) module {%{EH}Pred.CtxtRedOnly.RedGraph} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp}, Data.Maybe)
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}CHR.Constraint},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) import({%{EH}CHR.CtxtRedOnly.Constraint},{%{EH}CHR.CtxtRedOnly.Constraint})
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Pred.Heuristics})
+%%[(9 hmtyinfer) import({%{EH}Pred.CtxtRedOnly.Heuristics})
 %%]
 
 %%[(9 hmtyinfer) import(qualified Data.Map as Map, qualified Data.Set as Set)

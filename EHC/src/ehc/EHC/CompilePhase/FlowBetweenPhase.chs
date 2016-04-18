@@ -59,7 +59,7 @@ XXX
 %%]
 
 -- CHR solver
-%%[(50 hmtyinfer) import({%{EH}CHR.Solve}(chrStoreUnion))
+%%[(50 hmtyinfer) import({%{EH}CHR.CtxtRedOnly.Solve}(chrStoreUnion))
 %%]
 
 -- Force evaluation for IO

@@ -4,10 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.Evidence}
+%%[(9 hmtyinfer) module {%{EH}Pred.CtxtRedOnly.Evidence}
 %%]
 
-%%[(9 hmtyinfer) import(UHC.Util.CHR, {%{EH}Substitutable}, {%{EH}Ty}, {%{EH}VarMp}, {%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) import(UHC.Util.CHR, {%{EH}Substitutable}, {%{EH}Ty}, {%{EH}VarMp}, {%{EH}CHR.CtxtRedOnly.Constraint})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})

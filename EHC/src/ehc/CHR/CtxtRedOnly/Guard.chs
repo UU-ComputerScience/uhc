@@ -4,10 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}CHR.Guard} import(UHC.Util.CHR,{%{EH}CHR.Key})
+%%[(9 hmtyinfer) module {%{EH}CHR.CtxtRedOnly.Guard} import(UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Key})
 %%]
 
-%%[(9999 hmtyinfer) import({%{EH}CHR.Constraint}) export(module {%{EH}CHR.Constraint})
+%%[(9999 hmtyinfer) import({%{EH}CHR.CtxtRedOnly.Constraint}) export(module {%{EH}CHR.CtxtRedOnly.Constraint})
 %%]
 
 %%[(9999 hmtyinfer) import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)

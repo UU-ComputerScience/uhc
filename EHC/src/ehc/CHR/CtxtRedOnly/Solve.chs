@@ -8,7 +8,7 @@ Assumptions (to be documented further)
 - The key [Trie.TrieKey Key] used to lookup a constraint in a CHR should be distinguishing enough to be used for the prevention
   of the application of a propagation rule for a 2nd time.
 
-%%[(9 hmtyinfer) module {%{EH}CHR.Solve}
+%%[(9 hmtyinfer) module {%{EH}CHR.CtxtRedOnly.Solve}
 %%]
 
 %%[(9 hmtyinfer) import(qualified Data.Set as Set)
@@ -17,7 +17,7 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer) import(UHC.Util.Utils, UHC.Util.CHR, UHC.Util.CHR.Rule, UHC.Util.Substitutable) export(module UHC.Util.CHR.Rule)
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}CHR.Instances}, {%{EH}CHR.Key}, {%{EH}VarMp}, {%{EH}Ty}, {%{EH}Ty.FitsInCommon2})
+%%[(9 hmtyinfer) import({%{EH}CHR.CtxtRedOnly.Instances}, {%{EH}CHR.CtxtRedOnly.Key}, {%{EH}VarMp}, {%{EH}Ty}, {%{EH}Ty.FitsInCommon2})
 %%]
 
 %%[(9 hmtyinfer) import(UHC.Util.CHR.Solve.TreeTrie.Mono hiding(IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore), qualified UHC.Util.CHR.Solve.TreeTrie.Mono as Mono) export(module UHC.Util.CHR.Solve.TreeTrie.Mono, IsCHRSolvable(..), SolveState, SolveTrace, SolveStep, CHRStore', CHRSolverConstraint)

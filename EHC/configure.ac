@@ -186,6 +186,10 @@ AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)
 AC_ARG_ENABLE(sandbox, AS_HELP_STRING([--enable-sandbox],[build EHC/UHC libs with cabal sandbox]), [enableSandbox=yes], [enableSandbox=no])
 AC_SUBST(ENABLE_SANDBOX,$enableSandbox)
 
+### enable options: turn on CHR based type system impl
+AC_ARG_ENABLE(chrtysys, AS_HELP_STRING([--enable-chrtysys],[build EHC/UHC with CHR based type system]), [enableChrTySys=yes], [enableChrTySys=no])
+AC_SUBST(ENABLE_CHRTYSYS,$enableChrTySys)
+
 ### cpp
 AC_ARG_WITH(cpp,
 [AS_HELP_STRING([--with-cpp=<cpp preprocessor>],[Use a command different from 'cpp' to compile with CPP.])],
