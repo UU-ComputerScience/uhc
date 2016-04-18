@@ -89,7 +89,7 @@ instance VarExtractable VarUIDHsName where
   varFreeSet          _                 = Set.empty
 
 -- instance VarUpdatable VarUIDHsName VarMp where
-instance (VarLookup m (SubstVarKey m) (SubstVarVal m), SubstVarKey m ~ ImplsVarId, SubstVarVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
+instance (VarLookup m, VarLookupKey m ~ ImplsVarId, VarLookupVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
   varUpd s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 

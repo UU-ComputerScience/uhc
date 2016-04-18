@@ -181,7 +181,7 @@ dtEltGam m dm g
 dtEltFoVarMp :: VarMp -> FIOut -> PP_Doc
 dtEltFoVarMp dm fo = ppVarMp ppCurlysCommas' (foVarMp fo)
 
-dtEltVarMp :: (VarLookup m (SubstVarKey m) (SubstVarVal m), SubstVarKey m ~ TyVarId, SubstVarVal m ~ VarMpInfo, VarUpdatable VarMpInfo m) => m -> VarMp -> VarMp -> (PP_Doc,VarMp)
+dtEltVarMp :: (VarLookup m (VarLookupKey m) (VarLookupVal m), VarLookupKey m ~ TyVarId, VarLookupVal m ~ VarMpInfo, VarUpdatable VarMpInfo m) => m -> VarMp -> VarMp -> (PP_Doc,VarMp)
 dtEltVarMp m dm vm
   = (ppAssocL' ppBracketsCommas' ":->" [ (ppTyDt $ dm' `varUpd` varmpinfoMkVar tv i,ppVarMpInfoDt i) | (tv,i) <- varmpToAssocL vm'], dm')
   where (vm',dm')
@@ -192,7 +192,7 @@ dtEltVarMp m dm vm
                          ) dm vm
 %%]
 
-(VarLookup m (SubstVarKey m) (SubstVarVal m), SubstVarKey m ~ TyVarId, SubstVarVal m ~ VarMpInfo)
+(VarLookup m (VarLookupKey m) (VarLookupVal m), VarLookupKey m ~ TyVarId, VarLookupVal m ~ VarMpInfo)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Choose between final/infer variant

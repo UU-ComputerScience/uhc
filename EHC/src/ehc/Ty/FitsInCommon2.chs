@@ -39,14 +39,14 @@ For debug/trace:
 %%[[4
 ppTyWithFI :: FIIn -> Ty -> PP_Doc
 %%][8
-ppTyWithFI :: (VarLookupCmb VarMp gm, VarUpdatable Ty gm, SubstVarKey gm ~ VarId) => FIIn' gm -> Ty -> PP_Doc
+ppTyWithFI :: (VarLookupCmb VarMp gm, VarUpdatable Ty gm, VarLookupKey gm ~ VarId) => FIIn' gm -> Ty -> PP_Doc
 %%]]
 ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi |+> fiVarMp fi) t
 
 %%[[4
 ppTyWithFIFO :: FIIn -> FIOut -> Ty -> PP_Doc
 %%][8
-ppTyWithFIFO :: (VarLookupCmb VarMp gm, VarUpdatable Ty gm, SubstVarKey gm ~ VarId) => FIIn' gm -> FIOut -> Ty -> PP_Doc
+ppTyWithFIFO :: (VarLookupCmb VarMp gm, VarUpdatable Ty gm, VarLookupKey gm ~ VarId) => FIIn' gm -> FIOut -> Ty -> PP_Doc
 %%]]
 ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo |+> fiVarMp fi) t
 %%]
@@ -114,7 +114,7 @@ fiLookupVar' lkup1 lkup2 v m1 m2
 %%[[4
 fiLookupTyVarCyc :: FIIn -> TyVarId -> Maybe Ty
 %%][8
-fiLookupTyVarCyc :: VarLookup gm TyVarId VarMpInfo => FIIn' gm -> TyVarId -> Maybe Ty
+fiLookupTyVarCyc :: (VarLookup gm, VarLookupKey gm ~ TyVarId, VarLookupVal gm ~ VarMpInfo) => FIIn' gm -> TyVarId -> Maybe Ty
 %%]]
 fiLookupTyVarCyc  fi v  =  fiLookupVar' varmpTyLookupCyc varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
 %%]
@@ -124,7 +124,7 @@ fiLookupTyVarCyc  fi v  =  fiLookupVar' varmpTyLookupCyc varmpTyLookupCyc v (fiV
 %%[[4
 fiLookupReplaceTyCyc :: FIIn -> Ty -> Ty
 %%][8
-fiLookupReplaceTyCyc :: VarLookup gm TyVarId VarMpInfo => FIIn' gm -> Ty -> Ty
+fiLookupReplaceTyCyc :: (VarLookup gm, VarLookupKey gm ~ TyVarId, VarLookupVal gm ~ VarMpInfo) => FIIn' gm -> Ty -> Ty
 %%]]
 fiLookupReplaceTyCyc  fi t  =  maybe t (maybe t id . fiLookupTyVarCyc fi) $ tyMbVar t
 %%]

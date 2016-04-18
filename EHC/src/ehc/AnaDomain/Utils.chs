@@ -108,8 +108,8 @@ relevQualRemoveAmbig bound qualS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegenanalysis) hs
-type instance SubstVarKey RVarMp = UID
-type instance SubstVarVal RVarMp = RelevTy
+type instance VarLookupKey RVarMp = UID
+type instance VarLookupVal RVarMp = RelevTy
 type instance ExtrValVarKey RelevTy = UID
 
 instance VarUpdatable RelevTy RVarMp where

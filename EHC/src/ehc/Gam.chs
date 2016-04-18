@@ -228,7 +228,7 @@ instance (Eq (ExtrValVarKey vv), Eq tk, VarExtractable vv) => VarExtractable (Ga
 %%]
 
 %%[(8 hmtyinfer || hmtyast).Substitutable.SGam -2.Substitutable.Gam
-instance (Ord tk, Ord (SubstVarKey subst), VarUpdatable vv subst) => VarUpdatable (SGam tk vv) subst where
+instance (Ord tk, Ord (VarLookupKey subst), VarUpdatable vv subst) => VarUpdatable (SGam tk vv) subst where
   s `varUpd`  g    =   gamMapElts (s `varUpd`) g
 %%[[4
   s `varUpdCyc` g    =   (g',varmpUnions $ gamElts gm)

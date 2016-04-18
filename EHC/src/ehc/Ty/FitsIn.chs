@@ -141,7 +141,8 @@ fiAppSpineLookup fi n gappSpineGam = asGamLookup n $ feAppSpineGam $ fiEnv fi
 fiAppSpineLookup
   :: forall gm .
      ( VarLookupCmb VarMp gm
-     , VarLookup gm TyVarId VarMpInfo
+     , VarLookup gm
+     , VarLookupKey gm ~ TyVarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIIn' gm -> HsName -> AppSpineGam -> Maybe AppSpineInfo
 fiAppSpineLookup fi n gappSpineGam
@@ -294,9 +295,9 @@ fitsIn
      , VarLookupCmb gm gm
      )
      => -} 
-     ( VarLookup gm TyVarId VarMpInfo
+     ( VarLookup gm
      , VarLookupCmb VarMp gm
-     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
+     , VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIOpts -> FIEnv -> UID -> gm -> Ty -> Ty
      -> FIOut
@@ -325,9 +326,9 @@ fitsInFI
      , VarLookupCmb gm gm
      )
      => -} 
-     ( VarLookup gm TyVarId VarMpInfo
+     ( VarLookup gm
      , VarLookupCmb VarMp gm
-     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
+     , VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Ty -> Ty
      -> FIOut
@@ -1641,8 +1642,8 @@ fitsInFold opts env uniq varmp tyl
 %%[(9 hmtyinfer) export(fitPredIntoPred)
 fitPredIntoPred
   :: ( VarLookupCmb VarMp gm
-     , VarLookup gm TyVarId VarMpInfo
-     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
+     , VarLookup gm
+     , VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Pred -> Pred
      -> Maybe (Pred,VarMp)

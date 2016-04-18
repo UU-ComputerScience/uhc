@@ -85,8 +85,6 @@ instance (VarExtractable p) => VarExtractable (Evidence' p info) where
   varFreeSet            (Evid_Ambig       p  ess)    = Set.unions $ varFreeSet p : map (Set.unions . map varFreeSet . snd) ess
 
 instance VarUpdatable p s => VarUpdatable (Evidence' p info) s where
-  -- type SubstVarKey s = SubstVarKey s
-  -- type SubstVarVal s = SubstVarVal s
   varUpd s     (Evid_Unresolved  p   u )    = Evid_Unresolved (varUpd s p) u
   varUpd s     (Evid_Proof       p i es)    = Evid_Proof      (varUpd s p) i (map (varUpd s) es)
   varUpd s     (Evid_Recurse     p     )    = Evid_Recurse    (varUpd s p)  
