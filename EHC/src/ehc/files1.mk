@@ -66,7 +66,10 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													FinalEnv Substitutable Opts Gam VarMp VarLookup Deriving Generics NameAspect DerivationTree Pred HI LamInfo AbstractCore \
 													Config ConfigInternalVersions ConfigCabal Paths_uhc_light \
 													$(addprefix EH/,Main) \
-													$(addprefix CHR/CtxtRedOnly/,Key Constraint Guard Solve Instances) \
+													$(addprefix CHR/,\
+														$(addprefix CtxtRedOnly/,Key Constraint Guard Solve Instances) \
+														$(addprefix TySys/,Types) \
+													) \
 													$(addprefix AbstractCore/,Utils) \
 													$(addprefix AnaDomain/,Utils) \
 													$(addprefix VarMp/,Utils) \

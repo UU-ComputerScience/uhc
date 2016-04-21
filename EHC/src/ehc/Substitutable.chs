@@ -128,6 +128,7 @@ instance VarExtractable LabelOffset where
 %%]
 
 %%[(2 hmtyinfer || hmtyast).SubstitutableList
+{- 20160421: in uhc-util
 -- instance (VarUpdatable vv subst) => VarUpdatable [vv] subst where
 instance (Ord (VarLookupKey subst), VarUpdatable vv subst) => VarUpdatable [vv] subst where
   s      `varUpd`  l   =   map (varUpd s) l
@@ -135,6 +136,7 @@ instance (Ord (VarLookupKey subst), VarUpdatable vv subst) => VarUpdatable [vv] 
   s      `varUpdCyc` l   =   (l,varmpUnions m)
                   where (l,m) = unzip $ map (varUpdCyc s) l
 %%]]
+-}
 
 {- 20160411: in uhc-util
 instance (VarExtractable vv) => VarExtractable [vv] where
