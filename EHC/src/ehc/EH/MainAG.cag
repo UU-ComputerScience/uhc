@@ -140,6 +140,9 @@
 %%[(99 hmtyinfer) hs import({%{EH}VarMp.Utils})
 %%]
 
+%%[(99 chrtysys) hs import({%{EH}CHR.TySys.Types})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,8 +151,7 @@
 WRAPPER AGItf
 %%]
 
-
-%%[(1 hmtyinfer) ag import({EH/InferUtils},{EH/Infer},{EH/InferExpr},{EH/InferTyUpDown},{EH/InferPatExpr},{EH/InferTyExpr},{EH/InferInit})
+%%[(1 hmtyinfer) ag import({EH/HMTySys/InferUtils},{EH/HMTySys/Infer},{EH/HMTySys/InferExpr},{EH/HMTySys/InferTyUpDown},{EH/HMTySys/InferPatExpr},{EH/HMTySys/InferTyExpr},{EH/HMTySys/InferInit})
 %%]
 %%[(2 hmtyinfer) ag import({EH/FinalInfo})
 %%]
@@ -204,16 +206,16 @@ WRAPPER AGItf
 %%[102 -1.Pretty
 %%]
 
-%%[(2 hmtyinfer) ag import({EH/InferIncrFtv})
+%%[(2 hmtyinfer) ag import({EH/HMTySys/InferIncrFtv})
 %%]
 
-%%[(5 hmtyinfer) ag import({EH/InferCaseExpr})
+%%[(5 hmtyinfer) ag import({EH/HMTySys/InferCaseExpr})
 %%]
 
-%%[5 ag import({EH/InferData})
+%%[5 ag import({EH/HMTySys/InferData})
 %%]
 
-%%[(6 hmtyinfer) ag import({EH/InferKiExpr})
+%%[(6 hmtyinfer) ag import({EH/HMTySys/InferKiExpr})
 %%]
 
 %%[(8 codegen) ag import({EH/ToCore})
@@ -221,13 +223,13 @@ WRAPPER AGItf
 %%[(8 hmtyinfer codegen) ag import({EH/SysfTy},{EH/SysfEnv})
 %%]
 
-%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})
+%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/HMTySys/InferClass},{EH/HMTySys/InferClassCHR},{EH/ResolvePredCHR},{EH/HMTySys/InferDefault})
 %%]
 
 %%[9 ag import({EH/GatherGam})
 %%]
 
-%%[(17 hmtyinfer) ag import({EH/InferPolarity})
+%%[(17 hmtyinfer) ag import({EH/HMTySys/InferPolarity})
 %%]
 
 %%[(50 hmtyinfer codegen) ag import({EH/UsedNames},{EH/Orphan})

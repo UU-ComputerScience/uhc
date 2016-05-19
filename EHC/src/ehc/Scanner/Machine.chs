@@ -16,7 +16,7 @@ A |ScanOpts| specifies sets of keywords, variations on identifier parsing, etc e
 %%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,System.IO,UU.Scanner.Position,UHC.Util.Utils,UHC.Util.ScanUtils,{%{EH}Scanner.Token})
 %%]
 
-%%[5 import(qualified Data.Set as Set)
+%%[5 import(qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
 %%[8 export(getRational)
@@ -81,7 +81,7 @@ scan opts pos input
    isPairSym= (`Set.member` scoSpecPairs opts)
    isStringDelim = (`elem` scoStringDelims opts)
 %%[[99
-   isPragma = (`Set.member` scoPragmasTxt opts) . map toUpper
+   isPragma = maybe (False,False) ((,) True). (`Map.lookup` scoPragmasTxt opts) . map toUpper
 %%]]
 
    isIdStart c = isLower    c || c == '_' || iskwextra c
@@ -137,10 +137,6 @@ scan opts pos input
    scanString :: Char -> Pos -> String -> (String,Pos,String)
    scanString d p []            = ("",p,[])
    scanString d p ('\\':'&':xs) = scanString d (advc 2 p) xs
-   {-
-   scanString d p ('\'':xs)     = let (str,p',r) = scanString d (advc 1 p) xs
-                                  in  ('\'': str,p',r)
-   -}
    scanString d p ( c  :xs) | isStringDelim c && c /= d
                                 = let (str,p',r) = scanString d (advc 1 p) xs
                                   in  (c:str,p',r)
@@ -152,6 +148,15 @@ scan opts pos input
    scanString d p xs = let (ch,cw,cr) = getchar d xs
                            (str,p',r) = scanString d (advc cw p) cr
                        in  maybe ("",p,xs) (\c -> (c:str,p',r)) ch
+%%]
+
+%%[99
+   scanPragmaString :: Pos -> String -> (String,Pos,String)
+   scanPragmaString p   []               = ("", p, [])
+   scanPragmaString p s@('#':'-':'}':xs) = ("", p, s )
+   scanPragmaString p   ( c         :xs) =
+                                let (  str,p',r) = scanPragmaString (adv p c) xs
+                                in  (c:str,p',r)
 %%]
 
 %%[99
@@ -178,12 +183,18 @@ scan opts pos input
      | c == '-' || not (isOpsym c)
        = doScan (scSt {ssAfterQual=False}) p (dropWhile (/= '\n') s)
 %%[[99
-{-
--}
    doScan scSt p ('{':'-':'#':s)
-     | isPragma pragma
-       = reserved "{-#" p : reserved pragma p2 : doScan (scSt {ssAfterQual=False}) p3 s3
-       where (w        ,s2) = getWhite s
+     | isPr
+       = reserved "{-#" p : reserved pragma p2 : 
+           (if asStr
+            then let (s,p',rest) = scanPragmaString p3 s3
+                 in if null rest || head rest /= '#'
+                       then errToken "Unterminated pragma string" p3 : doScan scSt p' rest
+                       else valueToken TkString s p3 : reserved "#-}" p' : doScan scSt (advc 3 p') (drop 3 rest)
+            else doScan (scSt {ssAfterQual=False}) p3 s3
+           )
+       where (isPr,asStr)   = isPragma pragma
+             (w        ,s2) = getWhite s
              p2             = advc (length w) $ advc 3 p
              (pragma,p3,s3) = scanIdent isIdChar p2 s2
    doScan scSt p ('#':'-':'}':s) = reserved "#-}" p : doScan (scSt {ssAfterQual=False}) (advc 3 p) s
@@ -336,26 +347,6 @@ scanNestedComment cont scSt pos inp = nest cont scSt pos inp
        nest c scSt p ('{':'-':s) = nest (nest c) scSt (advc 2 p) s
        nest c scSt p (x:s)       = nest c scSt (adv p x) s
        nest _ _    _ []          = [ errToken "Unterminated nested comment" pos]
-
-
-{-
-scanString :: Char -> Pos -> String -> (String,Pos,String)
-scanString d p []            = ("",p,[])
-scanString d p ('\\':'&':xs) = scanString d (advc 2 p) xs
--- scanString d p ('\'':xs)     = let (str,p',r) = scanString d (advc 1 p) xs
---                                in  ('\'': str,p',r)
-scanString d p ( c  :xs) | isStringDelim c && c /= d
-                             = let (str,p',r) = scanString d (advc 1 p) xs
-                               in  (c:str,p',r)
-scanString d p ('\\':x:xs) | isSpace x
-                             = let (white,rest) = span isSpace xs
-                               in  case rest of
-                                     ('\\':rest') -> scanString d (advc 1 $ foldl adv (advc 2 p) white) rest'
-                                     _            -> ("",advc 2 p,xs)
-scanString d p xs = let (ch,cw,cr) = getchar d xs
-                        (str,p',r) = scanString d (advc cw p) cr
-                    in  maybe ("",p,xs) (\c -> (c:str,p',r)) ch
--}
 
 scanChar :: [Char] -> (Maybe Char,Int,[Char])
 scanChar ('"' :xs) = (Just '"',1,xs)
