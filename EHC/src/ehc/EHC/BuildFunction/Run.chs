@@ -1,5 +1,5 @@
 %%[0 hs
-{-# LANGUAGE GADTs, TemplateHaskell, KindSignatures, ImpredicativeTypes #-}
+{-# LANGUAGE GADTs, TemplateHaskell, KindSignatures #-}
 -- {-# LANGUAGE RecursiveDo #-}
 %%]
 
