@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.9.4 - 20160521
+
+- [compatibility] with ghc 8.0.1
+- [type system] Ongoing work for CHR based type system
+- [uhc-util] Ongoing sync with uhc-util
+- [compiler driver] check for writeability of directory is now on dest dir, not src dir
+- [pragmas] bangpatterns pragma turned off by default
+- [pragmas] bangpatterns pragma propagation to parser fixed
+- [options] fixed -O0 option
+
 ## 1.1.9.3 - 20160219
 
 - [libs] Updated version lowerbound for hashable and fclabels, via uhc-util
