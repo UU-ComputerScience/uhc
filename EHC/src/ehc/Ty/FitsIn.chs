@@ -1189,11 +1189,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QLR
-%%[[4
-            fBase fi updTy t1@(Ty_TBind q1 _ _)   t2@(Ty_TBind q2 _ _)
-%%][6
-            fBase fi updTy t1@(Ty_TBind q1 _ _ _) t2@(Ty_TBind q2 _ _ _)
-%%]]
+            fBase fi updTy t1@(Ty_TBind {qu_Ty_TBind=q1})   t2@(Ty_TBind {qu_Ty_TBind=q2})
                 | fioMode (fiFIOpts fi) == FitUnify && q1 == q2
                                                     = fVar' fTySyn fi2 id uqt1 uqt2
                 where  (fi1,uqt1,_,_) = unquant fi   t1 False instCoConst
@@ -1201,21 +1197,13 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QR
-%%[[4
-            fBase fi updTy t1                     t2@(Ty_TBind _ _ _)
-%%][6
-            fBase fi updTy t1                     t2@(Ty_TBind _ _ _ _)
-%%]]
+            fBase fi updTy t1                     t2@(Ty_TBind {})
                 | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
                                                     = back2 (fo { foRInstToL = instto2 ++ foRInstToL fo
                                                                 })
                 where (fi2,uqt2,back2,instto2) = unquant fi t2 False instCoConst
                       fo = fVar' fTySyn fi2 id t1 uqt2
-%%[[4
-            fBase fi updTy t1                     t2@(Ty_TBind _ _ _)
-%%][6
-            fBase fi updTy t1                     t2@(Ty_TBind _ _ _ _)
-%%]]
+            fBase fi updTy t1                     t2@(Ty_TBind {})
                 | fioIsSubsume (fiFIOpts fi) && not (fioLeaveRInst (fiFIOpts fi))
                                                     = back2 (fo { foRInstToL = instto2 ++ foRInstToL fo
                                                                 })
@@ -1224,11 +1212,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QL
-%%[[4
-            fBase fi updTy t1@(Ty_TBind _ _ _)    t2
-%%][6
-            fBase fi updTy t1@(Ty_TBind _ _ _ _)  t2
-%%]]
+            fBase fi updTy t1@(Ty_TBind {})    t2
                 | fioIsSubsume (fiFIOpts fi)        = fo { foLInstToL = instto1 ++ foLInstToL fo
                                                          }
                 where (fi1,uqt1,back1,instto1) = unquant fi t1 False instCoConst
