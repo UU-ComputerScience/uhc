@@ -1190,10 +1190,13 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[(4 hmtyinfer).fitsIn.QLR
             fBase fi updTy t1@(Ty_TBind {qu_Ty_TBind=q1})   t2@(Ty_TBind {qu_Ty_TBind=q2})
-                | fioMode (fiFIOpts fi) == FitUnify && q1 == q2
-                                                    = fVar' fTySyn fi2 id uqt1 uqt2
-                where  (fi1,uqt1,_,_) = unquant fi   t1 False instCoConst
-                       (fi2,uqt2,_,_) = unquant fi1  t2 False instCoConst
+                | fiom `elem` [FitSubLR,FitUnify]
+                                                    = if q1 == q2 
+                                                      then fVar' fTySyn fi2 id uqt1 uqt2
+                                                      else errClash fi t1 t2
+                where  fiom = fioMode (fiFIOpts fi)
+                       (fi1,uqt1,_,_) = unquant fi   t1 False instCoConst
+                       (fi2,uqt2,_,_) = unquant fi1  t2 False (if fiom == FitSubLR then instContra else instCoConst)
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QR
