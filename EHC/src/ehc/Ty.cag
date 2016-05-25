@@ -551,7 +551,7 @@ tyQu_KiExists = TyQu_Exists metaLevTy
 %%% Properties of quantifier
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer || hmtyast) hs export(tyquIsExists, tyquIsForall)
+%%[(4 hmtyinfer || hmtyast) hs export(tyquEqModuloLev, tyquIsExists, tyquIsForall)
 tyquIsExists, tyquIsForall :: TyQu -> Bool
 %%]
 
@@ -561,6 +561,10 @@ tyquIsForall _                       = False
 
 tyquIsExists (TyQu_Exists _)         = True
 tyquIsExists _                       = False
+
+tyquEqModuloLev (TyQu_Forall {}) (TyQu_Forall {}) = True
+tyquEqModuloLev (TyQu_Exists {}) (TyQu_Exists {}) = True
+tyquEqModuloLev _                _                = False
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs export(tyquMetaLev)
