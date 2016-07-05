@@ -6,7 +6,7 @@
 %%% DataGam gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen corein)
+%%[(8 core)
 -- Gathering of dataGam
 ATTR CodeAGItf CModule AllDeclMeta [ | | gathDataGam USE {`gamUnion`} {emptyGam} : DataGam ]
 
