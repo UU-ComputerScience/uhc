@@ -22,3 +22,15 @@ build-*/
 t/
 doc/
 klad*
+
+ehclib/directory/include/HsDirectoryConfig.h
+ehclib/old-time/include/HsTimeConfig.h
+ehclib/uhcbase/include/HsBaseConfig.h
+ehclib/uhcbase/include/MachDeps.h
+ehclib/unix/include/HsUnixConfig.h
+mk/shared.mk
+src/ehc/Config.chs
+src/ehc/ConfigDefines.chs
+test/benchmark/runbenchmark.pl
+
+
