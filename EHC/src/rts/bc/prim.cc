@@ -426,7 +426,7 @@ PRIM GB_NodePtr primShowFloat( Float w )
 {
 	char buf[sizeof(Float)*10] ;
 	char *s = buf ;
-	sprintf( s, "%f", w ) ;
+	sprintf( s, "%-1.8g", w ) ;
 	
 	GB_NodePtr n ;
 	int sz = strlen(buf) + 1 ; // ??? why +1
@@ -440,7 +440,7 @@ PRIM GB_NodePtr primShowDouble( Double w )
 {
 	char buf[sizeof(Double)*10] ;
 	char *s = buf ;
-	sprintf( s, "%lf", w ) ;
+	sprintf( s, "%-1.16g", w ) ;
 	
 	GB_NodePtr n ;
 	int sz = strlen(buf) + 1 ; // ??? why +1
