@@ -93,7 +93,7 @@ SEM Decl
                                                     =   mkDataConstrTys2 (tvarKi @lhs.finTyKiGam @tyPrExpr.intlTyKiGam @lhs.tvKiVarMp emptyVarMp) @dataDictConProdTy @dataDictTy
                 lhs             .   patTyGam        =   gamAdd @dataDictNm (TyGamInfo (appCon @dataDictNm)
 %%[[(8 counting)
-                                                                            [] (CA.AnnotatedType_TyError "Class_patTyGam")
+                                                                            [] (CA.Type_Error "Class_patTyGam")
 %%]]
                                                                   ) @lhs.patTyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam

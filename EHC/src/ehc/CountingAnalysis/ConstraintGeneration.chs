@@ -4,489 +4,439 @@ import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
-import Data.Monoid (mconcat, (<>))
-
 import Control.Monad.State
-import Control.Arrow (second)
+import Data.Monoid
+import UHC.Util.Utils
+import Data.List (transpose)
 
 import %%@{%{EH}%%}CountingAnalysis
 import %%@{%{EH}%%}Base.HsName (HsName, mkHNm)
 
-genEq :: ConstraintGeneration a => Var -> a -> a -> (GatherConstraints, Var)
-genEq freshVars a1 a2 = runState (genEq' a1 a2) freshVars
-genAdd :: ConstraintGeneration a => Var -> a -> a -> a -> (GatherConstraints, Var)
-genAdd freshVars a1 a2 a = runState (genAdd' a1 a2 a) freshVars
-genUnion :: ConstraintGeneration a => Var -> a -> a -> a -> (GatherConstraints, Var)
-genUnion freshVars a1 a2 a = runState (genUnion' a1 a2 a) freshVars
-genTimes :: ConstraintGeneration a => Var -> Annotation -> a -> a -> (GatherConstraints, Var)
-genTimes freshVars a1 a2 a = runState (genTimes' a1 a2 a) freshVars
-genCon :: ConstraintGeneration a => Var -> Annotation -> a -> a -> (GatherConstraints, Var)
-genCon freshVars a1 a2 a = runState (genCon' a1 a2 a) freshVars
-genSub :: ConstraintGeneration a => Var -> a -> a -> (GatherConstraints, Var)
-genSub freshVars a1 a2 = runState (genUnion' a1 a2 a2) freshVars
-genSup :: ConstraintGeneration a => Var -> a -> a -> (GatherConstraints, Var)
-genSup freshVars = flip $ genSub freshVars
+annPlus :: AnnVal -> AnnVal -> AnnVal
+annPlus a1 a2 = S.fromList [x .+ y | x <- S.toList a1, y <- S.toList a2] 
 
-genSub' :: ConstraintGeneration a => a -> a -> State Var GatherConstraints
-genSub' a1 a2 = genUnion' a1 a2 a2
-genSup' :: ConstraintGeneration a => a -> a -> State Var GatherConstraints
-genSup' = flip genSub'
+annUnion :: AnnVal -> AnnVal -> AnnVal
+annUnion = S.union
 
+annTimes :: AnnVal -> AnnVal -> AnnVal
+annTimes a1 a2 = S.fromList [annFromInt (sum $ map annToInt y) | x <- S.toList a1, y <- f (annToInt x) $ S.toList a2]
+  where f 0 _ = [[]] 
+        f _ [] = []
+        f n y@(x:xs) = f n xs ++ map (x:) (f (n-1) y)
+
+annCond :: AnnVal -> AnnVal -> AnnVal
+annCond a1 a2 = S.unions $ map (\x -> if x == AnnPrim_Zero then annZero' else a2) $ S.toList a1
+
+(.+) :: AnnPrim -> AnnPrim -> AnnPrim
+x .+ y = annFromInt $ annToInt x + annToInt y
+
+annToInt :: AnnPrim -> Int
+annToInt AnnPrim_Zero = 0
+annToInt AnnPrim_One = 1
+annToInt AnnPrim_Infinity = 2;
+
+annFromInt :: Int -> AnnPrim
+annFromInt 0 = AnnPrim_Zero
+annFromInt 1 = AnnPrim_One
+annFromInt _ = AnnPrim_Infinity
 
 class ConstraintGeneration a where
-  genC :: C a -> Constraint
-  genC = undefined
-  genEq' :: a -> a -> State Var GatherConstraints
-  genEq' a1 a2 = return $ singleton $ genC $ EqC a1 a2
-  genAdd' :: a -> a -> a -> State Var GatherConstraints
-  genAdd' a1 a2 a = return $ singleton $ genC $ PlusC a a1 a2
-  genUnion' :: a -> a -> a -> State Var GatherConstraints
-  genUnion' a1 a2 a = return $ singleton $ genC $ UnionC a a1 a2
-  genTimes' :: Annotation -> a -> a -> State Var GatherConstraints
-  genTimes' a1 a2 a = return $ singleton $ genC $ TimesC a a1 a2
-  genCon' :: Annotation -> a -> a -> State Var GatherConstraints
-  genCon' a1 a2 a = return $ singleton $ genC $ ConC a a1 a2
-
-instance ConstraintGeneration a => ConstraintGeneration [a] where
-  genEq' l1 l2 = do 
-    xss <- mapM (uncurry genEq') $  zip l1 l2
-    return $ mconcat xss
-  genAdd' l1 l2 l3 = do 
-    xss <- mapM (uncurry $ uncurry genAdd') $ zip (zip l1 l2) l3
-    return $ mconcat xss
-  genUnion' l1 l2 l3 = do 
-    xss <- mapM (uncurry $ uncurry genUnion') $ zip (zip l1 l2) l3
-    return $ mconcat xss
-  genTimes' a l2 l3 = do 
-    xss <- mapM (uncurry $ genTimes' a) $ zip l2 l3
-    return $ mconcat xss
-  genCon' a l2 l3 = do 
-    xss <- mapM (uncurry $ genCon' a) $ zip l2 l3
-    return $ mconcat xss
+  genEq :: a -> a -> Constraints
+  genPlus :: a -> a -> a -> Constraints
+  genUnion :: a -> a -> a -> Constraints
+  genTimes :: Annotation -> a -> a -> Constraints
+  genCond :: Annotation -> a -> a -> Constraints
+  genSub :: a -> a -> Constraints
+  genSub a1 a2 = genUnion a1 a2 a2
+  genSup :: a -> a -> Constraints
+  genSup = flip genSub
 
 instance ConstraintGeneration Annotation where
-  genC = Constraint_AnnC . fromGC
+  genEq a1 a2 | a1 == a2 = []
+              | otherwise = [Constraint_Eq $ ConstraintEq_Ann a1 a2]
+  genPlus a1 a2 = (:[]) . Constraint_Ann . ConstraintAnn_Plus a1 a2
+  genUnion a1 a2 = (:[]) . Constraint_Ann . ConstraintAnn_Union a1 a2
+  genTimes a1 a2 = (:[]) . Constraint_Ann . ConstraintAnn_Times a1 a2
+  genCond a1 a2 = (:[]) . Constraint_Ann . ConstraintAnn_Cond a1 a2
 
-instance ConstraintGeneration AnnotatedType where
-  genC = Constraint_TyC . fromGC
+instance ConstraintGeneration Type where
+  genEq t1 t2 | t1 == t2 = []
+              | otherwise = [Constraint_Eq $ ConstraintEq_Type t1 t2]
+  genPlus t1 t2 t = genEq t t1 <> genEq t t2
+  genUnion t1 t2 t = genEq t t1 <> genEq t t2
+  genTimes _ t2 t = genEq t t2
+  genCond _ t2 t = genEq t t2
+  
+instance ConstraintGeneration Scheme where
+  genEq s1 s2 | s1 == s2 = []
+              | otherwise = [Constraint_Eq $ ConstraintEq_Scheme s1 s2]
+  genPlus s1 s2 s = genEq s s1 <> genEq s s2
+  genUnion s1 s2 s = genEq s s1 <> genEq s s2
+  genTimes _ s2 s = genEq s s2
+  genCond _ s2 s = genEq s s2
+  
+instance ConstraintGeneration a => ConstraintGeneration (GEta a) where
+    genEq e1 e2 = genEq (getType e1) (getType e2) <> genEq (getUsage e1) (getUsage e2)
+    genPlus e1 e2 e = genPlus (getType e1) (getType e2) (getType e) <> genPlus (getUsage e1) (getUsage e2) (getUsage e)
+    genUnion e1 e2 e = genUnion (getType e1) (getType e2) (getType e) <> genUnion (getUsage e1) (getUsage e2) (getUsage e)
+    genTimes a e2 e = genTimes a (getType e2) (getType e) <> genTimes a (getUsage e2) (getUsage e)
+    genCond a e2 e = genCond a (getType e2) (getType e) <> genCond a (getUsage e2) (getUsage e)
 
-instance ConstraintGeneration TyScheme where
-  genC = Constraint_SchemeC . fromGC
+instance ConstraintGeneration a => ConstraintGeneration (GRho a) where
+    genEq e1 e2 = genEq (getType e1) (getType e2) 
+      <> genEq (getUsage e1) (getUsage e2) 
+      <> genEq (getDemand e1) (getDemand e2)
+    genPlus e1 e2 e = genPlus (getType e1) (getType e2) (getType e) 
+      <> genPlus (getUsage e1) (getUsage e2) (getUsage e) 
+      <> genPlus (getDemand e1) (getDemand e2) (getDemand e)
+    genUnion e1 e2 e = genUnion (getType e1) (getType e2) (getType e)
+      <> genUnion (getUsage e1) (getUsage e2) (getUsage e) 
+      <> genUnion (getDemand e1) (getDemand e2) (getDemand e)
+    genTimes a e2 e = genTimes a (getType e2) (getType e) 
+      <> genTimes a (getUsage e2) (getUsage e) 
+      <> genTimes a (getDemand e2) (getDemand e)
+    genCond a e2 e = genCond a (getType e2) (getType e) 
+      <> genCond a (getUsage e2) (getUsage e) 
+      <> genCond a (getDemand e2) (getDemand e)
 
-instance ConstraintGeneration a => ConstraintGeneration (Eta a) where
-  genEq' (Eta u1 v1) (Eta u2 v2) = do
-    c1 <- genEq' u1 u2
-    c2 <- genEq' v1 v2
-    return $ c1 <> c2
-  genAdd' (Eta u1 v1) (Eta u2 v2) (Eta u v) = do
-    c1 <- genAdd' u1 u2 u
-    c2 <- genAdd' v1 v2 v
-    return $ c1 <> c2
-  genUnion' (Eta u1 v1) (Eta u2 v2) (Eta u v) = do
-    c1 <- genUnion' u1 u2 u
-    c2 <- genUnion' v1 v2 v
-    return $ c1 <> c2
-  genTimes' phi1 (Eta u2 v2) (Eta u v) = do
-    c1 <- genTimes' phi1 u2 u
-    c2 <- genTimes' phi1 v2 v
-    return $ c1 <> c2
-  genCon' phi1 (Eta u2 v2) (Eta u v) = do
-    c1 <- genCon' phi1 u2 u
-    c2 <- genCon' phi1 v2 v
-    return $ c1 <> c2
+instance ConstraintGeneration EtaType where
+  genEq a b = genEq (toGEta a) (toGEta b)
+  genPlus a b c = genPlus (toGEta a) (toGEta b) (toGEta c)
+  genUnion a b c = genUnion (toGEta a) (toGEta b) (toGEta c)
+  genTimes a b c = genTimes a (toGEta b) (toGEta c)
+  genCond a b c = genCond a (toGEta b) (toGEta c)
 
-instance ConstraintGeneration a => ConstraintGeneration (Rho a) where
-  genEq' (Rho u1 v1) (Rho u2 v2) = do
-    c1 <- genEq' u1 u2
-    c2 <- genEq' v1 v2
-    return $ c1 <> c2
-  genAdd' (Rho u1 v1) (Rho u2 v2) (Rho u v) = do
-    c1 <- genAdd' u1 u2 u
-    c2 <- genAdd' v1 v2 v
-    return $ c1 <> c2
-  genUnion' (Rho u1 v1) (Rho u2 v2) (Rho u v) = do
-    c1 <- genUnion' u1 u2 u
-    c2 <- genUnion' v1 v2 v
-    return $ c1 <> c2
-  genTimes' phi1 (Rho u2 v2) (Rho u v) = do
-    c1 <- genTimes' phi1 u2 u
-    c2 <- genTimes' phi1 v2 v
-    return $ c1 <> c2
-  genCon' phi1 (Rho u2 v2) (Rho u v) = do
-    c1 <- genCon' phi1 u2 u
-    c2 <- genCon' phi1 v2 v
-    return $ c1 <> c2
+instance ConstraintGeneration RhoType where
+  genEq a b = genEq (toGRho a) (toGRho b)
+  genPlus a b c = genPlus (toGRho a) (toGRho b) (toGRho c)
+  genUnion a b c = genUnion (toGRho a) (toGRho b) (toGRho c)
+  genTimes a b c = genTimes a (toGRho b) (toGRho c)
+  genCond a b c = genCond a (toGRho b) (toGRho c)
 
-instance ConstraintGeneration EtaAnnotatedType where
-  genEq' a b = genEq' (toEta a) (toEta b)
-  genAdd' a b c = genAdd' (toEta a) (toEta b) (toEta c)
-  genUnion' a b c = genUnion' (toEta a) (toEta b) (toEta c)
-  genTimes' a b c = genTimes' a (toEta b) (toEta c)
-  genCon' a b c = genCon' a (toEta b) (toEta c)
+instance ConstraintGeneration EtaScheme where
+  genEq a b = genEq (toGEta a) (toGEta b)
+  genPlus a b c = genPlus (toGEta a) (toGEta b) (toGEta c)
+  genUnion a b c = genUnion (toGEta a) (toGEta b) (toGEta c)
+  genTimes a b c = genTimes a (toGEta b) (toGEta c)
+  genCond a b c = genCond a (toGEta b) (toGEta c)
 
-instance ConstraintGeneration RhoAnnotatedType where
-  genEq' a b = genEq' (toRho a) (toRho b)
-  genAdd' a b c = genAdd' (toRho a) (toRho b) (toRho c)
-  genUnion' a b c = genUnion' (toRho a) (toRho b) (toRho c)
-  genTimes' a b c = genTimes' a (toRho b) (toRho c)
-  genCon' a b c = genCon' a (toRho b) (toRho c)
+instance ConstraintGeneration RhoScheme where
+  genEq a b = genEq (toGRho a) (toGRho b)
+  genPlus a b c = genPlus (toGRho a) (toGRho b) (toGRho c)
+  genUnion a b c = genUnion (toGRho a) (toGRho b) (toGRho c)
+  genTimes a b c = genTimes a (toGRho b) (toGRho c)
+  genCond a b c = genCond a (toGRho b) (toGRho c)
 
-instance ConstraintGeneration EtaTyScheme where
-  genEq' a b = genEq' (toEta a) (toEta b)
-  genAdd' a b c = genAdd' (toEta a) (toEta b) (toEta c)
-  genUnion' a b c = genUnion' (toEta a) (toEta b) (toEta c)
-  genTimes' a b c = genTimes' a (toEta b) (toEta c)
-  genCon' a b c = genCon' a (toEta b) (toEta c)
+instance ConstraintGeneration a => ConstraintGeneration [a] where
+  genEq l1 l2 = mconcat $ zipWith genEq l1 l2
+  genPlus l1 l2 l3 = mconcat $ zipWith (uncurry genPlus) (zip l1 l2) l3
+  genUnion l1 l2 l3 = mconcat $ zipWith (uncurry genUnion) (zip l1 l2) l3
+  genTimes a l2 l3 = mconcat $ zipWith (genTimes a) l2 l3
+  genCond a l2 l3 = mconcat $ zipWith (genCond a) l2 l3
 
-instance ConstraintGeneration RhoTyScheme where
-  genEq' a b = genEq' (toRho a) (toRho b)
-  genAdd' a b c = genAdd' (toRho a) (toRho b) (toRho c)
-  genUnion' a b c = genUnion' (toRho a) (toRho b) (toRho c)
-  genTimes' a b c = genTimes' a (toRho b) (toRho c)
-  genCon' a b c = genCon' a (toRho b) (toRho c)
+type EnvState = (Var, Var -> HsName)  
 
-instance ConstraintGeneration Env where
-  genEq' env1 env2 = do 
-    y <- mapM (\x -> do
-      e1 <- envLookup' env1 x
-      e2 <- envLookup' env2 x
-      genEq' e1 e2) xs
-    return $ mconcat y
-    where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2
-  genAdd' env1 env2 env = do 
-    y <- mapM (\x -> do
-      e1 <- envLookup' env1 x
-      e2 <- envLookup' env2 x
-      e <- envLookup' env x
-      genAdd' e1 e2 e) xs
-    return $ mconcat y
-    where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2 ++ M.keys env
-  genUnion' env1 env2 env = do 
-    y <- mapM (\x -> do
-      e1 <- envLookup' env1 x
-      e2 <- envLookup' env2 x
-      e <- envLookup' env x
-      genUnion' e1 e2 e) xs
-    return $ mconcat y
-    where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2 ++ M.keys env
-  genTimes' phi1 env2 env = do 
-    y <- mapM (\x -> do
-      e2 <- envLookup' env2 x
-      e <- envLookup' env x
-      genTimes' phi1 e2 e) xs
-    return $ mconcat y
-    where xs = S.toList $ S.fromList $ M.keys env2 ++ M.keys env
-  genCon' phi1 env2 env = do 
-    y <- mapM (\x -> do
-      e2 <- envLookup' env2 x
-      e <- envLookup' env x
-      genCon' phi1 e2 e) xs
-    return $ mconcat y
-    where xs = S.toList $ S.fromList $ M.keys env2 ++ M.keys env
+genEqEnv :: EnvState -> Env -> Env -> (Var, Constraints)
+genEqEnv s e1 e2 = let (c, (v,_)) = runState (genEqEnv' e1 e2) s in (v,c) 
 
-computeAdd :: Compute a => Var -> a -> a -> ((GatherConstraints, a), Var)
-computeAdd freshVars a1 a2 = runState (computeAdd' a1 a2) freshVars
+genPlusEnv :: EnvState -> Env -> Env -> Env -> (Var, Constraints)
+genPlusEnv s e1 e2 e = let (c, (v,_)) = runState (genPlusEnv' e1 e2 e) s in (v,c) 
 
-computeUnion :: Compute a => Var -> a -> a -> ((GatherConstraints, a), Var)
-computeUnion freshVars a1 a2 = runState (computeUnion' a1 a2) freshVars
+genUnionEnv :: EnvState -> Env -> Env -> Env -> (Var, Constraints)
+genUnionEnv s e1 e2 e = let (c, (v,_)) = runState (genUnionEnv' e1 e2 e) s in (v,c) 
 
-computeTimes :: Compute a => Var -> Annotation -> a -> ((GatherConstraints, a), Var)
-computeTimes freshVars a1 a2 = runState (computeTimes' a1 a2) freshVars
+genTimesEnv :: EnvState -> Annotation -> Env -> Env -> (Var, Constraints)
+genTimesEnv s a e2 e = let (c, (v,_)) = runState (genTimesEnv' a e2 e) s in (v,c) 
 
-computeCon :: Compute a => Var -> Annotation -> a -> ((GatherConstraints, a), Var)
-computeCon freshVars a1 a2 = runState (computeCon' a1 a2) freshVars
+genCondEnv :: EnvState -> Annotation -> Env -> Env -> (Var, Constraints)
+genCondEnv s a e2 e = let (c, (v,_)) = runState (genCondEnv' a e2 e) s in (v,c) 
 
-simpleCompute :: (Var -> a -> b -> ((GatherConstraints, b), Var)) -> a -> b -> Maybe b
-simpleCompute f a b 
-  | c == mempty && v == 0 = Just r
-  | otherwise = Nothing
-  where ((c,r),v) = f 0 a b
+genEnv3 :: (GRho Scheme -> GRho Scheme -> GRho Scheme -> Constraints) -> Env -> Env -> Env -> State EnvState Constraints
+genEnv3 f env1 env2 env = do 
+  y <- mapM (\x -> do
+    e1 <- envLookup' env1 Nothing x
+    e2 <- envLookup' env2 Nothing x
+    e <- envLookup' env Nothing x
+    return $ f (toGRho e1) (toGRho e2) (toGRho e)) xs
+  return $ mconcat y
+  where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2 ++ M.keys env 
 
-class Compute a where
-  computeAdd' :: a -> a -> State Var (GatherConstraints, a)
-  computeUnion' :: a -> a -> State Var (GatherConstraints, a)
-  computeTimes' :: Annotation -> a -> State Var (GatherConstraints, a)
-  computeCon' :: Annotation -> a -> State Var (GatherConstraints, a)
+genEnv2 :: (Annotation -> GRho Scheme -> GRho Scheme -> Constraints) -> Annotation -> Env -> Env -> State EnvState Constraints
+genEnv2 f phi1 env2 env = do 
+  y <- mapM (\x -> do
+    e2 <- envLookup' env2 Nothing x
+    e <- envLookup' env Nothing x
+    return $ genTimes phi1 (toGRho e2) (toGRho e)) xs
+  return $ mconcat y
+  where xs = S.toList $ S.fromList $ M.keys env2 ++ M.keys env
 
--- computeAnn :: (Annotation -> Annotation -> Annotation -> 
---     State Var GatherConstraints, Annotation -> Annotation -> Annotation)
---   -> Annotation -> Annotation -> State Var (GatherConstraints, Annotation)
-computeAnn (_, f) (Annotation_AnnVal x) (Annotation_AnnVal y) = return (mempty, Annotation_AnnVal $ f x y)
-computeAnn (f, _) x y = do
-  z <- getFresh
-  let a = Annotation_AnnVar z
-  c <- f x y a
-  return (c, a)
+genEqEnv' :: Env -> Env -> State EnvState Constraints
+genEqEnv' env1 env2 = do 
+  y <- mapM (\x -> do
+    e1 <- envLookup' env1 Nothing x
+    e2 <- envLookup' env2 Nothing x
+    return $ genEq (toGRho e1) (toGRho e2)) xs
+  return $ mconcat y
+  where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2
 
--- computeTy :: ([Annotation] -> [Annotation] -> State Var (GatherConstraints, [Annotation]), 
---     [AnnotatedType] -> [AnnotatedType] -> State Var (GatherConstraints, [AnnotatedType])) 
---   -> AnnotatedType -> AnnotatedType -> State Var (GatherConstraints, AnnotatedType)
-computeTy ((f, g), _, _) (AnnotatedType_TyData n1 a1 t1) (AnnotatedType_TyData n2 a2 t2) | n1 == n2 = do 
-  (c1, a) <- f a1 a2
-  (c2, t) <- g t1 t2
-  return (c1 <> c2, AnnotatedType_TyData n1 a t)
-computeTy (_, (f, g), _) (AnnotatedType_TyFunc r1 e1) (AnnotatedType_TyFunc r2 e2) = do 
-  (c1, r) <- f r1 r2
-  (c2, e) <- g e1 e2
-  return (c1 <> c2, AnnotatedType_TyFunc r e)
-computeTy (_, _, f) t1 t2 = do
-  x <- getFresh
-  let t = AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x
-  c <- f t1 t2 t
-  return (c, t)
+genPlusEnv' :: Env -> Env -> Env -> State EnvState Constraints
+genPlusEnv' = genEnv3 genPlus
 
--- computeTyAnn
---   :: ((Annotation -> [Annotation] -> State Var (GatherConstraints, [Annotation])
---       , Annotation -> [AnnotatedType] -> State Var (GatherConstraints, [AnnotatedType]))
---      , (Annotation -> Rho AnnotatedType -> State Var (GatherConstraints, Rho AnnotatedType)
---        , Annotation -> Eta AnnotatedType -> State Var (GatherConstraints, Eta AnnotatedType))
---      , Annotation -> AnnotatedType -> AnnotatedType -> State Var GatherConstraints)
---   -> Annotation 
---   -> AnnotatedType
---   -> State Var (GatherConstraints, AnnotatedType)
-computeTyAnn ((f, g), _, _) a (AnnotatedType_TyData n as ts) = do
-  (c1, ax) <- f a as
-  (c2, t) <- g a ts
-  return (c1 <> c2, AnnotatedType_TyData n ax t)
-computeTyAnn (_, (f, g), _) a (AnnotatedType_TyFunc r2 e2) = do 
-  (c1, r) <- f a r2
-  (c2, e) <- g a e2
-  return (c1 <> c2, AnnotatedType_TyFunc r e)
-computeTyAnn (_, _, f) a t2 = do
-  x <- getFresh
-  let t = AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x
-  c <- f a t2 t
-  return (c, t)
+genUnionEnv' :: Env -> Env -> Env -> State EnvState Constraints
+genUnionEnv' = genEnv3 genUnion
 
-computeScheme sv@(TyScheme_SchemeVar _) s2 =
-  return (singleton $ Constraint_SchemeC $ CTyScheme_EqC sv s2, sv)
-computeScheme s1 sv@(TyScheme_SchemeVar _) = computeScheme sv s1
-computeScheme x y = error $ show ("unsolvable computeScheme:",x,y)
+genTimesEnv' :: Annotation -> Env -> Env -> State EnvState Constraints
+genTimesEnv' = genEnv2 genTimes
 
-computeSchemeAnn v@(TyScheme_SchemeVar _) = return (mempty, v)
-computeSchemeAnn s = error $ show ("TyScheme is no var:", s)
+genCondEnv' :: Annotation -> Env -> Env -> State EnvState Constraints
+genCondEnv' = genEnv2 genCond
 
-instance Compute a => Compute [a] where
-  computeAdd' xs ys = do 
-    z <- mapM (uncurry computeAdd') $ zip xs ys
-    let (c, l) = unzip z
-    return (mconcat c, l)
-  computeUnion' xs ys = do 
-    z <- mapM (uncurry computeUnion') $ zip xs ys
-    let (c, l) = unzip z
-    return (mconcat c, l)
-  computeTimes' a xs = do 
-    z <- mapM (computeTimes' a) xs
-    let (c, l) = unzip z
-    return (mconcat c, l)
-  computeCon' a xs = do 
-    z <- mapM (computeCon' a) xs
-    let (c, l) = unzip z
-    return (mconcat c, l)
-
-instance Compute Annotation where
-  computeAdd' = computeAnn (genAdd', annAdd)
-  computeUnion' = computeAnn (genUnion', annUnion)
-  computeTimes' = computeAnn (genTimes', annTimes)
-  computeCon' = computeAnn (genCon', annCon)
-
-instance Compute AnnotatedType where
-  computeAdd' = computeTy ((computeAdd', computeAdd'), (computeAdd', computeAdd'), genAdd')
-  computeUnion' = computeTy ((computeUnion', computeUnion'), (computeUnion', computeUnion'), genUnion')
-  computeTimes' = computeTyAnn ((computeTimes', computeTimes'), (computeTimes', computeTimes'), genTimes')
-  computeCon' = computeTyAnn ((computeCon', computeCon'), (computeCon', computeCon'), genCon')
-
-instance Compute TyScheme where
-  computeAdd' = computeScheme
-  computeUnion' = computeScheme
-  computeTimes' _ = computeSchemeAnn
-  computeCon' _ = computeSchemeAnn
-
-instance Compute a => Compute (Eta a) where
-  computeAdd' (Eta u1 v1) (Eta u2 v2) = do
-    (c1, u) <- computeAdd' u1 u2
-    (c2, v) <- computeAdd' v1 v2
-    return (c1 <> c2, Eta u v)
-  computeUnion' (Eta u1 v1) (Eta u2 v2) = do
-    (c1, u) <- computeUnion' u1 u2
-    (c2, v) <- computeUnion' v1 v2
-    return (c1 <> c2, Eta u v)
-  computeTimes' phi1 (Eta u2 v2) = do
-    (c1, u) <- computeTimes' phi1 u2
-    (c2, v) <- computeTimes' phi1 v2
-    return (c1 <> c2, Eta u v)
-  computeCon' phi1 (Eta u2 v2) = do
-    (c1, u) <- computeCon' phi1 u2
-    (c2, v) <- computeCon' phi1 v2
-    return (c1 <> c2, Eta u v)
-
-instance Compute a => Compute (Rho a) where
-  computeAdd' (Rho u1 v1) (Rho u2 v2) = do
-    (c1, u) <- computeAdd' u1 u2
-    (c2, v) <- computeAdd' v1 v2
-    return (c1 <> c2, Rho u v)
-  computeUnion' (Rho u1 v1) (Rho u2 v2) = do
-    (c1, u) <- computeUnion' u1 u2
-    (c2, v) <- computeUnion' v1 v2
-    return (c1 <> c2, Rho u v)
-  computeTimes' phi1 (Rho u2 v2) = do
-    (c1, u) <- computeTimes' phi1 u2
-    (c2, v) <- computeTimes' phi1 v2
-    return (c1 <> c2, Rho u v)
-  computeCon' phi1 (Rho u2 v2) = do
-    (c1, u) <- computeCon' phi1 u2
-    (c2, v) <- computeCon' phi1 v2
-    return (c1 <> c2, Rho u v)
-
-instance Compute EtaAnnotatedType where
-  computeAdd' a b = do
-    (x, y) <- computeAdd' (toEta a) (toEta b)
-    return (x, fromEta y)
-  computeUnion' a b = do
-    (x, y) <- computeUnion' (toEta a) (toEta b)
-    return (x, fromEta y)
-  computeTimes' a b = do
-    (x, y) <- computeTimes' a (toEta b)
-    return (x, fromEta y)
-  computeCon' a b = do
-    (x, y) <- computeCon' a (toEta b)
-    return (x, fromEta y)
-
-instance Compute RhoAnnotatedType where
-  computeAdd' a b = do
-    (x, y) <- computeAdd' (toRho a) (toRho b)
-    return (x, fromRho y)
-  computeUnion' a b = do
-    (x, y) <- computeUnion' (toRho a) (toRho b)
-    return (x, fromRho y)
-  computeTimes' a b = do
-    (x, y) <- computeTimes' a (toRho b)
-    return (x, fromRho y)
-  computeCon' a b = do
-    (x, y) <- computeCon' a (toRho b)
-    return (x, fromRho y)
-
-instance Compute EtaTyScheme where
-  computeAdd' a b = do
-    (x, y) <- computeAdd' (toEta a) (toEta b)
-    return (x, fromEta y)
-  computeUnion' a b = do
-    (x, y) <- computeUnion' (toEta a) (toEta b)
-    return (x, fromEta y)
-  computeTimes' a b = do
-    (x, y) <- computeTimes' a (toEta b)
-    return (x, fromEta y)
-  computeCon' a b = do
-    (x, y) <- computeCon' a (toEta b)
-    return (x, fromEta y)
-
-instance Compute RhoTyScheme where
-  computeAdd' a b = do
-    (x, y) <- computeAdd' (toRho a) (toRho b)
-    return (x, fromRho y)
-  computeUnion' a b = do
-    (x, y) <- computeUnion' (toRho a) (toRho b)
-    return (x, fromRho y)
-  computeTimes' a b = do
-    (x, y) <- computeTimes' a (toRho b)
-    return (x, fromRho y)
-  computeCon' a b = do
-    (x, y) <- computeCon' a (toRho b)
-    return (x, fromRho y)
-
-instance Compute Env where
-  computeAdd' env1 env2 = do
-    y <- mapM (\x -> do
-      e1 <- envLookup' env1 x
-      e2 <- envLookup' env2 x
-      (c, e) <- computeAdd' e1 e2
-      return (c, (x, e))) xs
-    let (c, e) = unzip y
-    return (mconcat c, M.fromList e)
-    where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2
-  computeUnion' env1 env2 = do
-    y <- mapM (\x -> do
-      e1 <- envLookup' env1 x
-      e2 <- envLookup' env2 x
-      (c, e) <- computeUnion' e1 e2
-      return (c, (x, e))) xs
-    let (c, e) = unzip y
-    return (mconcat c, M.fromList e)
-    where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2
-  computeTimes' a env2 = do
-    y <- mapM (\x -> do
-      e2 <- envLookup' env2 x
-      (c, e) <- computeTimes' a e2
-      return (c, (x, e))) xs
-    let (c, e) = unzip y
-    return (mconcat c, M.fromList e)
-    where xs = M.keys env2
-  computeCon' a env2 = do
-    y <- mapM (\x -> do
-      e2 <- envLookup' env2 x
-      (c, e) <- computeCon' a e2
-      return (c, (x, e))) xs
-    let (c, e) = unzip y
-    return (mconcat c, M.fromList e)
-    where xs = M.keys env2
-
--- envLookup :: Var -> Env -> HsName -> (RhoTyScheme, Var)
--- envLookup v e h = runState (envLookup' e h) v
-
--- version used when combining environments
-envLookup' :: Env -> HsName -> State Var (RhoTyScheme)
-envLookup' env v = case M.lookup v env of
+envLookup' :: Env -> Maybe Scheme -> HsName -> State EnvState RhoScheme
+envLookup' env ms v = case M.lookup v env of
   Just x -> return x
   Nothing -> do 
-    y <- getFresh
-    return $ RhoTyScheme_Rho (EtaTyScheme_Eta 
-      (TyScheme_SchemeVar $ SV y) 
-      annZero) annZero
+    y <- case ms of 
+      Nothing -> fmap Scheme_Var getFresh
+      Just s -> return s
+    return $ RhoScheme_Rho (EtaScheme_Eta y annZero) annZero
 
--- envLookup' :: Env -> HsName -> State Var (RhoTyScheme)
--- envLookup' env v = case M.lookup v env of
---   Just x -> return x
---   Nothing -> do 
---     y <- getFresh
---     return $ RhoTyScheme_Rho (EtaTyScheme_Eta 
---       (TyScheme_SForAll (S.singleton $ mkHNm $ "CA" ++ show y) 
---         S.empty [] (AnnotatedType_TyVar $ mkHNm $ "CA" ++ show y)) 
---       annZero) annZero
+envLookupFresh :: EnvState -> Env -> HsName -> (RhoScheme, Var)
+envLookupFresh s e h = let (r, (v,_)) = runState (envLookupFresh' e h) s in (r, v)
 
--- version used when a certain variable needs to be constrained
-envLookupFresh :: Var -> Env -> HsName -> (RhoTyScheme, Var)
-envLookupFresh v e h = runState (envLookupFresh' e h) v
+envLookupFreshList :: EnvState -> Env -> [HsName] -> ([RhoScheme], Var)
+envLookupFreshList s e hs = let (r, (v,_)) = runState (mapM (envLookupFresh' e) hs) s in (r, v)
 
-envLookupFreshList :: Var -> Env -> [HsName] -> ([RhoTyScheme], Var)
-envLookupFreshList v e hs = runState (mapM (envLookupFresh' e) hs) v
-
-envLookupFresh' :: Env -> HsName -> State Var (RhoTyScheme)
+envLookupFresh' :: Env -> HsName -> State EnvState RhoScheme
 envLookupFresh' env v = case M.lookup v env of
   Just x -> return x
   Nothing -> do 
     y <- getFresh
     v <- getFresh
     d <- getFresh
+    return $ RhoScheme_Rho (EtaScheme_Eta
+      (Scheme_Var y) (Annotation_Var v)) 
+      (Annotation_Var d)
 
-    return $ RhoTyScheme_Rho (EtaTyScheme_Eta
-      (TyScheme_SchemeVar $ SV y) (Annotation_AnnVar v)) 
-      (Annotation_AnnVar d)
-
-getFresh :: State Var Var
+getFresh :: State EnvState HsName
 getFresh = do
-  x <- get
-  put $ x + 1
-  return x
+  (v, f) <- get
+  put (v + 1, f)
+  return $ f v
+  
+computePlus :: Compute a => EnvState -> a -> a -> ((a, Constraints), Var)
+computePlus s a1 a2 = let (c, (v,_)) = runState (computePlus' a1 a2) s in (c, v)
 
-sub :: Var -> Bool -> EtaAnnotatedType -> ((GatherConstraints, EtaAnnotatedType), Var)
-sub v b t = runState (sub' b t) v
+computeUnion :: Compute a => EnvState -> a -> a -> ((a, Constraints), Var)
+computeUnion s a1 a2 = let (c, (v,_)) = runState (computeUnion' a1 a2) s in (c, v)
 
-sub' :: Bool -> EtaAnnotatedType -> State Var (GatherConstraints, EtaAnnotatedType)
-sub' True (EtaAnnotatedType_Eta t n2) = do
-  x <- getFresh
-  let n1 = Annotation_AnnVar x
-  c <- genSub' n1 n2
-  return (c, EtaAnnotatedType_Eta t n1)
-sub' False t = return (mempty, t)
+computeTimes :: Compute a => EnvState -> Annotation -> a -> ((a, Constraints), Var)
+computeTimes s a1 a2 = let (c, (v,_)) = runState (computeTimes' a1 a2) s in (c, v)
+
+computeCond :: Compute a => EnvState -> Annotation -> a -> ((a, Constraints), Var)
+computeCond s a1 a2 = let (c, (v,_)) = runState (computeCond' a1 a2) s in (c, v)
+
+simpleCompute :: (EnvState -> a -> b -> ((Constraints, b), Var)) -> a -> b -> Maybe b
+simpleCompute f a b 
+  | c == mempty && v == 0 = Just r
+  | otherwise = Nothing
+  where ((c,r),v) = f (0, const (mkHNm "")) a b
+
+class Compute a where
+  computePlus' :: a -> a -> State EnvState (a, Constraints)
+  computeUnion' :: a -> a -> State EnvState (a, Constraints)
+  computeTimes' :: Annotation -> a -> State EnvState (a, Constraints)
+  computeCond' :: Annotation -> a -> State EnvState (a, Constraints)
+
+computeFresh :: (HsName -> a) -> (a -> a -> a -> Constraints) -> a -> a -> State EnvState (a, Constraints)
+computeFresh g f a1 a2 = do
+  a' <- getFresh
+  let a = g a'
+  let c = f a1 a2 a
+  return (a, c)
+  
+computeAnnotation = computeFresh Annotation_Var
+
+computeEq :: ConstraintGeneration a =>  a -> a -> State EnvState (a, Constraints)
+computeEq a1 a2 = return (a1, genEq a1 a2)
+
+instance Compute a => Compute [a] where
+  computePlus' xs ys = do 
+    zs <- zipWithM computePlus' xs ys
+    let (as, cs) = unzip zs
+    return (as, mconcat cs)
+  computeUnion' xs ys = do 
+    zs <- zipWithM computeUnion' xs ys
+    let (as, cs) = unzip zs
+    return (as, mconcat cs)
+  computeTimes' a ys = do 
+    zs <- mapM (computeTimes' a) ys
+    let (as, cs) = unzip zs
+    return (as, mconcat cs)
+  computeCond' a ys = do 
+    zs <- mapM (computeCond' a) ys
+    let (as, cs) = unzip zs
+    return (as, mconcat cs)
+
+instance Compute Annotation where
+  computePlus' a b 
+    | a == annZero = return (b, mempty)
+    | b == annZero = return (a, mempty)
+    | otherwise = computeAnnotation genPlus a b
+  computeUnion' = computeAnnotation genUnion
+  computeTimes' a b
+    | a == annOne = return (b, mempty)
+    | b == annOne = return (a, mempty)
+    | otherwise = computeAnnotation genTimes a b
+  computeCond' = computeAnnotation genCond
+
+instance Compute Type where
+  computePlus' = computeEq
+  computeUnion' = computeEq
+  computeTimes' _ = return . (,mempty)
+  computeCond' _ = return . (,mempty)
+
+instance Compute Scheme where
+  computePlus' = computeEq
+  computeUnion' = computeEq
+  computeTimes' _ = return . (,mempty)
+  computeCond' _ = return . (,mempty)
+  
+instance Compute a => Compute (GEta a) where
+  computePlus' (GEta u1 v1) (GEta u2 v2) = do
+    (u, c1) <- computePlus' u1 u2
+    (v, c2) <- computePlus' v1 v2
+    return (GEta u v, c1 <> c2)
+  computeUnion' (GEta u1 v1) (GEta u2 v2) = do
+    (u, c1) <- computeUnion' u1 u2
+    (v, c2) <- computeUnion' v1 v2
+    return (GEta u v, c1 <> c2)
+  computeTimes' phi1 (GEta u2 v2) = do
+    (u, c1) <- computeTimes' phi1 u2
+    (v, c2) <- computeTimes' phi1 v2
+    return (GEta u v, c1 <> c2)
+  computeCond' phi1 (GEta u2 v2) = do
+    (u, c1) <- computeCond' phi1 u2
+    (v, c2) <- computeCond' phi1 v2
+    return (GEta u v, c1 <> c2)
+
+instance Compute a => Compute (GRho a) where
+  computePlus' (GRho u1 v1) (GRho u2 v2) = do
+    (u, c1) <- computePlus' u1 u2
+    (v, c2) <- computePlus' v1 v2
+    return (GRho u v, c1 <> c2)
+  computeUnion' (GRho u1 v1) (GRho u2 v2) = do
+    (u, c1) <- computeUnion' u1 u2
+    (v, c2) <- computeUnion' v1 v2
+    return (GRho u v, c1 <> c2)
+  computeTimes' phi1 (GRho u2 v2) = do
+    (u, c1) <- computeTimes' phi1 u2
+    (v, c2) <- computeTimes' phi1 v2
+    return (GRho u v, c1 <> c2)
+  computeCond' phi1 (GRho u2 v2) = do
+    (u, c1) <- computeCond' phi1 u2
+    (v, c2) <- computeCond' phi1 v2
+    return (GRho u v, c1 <> c2)
+
+instance Compute Env where
+  computePlus' env1 env2 = do
+    y <- mapM (\x -> do
+      e1 <- envLookup' env1 (getType <$> M.lookup x env2) x
+      e2 <- envLookup' env2 (getType <$> M.lookup x env1) x
+      (e, c) <- computePlus' (toGRho e1) (toGRho e2)
+      return ((x, fromGRho e), c)) xs
+    let (e, c) = unzip y
+    return (M.fromList e, mconcat c)
+    where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2
+  computeUnion' env1 env2 = do
+    y <- mapM (\x -> do
+      e1 <- envLookup' env1 (getType <$> M.lookup x env2) x
+      e2 <- envLookup' env2 (getType <$> M.lookup x env1) x
+      (e, c) <- computeUnion' (toGRho e1) (toGRho e2)
+      return ((x, fromGRho e), c)) xs
+    let (e, c) = unzip y
+    return (M.fromList e, mconcat c)
+    where xs = S.toList $ S.fromList $ M.keys env1 ++ M.keys env2
+  computeTimes' a env2 = do
+    y <- mapM (\x -> do
+      e2 <- envLookup' env2 Nothing x
+      (e, c) <- computeTimes' a (toGRho e2)
+      return ((x, fromGRho e), c)) xs
+    let (e, c) = unzip y
+    return (M.fromList e, mconcat c)
+    where xs = M.keys env2
+  computeCond' a env2 = do
+    y <- mapM (\x -> do
+      e2 <- envLookup' env2 Nothing x
+      (e, c) <- computeCond' a (toGRho e2)
+      return ((x, fromGRho e), c)) xs
+    let (e, c) = unzip y
+    return (M.fromList e, mconcat c)
+    where xs = M.keys env2
+
+computeCondList :: Compute a => EnvState -> [Annotation] -> [a] -> (([a], Constraints), Var)
+computeCondList s xs ys = let (c, (v,_)) = runState (computeCondList' xs ys) s in (c, v)
+
+computeCondList' :: Compute a => [Annotation] -> [a] -> State EnvState ([a], Constraints)
+computeCondList' xs ys = do 
+  zs <- zipWithM computeCond' xs ys
+  let (as, cs) = unzip zs
+  return (as, mconcat cs)
+  
+-- TODO controleren of de juiste deltai wordt gebruikt
+computeCondMatrix :: Compute a => EnvState -> [Annotation] -> [[a]] -> (([[a]], Constraints), Var)
+computeCondMatrix s xs ys = let (c, (v,_)) = runState (computeCondMatrix' xs ys) s in (c, v)
+
+computeCondMatrix' :: Compute a => [Annotation] -> [[a]] -> State EnvState ([[a]], Constraints)
+computeCondMatrix' xs ys = do 
+  zs <- mapM (computeCondList' xs) ys
+  let (as, cs) = unzip zs
+  return (as, mconcat cs)
+
+bigPlus :: Compute a => EnvState -> [a] -> ((a, Constraints), Var)
+bigPlus s xs = let (c, (v,_)) = runState (bigPlus' xs) s in (c, v)
+
+bigPlus' :: Compute a => [a] -> State EnvState (a, Constraints)
+bigPlus' [] = panic "Bigplus' on empty list"
+bigPlus' [x] = return (x, mempty)
+bigPlus' (x:xs) = do
+  (y1, c1) <- bigPlus' xs
+  (y2, c2) <- computePlus' x y1
+  return (y2, c1 <> c2)
+  
+bigPlusMatrix :: Compute a => EnvState -> [[a]] -> (([a], Constraints), Var)
+bigPlusMatrix s xs = let (c, (v,_)) = runState (bigPlusMatrix' $ transpose xs) s in (c, v)
+
+bigPlusMatrix' :: Compute a => [[a]] -> State EnvState ([a], Constraints)
+bigPlusMatrix' xs = do
+  zs <- mapM bigPlus' xs
+  let (as, cs) = unzip zs
+  return (as, mconcat cs)
+
+bigUnion :: Compute a => EnvState -> [a] -> ((a, Constraints), Var)
+bigUnion s xs = let (c, (v,_)) = runState (bigUnion' xs) s in (c, v)
+
+bigUnion' :: Compute a => [a] -> State EnvState (a, Constraints)
+bigUnion' [] = panic "bigUnion' on empty list"
+bigUnion' [x] = return (x, mempty)
+bigUnion' (x:xs) = do
+  (y1, c1) <- bigUnion' xs
+  (y2, c2) <- computeUnion' x y1
+  return (y2, c1 <> c2)
+
+sub :: EnvState -> (Annotation -> Annotation -> Constraints) -> EtaType -> ((EtaType, Constraints), Var)
+sub s f e = let (c, (v,_)) = runState (sub' f e) s in (c, v)
+
+sub' :: (Annotation -> Annotation -> Constraints) -> EtaType -> State EnvState (EtaType, Constraints)
+sub' f (EtaType_Eta tau nu) = do
+  anu' <- getFresh
+  let nu' = Annotation_Var anu'
+  return (EtaType_Eta tau nu', f nu' nu) 
+  
+envDeleteList :: Env -> HsNames -> Env
+envDeleteList = foldr M.delete
+
+envFilterList :: Map HsName a -> Set HsName -> Map HsName a
+envFilterList r hs = M.filterWithKey (\k _ -> k `S.member` hs) r
+
 
 %%]

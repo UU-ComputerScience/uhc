@@ -20,81 +20,76 @@
 %%]
 
 %%[(8 counting) ag import({CountingAnalysis/AbsSyn})
+-- optpragmas
+-- {
+-- {-# LANGUAGE TypeFamilies #-}
+-- {-# LANGUAGE RankNTypes #-}
+-- {-# LANGUAGE MultiParamTypeClasses #-}
+-- {-# LANGUAGE FunctionalDependencies #-}
+-- {-# LANGUAGE DeriveFunctor #-}
+-- {-# LANGUAGE TemplateHaskell #-}
+-- }
 %%]
 
 %%[(8 counting) hs
--- type GatherConstraints = Seq.Seq Constraint
 
--- toConstraints :: GatherConstraints -> Constraints
--- toConstraints = Fold.toList
+singleC :: Constraint -> Constraints
+singleC x =[x]
 
--- fromConstraints :: Constraints -> GatherConstraints
--- fromConstraints = Seq.fromList
-
--- infixr 5 <|
--- (<|) :: Constraint -> GatherConstraints -> GatherConstraints
--- (<|) = (Seq.<|)
-
--- singleton :: Constraint -> GatherConstraints
--- singleton = Seq.singleton
-
-type GatherConstraints = Constraints
-
-toConstraints :: GatherConstraints -> Constraints
-toConstraints = id
-
-fromConstraints :: Constraints -> GatherConstraints
-fromConstraints = id
-
-infixr 5 <|
-(<|) :: Constraint -> GatherConstraints -> GatherConstraints
-(<|) = (:)
-
-singleton :: Constraint -> GatherConstraints
-singleton x = [x]
 %%]
 
 %%[(8 counting) hs
-type AnnVal = Set AnnPrim
-type Var = Int
-newtype SchemeVar = SV {unSV :: Var}
-  deriving (Typeable, Eq, Ord, Show, Data, Generic)
-
-type AnnSol = Map Var Annotation
-type AnnPartSol = Map Var (Set AnnVal)
-type TySol = Map HsName AnnotatedType
-type SchemeSol = Map SchemeVar TyScheme
-
-data Solution = Solution
-  { annSol :: AnnSol
-  , tySol :: TySol
-  , schemeSol :: SchemeSol
+type AnnSol = Map HsName Annotation
+type TySol = Map HsName Type
+type SchemeSol = Map HsName Scheme
+type PartSolution = Map HsName (Set AnnVal)
+data Solution = Solution 
+  { _annSol :: AnnSol
+  , _tySol :: TySol
+  , _schemeSol :: SchemeSol
   }
   deriving (Eq, Show)
+  
+emptySolution = Solution
+  { _annSol = M.empty
+  , _tySol = M.empty
+  , _schemeSol = M.empty
+  }
+
+type Imports = Map HsName Scheme
+type Exports = Set HsName
+type BindingEnv = Env
 %%]
 
 %%[(8 counting) ag
-DERIVING ALLTYPES
-  : Typeable, Ord, Data, Generic
-
 DERIVING *
-  : Eq, Show
+  : Typeable, Eq, Show, Ord, Data, Generic
+
+-- DERIVING *
+--   : Eq, Show
 
 %%]
 
 %%[(8 counting) hs
+type Var = Int
+type HsNames = [HsName]
+type AnnVal = Set AnnPrim
+type AnnotationValue = AnnVal
 
 annBot' = S.empty
-annZero' = S.singleton AnnPrim_Zero
-annOne' = S.singleton AnnPrim_One
-annW' = S.singleton AnnPrim_Infinity
-annTop' = S.fromList [AnnPrim_Zero, AnnPrim_One, AnnPrim_Infinity]
+annBot = Annotation_Val annBot'
 
-annBot = Annotation_AnnVal annBot'
-annZero = Annotation_AnnVal annZero'
-annOne = Annotation_AnnVal annOne'
-annW = Annotation_AnnVal annW'
-annTop = Annotation_AnnVal annTop'
+annZero' = S.singleton AnnPrim_Zero
+annZero = Annotation_Val annZero'
+
+annOne' = S.singleton AnnPrim_One
+annOne = Annotation_Val annOne'
+
+annW' = S.singleton AnnPrim_Infinity
+annW = Annotation_Val annW'
+
+annTop' = S.fromList [AnnPrim_Zero, AnnPrim_One, AnnPrim_Infinity]
+annTop = Annotation_Val annTop'
 
 annPow :: AnnVal -> Set AnnVal
 annPow = S.fromList . map (S.fromList) . annPow' . S.toList
@@ -105,189 +100,228 @@ annPow = S.fromList . map (S.fromList) . annPow' . S.toList
 annPowWithoutEmpty :: AnnVal -> Set AnnVal
 annPowWithoutEmpty = S.delete (S.empty) . annPow
 
-instance Functor Eta where
-  fmap f (Eta x a) = Eta (f x) a
+type UsageAnnotation = Annotation
+type DemandAnnotation = Annotation
 
-instance Functor Rho where
-  fmap f (Rho x a) = Rho (fmap f x) a
+type family UType a
+type instance UType EtaType = Type
+type instance UType EtaScheme = Scheme
+type instance UType RhoType = Type
+type instance UType RhoScheme = Scheme
+type instance UType (GEta a) = a
+type instance UType (GRho a) = a
 
-annAdd :: AnnVal -> AnnVal -> AnnVal
-annAdd a1 a2 = S.fromList [x .+ y | x <- S.toList a1, y <- S.toList a2] 
+data GEta a = GEta a Annotation
+  deriving (Show, Ord, Eq, Functor)
+data GRho a  = GRho (GEta a) Annotation
+  deriving (Show, Ord, Eq, Functor)
 
-annUnion :: AnnVal -> AnnVal -> AnnVal
-annUnion = S.union
+class Eta a where
+  getType :: a -> UType a
+  getUsage :: a -> Annotation
+  toGEta :: a -> GEta (UType a)
+  toGEta a = GEta (getType a) (getUsage a)
+  fromGEta :: GEta (UType a) -> a
 
-annTimes :: AnnVal -> AnnVal -> AnnVal
-annTimes a1 a2 = S.fromList [annFromInt (sum $ map annToInt y) | x <- S.toList a1, y <- f (annToInt x) $ S.toList a2]
-  where f 0 _ = [[]] 
-        f _ [] = []
-        f n y@(x:xs) = f n xs ++ map (x:) (f (n-1) y)
+class Eta a => Rho a where
+  getDemand :: a -> DemandAnnotation
+  toGRho :: a -> GRho (UType a)
+  toGRho a = GRho (toGEta a) (getDemand a)
+  fromGRho :: GRho (UType a) -> a
 
-annCon :: AnnVal -> AnnVal -> AnnVal
-annCon a1 a2 = S.unions $ map (\x -> if x == AnnPrim_Zero then annZero' else a2) $ S.toList a1
+instance Eta (GEta a) where
+  getType (GEta a _) = a
+  getUsage (GEta _ u) = u
+  fromGEta = id
 
-(.+) :: AnnPrim -> AnnPrim -> AnnPrim
-x .+ y = annFromInt $ annToInt x + annToInt y
+instance Eta (GRho a) where
+  getType (GRho e _) = getType e
+  getUsage (GRho _ u) = u
+  fromGEta = undefined
 
-annToInt :: AnnPrim -> Int
-annToInt AnnPrim_Zero = 0
-annToInt AnnPrim_One = 1
-annToInt AnnPrim_Infinity = 2;
+instance Rho (GRho a) where
+  getDemand (GRho _ d) = d
+  fromGRho = id
 
-annFromInt :: Int -> AnnPrim
-annFromInt 0 = AnnPrim_Zero
-annFromInt 1 = AnnPrim_One
-annFromInt _ = AnnPrim_Infinity
+instance Eta EtaType where
+  getType (EtaType_Eta t _) = t
+  getUsage (EtaType_Eta _ u) = u
+  fromGEta (GEta t u) = EtaType_Eta t u
 
+instance Eta EtaScheme where
+  getType (EtaScheme_Eta t _) = t
+  getUsage (EtaScheme_Eta _ u) = u
+  fromGEta (GEta s u) = EtaScheme_Eta s u
+
+instance Eta RhoType where
+  getType (RhoType_Rho e _) = getType e
+  getUsage (RhoType_Rho e _) = getUsage e
+  fromGEta = undefined
+
+instance Eta RhoScheme where
+  getType (RhoScheme_Rho e _) = getType e
+  getUsage (RhoScheme_Rho e _) = getUsage e
+  fromGEta = undefined
+
+instance Rho RhoType where
+  getDemand (RhoType_Rho _ d) = d
+  fromGRho (GRho e d) = RhoType_Rho (fromGEta e) d
+
+instance Rho RhoScheme where
+  getDemand (RhoScheme_Rho _ d) = d
+  fromGRho (GRho e d) = RhoScheme_Rho (fromGEta e) d
+  
+%%]
+
+Serialize
+%%[(8 counting) hs
 instance Serialize AnnPrim where
 instance Serialize Annotation where
-instance Serialize AnnotatedType where
-instance Serialize a => Serialize (Eta a) where
-instance Serialize a => Serialize (Rho a) where
-instance Serialize EtaAnnotatedType where
-instance Serialize RhoAnnotatedType where
-instance Serialize EtaTyScheme where
-instance Serialize RhoTyScheme where
-instance Serialize TyScheme where
-instance Serialize SchemeVar where
+instance Serialize Type where
+instance Serialize EtaType where
+instance Serialize RhoType where
+instance Serialize EtaScheme where
+instance Serialize RhoScheme where
+instance Serialize Field where
+instance Serialize Scheme where
 instance Serialize Constraint where
-instance Serialize a => Serialize (C a) where
-instance Serialize CAnnotation where
-instance Serialize CAnnotatedType where
-instance Serialize CTyScheme where
-
-data C a
-  = EqC a a
-  | PlusC a a a
-  | UnionC a a a
-  | TimesC a Annotation a
-  | ConC a Annotation a
-  deriving (Typeable, Eq, Ord, Show, Data, Generic)
-
-class ToGC a b | a -> b, b -> a where
-  toGC :: b -> C a
-  fromGC :: C a -> b
-
-instance ToGC Annotation CAnnotation where
-  toGC (CAnnotation_EqC a b) = EqC a b
-  toGC (CAnnotation_PlusC a b c) = PlusC a b c
-  toGC (CAnnotation_UnionC a b c) = UnionC a b c
-  toGC (CAnnotation_TimesC a b c) = TimesC a b c
-  toGC (CAnnotation_ConC a b c) = ConC a b c
-  fromGC (EqC a b) = CAnnotation_EqC a b
-  fromGC (PlusC a b c) = CAnnotation_PlusC a b c
-  fromGC (UnionC a b c) = CAnnotation_UnionC a b c
-  fromGC (TimesC a b c) = CAnnotation_TimesC a b c
-  fromGC (ConC a b c) = CAnnotation_ConC a b c
-
-instance ToGC AnnotatedType CAnnotatedType where
-  toGC (CAnnotatedType_EqC a b) = EqC a b
-  toGC (CAnnotatedType_PlusC a b c) = PlusC a b c
-  toGC (CAnnotatedType_UnionC a b c) = UnionC a b c
-  toGC (CAnnotatedType_TimesC a b c) = TimesC a b c
-  toGC (CAnnotatedType_ConC a b c) = ConC a b c
-  fromGC (EqC a b) = CAnnotatedType_EqC a b
-  fromGC (PlusC a b c) = CAnnotatedType_PlusC a b c
-  fromGC (UnionC a b c) = CAnnotatedType_UnionC a b c
-  fromGC (TimesC a b c) = CAnnotatedType_TimesC a b c
-  fromGC (ConC a b c) = CAnnotatedType_ConC a b c
-
-instance ToGC TyScheme CTyScheme where
-  toGC (CTyScheme_EqC a b) = EqC a b
-  toGC (CTyScheme_PlusC a b c) = PlusC a b c
-  toGC (CTyScheme_UnionC a b c) = UnionC a b c
-  toGC (CTyScheme_TimesC a b c) = TimesC a b c
-  toGC (CTyScheme_ConC a b c) = ConC a b c
-  fromGC (EqC a b) = CTyScheme_EqC a b
-  fromGC (PlusC a b c) = CTyScheme_PlusC a b c
-  fromGC (UnionC a b c) = CTyScheme_UnionC a b c
-  fromGC (TimesC a b c) = CTyScheme_TimesC a b c
-  fromGC (ConC a b c) = CTyScheme_ConC a b c
-
-data Eta a = Eta a Annotation
-  deriving (Typeable, Eq, Ord, Show, Data, Generic)
-
-class ToEta a b | a -> b, b -> a where
-  toEta :: b -> Eta a
-  fromEta :: Eta a -> b
-
-instance ToEta AnnotatedType EtaAnnotatedType where
-  toEta (EtaAnnotatedType_Eta a b) = Eta a b
-  fromEta (Eta a b) = EtaAnnotatedType_Eta a b
-
-instance ToEta TyScheme EtaTyScheme where
-  toEta (EtaTyScheme_Eta a b) = Eta a b
-  fromEta (Eta a b) = EtaTyScheme_Eta a b
-
-data Rho a = Rho (Eta a) Annotation 
-  deriving (Typeable, Eq, Ord, Show, Data, Generic)
-
-class ToRho a b | a -> b, b -> a where
-  toRho :: b -> Rho a
-  fromRho :: Rho a -> b
-
-instance ToEta AnnotatedType EtaAnnotatedType => ToRho AnnotatedType RhoAnnotatedType where
-  toRho (RhoAnnotatedType_Rho a b) = Rho (toEta a) b
-  fromRho (Rho a b) = RhoAnnotatedType_Rho (fromEta a) b
-
-instance ToEta TyScheme EtaTyScheme => ToRho TyScheme RhoTyScheme where
-  toRho (RhoTyScheme_Rho a b) = Rho (toEta a) b
-  fromRho (Rho a b) = RhoTyScheme_Rho (fromEta a) b
-
-stripRho :: Rho a -> Eta a
-stripRho (Rho t _) = t
-
-stripEta :: Eta a -> a
-stripEta (Eta t _) = t
-
-stripRhoEta :: Rho a -> a
-stripRhoEta (Rho (Eta t _) _) = t
-
-getAnnRho :: Rho a -> Annotation
-getAnnRho (Rho _ a) = a
-
-getAnnEta :: Eta a -> Annotation
-getAnnEta (Eta _ a) = a
-
+instance Serialize ConstraintAnn where
+instance Serialize ConstraintEq where  
+%%]
 -- Pretty printing
+%%[(8 counting) hs
+instance PP Module where
+  pp (Module_Module mod) = pp mod
 
-instance PP CAModule where
-  pp (CAModule_Module mod) = pp mod
+instance PP Expr where
+  pp (Expr_VarLocal v) = pp v
+  pp (Expr_VarImport v) = pp v
+  pp (Expr_Const c) = pp c
+  pp (Expr_Let binds body) = "let" >-< indent 2 (vlist binds) >-< "in" >#< body
+  pp (Expr_LetBang x e1 e2) = "let!" >#< x >#< "=" >#< e1 >-< "in" >#< e2
+  pp (Expr_Con _ conNm flds) = conNm >#< ppSpaces flds 
+  pp (Expr_Tup flds) = ppParensCommas flds
+  pp (Expr_AppLocal func arg) = func >#< arg
+  pp (Expr_AppImport func arg) = func >#< arg
+  pp (Expr_AppConst func arg) = func >#< arg
+  pp (Expr_Abs bind body) = "\\" >|< bind >#< "->" >-< indent 2 body
+  pp (Expr_CaseCon e alts) = "case" >#< e >#< "of" >-< indent 2 (vlist alts)
+  pp (Expr_CaseTup e xs e1) = "case" >#< e >#< "of" >-< indent 2 (ppParensCommas xs >#< "->" >#< e1)
+  pp (Expr_CaseConst e alts) = "case" >#< e >#< "of" >-< indent 2 (vlist alts)
+  pp Expr_FFI{} = text "FFI"
+  pp (Expr_Ann t e) = ppParens e >#< "::" >#< t
 
-instance PP CAExpr where
-  pp (CAExpr_Var v) = pp v
-  pp (CAExpr_Const c) = pp c
-  pp (CAExpr_Let binds body) = "let" >-< indent 2 (vlist binds) >-< "in" >#< body
-  pp (CAExpr_LetBang b body) = "let" >#< b >-< "in" >#< body
-  pp (CAExpr_Con _ conNm flds) = conNm >#< ppSpaces flds 
-  pp (CAExpr_Rec flds) = ppParensCommas flds
-  pp (CAExpr_App func arg) = func >#< arg
-  pp (CAExpr_AppConst func arg) = func >#< arg
-  pp (CAExpr_Lam bind body) = "\\" >|< bind >#< "->" >-< indent 2 body
-  pp (CAExpr_Case e alts) = "case" >#< e >#< "of" >-< indent 2 (vlist alts)
-  pp (CAExpr_FFI{}) = text "FFI"
-  pp (CAExpr_Error e) = pp e
+instance PP ConVar where
+  pp (ConVar_VarLocal v) = pp v
+  pp (ConVar_VarImport v) = pp v
+  pp (ConVar_Const c) = pp c
 
-instance PP CAConVar where
-  pp (CAConVar_Var v) = pp v
-  pp (CAConVar_Const c) = pp c
+instance PP Binding where
+  pp (Binding_Bind n e) = n >#< "=" >#< e
 
-instance PP CABinding where
-  pp (CABinding_Bind n e) = n >#< "=" >#< e
+instance PP Const where
+  pp (Const_Int c) = pp c
+  pp (Const_Char c) = pp c
+  pp (Const_String c) = pp c
+  pp (Const_Integer c) = pp c
 
-instance PP CAAlt where
-  pp (CAAlt_Alt p e) = p >#< "->" >#< e
+instance PP AltCon where
+  pp (AltCon_Alt _ c xs e) = c >#< ppSpaces xs >#< "->" >#< e
 
-instance PP CAPat where
-  pp (CAPat_Pat _ conNm flds) = conNm >#< ppSpaces flds 
-  pp (CAPat_RecPat flds) = ppParensCommas flds
-  pp (CAPat_Int c) = pp c
-  pp (CAPat_Char c) = pp c
+instance PP AltConst where
+  pp (AltConst_Int c e) = c >#< "->" >#< e
+  pp (AltConst_Char c e) = c >#< "->" >#< e
+  
+instance PP Scheme where
+  pp (Scheme_Var v) = pp v
+  pp (Scheme_Forall as ts c t) = "forall" >#<
+    ppCurlysCommas (S.toList as ++ S.toList ts) 
+    >#< "." >#< text ("cs: " ++ show (length c))
+    >#< "=>"  >#< t >-< indent 4 (vlist c)
 
-instance PP CAConst where
-  pp (CAConst_Int c) = pp c
-  pp (CAConst_Char c) = pp c
-  pp (CAConst_String c) = pp c
-  pp (CAConst_Integer c) = pp c
+instance PP Type where
+  pp (Type_Var v) = pp v
+  pp (Type_Data n as ts) = n >#< ppSpaces as >#< ppSpaces ts
+  pp (Type_App t1 t2) = t1 >#< t2
+  pp (Type_Func t1 t2) = ppParens (t1 >#< "->" >#< t2)
+  pp (Type_Tup ts) = ppParensCommas ts
+  pp (Type_Error e) = "Type Error:" >#< e
 
+instance PP RhoType where
+  pp (RhoType_Rho (EtaType_Eta t u) d) = ppParens t >#< "^" >#< ppParensCommas [u,d]
+
+instance PP EtaType where
+  pp (EtaType_Eta t u) = ppParens t >#< "^" >#< u
+
+instance PP RhoScheme where
+  pp (RhoScheme_Rho (EtaScheme_Eta s u) d) = ppParens s >#< "^" >#< ppParensCommas [u,d]
+
+instance PP EtaScheme where
+  pp (EtaScheme_Eta s u) = ppParens s >#< "^" >#< u
+
+instance PP Annotation where
+  pp (Annotation_Var v) = pp v
+  pp (Annotation_Val v) = ppCurlysCommas $ S.toList v
+  
+instance PP AnnPrim where
+  pp AnnPrim_Zero = text "0"
+  pp AnnPrim_One = text "1"
+  pp AnnPrim_Infinity = text "2"
+
+instance PP Constraint where
+  pp (Constraint_Ann c) = pp c
+  pp (Constraint_Eq c) = pp c
+  pp (Constraint_Inst s t) = "inst(" >|< s >|< ") ==" >#< t
+  pp (Constraint_Gen t u d n0 d0 c e s) = "gen" 
+    >|< ppParensCommas [t >#< "^" >#< ppParensCommas [u, d], pp $ "cs: " ++ show (length c), pp $ "e: " ++ show (M.size e)]
+    >#< "==" >#< s >#< "^" >#< ppParensCommas [n0, d0]
+    >-< indent 4 (vlist c) >-< indent 4 (ppMap e)
+
+instance PP ConstraintAnn where
+  pp (ConstraintAnn_Plus a1 a2 a) = a1 >#< "(+)" >#< a2 >#< "==" >#< a
+  pp (ConstraintAnn_Union a1 a2 a) = a1 >#< "U" >#< a2 >#< "==" >#< a
+  pp (ConstraintAnn_Times a1 a2 a) = a1 >#< "." >#< a2 >#< "==" >#< a
+  pp (ConstraintAnn_Cond a1 a2 a) = a1 >#< ">" >#< a2 >#< "==" >#< a
+
+instance PP ConstraintEq where
+  pp (ConstraintEq_Ann a1 a2) = a1 >#< "==" >#< a2
+  pp (ConstraintEq_Type t1 t2) = t1 >#< "==" >#< t2
+  pp (ConstraintEq_Scheme s1 s2) = s1 >#< "==" >#< s2
+
+ppMap :: (PP k, PP v) => Map k v -> PP_Doc
+ppMap = vlist . map f . M.toList
+  where f (k,v) = k >#< "->" >-< indent 2 (pp v)
+
+instance PP Solution where
+  pp (Solution as ts ss) = "annSol:" >-< indent 2 (ppMap as)
+    >-< "typeSol:" >-< indent 2 (ppMap ts)
+    >-< "schemeSol:" >-< indent 2 (ppMap ss)
+
+class PPAnnFree a where
+  ppAnnFree :: a -> PP_Doc
+
+ppMapAnnFree :: (PP k, PPAnnFree v) => Map k v -> PP_Doc
+ppMapAnnFree = vlist . map f . M.toList
+  where f (k,v) = k >#< "->" >-< indent 2 (ppAnnFree v)
+
+instance PPAnnFree RhoScheme where
+  ppAnnFree (RhoScheme_Rho (EtaScheme_Eta s _) _) = ppAnnFree s
+  
+instance PPAnnFree Scheme where
+  ppAnnFree (Scheme_Var v) = pp v
+  ppAnnFree (Scheme_Forall _ _ _ t) = ppAnnFree t
+
+instance PPAnnFree Type where
+  ppAnnFree (Type_Var v) = pp v
+  ppAnnFree (Type_Data n _ ts) = n >#< ppSpaces (map ppAnnFree ts)
+  ppAnnFree (Type_App t1 t2) = ppAnnFree t1 >#< ppAnnFree t2
+  ppAnnFree (Type_Func t1 t2) = ppParens (ppAnnFree t1 >#< "->" >#< ppAnnFree t2)
+  ppAnnFree (Type_Tup ts) = ppParensCommas (map ppAnnFree ts)
+  ppAnnFree (Type_Error e) = "Type Error:" >#< e
+
+instance PPAnnFree RhoType where
+  ppAnnFree (RhoType_Rho (EtaType_Eta t _) _) = ppAnnFree t
+
+instance PPAnnFree EtaType where
+  ppAnnFree (EtaType_Eta t _) = ppAnnFree t
 %%]

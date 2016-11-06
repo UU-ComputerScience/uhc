@@ -4,7 +4,7 @@
 %%[(8 counting) hs import({%{EH}LamInfo},{%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
 %%]
 
-%%[(8 counting) hs import({%{EH}CountingAnalysis})
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis} as CA)
 %%]
 
 %%[(8 counting) hs import(UHC.Util.Utils)
@@ -31,11 +31,11 @@ PRAGMA strictcase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) hs export(toCAModule)
-toCAModule :: CModule -> CAModule
-toCAModule cmod
+toCAModule :: Map HsName CA.Scheme -> CModule -> CA.Module
+toCAModule lamMap cmod
   =  let t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
                             (Inh_CodeAGItf
-                             { 
+                             { lamMp_Inh_CodeAGItf = lamMap
                              })
      in trf_Syn_CodeAGItf t
 %%]
@@ -46,96 +46,98 @@ toCAModule cmod
 
 %%[(8 counting) hs
 
-getConVar :: CAExpr -> CAConVar
-getConVar (CAExpr_Var v) = CAConVar_Var v
-getConVar (CAExpr_Const c) = CAConVar_Const c
+getConVar :: CA.Expr -> CA.ConVar
+getConVar (CA.Expr_VarLocal v) = CA.ConVar_VarLocal v
+getConVar (CA.Expr_VarImport v) = CA.ConVar_VarImport v
+getConVar (CA.Expr_Const c) = CA.ConVar_Const c
 getConVar e = panic $ "getting app bound failed from: " ++ show e
 
 %%]
 
 %%[(8 counting) ag
 
-ATTR CodeAGItf [ | | trf: {CAModule} ]
-ATTR CModule [ | | trf: {CAModule} ]
-ATTR CExpr [ | | trf: {CAExpr} ]
-ATTR CPat [ | | trf: {CAPat} ]
-ATTR CBind [ | | trf: {Either CABinding HsName} ]
-ATTR CBound [ | | trf: {CAExpr} ]
-ATTR CAlt [ | | trf: {CAAlt} ]
-ATTR CBindL [ | | trf: {CABindings} ]
-ATTR CBoundL [ | | trf: {[CAExpr]} ]
-ATTR CAltL [ | | trf: {CAAlts} ]
+ATTR * [lamMp: {Map HsName CA.Scheme} | | ]
+
+ATTR CodeAGItf [ | | trf: {CA.Module} ]
+ATTR CModule [ | | trf: {CA.Module} ]
+ATTR CExpr [ | | trf: {CA.Expr} ]
+ATTR CPat [ | | trf: {Either (Either Int Char) (Either (HsName, HsName, [HsName]) [HsName])} ]
+ATTR CBind [ | | trf: {Either CA.Binding HsName} ]
+ATTR CBound [ | | trf: {CA.Expr} ]
+ATTR CAlt [ | | trf: {Either (Either CA.AltCon ([HsName], CA.Expr)) CA.AltConst} ]
+ATTR CBindL [ | | trf: {CA.Bindings} ]
+ATTR CBoundL [ | | trf: {[CA.Expr]} ]
+ATTR CAltL [ | | trf: {Either (Either CA.AltCons ([HsName], CA.Expr)) (Either CA.AltConsts ())} ]
 ATTR CPatRest [ | | isEmpty: {Bool} ]
 ATTR CPatFldL [ | | trf: {[HsName]} ]
 ATTR CPatFld [ | | trf: {HsName} ]
 
 SEM CModule 
   | Mod
-   lhs.trf = CAModule_Module @expr.trf
+   lhs.trf = CA.Module_Module @expr.trf
 
 SEM CExpr
   | Var
-    lhs.trf = CAExpr_Var $ acbrefNm @ref
+    lhs.trf = (if @loc.isImported then CA.Expr_VarImport else CA.Expr_VarLocal) $ acbrefNm @ref
+    loc.isImported = acbrefNm @ref `M.member` @lhs.lamMp
   | Int
-    lhs.trf = CAExpr_Const $ CAConst_Int @int
+    lhs.trf = CA.Expr_Const $ CA.Const_Int @int
   | Char
-    lhs.trf = CAExpr_Const $ CAConst_Char @char
+    lhs.trf = CA.Expr_Const $ CA.Const_Char @char
   | String 
-    lhs.trf = CAExpr_Const $ CAConst_String @str
+    lhs.trf = CA.Expr_Const $ CA.Const_String @str
 %%[[(97 core)
   | Integer
-    lhs.trf = CAExpr_Const $ CAConst_Integer @integer
+    lhs.trf = CA.Expr_Const $ CA.Const_Integer @integer
 %%]] 
   | Let
     lhs.trf = (if @loc.isStrict then 
-                CAExpr_LetBang (if length @binds.trf == 1 then 
-                  head @binds.trf else panic "multiple bindings in let!") 
-               else CAExpr_Let @binds.trf) @body.trf
+                case @binds.trf of
+                  [CA.Binding_Bind n e] -> CA.Expr_LetBang n e
+                  _ -> panic "multiple bindings in let!"
+               else CA.Expr_Let @binds.trf) @body.trf
     loc.isStrict = case @categ of
                     CBindCateg_Strict -> True
                     _ -> False
   | Tup
-    lhs.trf = if @loc.isRec then CAExpr_Rec [] else CAExpr_Con (ctagTyNm @tag) (ctagNm @tag) []
+    lhs.trf = if @loc.isRec then CA.Expr_Tup [] else CA.Expr_Con (ctagTyNm @tag) (ctagNm @tag) []
     loc.isRec = ctagIsRec @tag
   | Lam
-    lhs.trf = CAExpr_Lam @loc.arg @body.trf
+    lhs.trf = CA.Expr_Abs @loc.arg @body.trf
     loc.arg = case @bind.trf of 
                 Right n -> n
-                Left (CABinding_Bind n _) -> n
+                Left (CA.Binding_Bind n _) -> n
     -- totally ignore dflt
   | Case
-    lhs.trf = CAExpr_Case @expr.trf @alts.trf
+    lhs.trf = case @alts.trf of
+                Left (Left cs) -> CA.Expr_CaseCon @expr.trf cs
+                Left (Right (xs, e)) -> CA.Expr_CaseTup @expr.trf xs e
+                Right (Left cs) -> CA.Expr_CaseConst @expr.trf cs
+
   | App
     lhs.trf = case @func.trf of
-                CAExpr_Con tn cn flds -> CAExpr_Con tn cn $ flds ++ [getConVar @arg.trf]
-                CAExpr_Rec flds -> CAExpr_Rec $ flds ++ [getConVar @arg.trf]
+                CA.Expr_Con tn cn flds -> CA.Expr_Con tn cn $ flds ++ [getConVar @arg.trf]
+                CA.Expr_Tup flds -> CA.Expr_Tup $ flds ++ [getConVar @arg.trf]
                 _ -> case getConVar @arg.trf of
-                  CAConVar_Var v -> CAExpr_App @func.trf v
-                  CAConVar_Const c -> CAExpr_AppConst @func.trf c
+                  CA.ConVar_VarLocal v -> CA.Expr_AppLocal @func.trf v
+                  CA.ConVar_VarImport v -> CA.Expr_AppImport @func.trf v
+                  CA.ConVar_Const c -> CA.Expr_AppConst @func.trf c
 
   | FFI
-    -- TODO
-    lhs.trf = CAExpr_FFI @callconv 
-                @safety         
-%%[[8
-                @impEnt
-%%][90
-                @impEnt
-%%]]
-                @ty
+    lhs.trf = CA.Expr_FFI @ty
 
 SEM CPat
   | Con
     lhs.trf = if @rest.isEmpty then
-                if @loc.isRec then CAPat_RecPat @binds.trf else CAPat_Pat (ctagTyNm @tag) (ctagNm @tag) @binds.trf
+                if @loc.isRec then Right $ Right @binds.trf else Right $ Left (ctagTyNm @tag, ctagNm @tag, @binds.trf)
               else panic "CPatRest not empty"
     loc.isRec = ctagIsRec @tag
   | Var
     lhs.trf = panic "Unsupported CPat alternative Var"
   | Int
-    lhs.trf = CAPat_Int @int
+    lhs.trf = Left $ Left @int
   | Char
-    lhs.trf = CAPat_Char @char
+    lhs.trf = Left $ Right @char
 %%[[(97 core)
   | BoolExpr
     lhs.trf = panic "Unsupported CPat alternative BoolExpr"
@@ -157,7 +159,7 @@ SEM CBind
   | Bind
     lhs.trf = case length @bindAspects.trf of
                 0 -> Right @nm
-                1 -> Left $ CABinding_Bind @nm $ head @bindAspects.trf 
+                1 -> Left $ CA.Binding_Bind @nm $ head @bindAspects.trf 
                 _ -> traceShow (@bindAspects.trf) $ panic $ "Multiple bounds for single bind: " ++ show @nm
 
 SEM CBound
@@ -168,7 +170,7 @@ SEM CBound
     lhs.trf = panic "Unsupported CBound Alternative RelevTy" 
 %%]]
   | Ty
-    lhs.trf = CAExpr_Error "Unsupported CBound Alternative Ty" 
+    lhs.trf = CA.Expr_Error "Unsupported CBound Alternative Ty" 
 %%[[90
   | FFE
     lhs.trf = panic "Unsupported CBound Alternative FFE" 
@@ -176,7 +178,11 @@ SEM CBound
 
 SEM CAlt
   | Alt
-    lhs.trf = CAAlt_Alt @pat.trf @expr.trf
+    lhs.trf = case @pat.trf of
+                Left (Left n) -> Right $ CA.AltConst_Int n @expr.trf
+                Left (Right c) -> Right $ CA.AltConst_Char c @expr.trf
+                Right (Left (d,c,xs)) -> Left $ Left $ CA.AltCon_Alt d c xs @expr.trf
+                Right (Right xs) -> Left $ Right (xs, @expr.trf)
 
 SEM CBindL
   | Cons
@@ -187,12 +193,23 @@ SEM CBindL
   | Nil
     lhs.trf = []
 
-SEM CBoundL CAltL CPatFldL
+SEM CBoundL CPatFldL
   | Cons
     lhs.trf = @hd.trf : @tl.trf
   | Nil
     lhs.trf = []
 
+SEM CAltL
+  | Cons
+    lhs.trf = case (@hd.trf, @tl.trf) of
+                (Left (Left x), Left (Left xs)) -> Left $ Left $ x:xs
+                (Left (Left x), Right (Right ())) -> Left $ Left [x]
+                (Right x, Right (Left xs)) -> Right $ Left $ x:xs
+                (Right x, Right (Right ())) -> Right $ Left [x]
+                (Left (Right x), Right (Right ())) -> Left $ Right x
+                _ -> panic "Mismatched cases"
+  | Nil
+    lhs.trf = Right $ Right ()
 
 -- not supported
 SEM CExpr

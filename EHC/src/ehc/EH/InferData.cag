@@ -12,7 +12,7 @@ SEM Decl
   | Data        tyVars      .   tyGam               =   emptyGam
                 lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (appCon @tyNm)
 %%[[(8 counting)
-                                                                            [] (CA.AnnotatedType_TyError "data-patTyGam")
+                                                                            [] (CA.Type_Error "data-patTyGam")
 %%]]
                                                           ) @lhs.patTyGam
                 constrs     .   tyGam               =   gamPushGam @tyVars.tyGam @lhs.tyGam
@@ -22,7 +22,7 @@ SEM Decl
 SEM Decl
   | Data        loc         .   dataTgi             =   mkTGI (appCon @tyNm)
 %%[[(8 counting)
-                                                                            [] (CA.AnnotatedType_TyError "data-dataTgi")
+                                                                            [] (CA.Type_Error "data-dataTgi")
 %%]]
                             .   dataTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
                             .   dataPatTyGam        =   if @hasKiSig  then @lhs.patTyGam
@@ -98,11 +98,11 @@ SEM AGItf
 ATTR AGItf [ dataGam: DataGam | | ]
 
 SEM AGItf
-  | AGItf       expr        .   dataGam             =   ({-specialtrace-} @expr.gathDataGam) `gamUnion` @lhs.dataGam
+  | AGItf       expr        .   dataGam             =   (specialtrace $ expandTypeDefs @expr.gathDataGam @lhs.dataGam) `gamUnion` @lhs.dataGam
 
 {
 specialtrace :: DataGam -> DataGam
-specialtrace dg = traceShow dgl dg
+specialtrace dg = traceShow ("DataGam:", dgl) dg
   where dgl = map f $ gamToAssocL dg
         f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
 }
@@ -116,249 +116,192 @@ specialtrace dg = traceShow dgl dg
 %%[(8 counting)
 
 ATTR AllNT [ caDataGam: {DataGam} caTyGam: {TyGam} | caFreshVar: {CA.Var} | ]
-ATTR AllNT [ | caLocalDataGam: {Map.Map HsName Int} | caLocalDataGamGath USE {Map.union} {Map.empty} : {Map.Map HsName Int} ]
-ATTR AllNT [ caLocalDataNames: {Set.Set HsName} | | caLocalDataNamesGath USE {Set.union} {Set.empty} : {Set.Set HsName} ]
-ATTR AllNT [ caLocalAnnVars: {[CA.Var]} | | caLocalAnnVarsGath USE {++} {[]} : {[CA.Var]} ]
-
-ATTR AllDataField AllTyExpr [ caDeeper: Bool | | ]
-
-ATTR DataField TyExpr [ | | caAnnTy: {CA.AnnotatedType}]
-ATTR TyExpr [ | |  caIsFunc: {Maybe Bool}]
-ATTR DataFields TyExprs RowTyExpr [ | | caAnnTyList: {[CA.AnnotatedType]}]
-ATTR DataFields [ | | caLength: {Int} ]
--- ATTR AllDataConstr AllDataField AllTyExpr [ caBaseDataTypeName: HsName caBaseAnnDataType: {CA.AnnotatedType} | | ]
-
-ATTR TyVars [ | | caTyVars: {[HsName]} ]
-ATTR TyVar [ | | caTyVar: {HsName} ]
-
-SEM TyVars
-  | Cons
-    lhs.caTyVars = @hd.caTyVar : @tl.caTyVars
-  | Nil
-    lhs.caTyVars = []
+ATTR AllNT [ caIota: {Int} caLocalDataGam: {Map.Map HsName Int} | | ]
+ATTR Decl Decls DataFields DataField TyExpr RowTyExpr DataConstrs DataConstr [ caLocalDataNames: {Set.Set HsName} caLocalAnnVars: {[HsName]} | | ]
+ATTR Decl [  | | caLocalDataNamesGath:  {Set.Set HsName} caLocalAnnVarsGath: {[HsName]} caLocalDataGamGath: {Map.Map HsName Int}]
+ATTR Decls [ | | caLocalDataNamesGath USE {Set.union} {Set.empty}: {Set.Set HsName} caLocalAnnVarsGath USE {++} {[]}: {[HsName]} caLocalDataGamGath USE {Map.union} {Map.empty} : {Map.Map HsName Int} ]
+ATTR TyExpr [ | | caIsFunc: {Maybe Bool} caIsStrict USE {(||)} {False}: {Bool} caType: {CA.Type}]
+ATTR DataFields [ | | caFields USE {(++)} {[]}: {[CA.Field]}]
+ATTR DataField [ | | caFields: {[CA.Field]}]
+ATTR TyVars [ | | caTyVars USE {(++)} {[]}: {[HsName]} ]
+ATTR TyVar [ | | caTyVars: {[HsName]} ]
+ATTR RowTyExpr [ | | caTypes: {[CA.Type]} caLength: {Int}]
+ATTR TyExpr RowTyExpr [ caLevel: {Int} | | ]
 
 SEM TyVar
   | Var
-    lhs.caTyVar = @nm
+    lhs.caTyVars = [@nm]
 
 SEM AGItf
   | AGItf
     expr.caFreshVar = 0
     expr.caDataGam = @lhs.dataGam
     expr.caTyGam = @lhs.tyGam
-    expr.caLocalAnnVars = []
-    expr.caLocalDataNames = Set.empty
-    expr.caLocalDataGam = Map.empty -- baseAnnTypes
+    expr.caLocalDataGam = Map.empty
+    expr.caIota = 3
 
 SEM Expr
   | Let
-    -- do i need these empties?
-      lhs.caLocalDataNamesGath = Set.empty
-      lhs.caLocalAnnVarsGath = []
-     body.caLocalDataNames = Set.empty
-     body.caLocalAnnVars = []
     decls.caLocalDataNames = @decls.caLocalDataNamesGath
     decls.caLocalAnnVars = @decls.caLocalAnnVarsGath
     body.caLocalDataGam = Map.union @lhs.caLocalDataGam @decls.caLocalDataGamGath
 
-SEM DataFields TyExprs
-  | Cons
-    lhs.caAnnTyList        = @hd.caAnnTy : @tl.caAnnTyList
-  | Nil
-    lhs.caAnnTyList        = []
+SEM Decl
+  | Data
+    lhs.caLocalDataNamesGath = Set.singleton @tyNm
+    lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
+    lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
+  | Type
+    lhs.caLocalDataNamesGath = Set.singleton @tyNm
+    lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
+    lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
+    tyExpr.caLevel = 1
+
+SEM DataField
+  | Field
+    loc.rhoType = CA.RhoType_Rho (CA.EtaType_Eta @tyExpr.caType @loc.nu) @loc.delta
+    lhs.caFields = [(if @tyExpr.caIsStrict then CA.Field_Strict else CA.Field_Lazy) @loc.rhoType]
+    tyExpr.caLevel = 1
+    loc.(nu,delta,fv) = if 0 < @lhs.caIota then 
+                            (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, @lhs.caFreshVar + 2) 
+                          else (CA.annTop, CA.annTop, @lhs.caFreshVar)
+    tyExpr.caFreshVar = @fv
 
 SEM RowTyExpr
   | Empty
-    lhs.caAnnTyList = []
-  | Ext
-    lhs.caAnnTyList = @tyExpr.caAnnTy : @rowTyExpr.caAnnTyList
-  | Var
-    lhs.caAnnTyList = panic "RowTyExpr Var not supported" 
-
-SEM DataFields
-  | Cons
-    lhs.caLength = 1 + @tl.caLength
-  | Nil
+    lhs.caTypes = []
     lhs.caLength = 0
-
-SEM DataConstr
-  | Constr
-    loc.caAnnTyList = map (\(i,t) -> CA.Rho (CA.Eta t $ CA.Annotation_AnnVar $ @fields.caFreshVar + 2 * i) $ CA.Annotation_AnnVar $ @fields.caFreshVar + 2 * i + 1) $ zip [0 .. length @fields.caAnnTyList - 1] @fields.caAnnTyList
-    lhs.caFreshVar = @fields.caFreshVar + 2 * @fields.caLength
-
-SEM Decl
-  | Data
-    lhs.caLocalDataNamesGath = {-traceShow ("DataDecl: ", @tyNm) $ -}Set.singleton @tyNm
-    lhs.caLocalAnnVarsGath = [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
-    -- lhs.caLocalAnnVarsGath = @loc.caLocalAnnVarsGath
-    lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
-    -- constrs.caLocalDataGam = @lhs.caLocalDataGam
-    loc.caTyVars = @tyVars.caTyVars
-  | Type
-    lhs.caLocalDataNamesGath = {-traceShow ("TypeDecl: ", @tyNm) $ -}Set.singleton @tyNm
-    lhs.caLocalAnnVarsGath = [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
-    -- lhs.caLocalAnnVarsGath = @loc.caLocalAnnVarsGath
-    lhs.caLocalDataGamGath = {-traceShow ("TypeTy: ", @tyNm, @tyExpr.caAnnTy) $ -}Map.singleton @tyNm (length @lhs.caLocalAnnVars)
-    -- constrs.caLocalDataGam = @lhs.caLocalDataGam
+  | Ext
+    lhs.caTypes = @rowTyExpr.caTypes ++ [@tyExpr.caType]
+    lhs.caLength = @rowTyExpr.caLength + 1    
+  | Var
+    lhs.caTypes = panic "Unsupported Var case of RowTyExpr (types)"
+    lhs.caLength = panic "Unsupported Var case of RowTyExpr (length)"
 
 SEM TyExpr
   | *
-    -- loc.caAnn1 = if @lhs.caDeeper then CA.annTop else CA.Annotation_AnnVar $ @lhs.caFreshVar + 1
-    -- loc.caAnn2 = if @lhs.caDeeper then CA.annTop else CA.Annotation_AnnVar @lhs.caFreshVar
-    -- loc.caAnnTyf = \x -> CA.Rho (CA.Eta x @loc.caAnn1) @loc.caAnn2
-    loc.caToAnn = if @lhs.caDeeper then const CA.annTop else CA.Annotation_AnnVar
     loc.caIsFunc = Nothing
+    loc.caToAnn = if @lhs.caLevel < @lhs.caIota then CA.Annotation_Var else const CA.annTop 
   | Var
-    lhs.caAnnTy = CA.AnnotatedType_TyVar @nm
+    lhs.caType = CA.Type_Var @nm
   | Con
-    lhs.caIsFunc = @loc.ismFunc
     loc.ismFunc = case hsnBaseUnpack @nm of
                     Just ("->", _) -> Just True
                     _ -> Nothing
     loc.isFunc = fromMaybe False @loc.ismFunc
-    lhs.caFreshVar = if @lhs.caDeeper || @loc.isFunc then @lhs.caFreshVar else @lhs.caFreshVar + @loc.caNumAnn
-    loc. (caIsType, caNumAnn) = {-traceShow' @nm $ -}fromJust $ @loc.caNumFunc <|> @loc.caNumLoc <|> @loc.caNumLdg <|> @loc.caNumIdg <|> @loc.caNumTy <|> @loc.caNumPanic
-       . caNumFunc = if @loc.isFunc then {-traceShow ("isFunc: ",@nm)-} Just (False, 0) else Nothing
-       . caNumLdg = fmap (\x -> {-traceShow ("module: ",@nm) -}(False,x)) $ Map.lookup @nm @lhs.caLocalDataGam
-       . caNumIdg = fmap ({-traceShow ("gam: ",@nm) . -}(\x -> (False,x)) . length . dgiAnnVars) $ @nm `dataGamLookup` @lhs.caDataGam
-       . caNumLoc = if @loc.localGroup then {-traceShow ("local: ",@nm)-} (Just (False, 0)) else Nothing
-       . caNumTy = fmap ({-traceShow ("type: ",@nm) . -}(\x -> (True,x)) . length . tgiAnnVars) $ @nm `tyGamLookup` @lhs.caTyGam
-       . caNumPanic = panic $ "Could not find data type " ++ show @nm
-    -- loc.caTypeLookup = @nm `tyGamLookup` @lhs.caTyGam
-    lhs.caAnnTy = if @loc.localGroup then CA.AnnotatedType_TyData @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
-                  else CA.AnnotatedType_TyData @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
-    -- lhs.caAnnTy = if @loc.localGroup then if @loc.caIsType then
-    --                   traceShow ("typeLoc: ", @nm, show @loc.caTypeLookup) (tgiAnnTy (fromJust @loc.caTypeLookup))
-    --                 else CA.AnnotatedType_TyData @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
-    --               else if @loc.caIsType then
-    --                   traceShow ("typeGlob: ", @nm, show @loc.caTypeLookup) (tgiAnnTy (fromJust @loc.caTypeLookup))
-    --                 else CA.AnnotatedType_TyData @nm (map (\x -> @loc.caToAnn $ x + @lhs.caFreshVar - 1) [1 .. @loc.caNumAnn])  []
     loc.localGroup = Set.member @nm @lhs.caLocalDataNames 
+    loc.caNumAnn = fromJust $ @loc.caNumFunc <|> @loc.caNumLoc <|> @loc.caNumLdg <|> @loc.caNumIdg <|> @loc.caNumTy <|> @loc.caNumPanic
+       .caNumFunc = if @loc.isFunc then Just 0 else Nothing
+       .caNumLoc = if @loc.localGroup then Just 0 else Nothing
+       .caNumLdg = Map.lookup @nm @lhs.caLocalDataGam
+       .caNumIdg = fmap (length . dgiAnnVars) $ @nm `dataGamLookup` @lhs.caDataGam
+       .caNumTy = fmap (length . tgiAnnVars) $ @nm `tyGamLookup` @lhs.caTyGam
+       .caNumPanic = panic $ "Could not find data type " ++ show @nm
+    lhs.caType = if @loc.localGroup then CA.Type_Data @nm (map @loc.caToAnn @lhs.caLocalAnnVars) []
+                  else CA.Type_Data @nm (map (\x -> @loc.caToAnn $ mkHNm $ show $ @lhs.caFreshVar + x) [0 .. @loc.caNumAnn - 1])  []
+    lhs.caFreshVar = if @lhs.caLevel < @lhs.caIota then @lhs.caFreshVar + @loc.caNumAnn else @lhs.caFreshVar
+    lhs.caIsFunc = @loc.ismFunc
   | App
     lhs.caIsFunc = case @func.caIsFunc of
                     Just True -> Just False
                     _ -> Nothing
-    loc.caAnnTy = case @func.caIsFunc of
-                    Just True -> @arg.caAnnTy
-                    Just False -> CA.AnnotatedType_TyFunc (CA.fromRho $ CA.Rho (CA.Eta @func.caAnnTy CA.annTop) CA.annTop) $ CA.fromEta $ CA.Eta @arg.caAnnTy CA.annTop
-                    -- Assume type constructor application
-                    _ -> case @func.caAnnTy of
-                          -- TODO does not deal with 
-                          CA.AnnotatedType_TyData n ann ty -> CA.AnnotatedType_TyData n ann (ty ++ [@arg.caAnnTy])
-                          _ -> @func.caAnnTy
+    lhs.caType = case @func.caIsFunc of
+                    Just True -> @arg.caType
+                    Just False -> CA.Type_Func (CA.RhoType_Rho (CA.EtaType_Eta @func.caType @loc.nu1) @loc.delta) $ CA.EtaType_Eta @arg.caType @loc.nu2
+                    _ -> case @func.caType of
+                          CA.Type_Data n ann ty -> CA.Type_Data n ann (ty ++ [@arg.caType])
+                          CA.Type_Var _ -> CA.Type_App @func.caType @arg.caType
+                          CA.Type_App{} -> CA.Type_App @func.caType @arg.caType
+                          _ -> panic $ "not supported left hand side of application" ++ show @func.caType
+    loc.(nu1,delta, nu2,fv) = if @lhs.caLevel < @lhs.caIota && not @loc.isCurFunc then 
+                                (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 2, @lhs.caFreshVar + 3) 
+                              else (CA.annTop, CA.annTop, CA.annTop, @lhs.caFreshVar)
+    func.caFreshVar = @loc.fv
+    func.caLevel = @lhs.caLevel + 1
     loc.isCurFunc = case @func.caIsFunc of
                       Just False -> True
                       _ -> False
-    -- func.caFreshVar = if @lhs.caDeeper || not @loc.isCurFunc then @lhs.caFreshVar else @lhs.caFreshVar + 3
-    -- func.caDeeper = 
-    arg.caDeeper = True
-
-  | AppTop
-    loc.caAnnTy = @tyExpr.caAnnTy
-  | Parens
-    loc.caAnnTy = @tyExpr.caAnnTy
-  | Ann
-    loc.caAnnTy = @tyExpr.caAnnTy
-  | Lam
-    loc.caAnnTy = @tyExpr.caAnnTy
-  | Quant
-    loc.caAnnTy = @tyExpr.caAnnTy
   | Row
-    loc.caAnnTy = CA.AnnotatedType_TyRow @rowTyExpr.caAnnTyList
+    rowTyExpr.caLevel = @lhs.caLevel + 1
+    loc.(nus, deltas, fv) = if (@lhs.caLevel < @lhs.caIota) then 
+                              (map (CA.Annotation_Var . mkHNm) [@lhs.caFreshVar .. @lhs.caFreshVar + @rowTyExpr.caLength - 1]
+                               , map (CA.Annotation_Var . mkHNm) [@lhs.caFreshVar + @rowTyExpr.caLength .. @lhs.caFreshVar + 2 * @rowTyExpr.caLength - 1]
+                               , @lhs.caFreshVar + 2 * @rowTyExpr.caLength)
+                            else (replicate @rowTyExpr.caLength CA.annTop, replicate @rowTyExpr.caLength CA.annTop, @lhs.caFreshVar)
+    rowTyExpr.caFreshVar = @loc.fv
+    lhs.caType = CA.Type_Tup $ map (\(t,u,d) -> CA.RhoType_Rho (CA.EtaType_Eta t u) d) $ zip3 @rowTyExpr.caTypes @loc.nus @loc.deltas 
+  | Ann
+  -- TODO strictness annotation
+  | AppTop
+    -- copy rules
+    tyExpr.caLevel = @lhs.caLevel + 1
+  | Parens
+    -- copy rules
+  
+  -- TODO this is forgotten
+  | Quant
+    tyExpr.caLevel = @lhs.caLevel + 1
+  
+  -- unused but prevents ag warnings
+  | Lam
+    lhs.caType = panic "Unsupported construct during data type annotation algorithm: Lam"
   | Wild
-    loc.caAnnTy = CA.AnnotatedType_TyError "UnsupportedWild"
+    lhs.caType = panic "Unsupported construct during data type annotation algorithm: Wild"
   | Mono
-    loc.caAnnTy = CA.AnnotatedType_TyError "UnsupportedMono"
+    lhs.caType = panic "Unsupported construct during data type annotation algorithm: Mono"
   | VarWild
-    loc.caAnnTy = CA.AnnotatedType_TyError "UnsupportedVarWild"
+    lhs.caType = panic "Unsupported construct during data type annotation algorithm: VarWild"
   | Pred
-    loc.caAnnTy = CA.AnnotatedType_TyError "UnsupportedPred"
+    lhs.caType = panic "Unsupported construct during data type annotation algorithm: Pred"
   | Impls
-    loc.caAnnTy = CA.AnnotatedType_TyError "UnsupportedImpls"
+    lhs.caType = panic "Unsupported construct during data type annotation algorithm: Impls"
   | NoImpls
-    loc.caAnnTy = CA.AnnotatedType_TyError "UnsupportedNoImpls"
+    lhs.caType = panic "Unsupported construct during data type annotation algorithm: NoImpls"
 
-SEM DataConstr
-  | Constr
-    fields.caDeeper = False
-    mbGadtTyExpr.caDeeper = False -- not sure how this works with annotated types
-
--- not relevant but it prevents warnings
 SEM Decl
-  | TySig
-    tyExpr.caDeeper = False
-    -- tyExpr.caBaseDataTypeName = hsnEmpty
-    -- tyExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedTySig"
-  | FFI
-    tyExpr.caDeeper = False
-    -- tyExpr.caBaseDataTypeName = hsnEmpty
-    -- tyExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedFFI"
-  | Type
-    tyExpr.caDeeper = False
-    -- lhs.caLocalDataNamesGath = traceShow ("TypeDecl: ", @tyNm) Set.empty
-    -- tyExpr.caBaseDataTypeName = hsnEmpty
-    -- tyExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedType"
-%%[[90
-  | FFE
-    tyExpr.caDeeper = False
-    -- tyExpr.caBaseDataTypeName = hsnEmpty
-    -- tyExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedFFE"
-%%]]
-  | Class
-    tyPrExpr.caDeeper = False
-    -- tyPrExpr.caBaseDataTypeName = hsnEmpty
-    -- tyPrExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedClass"
-  | Instance
-    tyPrExpr.caDeeper = False
-    -- tyPrExpr.caBaseDataTypeName = hsnEmpty
-    -- tyPrExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedInstance"
-  | InstanceIntro
-    prExpr.caDeeper = False
-    -- prExpr.caBaseDataTypeName = hsnEmpty
-    -- prExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedInstanceIntro"
-  | Default
-    tyExprs.caDeeper = False
-    -- tyExprs.caBaseDataTypeName = hsnEmpty
-    -- tyExprs.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedDefault"
+  | TySig FFI FFE
+    tyExpr.caLevel = 100000000
+  | Class Instance
+    tyPrExpr.caLevel = 100000000
+  | * - Data Type
+    lhs.caLocalAnnVarsGath = []
+    lhs.caLocalDataGamGath = Map.empty
+    lhs.caLocalDataNamesGath = Set.empty
+    
+SEM Expr PatExpr
+  | TypeAs 
+    tyExpr.caLevel = 100000000
+    tyExpr.caLocalAnnVars = panic "Unused AnnVars"
+    tyExpr.caLocalDataNames = panic "Unused DataNames"
 
-SEM Expr
-  | TypeAs
-    tyExpr.caDeeper = False
-    -- tyExpr.caBaseDataTypeName = hsnEmpty
-    -- tyExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedTypeAs"
-  | AppImpl
-    argPr.caDeeper = False
-    -- argPr.caBaseDataTypeName = hsnEmpty
-    -- argPr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedAppImpl"
-  | LamImpl
-    argPr.caDeeper = False
-    -- argPr.caBaseDataTypeName = hsnEmpty
-    -- argPr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedLamImpl"
+SEM MbTyExpr
+  | Just
+    just.caLevel = 100000000
+    just.caLocalAnnVars = panic "Unused AnnVars"
+    just.caLocalDataNames = panic "Unused DataNames"
 
-SEM PatExpr
-  | TypeAs
-    tyExpr.caDeeper = False
-    -- tyExpr.caBaseDataTypeName = hsnEmpty
-    -- tyExpr.caBaseAnnDataType = CA.AnnotatedType_TyError "UnsupportedTypeAs"
+SEM PrExpr
+  | Lacks
+    rowTyExpr.caLevel = 100000000
+    rowTyExpr.caLocalAnnVars = panic "Unused AnnVars"
+    rowTyExpr.caLocalDataNames = panic "Unused DataNames"
+  | DynVar
+    tyExpr.caLevel = 100000000
+    tyExpr.caLocalAnnVars = panic "Unused AnnVars"
+    tyExpr.caLocalDataNames = panic "Unused DataNames"
+  | Eq
+    tyExpr1.caLevel = 100000000
+    tyExpr1.caLocalAnnVars = panic "Unused AnnVars"
+    tyExpr1.caLocalDataNames = panic "Unused DataNames"
+    tyExpr2.caLevel = 100000000
+    tyExpr2.caLocalAnnVars = panic "Unused AnnVars"
+    tyExpr2.caLocalDataNames = panic "Unused DataNames"
 
-{
--- extractNumAnns :: DataGam -> Map HsName Int
--- extractNumAnns dg = Map.fromList $ map f $ gamToAssocL dg
---   where f (x, y) = (x, length $ dgiAnnVars y)
-
--- baseAnnTypes :: Map HsName Int
--- baseAnnTypes = 
-  -- Map.fromList [
-  --   (mkHNm "Int", 0),
-  --   -- (mkHNm "Bool", 0),
-  --   (mkHNm "Char", 0)
-  -- ]
-
-traceShow' :: (Show a, Show b) => a -> b -> b
-traceShow' x y = traceShow (x,y) y
-}
-
-
+SEM TyExprs
+  | Cons
+    hd.caLevel = 100000000
+    hd.caLocalAnnVars = panic "Unused AnnVars"
+    hd.caLocalDataNames = panic "Unused DataNames"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -387,7 +330,7 @@ SEM Decl
 %%]]
 %%[[(8 counting)
                                                               @lhs.caLocalAnnVars
-                                                              @loc.caTyVars
+                                                              @tyVars.caTyVars
 %%]]
                 lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 
@@ -541,7 +484,7 @@ SEM Decl
   | Data        loc         .   dataAltTy           =   recSum @constrs.dataAltTyL
                             .   dataTgi             :=  mkTGIData (appCon @tyNm) Ty_Any {- ([@dataTy] `appArr` @dataAltTy) -}
 %%[[(8 counting)
-                                                                            [] (CA.AnnotatedType_TyError "dataTgi")
+                                                                            [] (CA.Type_Error "dataTgi")
 %%]]
 %%]
   | Constr      loc         -- .   dataConTy2          =   @dataConTyL `appArr` @lhs.dataTy 
@@ -643,7 +586,7 @@ SEM DataConstr
                                                           , dtiFldRefL      = assocLElts @fldRefL
 %%]]
 %%[[(8 counting)
-                                                          , dtiFldAnnTyL    = @loc.caAnnTyList
+                                                          , dtiFldAnnTyL    = @fields.caFields
 %%]]
 %%[[91
                                                           , dtiMbFixityPrio = @mbFixityPrio

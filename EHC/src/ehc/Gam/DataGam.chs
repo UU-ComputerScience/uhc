@@ -109,7 +109,7 @@ data DataTagInfo
       { dtiFldMp    		:: !DataFldMp				-- map of field names to offset
       , dtiFldTyL     :: !FldTyL          -- association list of maybe a field name with types
 %%[[(8 counting)
-      , dtiFldAnnTyL			:: ![CA.Rho CA.AnnotatedType]					-- list of annotated types (conversion of dtiFldTyL)
+      , dtiFldAnnTyL			:: !CA.Fields					-- list of annotated types (conversion of dtiFldTyL)
 %%]]
       , dtiConFldAnnL		:: ![DataConFldAnnInfo]		-- per constructor field (with or without name) annotation info
       , dtiConNm			:: !HsName					-- constructor name (duplicate of key of gamma leading to this info)
@@ -212,7 +212,7 @@ data DataGamInfo
       , dgiDataTy 			:: !Ty					-- the type dataty -> sum of product
       , dgiDataKi 			:: !Ty					-- the kind
 %%[[(8 counting)
-      , dgiAnnVars      :: ![CA.Var]      -- all annatotation variables 
+      , dgiAnnVars      :: ![HsName]      -- all annatotation variables 
       , dgiTyVars       :: ![HsName]      -- all tyvars
 %%]]
 %%[[50
@@ -279,7 +279,7 @@ mkDGI
      -> Maybe Int
 %%]]
 %%[[(8 counting)
-     -> [CA.Var] -> [HsName]
+     -> [HsName] -> [HsName]
 %%]]
      -> DataGamInfo
 %%]]

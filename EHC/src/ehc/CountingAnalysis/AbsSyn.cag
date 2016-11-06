@@ -3,172 +3,112 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) ag
-TYPE Constraints = [Constraint]
-TYPE Annotations = [Annotation]
-TYPE AnnotatedTypes = [AnnotatedType]
-TYPE CAnnotations = [CAnnotation]
-TYPE CAnnotatedTypes = [CAnnotatedType]
-TYPE CTySchemes = [CTyScheme]
-TYPE Env = MAP {HsName} RhoTyScheme
-TYPE RhoAnnotatedTypeL = [RhoAnnotatedType]
-
 DATA AnnPrim 
-  | Zero 
-  | One 
+  | Zero
+  | One
   | Infinity
 
-DATA Annotation 
-  | AnnVar v : {Var} 
-  | AnnVal v : {AnnVal}
-
-DATA AnnotatedType
-  | TyVar v : {HsName}
-  | TyData n : {HsName} as : Annotations ts : AnnotatedTypes
-  | TyFunc t1 : RhoAnnotatedType t2 : EtaAnnotatedType
-  | TyRow ts : AnnotatedTypes
-  | TyRec ts : {[EtaAnnotatedType]}
-  -- If this is ever inspected then something is wrong in the algorithm
-  -- But at the moment it is needed as the AG needs a type in every expression
-  -- even unused ones
-  | TyError e : {String}
-
-DATA EtaAnnotatedType
-  | Eta w : AnnotatedType a : Annotation
-
-DATA RhoAnnotatedType
-  | Rho w : EtaAnnotatedType a : Annotation 
-
-DATA EtaTyScheme
-  | Eta w : TyScheme a : Annotation
-
-DATA RhoTyScheme
-  | Rho w : EtaTyScheme a : Annotation 
-
-DATA TyScheme 
-  | SchemeVar v : {SchemeVar} 
-  | SForAll ts : {Set HsName} as : {Set Var} cs : Constraints t : AnnotatedType
-
-DATA Constraint 
-  -- Annotation constraints
-  | AnnC c : CAnnotation
-  -- AnnotatedType constraints
-  | TyC c : CAnnotatedType
-  -- TyScheme constraints
-  | SchemeC c : CTyScheme
-  -- Instantiation constraint
-  | InstC s : TyScheme t : AnnotatedType
-  -- Generalisation constraint
-  | GenC t : RhoAnnotatedType cs : Constraints e : Env s : RhoTyScheme
-
-DATA CAnnotation
-  | EqC c1 : Annotation c2 : Annotation
-  | PlusC c1 : Annotation c2 : Annotation c3 : Annotation
-  | UnionC c1 : Annotation c2 : Annotation c3 : Annotation
-  | TimesC c1 : Annotation a : Annotation c3 : Annotation
-  | ConC c1 : Annotation a : Annotation c3 : Annotation
-
-DATA CAnnotatedType
-  | EqC c1 : AnnotatedType c2 : AnnotatedType
-  | PlusC c1 : AnnotatedType c2 : AnnotatedType c3 : AnnotatedType
-  | UnionC c1 : AnnotatedType c2 : AnnotatedType c3 : AnnotatedType
-  | TimesC c1 : AnnotatedType a : Annotation c3 : AnnotatedType
-  | ConC c1 : AnnotatedType a : Annotation c3 : AnnotatedType
-
-DATA CTyScheme
-  | EqC c1 : TyScheme c2 : TyScheme
-  | PlusC c1 : TyScheme c2 : TyScheme c3 : TyScheme
-  | UnionC c1 : TyScheme c2 : TyScheme c3 : TyScheme
-  | TimesC c1 : TyScheme a : Annotation c3 : TyScheme
-  | ConC c1 : TyScheme a : Annotation c3 : TyScheme
-
-SET CAL = CAnnotations CAnnotatedTypes CTySchemes
-SET CA = CAnnotation CAnnotatedType CTyScheme
-SET RHO = RhoTyScheme RhoAnnotatedType
-SET ETA = EtaTyScheme EtaAnnotatedType
-
--- Filter/Special nodes
-
-DATA Root
-  | Root cs : Constraints
-
-DATA Phase2Root
-  | Phase2Root cs : Constraints
-
--- DATA Subst
---   | Ty c : AnnotatedType
---   | Ann c : Annotation
---   | Constr c : Constraint
-
--- DATA FreeVar
---   | Ty c : AnnotatedType
---   | Ann c : Annotation
---   | Constr c : Constraint
-
-SET SPEC = Root Phase2Root
-SET ALLTYPES = Constraint AnnPrim Annotation 
-  AnnotatedType TyScheme Constraints
-  Annotations AnnotatedTypes CAnnotations
-  CAnnotatedTypes CTySchemes Env RhoAnnotatedTypeL
-  CAL RHO CA ETA
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Expressions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 counting) ag
-
-TYPE CABindings = [CABinding]
-TYPE CAAlts = [CAAlt]
-TYPE CAConVars = [CAConVar]
-
-DATA CAExpr
+DATA Annotation
   | Var v : {HsName}
-  | Const c: CAConst
-  | Lam bind : {HsName} body : CAExpr
-  | App func : CAExpr  arg : {HsName}
-  | AppConst func : CAExpr  arg : CAConst
-  | Let binds : CABindings body : CAExpr
-  | LetBang bind : CABinding body : CAExpr
-  | Con tyNm : {HsName} conNm : {HsName} flds : CAConVars
-  | Rec flds : CAConVars
-  | Case e : CAExpr alts : CAAlts
-  -- what to do with this
-  | FFI         callconv        : {FFIWay}
-                safety          : {String}
-%%[[8
-                impEnt          : {String}
-%%][90
-                impEnt          : {ForeignEnt}
-%%]]
-                ty              : {Ty}
+  | Val v : AnnotationValue
+ 
+TYPE Annotations = [Annotation]
+TYPE Types = [Type]
+TYPE RhoTypes = [RhoType]
+TYPE Constraints = [Constraint]
+TYPE Fields = [Field]
+
+DATA Field
+  | Strict t : RhoType
+  | Lazy t : RhoType
+
+DATA Type
+  | Var v : {HsName}
+  | Data n : {HsName} as : Annotations ts : Types
+  | App t1 : Type t2 : Type
+  | Func t1 : RhoType t2 : EtaType
+  | Tup ts : RhoTypes
   | Error e : {String}
 
-DATA CAConVar
+DATA Scheme
   | Var v : {HsName}
-  | Const c : CAConst
+  | Forall as : {Set HsName} ts : {Set HsName} cs : Constraints t : Type
 
-DATA CABinding
-  | Bind n : {HsName} e : CAExpr
+DATA EtaType
+  | Eta t : Type a : Annotation
 
-DATA CAAlt
-  | Alt p : CAPat e : CAExpr
+DATA EtaScheme
+  | Eta s : Scheme a : Annotation
 
-DATA CAPat
-  | Pat tyNm : {HsName} conNm : {HsName} flds : {[HsName]}
-  | RecPat flds : {[HsName]}
-  | Int c : {Int}
-  | Char c : {Char}
+DATA RhoType
+  | Rho e : EtaType a : Annotation
+ 
+DATA RhoScheme
+  | Rho e : EtaScheme a : Annotation
 
-DATA CAConst
+TYPE Env = MAP {HsName} RhoScheme
+TYPE AltCons = [AltCon]
+TYPE AltConsts = [AltConst]
+TYPE ConVars = [ConVar]
+TYPE Bindings = [Binding]
+
+TYPE Expr
+  | VarLocal v : {HsName}
+  | VarImport v : {HsName}
+  | Const c : Const
+  | Abs bind : {HsName} body : Expr
+  | AppLocal func : Expr  arg : {HsName}
+  | AppImport func : Expr  arg : {HsName}
+  | AppConst func : Expr  arg : Const
+  | Let binds : Bindings e : Expr
+  | LetBang x : {HsName} e1 : Expr e2 : Expr
+  | Con tyNm : {HsName} conNm : {HsName} flds : ConVars
+  | Tup flds : ConVars
+  | CaseCon e : Expr alts : AltCons
+  | CaseTup e : Expr xs : {HsNames} e1 : Expr
+  | CaseConst e : Expr alts : AltConsts
+  | FFI ty : {Ty}
+  | Ann ann : EtaType e : Expr
+  | Error e : {String}
+
+DATA ConVar
+  | VarLocal v : {HsName}
+  | VarImport v : {HsName}
+  | Const c : Const
+
+DATA Binding
+  | Bind n : {HsName} e : Expr
+
+DATA Const
   | Int c : {Int}
   | Char c : {Char}
   | String c : {String}
   | Integer c : {Integer}
 
-DATA CAModule 
-  | Module mod : CAExpr
+DATA AltCon
+  | Alt tyNm : {HsName} conNm : {HsName} xs : {HsNames} e : Expr
 
-SET ALLCAEXPR = CAExpr CABinding CABindings CAAlt CAAlts CAPat CAConVar CAConVars CAConst
+DATA AltConst 
+  | Int c : {Int} e : Expr
+  | Char c : {Char} e : Expr
+  
+DATA Constraint
+  | Ann c : ConstraintAnn
+  | Eq c : ConstraintEq
+  | Inst s : Scheme t : Type
+  | Gen t : Type u : Annotation d : Annotation v0: Annotation d0: Annotation c : Constraints e : Env s : Scheme
 
+DATA ConstraintAnn
+  | Plus a1 : Annotation a2 : Annotation a : Annotation
+  | Union a1 : Annotation a2 : Annotation a : Annotation
+  | Times a1 : Annotation a2 : Annotation a : Annotation
+  | Cond a1 : Annotation a2 : Annotation a : Annotation
+
+DATA ConstraintEq
+  | Ann a1 : Annotation a2 : Annotation
+  | Type t1 : Type t2 : Type
+  | Scheme s1 : Scheme s2 : Scheme
+
+DATA Module
+  | Module e : Expr
 %%]

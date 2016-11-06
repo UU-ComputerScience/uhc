@@ -18,7 +18,7 @@ Debugging
 %%]
 
 %%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSyn})
-WRAPPER CAModule
+WRAPPER Module
 %%]
 
 
@@ -31,8 +31,8 @@ PRAGMA strictcase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) hs export(toCModule)
-toCModule :: CAModule -> CModule
-toCModule = undefined
+toCModule :: Module -> CModule
+toCModule m = panic "toCModule"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,9 +41,9 @@ toCModule = undefined
 
 %%[(8 counting) ag
 
-ATTR CAModule [ | | trf: {CModule} ]
+ATTR Module [ | | trf: {CModule} ]
 
-SEM CAModule
+SEM Module
   | Module
     lhs.trf = undefined
 

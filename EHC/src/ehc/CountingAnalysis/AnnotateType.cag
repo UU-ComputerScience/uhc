@@ -1,0 +1,98 @@
+%%[(8 counting) hs module {%{EH}CountingAnalysis.AnnotateType} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map hiding (foldr),qualified Data.Map as Map)
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.HsName},{%{EH}Base.Common})
+%%]
+
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis} as CA)
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty}, {%{EH}Gam.DataGam})
+%%]
+
+%%[(8 counting) hs import(UHC.Util.Utils)
+%%]
+
+%%[(8 counting) ag import({Ty/AbsSyn})
+WRAPPER Ty
+%%]
+
+%%[(99 counting)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% access functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) hs export (annotate)
+annotate :: DataGam -> Ty -> CA.Scheme
+annotate d a = CA.Scheme_Forall Set.empty (tyVars_Syn_Ty syn) mempty (annTy_Syn_Ty syn)  
+  where syn = wrap_Ty (sem_Ty a) (Inh_Ty d) 
+
+numAnns :: HsName -> DataGam -> Int
+numAnns nm d 
+  | show nm == "Char" = 0
+  | show nm == "Int" = 0 
+  | otherwise = length $ dgiAnnVars $ fromMaybe (error $ "annCon: " ++ show nm) $ nm `dataGamLookup` d
+%%]
+
+
+%%[(8 counting) ag
+
+ATTR Ty [ dataEnv: {DataGam} | | annTy: {CA.Type} tyVars: {Set HsName} caIsFunc: {Maybe Bool}]
+
+SEM Ty
+  | *
+    loc.caIsFunc = Nothing
+  | Con
+    lhs.caIsFunc = @loc.ismFunc
+    loc.ismFunc = case hsnBaseUnpack @nm of
+                    Just ("->", _) -> Just True
+                    _ -> Nothing
+    loc.isFunc = fromMaybe False @loc.ismFunc
+    loc.annTops = replicate (numAnns @nm @lhs.dataEnv) CA.annTop
+    loc.dataTy = CA.Type_Data @nm @loc.annTops []
+    lhs.annTy = if @loc.isFunc then panic "Function Constructor" else @loc.dataTy
+    lhs.tyVars = Set.empty
+  | App
+    lhs.caIsFunc = case @func.caIsFunc of
+                    Just True -> Just False
+                    _ -> Nothing
+    lhs.annTy = case @func.caIsFunc of
+                    Just True -> @arg.annTy
+                    Just False -> CA.Type_Func (CA.RhoType_Rho (CA.EtaType_Eta @func.annTy CA.annTop) CA.annTop) $ CA.EtaType_Eta @arg.annTy CA.annTop
+                    -- Assume type constructor application
+                    _ -> case @func.annTy of 
+                          CA.Type_Data n ann ty -> CA.Type_Data n ann (ty ++ [@arg.annTy])
+                          _ -> panic "Unknown type in App" 
+    lhs.tyVars = Set.empty
+  | Ann
+    -- copy rules
+  | TBind Lam
+    lhs.annTy =  @ty.annTy 
+    lhs.tyVars = Set.insert (uidHNm @tv) @ty.tyVars
+  | Var
+    lhs.annTy = CA.Type_Var $ uidHNm @tv
+    lhs.tyVars = Set.empty
+  | Ext
+    lhs.annTy = panic "unsupported Ty Ext"
+    lhs.tyVars = Set.empty
+  | Any
+    lhs.annTy = panic "unsupported Ty Any"
+    lhs.tyVars = Set.empty   
+  | Dbg
+    lhs.annTy = panic "unsupported Ty Dbg"
+    lhs.tyVars = Set.empty 
+  | Pred
+    lhs.annTy = panic "unsupported Ty Pred"
+    lhs.tyVars = Set.empty   
+  | Impls
+    lhs.annTy = panic "unsupported Ty Impls"
+    lhs.tyVars = Set.empty
+    
+SEM Pred TyAGItf
+  | *
+    loc.dataEnv = panic "dataEnv pred"
+    
+%%]

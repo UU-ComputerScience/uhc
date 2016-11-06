@@ -100,7 +100,7 @@ TEST_VARIANTS					:= $(EHC_PUB_NOCODE_VARIANTS) 8 9 10 11 $(EHC_PREL_VARIANT)
 # Check whether tools are missing
 ###########################################################################################
 
-EXIT_IF_ABSENT_LIB_OR_TOOL		:= @EXIT_IF_ABSENT_LIB_OR_TOOL@
+EXIT_IF_ABSENT_LIB_OR_TOOL		:= 
 
 ###########################################################################################
 # use of ruler depents on variant
@@ -118,30 +118,30 @@ EHC_CFG_TARGET_IS_C						:= $(filter C,$(EHC_VARIANT_TARGET))
 EHC_CFG_TARGET_IS_llvm					:= $(filter llvm,$(EHC_VARIANT_TARGET))
 
 # which MP lib
-EHC_CFG_MPLIB							:= @MPLIB@
+EHC_CFG_MPLIB							:= ltm
 
 # which GC lib
 # NOTE: this is globally turned off, but for reasons of consistency/symmetry still here
-EHC_CFG_GCLIB							:= @GCLIB@
+EHC_CFG_GCLIB							:= mm
 
 # whether LTM sources should be included in rts
-ifeq (@MPLIB@,ltm)
+ifeq (ltm,ltm)
 EHC_CFG_USE_LTM							:= $(filter $(EHC_VARIANT),$(EHC_LTM_VARIANTS))
 endif
 
 # whether GMP library should be build and linked in when compiling
-ifeq (@MPLIB@,gmp)
+ifeq (ltm,gmp)
 EHC_CFG_USE_GMP							:= $(filter $(EHC_VARIANT),$(EHC_GMP_VARIANTS))
-EHC_CFG_GMP_LIB_ARCHIVE					:= @GMP_LIB_ARCHIVE@
+EHC_CFG_GMP_LIB_ARCHIVE					:= /home/tibor_admin/Documents/thesis/uhc/EHC/extlibs/gmp/gmp-4.2.1.tar.gz
 endif
 
 ###########################################################################################
 # Names of compiler executables
 ###########################################################################################
 
-EHC_EXEC_NAME			:= @EHC_EXEC_NAME@
+EHC_EXEC_NAME			:= ehc
 EHCRUN_EXEC_NAME		:= $(EHC_EXEC_NAME)r
-UHC_EXEC_NAME			:= @UHC_EXEC_NAME@
+UHC_EXEC_NAME			:= uhc
 UHCLIGHT_EXEC_NAME		:= $(UHC_EXEC_NAME)l
 UHCRUN_EXEC_NAME		:= $(UHC_EXEC_NAME)r
 
@@ -149,16 +149,16 @@ UHCRUN_EXEC_NAME		:= $(UHC_EXEC_NAME)r
 # GIT revision nr, and cmd to extract, if present
 ###########################################################################################
 
-GIT_VERSION_EXISTS		:= @GIT_VERSION_EXISTS@
-GIT_VERSION_CMD			:= @GIT_VERSION_CMD@
-GIT_REVISION			:= @GIT_REVISION@
+GIT_VERSION_EXISTS		:= yes
+GIT_VERSION_CMD			:= cat GITHASH
+GIT_REVISION			:= TiborCountingAnalysis@ee98a405bc
 
 ###########################################################################################
 # Locations in source, build, install, distribution
 ###########################################################################################
 
 # suffix for build + (temporary) install locations + package names
-EHC_BUILD_SUFFIX	:= @EHC_BUILD_SUFFIX@
+EHC_BUILD_SUFFIX	:= 
 ifneq ($(EHC_BUILD_SUFFIX),)
 EHC_BUILD_SUFFIX_DASH					:= -$(EHC_BUILD_SUFFIX)
 endif
@@ -175,17 +175,17 @@ HDOCABS_PREFIX		:= $(TOPABS_PREFIX)hdoc/
 LIB_PREFIX			:= $(UHC_TOP_PREFIX)lib/
 
 # location for cabal installed stuff (mainly libraries), and other build time installs, used when building ehc
-INSTALLFORBLD_PREFIX			:= $(UHC_TOP_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
-INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
-INSTALLFORBLDABS2_PREFIX		:= $(TOPABS2_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLD_PREFIX			:= $(UHC_TOP_PREFIX)install-for-build$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)install-for-build$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS2_PREFIX		:= $(TOPABS2_PREFIX)install-for-build$(EHC_BUILD_SUFFIX_DASH)/
 INSTALLFORBLDABS_FLAG_PREFIX	:= $(INSTALLFORBLDABS2_PREFIX)ins-flg-
 INSTALLFORBLDABS_LIB_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)lib/
 INSTALLFORBLDABS_INC_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)include/
 
 # location installed stuff, used when running ehc
-INSTALL_DIR						:= $(UHC_TOP_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
-INSTALLABS_DIR					:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
-INSTALLABS2_DIR					:= $(TOPABS2_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
+INSTALL_DIR						:= $(UHC_TOP_PREFIX)install$(EHC_BUILD_SUFFIX_DASH)
+INSTALLABS_DIR					:= $(TOPABS_PREFIX)install$(EHC_BUILD_SUFFIX_DASH)
+INSTALLABS2_DIR					:= $(TOPABS2_PREFIX)install$(EHC_BUILD_SUFFIX_DASH)
 
 INSTALL_PREFIX					:= $(INSTALL_DIR)/
 INSTALLABS_PREFIX				:= $(INSTALLABS_DIR)/
@@ -194,10 +194,10 @@ INSTALLABS_LIB_PREFIX			:= $(INSTALLABS_PREFIX)lib/
 INSTALLABS_INC_PREFIX			:= $(INSTALLABS_PREFIX)include/
 
 # location for uhc installs, as specified by configure
-INSTALL_UHC_ROOT		:= @prefix@/lib
-INSTALL_UHC_DIR			:= @prefix@/@INSTALL_LIBC_SUFFIX@
+INSTALL_UHC_ROOT		:= /usr/local/lib
+INSTALL_UHC_DIR			:= /usr/local/@INSTALL_LIBC_SUFFIX@
 INSTALL_UHC_PREFIX		:= $(INSTALL_UHC_DIR)/
-INSTALL_UHC_BIN_PREFIX	:= @prefix@/bin/
+INSTALL_UHC_BIN_PREFIX	:= /usr/local/bin/
 INSTALL_UHC_LIB_PREFIX	:= $(INSTALL_UHC_PREFIX)lib/
 INSTALL_UHC_INC_PREFIX	:= $(INSTALL_UHC_PREFIX)include/
 
@@ -233,37 +233,37 @@ TEST_TOP_PREFIX						:= ../../
 TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
 
 # name of subdirectory for shared ehc library artifacts
-EHCLIB_SHARED						:= @EHCLIB_SHARED@
+EHCLIB_SHARED						:= shared
 
 ###########################################################################################
 # Commands
 ###########################################################################################
 
 # compilers and tools used
-AGC							:= @UUAGC_CMD@
-SHUFFLE						:= @SHUFFLE_CMD@
-RULER2						:= @RULER_CMD@
-GHC							:= @GHC_CMD@
-GHC1						:= @GHC_CMD1@
-GHC_VERSION         		:= @GHC_VERSION@
-CABAL						:= @CABAL_CMD@
-HSC2HS						:= @HSC2HS_CMD@
-HADDOCK						:= @HADDOCK_CMD@
-HADDOCK_VERSION     		:= @HADDOCK_VERSION@
-GCC							:= @GCC_CMD@
-AR							:= @AR_CMD@
-RANLIB						:= @RANLIB_CMD@
+AGC							:= /home/tibor_admin/.cabal/bin/uuagc
+SHUFFLE						:= /home/tibor_admin/.cabal/bin/shuffle
+RULER2						:= echo "**** ERROR **** A tool or library is missing. Check ./configure summary." ; exit 1
+GHC							:= /usr/local/bin/ghc
+GHC1						:= /usr/local/bin/ghc
+GHC_VERSION         		:= 7.10.2
+CABAL						:= /home/tibor_admin/.cabal/bin/cabal
+HSC2HS						:= /usr/local/bin/hsc2hs
+HADDOCK						:= /usr/local/bin/haddock
+HADDOCK_VERSION     		:= Haddock version 2.16.1, (c) Simon Marlow 2006
+GCC							:= /usr/bin/gcc
+AR							:= /usr/bin/ar
+RANLIB						:= /usr/bin/ranlib
 OPEN_FOR_EDIT				:= bbedit
 STRIP						:= $(STRIP_CMD)
-JAVAC						:= @JAVAC_CMD@
-JAR							:= @JAR_CMD@
-CAT							:= @CAT_CMD@
+JAVAC						:= 
+JAR							:= 
+CAT							:= /bin/cat
 SHELL_FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
 SHELL_AGDEPEND				:= $(BINABS_PREFIX)agdepend
-TAR							:= @TAR_CMD@
+TAR							:= tar
 
 #tool existence
-ifeq (@RULER_EXISTS@,yes)
+ifeq (no,yes)
 RULER_EXISTS				:= yes
 else
 # just leave empty
@@ -294,8 +294,8 @@ SHUFFLE_JS					:= $(SHUFFLE_PLAIN)
 
 # misc
 # $1: files to md5
-ifneq (@MD5_CMD@,)
-FUN_MD5						= cat $(1) | @MD5_CMD@
+ifneq (,)
+FUN_MD5						= cat $(1) | 
 else
 FUN_MD5						= echo -n "no md5"
 endif
@@ -397,8 +397,8 @@ FUN_EHC_GCC_LD_OPTS							= -L$(call FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX,$(
 ###########################################################################################
 
 # GHC options
-GHC_OPTS_GENERAL						:= @GHC_GEN_OPTIONS@
-GHC_OPTS_WHEN_EHC						:= $(GHC_OPTS_GENERAL) @GHC_EHC_OPTIONS@
+GHC_OPTS_GENERAL						:=  -rtsopts
+GHC_OPTS_WHEN_EHC						:= $(GHC_OPTS_GENERAL) 
 GHC_OPTS								:= $(OPT_GHC_STANDARD_PACKAGES) -package uulib -package uhc-util $(GHC_OPTS_GENERAL)
 GHC_OPTS_OPTIM							:= -O2
 
@@ -406,13 +406,13 @@ GHC_OPTS_OPTIM							:= -O2
 HADDOCK_OPTS							:= 
 
 # SHUFFLE options
-SHUFFLE_OPTS_WHEN_EHC					:= @SHUFFLE_EHC_OPTIONS@
+SHUFFLE_OPTS_WHEN_EHC					:= 
 SHUFFLE_OPTS_WHEN_UHC					:= --agmodheader=yes
 
 # UUAGC options
-UUAGC_OPTS_WHEN_EHC						:= @UUAGC_OPTIONS@
-UUAGC_OPTS_WHEN_EHC_AST_DATA			:= @UUAGC_EHC_AST_OPTIONS@ --datarecords
-UUAGC_OPTS_WHEN_EHC_AST_SEM				:= @UUAGC_EHC_SEM_OPTIONS@
+UUAGC_OPTS_WHEN_EHC						:= --aoag
+UUAGC_OPTS_WHEN_EHC_AST_DATA			:=  --datarecords
+UUAGC_OPTS_WHEN_EHC_AST_SEM				:= 
 
 # UUAGC options for production version (i.e. uhc, ehc variant >= $(EHC_PREL_VARIANT))
 UUAGC_OPTS_WHEN_UHC						:=
@@ -421,19 +421,19 @@ UUAGC_OPTS_WHEN_UHC_AST_DATA			:= --strictdata --datarecords
 UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --strictwrap -O
 
 # GCC options
-GCC_OPTS_WHEN_EHC						:= @CC_STD_FLAG@ @GCC_EHC_OPTIONS@ -fomit-frame-pointer
+GCC_OPTS_WHEN_EHC						:= -std=gnu99   -fomit-frame-pointer
 
 # CPP options
-CPP_OPTS_WHEN_EHC						:= @CPP_EHC_OPTIONS@
+CPP_OPTS_WHEN_EHC						:=   -D__STDC__
 
 # cabal options
-CABAL_CONFIGURE_OPTS_WHEN_EHC			:= @CABAL_CONFIGURE_OPTIONS@
+CABAL_CONFIGURE_OPTS_WHEN_EHC			:= 
 CABAL_SETUP_OPTS						:= --ghc --with-compiler=$(GHC1) $(CABAL_CONFIGURE_OPTS_WHEN_EHC)
-CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES 	:= @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
+CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES 	:= UndecidableInstances
 
 # C compiler options, some are also extended by sub makefiles
-EXTLIBS_GCC_CC_OPTS						:=  @GCC_EXTLIBS_OPTIONS@
-EXTLIBS_GMP_ABI							:=  @GMP_ABI@
+EXTLIBS_GCC_CC_OPTS						:=   -m64
+EXTLIBS_GMP_ABI							:=  64
 EXTLIBS_BGC_OPTS						:=  @EXTLIBS_BGC_OPTS@
 EHC_GCC_CC_OPTS							:= -I$(INSTALLFORBLDABS_INC_PREFIX) -I$(INSTALLFORBLDABS_INC_PREFIX)/gc $(GCC_OPTS_WHEN_EHC)
 EHC_GCC_LD_OPTS							:= -L$(INSTALLFORBLDABS_LIB_PREFIX)
@@ -443,9 +443,9 @@ RTS_GCC_CC_OPTS							:= -D__UHC_BUILDS_RTS__
 RTS_GCC_CC_OPTS_OPTIM					:= $(RTS_GCC_CC_OPTS) -O3
 
 # library building, using libtool
-LIBTOOL_STATIC_CMD						:= @LIBTOOL_STATIC_CMD@
-LIBTOOL_STATIC							:= $(LIBTOOL_STATIC_CMD) @LIBTOOL_STATIC_OPTS@
-LIBTOOL_DYNAMIC							:= @LIBTOOL_DYNAMIC_CMD@ @LIBTOOL_DYNAMIC_OPTS@
+LIBTOOL_STATIC_CMD						:= no
+LIBTOOL_STATIC							:= $(LIBTOOL_STATIC_CMD) -static -o
+LIBTOOL_DYNAMIC							:=  
 
 # lhs2tex options
 LHS2TEX_OPTS_DFLT						:= 
@@ -508,7 +508,7 @@ FUN_GEN_CABAL		= \
 					echo   "Author:				$(UHC_TEAM)" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC" ; \
 					echo   "Category:			Testing" ; \
-					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.5&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "Build-Tools:		" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies TupleSections DeriveFunctor NamedFieldPuns RecordWildCards DisambiguateRecordFields $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
@@ -594,7 +594,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "" ; \
 					echo   "Library" ; \
 					echo   "  Hs-Source-Dirs:       $(17)" ; \
-					echo   "  Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Build-Depends:		$(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.5&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Exposed-Modules:		$(7)" ; \
 					echo   "  Other-Modules:		$(8)" ; \
@@ -602,13 +602,13 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "" ; \
 					echo   "Executable $(strip $(10))" ; \
 					echo   "  Hs-Source-Dirs:       $(18)" ; \
-					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.5&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Main-Is:           	$(strip $(9)).hs" ; \
 					echo   "" ; \
 					echo   "Executable $(strip $(16))" ; \
 					echo   "  Hs-Source-Dirs:       $(18)" ; \
-					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.5&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Main-Is:           	$(strip $(15)).hs" ; \
 					)

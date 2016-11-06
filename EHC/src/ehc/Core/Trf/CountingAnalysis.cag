@@ -12,16 +12,19 @@ Implementation of Hidde's counting Analysis
 %%[(8 counting) hs module {%{EH}Core.Trf.CountingAnalysis} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map (Map),qualified Data.Map as Map,qualified Data.Map as Data.Map)
 %%]
 
+%%[(8 counting) hs import(qualified Data.Set as S,qualified Data.Map as M)
+%%]
+
 %%[(8 counting) hs import({%{EH}LamInfo},{%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 counting) hs import({%{EH}CountingAnalysis.ConstraintGeneration},{%{EH}CountingAnalysis.ConstraintSolver},{%{EH}CountingAnalysis})
 %%]
 
-%%[(8 counting) hs import({%{EH}CountingAnalysis.ToCAModule})
+%%[(8 counting) hs import({%{EH}CountingAnalysis.ToCAModule}, {%{EH}CountingAnalysis.ToCModule})
 %%]
 
-%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis.Substitution} as S)
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis.Substitution} as S, {%{EH}CountingAnalysis.AnnotateType})
 %%]
 
 %%[(8 counting) hs import(UHC.Util.Utils, UHC.Util.Pretty)
@@ -33,12 +36,15 @@ Implementation of Hidde's counting Analysis
 %%[(8 counting) hs import(Data.Monoid ((<>)))
 %%]
 
+%%[(8 counting) hs import(Data.List (zipWith6), Control.Arrow(first))
+%%]
+
 Debugging
 %%[(8 counting) hs import(Debug.Trace)
 %%]
 
 %%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSyn})
-WRAPPER CAModule
+WRAPPER Expr
 %%]
 
 
@@ -59,16 +65,80 @@ PRAGMA strictcase
 
 %%[(8 counting) hs
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
-cmodTrfAnalysis s dataGam lamMap cmod
-  =  let t = wrap_CAModule (sem_CAModule ({-(\x -> traceShow (pp x) x) $-} toCAModule cmod)) 
-                            (Inh_CAModule
-                             { dataGam_Inh_CAModule = dataGam
-                             , subtyping_Inh_CAModule = s
-                             , lamMp_Inh_CAModule = lamMap
-                             })
-     in ( cmod -- return the input module as nothing is changed
-        , gathLamMp_Syn_CAModule t
-        )
+cmodTrfAnalysis subeff d imps m = traceShow (pp e, e) $ traceShow (ppMapAnnFree bi, ex) res
+  where Module_Module e = toCAModule im m
+        syn = wrap_Expr (sem_Expr e)
+                Inh_Expr
+                  { dataEnv_Inh_Expr = d
+                  , exports_Inh_Expr = ex
+                  , importEnv_Inh_Expr = im
+                  , subeffecting_Inh_Expr = if subeff then genSub else genEq
+                  , toHsName_Inh_Expr = toHsName
+                  , freshVar_Inh_Expr = 0
+                  }
+        im = toImports imps
+        ex = S.map (fixHsName modName) $ toExports d m
+        c = constraints_Syn_Expr syn
+        e' = annCopy_Syn_Expr syn
+        bindingEnv = bindingEnv_Syn_Expr syn
+        finalBindEnv = S.substSolution bindingEnv s
+        newLamMap = toLamMp finalBindEnv
+        finalLamMap = lamMpMergeInto (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType=a}) const newLamMap imps
+        s = traceShow ("num constraints: ", length c, vlist c) $ solveDef c (emptySolveState {_freshVar = freshVar_Syn_Expr syn, _toHsName = toHsName})
+        toHsName v = mkHNm $ show modName ++ ".CA@" ++ show v
+        modName = moduleNm_CModule_Mod m
+        bi = envFilterList finalBindEnv ex
+        res = if M.size bi == S.size ex 
+          then (toCModule $ Module_Module (S.substSolution e' s), finalLamMap) 
+          else panic "not all exported symbols have a type"
+
+type DataEnv = DataGam
+
+toLamMp :: BindingEnv -> LamMp
+toLamMp = M.map $ \x -> emptyLamInfo {laminfoCaType = getType x}
+
+toImports :: LamMp -> Imports
+toImports x = im
+  where im = M.filter (/= Scheme_Forall mempty mempty mempty (Type_Error "Empty lamInfo")) $ M.map laminfoCaType x
+
+toExports :: DataGam -> CModule -> Exports
+toExports d (CModule_Mod _ exps _ _ _) = toExports' exps
+  where toExports' [] = S.empty
+        toExports' (CExport_Export n:xs) = S.insert n $ toExports' xs
+        toExports' (CExport_ExportData n Nothing:xs) = Set.union cs $ toExports' xs
+          where cs = Set.fromList $ Map.keys $ dgiConstrTagMp $ fromMaybe (panic "ex") $ n `dataGamLookup` d 
+        toExports' (CExport_ExportData _ (Just cs):xs) = S.union (S.fromList cs) $ toExports' xs
+        
+annVars :: DataGamInfo -> HsNames
+annVars = dgiAnnVars
+
+tyVars :: DataGamInfo -> HsNames
+tyVars = dgiTyVars
+
+constrs :: DataGamInfo -> Map HsName Fields
+constrs = Map.map dtiFldAnnTyL . dgiConstrTagMp
+
+fromFields :: Fields -> [RhoType]
+fromFields = map fromField
+
+fromField :: Field -> RhoType
+fromField (Field_Lazy t) = t
+fromField (Field_Strict t) = t
+
+-- temp
+
+-- TODO ask atze as this is basically hope it works stuff
+fixHsName :: HsName -> HsName -> HsName
+fixHsName x hnm = mkHNm $ show x ++ "." ++ show hnm
+
+traceShow2 :: (Show a, Show b) => a -> b -> b
+traceShow2 x y = y
+-- traceShow2 x y = traceShow ("***********",x,y,"$$$$$$$$$$$$$$") y
+
+traceShow1 :: (Show a, Show b) => a -> b -> b
+traceShow1 x y = y
+-- traceShow1 x y = traceShow ("*********",x,y,"#########") y
+
 %%]
 
 %%[(8 counting) hs export(cmodTrfAnalysisCounting)
@@ -81,197 +151,92 @@ cmodTrfAnalysisCountingUnique :: DataGam -> LamMp -> CModule -> (CModule, LamMp)
 cmodTrfAnalysisCountingUnique = cmodTrfAnalysis False
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utils
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- %%% Gathering LamInfo
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 counting) hs 
+-- %%[(8 codegen)
+-- ATTR
+--   CAModule CAExpr
+--     [ | | gathLamMp: LamMp ]
 
-type LetFreshVarMap = (LetFreshVar0Map, LetFreshVarIMap)
-type LetFreshVar0Map = Map Int Fresh0
-type LetFreshVarIMap = Map Int FreshI
+-- SEM CAExpr
+--   | Let
+--           lhs         .   gathLamMp   =   @binds.bindLamMp `Map.union` @body.gathLamMp
+--   | LetBang
+--     lhs.gathLamMp = @bind.bindLamMp `Map.union` @body.gathLamMp
+--   | * - Let LetBang
+--           lhs         .   gathLamMp   =   Map.empty
+-- %%]
 
-data Fresh0 = Fresh0
-  { fresh0_indexI :: Int
-  , fresh0_sigma :: TyScheme
-  , fresh0_delta :: Annotation
-  , fresh0_nu :: Annotation
-  }
+-- %%[(8 codegen)
+-- ATTR CABindings CABinding CAExpr [ | | bindLamMp USE {`lamMpUnionBindAspMp`} {Map.empty}: LamMp ]
 
-data FreshI = FreshI
-  { freshI_indexI :: Int
-  , freshI_delta :: Annotation
-  , freshI_nu :: Annotation
-  , freshI_tau :: AnnotatedType
-  , freshI_flds :: Map Int FreshIJ
-  }
+-- %%]
 
-data FreshIJ = FreshIJ
-  { freshIJ_indexI :: Int
-  , freshIJ_indexJ :: Int
-  , freshIJ_delta :: Annotation
-  , freshIJ_nu :: Annotation
-  , freshIJ_tau :: AnnotatedType
-  }
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- %%% Combining LamInfo for local (per module) use
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-makeLetFreshVarMaps :: Var -> Int -> (LetFreshVarMap, Var)
-makeLetFreshVarMaps v numBinds = runState (makeLetFreshVarMaps' numBinds) v
+-- %%[(8 codegen)
+-- SEM CAModule
+--   | Module      loc         .   gathLamMp   =   lamMpMergeInto @howMergeLamInfo const @mod.gathLamMp @lhs.lamMp
+--                 mod         .   lamMp       =   @howUnionGathLamInfo @lhs.lamMp
+-- %%]
 
-makeLetFreshVarMaps' :: Int -> State Var LetFreshVarMap
-makeLetFreshVarMaps' numBinds = do
-  m0 <- mapM mkFresh0 [1 .. numBinds]
-  mi <- mapM (mkFreshI numBinds) [1 .. numBinds]
-  return (Map.fromList m0, Map.fromList mi)
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- %%% Distributing LamInfo
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- mkFresh0 :: i -> State Var (i, Fresh0)
-mkFresh0 :: Int -> State Var (Int, Fresh0)
-mkFresh0 i = do
-  d <- getFresh
-  n <- getFresh
-  t <- getFresh
-  return (i, Fresh0
-    { fresh0_indexI = i
-    , fresh0_sigma = TyScheme_SchemeVar $ SV t 
-    , fresh0_delta = Annotation_AnnVar d
-    , fresh0_nu = Annotation_AnnVar n
-    })
+-- %%[(8 codegen)
+-- ATTR ALLCAEXPR CAModule [ lamMp: LamMp | | ]
+-- ATTR ALLCAEXPR [ importLamMp: LamMp | | ]
+-- %%]
 
--- mkFreshI :: maxJ -> i -> State Var (i, FreshI)
-mkFreshI :: Int -> Int -> State Var (Int, FreshI)
-mkFreshI numBinds i = do
-  d <- getFresh
-  n <- getFresh
-  t <- getFresh
-  f <- mapM (mkFreshIJ i) [1 .. numBinds]
-  return (i, FreshI
-    { freshI_indexI = i
-    , freshI_delta = Annotation_AnnVar d
-    , freshI_nu = Annotation_AnnVar n
-    , freshI_tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ show t 
-    , freshI_flds = Map.fromList f
-    })
+-- %%[(8 codegen)
+-- SEM CAModule
+--   | Module
+--     mod.importLamMp = @lhs.lamMp
 
--- mkFreshIJ :: i -> j -> State Var (j, FreshIJ)
-mkFreshIJ :: Int -> Int -> State Var (Int, FreshIJ)
-mkFreshIJ i j = do
-  d <- getFresh
-  n <- getFresh
-  t <- getFresh
-  return (j, FreshIJ
-    { freshIJ_indexI = i
-    , freshIJ_indexJ = j
-    , freshIJ_delta = Annotation_AnnVar d
-    , freshIJ_nu = Annotation_AnnVar n
-    , freshIJ_tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ show t 
-    })
+-- SEM CAExpr
+--   | Abs         body        .   lamMp       =   Map.delete @bind @lhs.lamMp
+-- %%]
 
--- getFresh :: State Var Var
--- getFresh = do
---   x <- get
---   put $ x + 1
---   return x
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- %%% Gathering LamInfo Hooks
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- mkTimes :: LetFreshVarIMap -> i -> delta/nu/tau -> results
-mkTimes :: Compute a => Var -> LetFreshVarIMap -> Int -> (FreshIJ -> a) -> ((GatherConstraints, a), Var)
-mkTimes v fm i f = runState (mkTimes' fm i f) v
+-- %%[(8 counting)
+-- SEM CAModule
+--   | Module       
+--     loc.howUnionGathLamInfo = Map.union @gathLamMp
+-- %%]
 
-mkTimes' :: Compute a => LetFreshVarIMap -> Int -> (FreshIJ -> a) -> State Var (GatherConstraints, a)
-mkTimes' fm i f = do
-  a <- getFresh
-  let (hd:tl) = Map.elems $ freshI_flds $ fm Map.! i
-  b <- computeTimes' (freshI_delta $ fm Map.! freshIJ_indexJ hd) $ f hd
-  foldM g b tl
-  where -- g :: (GatherConstraints, a) -> a -> State Var (GatherConstraints, a)
-        g (c, a) b = do
-          (c2, r1) <- computeTimes' (freshI_delta $ fm Map.! freshIJ_indexJ b) $ f b
-          (c3, r2) <- computeAdd' r1 a
-          return (c <> c2 <> c3, r2)
-%%]
+-- %%[(8 counting)
+-- SEM CAModule
+--   | Module       
+--     loc.howMergeLamInfo = (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType=a})
+-- %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gathering LamInfo
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-- %%[(8 counting)
+-- SEM CAExpr
+--   | Abs      
+--     loc.bindType = S.substSolution (stripRhoEta $ toRho @loc.scheme) @lhs.solvedContraints
+--     lhs.bindLamMp = {-traceShow (@bind, @loc.fety) $-} Map.insert @bind (emptyLamInfo {laminfoCaType = @loc.bindType}) @body.bindLamMp
 
-%%[(8 codegen)
-ATTR
-  CAModule CAExpr
-    [ | | gathLamMp: LamMp ]
-
-SEM CAExpr
-  | Let
-          lhs         .   gathLamMp   =   @binds.bindLamMp `Map.union` @body.gathLamMp
-  | LetBang
-    lhs.gathLamMp = @bind.bindLamMp `Map.union` @body.gathLamMp
-  | * - Let LetBang
-          lhs         .   gathLamMp   =   Map.empty
-%%]
-
-%%[(8 codegen)
-ATTR CABindings CABinding CAExpr [ | | bindLamMp USE {`lamMpUnionBindAspMp`} {Map.empty}: LamMp ]
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Combining LamInfo for local (per module) use
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-SEM CAModule
-  | Module      loc         .   gathLamMp   =   lamMpMergeInto @howMergeLamInfo const @mod.gathLamMp @lhs.lamMp
-                mod         .   lamMp       =   @howUnionGathLamInfo @lhs.lamMp
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Distributing LamInfo
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-ATTR
-  ALLCAEXPR CAModule
-    [ lamMp: LamMp | | ]
-%%]
-
-%%[(8 codegen)
-SEM CAExpr
-  | Lam         body        .   lamMp       =   Map.delete @bind @lhs.lamMp
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gathering LamInfo Hooks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 counting)
-SEM CAModule
-  | Module       
-    loc.howUnionGathLamInfo = Map.union @gathLamMp
-%%]
-
-%%[(8 counting)
-SEM CAModule
-  | Module       
-    loc.howMergeLamInfo = (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType=a})
-%%]
-
-%%[(8 counting)
-SEM CAExpr
-  | Lam        -- probalby incorrect
-    lhs.bindLamMp = {-traceShow (@bind, @loc.fety) $-} Map.insert @bind (emptyLamInfo {laminfoCaType = @loc.fety}) @body.bindLamMp
-
-SEM CABinding
-  | Bind
-    lhs.bindLamMp = {-traceShow (@n, @e.fety) $-} Map.singleton @n (emptyLamInfo {laminfoCaType = @e.fety})
-%%]
+-- SEM CABinding
+--   | Bind
+--     loc.bindType = S.substSolution (fresh0_sigma $ @lhs.freshVar0Map Map.! @lhs.indexI) @lhs.solvedContraints
+--     lhs.bindLamMp = {-traceShow (@n, @e.fety) $-} Map.singleton @n (emptyLamInfo {laminfoCaType = @loc.bindType})
+-- %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) ag
-ATTR ALLCAEXPR CAModule [ dataGam: DataGam | | ]
-ATTR ALLCAEXPR [ | | cTrf: SELF ]
-ATTR CAModule [ | | cTrf: CAModule ]
-ATTR CAModule ALLCAEXPR [ subtyping: Bool | | ]
-
+ATTR * [ toHsName: {Var -> HsName} importEnv: {Imports} exports: {Exports} dataEnv: {DataEnv} subeffecting: {Annotation -> Annotation -> Constraints} | freshVar: {Var} | annCopy: SELF ]
+ATTR * [ | | bindingEnv USE {M.union} {M.empty}: {BindingEnv} ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,279 +244,464 @@ ATTR CAModule ALLCAEXPR [ subtyping: Bool | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) ag
-ATTR ALLCAEXPR [ solvedContraints: {Solution} | freshVar: {Var} | constrs USE {(<>)} {mempty}: {GatherConstraints}]
-ATTR CAExpr [ | | fety: {EtaAnnotatedType} ]
-ATTR CAExpr CAAlt CAAlts CAConVar CAConVars CAConst CABinding [ | | ety: {EtaAnnotatedType} ]
-ATTR ALLCAEXPR - CAPat [ | | env: Env ]
-ATTR CAConVars [ | | conVars: {[Rho AnnotatedType]} ]
-ATTR CAConVar [ | | conVar: {Rho AnnotatedType} ]
-ATTR CAAlt CAAlts CAPat [ | | dataTyName: {Maybe HsName} isType: {Bool} ]
-ATTR CAAlt CAAlts  [ | | numFields: {Int} ]
-ATTR CAPat [ | | fields: {[HsName]} ]
-ATTR CABindings [ | | bindNames: {[HsName]} c2: {GatherConstraints} ]
-ATTR CABinding [ | | bindName: {HsName} ]
-ATTR CABinding CABindings [ freshVar0Map: {LetFreshVar0Map} freshVarIMap: {LetFreshVarIMap} indexI: {Int} allBindNames: {[HsName]} | | ]
+ATTR Expr AltCon AltConst AltCons AltConsts Binding [ | | env: {Env} etaTy: {EtaType} constraints: {Constraints}]
+ATTR ConVars [ | | env: {Env} rhoTypes: {[RhoType]} constraints: {Constraints} ] -- doen
+ATTR ConVar [ | | env: {Env} rhoTy: {RhoType} constraints: {Constraints}] -- done
+ATTR Const AltConsts AltConst [ | | ty: {Type}] -- done
+ATTR AltCons AltCon [ | | tyNm: {HsName}] -- done
+ATTR AltCons Bindings [ | | rhoSchemes: {[[RhoScheme]]}] -- done
+ATTR AltCon Binding [ | | rhoSchemes: {[RhoScheme]}] -- done
+ATTR Bindings [ | | constraints: {Constraints} envs: {[Env]} bindingNames: {HsNames} etaTypes: {[EtaType]}]
+ATTR ConVars AltCons AltConsts Bindings [ | | isNil: {Bool}] --done
+ATTR Binding [ | | bindingName: {HsName} ]
+ATTR Binding Bindings [ allBindingNames: {HsNames} | | ]
 
-SEM CAModule
-  | Module
-    mod.freshVar = 0
-    lhs.cTrf = CAModule_Module @mod.cTrf
-    loc.solvedContraints = traceShow ("Number of Constraints: " ++ (show $ length @mod.constrs)) $ solveConstraints @mod.freshVar $ toConstraints @mod.constrs
-    mod.solvedContraints = @loc.solvedContraints
-
-SEM CAExpr
-  | * 
-    loc.fety = S.substSolution @loc.ety @lhs.solvedContraints
-  | Var
-    lhs.freshVar = @lhs.freshVar + 3
-    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
-    loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
-    loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
-    lhs.env = Map.singleton @v $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) annOne 
-    loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
-    lhs.constrs = {-traceShow ("var", @v, "varInstC:", [Constraint_InstC @loc.sigma @loc.tau]) $-} singleton $ Constraint_InstC @loc.sigma @loc.tau
-  | Const
-    loc.ety = @c.ety
-  | Lam
-    -- loc.nu = Annotation_AnnVar @lhs.freshVar
-    -- loc.delta = Annotation_AnnVar $ @lhs.freshVar + 1
-    loc.nu2 = Annotation_AnnVar @lhs.freshVar
-    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)
-    body.freshVar = @lhs.freshVar + 2
-    (loc.scheme, lhs.freshVar) = envLookupFresh @loc.fv @body.env @bind
-    ((loc.c2, lhs.env), loc.fv) = computeTimes @body.freshVar @loc.nu2 $ Map.delete @bind @body.env
-    -- lhs.env = traceShow ("nu2: ", @loc.nu2, "Env1: ", Map.delete @bind @body.env, "computedEnv: ", @loc.env, "AppC2: ", @loc.c2) @loc.env
-    lhs.constrs = Constraint_SchemeC (CTyScheme_EqC (stripRhoEta $ toRho @loc.scheme) (TyScheme_SForAll Set.empty Set.empty [] @loc.tau)) <| @body.constrs <> {-traceShow ("lamC2: ", @loc.c2)-} @loc.c2
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyFunc (fromRho $ fmap (const @loc.tau) $ toRho @loc.scheme) @body.ety) @loc.nu2 
-  | App
-    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
-    loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
-    loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
-    loc.delta2 = Annotation_AnnVar $ @lhs.freshVar + 3
-    loc.c2 = {-traceShow ("AppInstC:",[Constraint_InstC @loc.sigma @loc.tau]) $-} singleton $ Constraint_InstC @loc.sigma @loc.tau
-
-    loc.sigma2' = EtaAnnotatedType_Eta @loc.tau @loc.nu
-    loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 4)) $ Annotation_AnnVar $ @lhs.freshVar + 5
-    loc.sigma4 = EtaTyScheme_Eta @loc.sigma @loc.nu
-    func.freshVar = @lhs.freshVar + 6
-    
-    ((loc.c2a, loc.sigma2), loc.fv1) = sub @func.freshVar @lhs.subtyping @loc.sigma2'
-    ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 True @func.ety
-    ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv2 @func.env $ Map.singleton @arg $ RhoTyScheme_Rho @loc.sigma4 @loc.delta2
-    -- lhs.env = traceShow ("funcEnv: ", @func.env, "varEnv: ", Map.singleton @arg $ RhoTyScheme_Rho @loc.sigma4 @loc.delta2, "computedEnv: ", @loc.env1, "AppC3: ", @loc.c3) @loc.env1
-    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) <| 
-                    Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.sigma2 @loc.delta2) @loc.sigma3)) <|
-                    -- traceShow ("AppC1a: ", @loc.c1a, "AppC2: ", @loc.c2, "AppC2a: ", @loc.c2a, "AppC3: ", @loc.c3) 
-                    @loc.c1a <> @func.constrs <> @loc.c2 <> @loc.c2a <> @loc.c3
-    loc.ety = @loc.sigma3
-  | AppConst
-    loc.delta2 = Annotation_AnnVar @lhs.freshVar    
-    loc.sigma3 = EtaAnnotatedType_Eta (AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show $ @lhs.freshVar + 1)) $ Annotation_AnnVar $ @lhs.freshVar + 2
-    func.freshVar = @lhs.freshVar + 3
-    
-    ((loc.c2a, loc.sigma2), loc.fv1) = sub @func.freshVar @lhs.subtyping @arg.ety
-    ((loc.c1a, loc.tyFunc), loc.fv2) = sub @loc.fv1 True @func.ety
-    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.tyFunc) annOne) <|
-                    Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.tyFunc) (AnnotatedType_TyFunc (RhoAnnotatedType_Rho @loc.sigma2 @loc.delta2) @loc.sigma3)) <|
-                    @loc.c1a <> @func.constrs <> @loc.c2a 
-    loc.ety = @loc.sigma3
-  | Let
-    loc.numBinds = length @binds.bindNames
-    binds.allBindNames = @binds.bindNames
-    binds.indexI = 1
-    ((loc.freshVar0Map, loc.freshVarIMap), binds.freshVar) = makeLetFreshVarMaps @lhs.freshVar @loc.numBinds
-
-    loc.env0 = foldr Map.delete @body.env @binds.bindNames
-    loc.ty0 = map (\x -> RhoTyScheme_Rho (EtaTyScheme_Eta (fresh0_sigma x) $ fresh0_nu x) $ fresh0_delta x) $ Map.elems @loc.freshVar0Map
-    (loc.tyEnv0, loc.fv2) = envLookupFreshList @body.freshVar @body.env @binds.bindNames
-    (loc.c0, loc.fv3) = genEq @loc.fv2 @loc.ty0 @loc.tyEnv0
-
-    ((loc.c2, loc.env), loc.fv4) = computeAdd @loc.fv3 @loc.env0 @binds.env
-
-    loc.c6 = fromConstraints $ map (\x -> let freshI = @loc.freshVarIMap Map.! fresh0_indexI x 
-              in Constraint_GenC (RhoAnnotatedType_Rho (EtaAnnotatedType_Eta (freshI_tau freshI) $ freshI_nu freshI) $ freshI_delta freshI) 
-                (toConstraints @binds.constrs) @loc.env $ RhoTyScheme_Rho (EtaTyScheme_Eta (fresh0_sigma x) $ fresh0_nu x) $ fresh0_delta x) 
-              $ Map.elems @loc.freshVar0Map
-
-    lhs.constrs = @loc.c0 <> @loc.c2 <> @binds.c2 <> @loc.c6
-    loc.ety = @body.ety
-  | LetBang
-    bind.allBindNames = [@bind.bindName]
-    bind.indexI = 1
-    -- todo
-    bind.freshVar0Map = Map.empty
-    bind.freshVarIMap = Map.empty
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported LetBang") annBot
-  | Con
-    loc.freshAnnVarsMap = Map.fromList $ zip (dgiAnnVars @loc.dataType) @loc.freshAnnVars
-    loc.freshTyVarsMap = Map.fromList $ zip (dgiTyVars @loc.dataType) @loc.freshTyVars
-    loc.dataType = fromJust $ dataGamLookup (@tyNm) @lhs.dataGam
-    loc.freshAnnVars = take (length $ dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar ..]
-    loc.freshTyVars = map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take (length $ dgiTyVars @loc.dataType) $ [@lhs.freshVar + length (dgiAnnVars @loc.dataType) ..]
-    loc.nu = Annotation_AnnVar $ @lhs.freshVar + (length $ dgiAnnVars @loc.dataType) + (length $ dgiTyVars @loc.dataType)
-    flds.freshVar = @lhs.freshVar + (length $ dgiAnnVars @loc.dataType) + (length $ dgiTyVars @loc.dataType) + 1
-
-    (loc.constrs, lhs.freshVar) = genEq @flds.freshVar @flds.conVars $ S.subst (dtiFldAnnTyL $ fromJust $ 
-                                    Map.lookup (@conNm) $ dgiConstrTagMp @loc.dataType)
-                                    @loc.freshAnnVarsMap @loc.freshTyVarsMap Map.empty
-    lhs.constrs = {-traceShow ("ConConstrs: ", @loc.constrs)-} @loc.constrs <> @flds.constrs
-    lhs.env = @flds.env
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData @tyNm @loc.freshAnnVars @loc.freshTyVars) @loc.nu
-  | Rec
-    lhs.constrs = @flds.constrs
-    lhs.env = @flds.env
-    loc.ety = @flds.ety
-  | Case
-    loc.dataTyName = fromJust @alts.dataTyName
-    loc.dataType = fromJust $ dataGamLookup (@loc.dataTyName) @lhs.dataGam
-    loc.freshAnnVars = if @alts.isType || @loc.isRec then [] else take (length $ dgiAnnVars @loc.dataType) $ map Annotation_AnnVar [@lhs.freshVar ..]
-    loc.freshTyVars = if @alts.isType || @loc.isRec then [] else map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take (length $ dgiTyVars @loc.dataType) $ [@lhs.freshVar + length (dgiAnnVars @loc.dataType) ..]
-    e.freshVar = @lhs.freshVar + (length @loc.freshAnnVars) + (length @loc.freshRecTyVars) + @alts.numFields + 1
-
-    ((loc.c1a, loc.subEty), loc.fv1) = sub @alts.freshVar True @e.ety
-    loc.etyTyData = AnnotatedType_TyData @loc.dataTyName @loc.freshAnnVars @loc.freshTyVars
-    loc.c1 = Constraint_TyC (CAnnotatedType_EqC (stripEta $ toEta @loc.subEty) $
-              if @loc.isRec then @loc.etyRec else @loc.etyTyData)
-                
-    ((loc.c3, lhs.env), lhs.freshVar) = computeAdd @loc.fv1 @e.env @alts.env
-    lhs.constrs = Constraint_AnnC (CAnnotation_EqC (getAnnEta $ toEta @loc.subEty) annOne) <|
-                    -- traceShow ("CaseC1a: ", @loc.c1a, "CaseC1: ", @loc.c1, "CaseC3: ", @loc.c3) 
-                    @loc.c1 <| @loc.c1a <> @loc.c3 <> @alts.constrs <> @e.constrs
-
-    loc.freshRecTyVars = map (\x -> AnnotatedType_TyVar $ mkHNm $ "CA" ++ show x) $ take @alts.numFields $ [@lhs.freshVar + (length @loc.freshAnnVars) + (length @loc.freshTyVars) ..]
-    loc.etyRec = AnnotatedType_TyRow @loc.freshRecTyVars
-    loc.isRec = isNothing  @alts.dataTyName
-    loc.ety = @alts.ety
-  | FFI
-    -- todo
-    lhs.env = Map.empty
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyError "Unsupported FFI") annBot
-  | Error
-    loc.ety = panic $ "Error constructor found: " ++ @e
-    lhs.env = Map.empty
-
-SEM CABindings
-  | Cons
-    lhs.bindNames = @hd.bindName : @tl.bindNames
-    tl.indexI = @lhs.indexI + 1
-    loc.freshI = @lhs.freshVarIMap Map.! @lhs.indexI
-
-    loc.envi = foldr Map.delete @hd.env @lhs.allBindNames
-    loc.tyi = map (\x -> RhoTyScheme_Rho (EtaTyScheme_Eta (TyScheme_SForAll Set.empty Set.empty [] $ freshIJ_tau x) $ freshIJ_nu x) $ freshIJ_delta x) $ Map.elems $ freshI_flds @loc.freshI
-    (loc.tyEnvi, loc.fv1) = envLookupFreshList @tl.freshVar @hd.env @lhs.allBindNames
-    (loc.c1ia, loc.fv2) = genEq @loc.fv1 @loc.tyi @loc.tyEnvi
-    (loc.c1ib, loc.fv3) = genEq @loc.fv2 @hd.ety @loc.ety
-    loc.ety = EtaAnnotatedType_Eta (freshI_tau @loc.freshI) $ freshI_nu @loc.freshI
-
-    ((loc.c2a, loc.timesEnv), loc.fv4) = computeTimes @loc.fv3 (freshI_delta @loc.freshI) @loc.envi
-    ((loc.c2b, lhs.env), loc.fv5) = computeAdd @loc.fv4 @loc.timesEnv @tl.env
-
-    ((loc.c3ia, loc.d), loc.fv6) = mkTimes @loc.fv5 @lhs.freshVarIMap @lhs.indexI freshIJ_delta
-    (loc.c3ib, loc.fv7) = genAdd @loc.fv6 (fresh0_delta $ @lhs.freshVar0Map Map.! @lhs.indexI) @loc.d $ freshI_delta @loc.freshI
-
-    ((loc.c4ia, loc.n), loc.fv8) = mkTimes @loc.fv7 @lhs.freshVarIMap @lhs.indexI freshIJ_nu
-    (loc.c4ib, loc.fv9) = genAdd @loc.fv8 (fresh0_nu $ @lhs.freshVar0Map Map.! @lhs.indexI) @loc.n $ freshI_nu @loc.freshI
-
-    ((loc.c5ia, loc.t), loc.fv10) = mkTimes @loc.fv9 @lhs.freshVarIMap @lhs.indexI freshIJ_tau
-    (loc.c5ib, lhs.freshVar) = genEq @loc.fv10 @loc.t $ freshI_tau @loc.freshI
-    
-    lhs.c2 = @loc.c2a <> @loc.c2b
-    lhs.constrs = @hd.constrs <> @tl.constrs <> @loc.c1ia <> @loc.c1ib
-                    <> @loc.c3ia <> @loc.c3ib <> @loc.c4ia <> @loc.c4ib <> @loc.c5ia <> @loc.c5ib 
-  | Nil
-    lhs.bindNames = []
-    lhs.c2 = mempty
-
-SEM CABinding
-  | Bind
-    lhs.bindName = @n
-    -- lhs.ety = e.ety
-
-SEM CAConst
-  | *
-    lhs.env = Map.empty
-  | Int Char Integer
-    lhs.freshVar = @lhs.freshVar + 1
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm @loc.dataName) [] []) $ Annotation_AnnVar @lhs.freshVar
-  | Char
-    loc.dataName = "Char"
-  | Int
-    loc.dataName = "Int"
-  | Integer
-    loc.dataName = "Integer"
-  | String
-    lhs.freshVar = @lhs.freshVar + 5
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyData (mkHNm "UHC.Base.String") (map Annotation_AnnVar [@lhs.freshVar + 1 .. @lhs.freshVar + 4]) []) $ Annotation_AnnVar @lhs.freshVar
-
-SEM CAAlt
-  | Alt
-    lhs.dataTyName = @p.dataTyName
-    lhs.numFields = length @p.fields
-
-SEM CAAlts
-  | Cons
-    lhs.dataTyName = @hd.dataTyName
-    lhs.numFields = @hd.numFields
-    loc.ety = @hd.ety
-    ((loc.c3, lhs.env), loc.fv1) = computeUnion @tl.freshVar @hd.env @tl.env
-    (loc.constrs, lhs.freshVar) = genEq @loc.fv1 @hd.ety @tl.ety
-    lhs.constrs = -- traceShow ("CAAltsCons : ", @loc.constrs, "AppC3: ", @loc.c3) 
-                    @loc.constrs <> @hd.constrs <> @tl.constrs <> @loc.c3
-    lhs.isType = @hd.isType
-  | Nil
-    lhs.dataTyName = panic "No alts in case"
-    lhs.numFields = 0
-    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
-    loc.nu = Annotation_AnnVar $ @lhs.freshVar + 1
-    loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
-    lhs.freshVar = @lhs.freshVar + 2
-    lhs.isType = False
-
-SEM CAPat
-  | Pat RecPat
-    lhs.fields = @flds
-    lhs.isType = False
-  | Int Char
-    lhs.fields = []
-    lhs.isType = True
-  | Pat
-    lhs.dataTyName = Just @tyNm
-  | RecPat
-    lhs.dataTyName = Nothing
-  | Int 
-    lhs.dataTyName = Just $ mkHNm "Int"
-  | Char 
-    lhs.dataTyName = Just $ mkHNm "Char"
-
-SEM CAConVars
-  | Cons
-    lhs.ety = case @tl.ety of EtaAnnotatedType_Eta (AnnotatedType_TyRec xs) ann -> EtaAnnotatedType_Eta (AnnotatedType_TyRec $ @hd.ety : xs) ann
-    ((loc.c2, lhs.env), lhs.freshVar) = computeAdd @tl.freshVar @hd.env @tl.env
-    lhs.constrs = {-traceShow ("CAConVarsCons: ", @loc.c2) -}@loc.c2 <> @hd.constrs <> @tl.constrs
-    lhs.conVars = @hd.conVar : @tl.conVars
-  | Nil
-    lhs.freshVar = @lhs.freshVar + 1
-    loc.nu = Annotation_AnnVar @lhs.freshVar
-    loc.ety = EtaAnnotatedType_Eta (AnnotatedType_TyRec []) @loc.nu
-    lhs.conVars = []
-
-SEM CAConVars CAAlts CABindings
-  | Nil
-    lhs.env = Map.empty
-
-SEM CAConVar
-  | Var
+SEM Expr
+  | VarLocal
+    loc.tau = Type_Var $ @lhs.toHsName @lhs.freshVar
+    loc.sigma = Scheme_Var $ @lhs.toHsName $ @lhs.freshVar + 1
+    loc.nu = Annotation_Var $ @lhs.toHsName $ @lhs.freshVar + 2
+    loc.delta = Annotation_Var $ @lhs.toHsName $ @lhs.freshVar + 3
+    loc.etaTy = EtaType_Eta @loc.tau @loc.nu
     lhs.freshVar = @lhs.freshVar + 4
-    loc.tau = AnnotatedType_TyVar $ mkHNm $ "CA" ++ (show @lhs.freshVar)
-    loc.sigma = TyScheme_SchemeVar $ SV $ @lhs.freshVar + 1
-    loc.nu = Annotation_AnnVar $ @lhs.freshVar + 2
-    loc.delta = Annotation_AnnVar $ @lhs.freshVar + 3
-    lhs.env = Map.singleton @v $ RhoTyScheme_Rho (EtaTyScheme_Eta @loc.sigma @loc.nu) @loc.delta 
-    loc.ety = EtaAnnotatedType_Eta @loc.tau @loc.nu
-    lhs.constrs = {-traceShow ("Convar", @v, "ConVarInstC:", [Constraint_InstC @loc.sigma @loc.tau])-} singleton $ Constraint_InstC @loc.sigma @loc.tau
-    lhs.conVar = Rho (Eta @loc.tau @loc.nu) @loc.delta
+    lhs.env = M.singleton @v $ RhoScheme_Rho (EtaScheme_Eta @loc.sigma @loc.nu) @loc.delta -- annOne
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("VarLocal-annCopy: ",@loc.annCopy, "Constraints: ") $ singleC $ Constraint_Inst @loc.sigma @loc.tau
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_VarLocal @v
+  | VarImport
+    loc.tau = Type_Var $ @lhs.toHsName @lhs.freshVar
+    loc.sigma = @lhs.importEnv M.! @v
+    loc.etaTy = EtaType_Eta @loc.tau annTop
+    lhs.freshVar = @lhs.freshVar + 1
+    lhs.env = M.empty
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("VarImport-annCopy: ",@loc.annCopy, "Constraints: ") $ singleC $ Constraint_Inst @loc.sigma @loc.tau
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_VarImport @v
   | Const
-    loc.delta = Annotation_AnnVar @lhs.freshVar
-    lhs.conVar = Rho (toEta $ @c.ety) @loc.delta
+    loc.tau = @c.ty
+    loc.nu = Annotation_Var $ @lhs.toHsName @lhs.freshVar
+    loc.etaTy = EtaType_Eta @loc.tau @loc.nu
+    lhs.freshVar = @lhs.freshVar + 1
+    lhs.env = M.empty
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("Const-annCopy: ",@loc.annCopy, "Constraints: ") $ mempty
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_Const @c.annCopy
+  | Abs
+    loc.env1 = M.delete @bind @body.env
+    loc.(rho, fv) = envLookupFresh (@body.freshVar, @lhs.toHsName) @body.env @bind
+    loc.sigma = getType @loc.rho
+    loc.nu = getUsage @loc.rho
+    loc.delta = getDemand @loc.rho
+    loc.eta = @body.etaTy
+    loc.c1 = @body.constraints 
+    loc.nu2 = Annotation_Var $ @lhs.toHsName @loc.fv
+    loc.tau = Type_Var $ @lhs.toHsName $ @loc.fv + 1
+    loc.((env2, c2), fv2) = computeTimes (@loc.fv + 2, @lhs.toHsName) @loc.nu2 @loc.env1
+    loc.etaTy = EtaType_Eta (Type_Func (RhoType_Rho (EtaType_Eta @loc.tau @loc.nu) @loc.delta) @loc.eta) @loc.nu2
+    lhs.freshVar = @loc.fv2
+    lhs.env = @loc.env2
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("Abs-annCopy: ",@loc.annCopy, "Constraints: ") $ @loc.c1 <> @loc.c2 <> genEq @loc.sigma (Scheme_Forall mempty mempty mempty @loc.tau)
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_Abs @bind @body.annCopy
+    +bindingEnv = M.insert @bind @loc.rho
+  | AppLocal
+    loc.env1 = @func.env
+    loc.eta' = @func.etaTy
+    loc.c1 = @func.constraints
+    loc.delta2 = Annotation_Var $ @lhs.toHsName @func.freshVar
+    loc.sigmax = Scheme_Var $ @lhs.toHsName $ @func.freshVar + 1
+    loc.nux = Annotation_Var $ @lhs.toHsName $ @func.freshVar + 2
+    loc.taux = Type_Var $ @lhs.toHsName $ @func.freshVar + 3
+    loc.eta4 = EtaScheme_Eta @loc.sigmax @loc.nux
+    loc.eta2' = EtaType_Eta @loc.taux @loc.nux
+    loc.c2 = singleC $ Constraint_Inst @loc.sigmax @loc.taux
+    loc.eta3 = EtaType_Eta (Type_Var $ @lhs.toHsName $ @func.freshVar + 4) $ Annotation_Var $ @lhs.toHsName $ @func.freshVar + 5
+    loc.((eta2, c2'), fv) = sub (@func.freshVar + 6, @lhs.toHsName) @lhs.subeffecting @loc.eta2'
+    loc.((etas', c1'), fv2) = sub (@loc.fv, @lhs.toHsName) genSub @loc.eta'
+    loc.tau1 = getType @loc.etas'
+    loc.nu1 = getUsage @loc.etas'
+    loc.((env2, c3), fv3) = computePlus (@loc.fv2, @lhs.toHsName) @loc.env1 $ M.singleton @arg $ RhoScheme_Rho @loc.eta4 @loc.delta2
+    loc.etaTy = @loc.eta3
+    lhs.freshVar = @loc.fv3
+    lhs.env = @loc.env2
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("AppLocal-annCopy: ",@loc.annCopy, "Constraints: ") $ mconcat [@loc.c1, @loc.c1', @loc.c2, @loc.c2', @loc.c3, 
+                        genEq @loc.tau1 $ Type_Func (RhoType_Rho @loc.eta2 @loc.delta2) @loc.eta3, 
+                        genEq @loc.nu1 annOne]
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_AppLocal @func.annCopy @arg
+  | AppImport
+    loc.env = @func.env
+    loc.eta' = @func.etaTy
+    loc.c1 = @func.constraints
+    loc.delta2 = Annotation_Var $ @lhs.toHsName @func.freshVar
+    loc.sigmax = @lhs.importEnv M.! @arg
+    loc.taux = Type_Var $ @lhs.toHsName $ @func.freshVar + 2
+    loc.eta2' = EtaType_Eta @loc.taux annTop
+    loc.c2 = singleC $ Constraint_Inst @loc.sigmax @loc.taux
+    loc.eta3 = EtaType_Eta (Type_Var $ @lhs.toHsName $ @func.freshVar + 3) $ Annotation_Var $ @lhs.toHsName $ @func.freshVar + 4
+    loc.((eta2, c2'), fv) = sub (@func.freshVar + 5, @lhs.toHsName) @lhs.subeffecting @loc.eta2'
+    loc.((etas', c1'), fv2) = sub (@loc.fv, @lhs.toHsName) genSub @loc.eta'
+    loc.tau1 = getType @loc.etas'
+    loc.nu1 = getUsage @loc.etas'
+    loc.etaTy = @loc.eta3
+    lhs.freshVar = @loc.fv2
+    lhs.env = @loc.env
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("AppImport-annCopy: ",@loc.annCopy, "Constraints: ") $ mconcat [@loc.c1, @loc.c1', @loc.c2, @loc.c2', 
+                        genEq @loc.tau1 $ Type_Func (RhoType_Rho @loc.eta2 @loc.delta2) @loc.eta3, 
+                        genEq @loc.nu1 annOne]
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_AppImport @func.annCopy @arg
+  | AppConst
+    loc.env = @func.env
+    loc.eta' = @func.etaTy
+    loc.c1 = @func.constraints
+    loc.delta2 = Annotation_Var $ @lhs.toHsName @func.freshVar
+    loc.eta2' = EtaType_Eta @arg.ty $ Annotation_Var $ @lhs.toHsName $ @func.freshVar + 1
+    loc.eta3 = EtaType_Eta (Type_Var $ @lhs.toHsName $ @func.freshVar + 2) $ Annotation_Var $ @lhs.toHsName $ @func.freshVar + 3
+    loc.((eta2, c2), fv) = sub (@func.freshVar + 4, @lhs.toHsName) @lhs.subeffecting @loc.eta2'
+    loc.((etas', c1'), fv2) = sub (@loc.fv, @lhs.toHsName) genSub @loc.eta'
+    loc.tau1 = getType @loc.etas'
+    loc.nu1 = getUsage @loc.etas'
+    loc.etaTy = @loc.eta3
+    lhs.freshVar = @loc.fv2
+    lhs.env = @loc.env
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("AppConst-annCopy: ",@loc.annCopy, "Constraints: ") $ mconcat [@loc.c1, @loc.c1', @loc.c2, 
+                        genEq @loc.tau1 $ Type_Func (RhoType_Rho @loc.eta2 @loc.delta2) @loc.eta3, 
+                        genEq @loc.nu1 annOne]
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_AppConst @func.annCopy @arg.annCopy
+  | Let
+    binds.allBindingNames = @binds.bindingNames
+    loc.env0 = envDeleteList @e.env @binds.bindingNames
+    loc.(rho0i, fv) = envLookupFreshList (@e.freshVar, @lhs.toHsName) @e.env @binds.bindingNames
+    loc.sigmai = map getType @loc.rho0i
+    loc.nui = map getUsage @loc.rho0i
+    loc.delta0i = map getDemand @loc.rho0i
+    loc.deltai = map (Annotation_Var . @lhs.toHsName) [@loc.fv .. @loc.fv + length @loc.delta0i - 1]
+    loc.fv0 = @loc.fv + length @loc.delta0i
+    loc.eta = @e.etaTy
+    loc.c0 = @e.constraints
+    loc.tauij = map (\x -> map (Type_Var . @lhs.toHsName) [@loc.fv0 + x * length @binds.bindingNames .. @loc.fv0 + (x + 1) * length @binds.bindingNames - 1]) [0 .. length @binds.bindingNames - 1]
+    loc.fv1 = @loc.fv0 + length @binds.bindingNames * length @binds.bindingNames
+    loc.sigmaij = map (map $ Scheme_Forall mempty mempty mempty) @loc.tauij
+    loc.envi = @binds.envs
+    loc.sigmaij' = map (map getType) @binds.rhoSchemes
+    loc.nuij = map (map getUsage) @binds.rhoSchemes
+    loc.deltaij = map (map getDemand) @binds.rhoSchemes
+    loc.taui = map getType @binds.etaTypes
+    loc.nuxi = map getUsage @binds.etaTypes
+    loc.c0'= genEq @loc.nui @loc.nuxi
+    loc.c1i = @binds.constraints
+    loc.c1' = genEq @loc.sigmaij @loc.sigmaij'
+    loc.c1 = @loc.c1' <> @loc.c1i
+    
+    loc.((envi', c2i), fv2) = traceShow1 (@loc.fv1, @binds.bindingNames, @loc.deltai, @loc.envi) $ computeCondList (@loc.fv1 + length @binds.bindingNames ^ 2, @lhs.toHsName) @loc.deltai @loc.envi
+    loc.((env', c2), fv3) = bigPlus (@loc.fv2, @lhs.toHsName) @loc.envi'
+    loc.((env, c2'), fv4) = computePlus (@loc.fv3, @lhs.toHsName) @loc.env0 @loc.env'
+    
+    loc.((deltaij', c3ij), fv5) = computeCondMatrix (@loc.fv4, @lhs.toHsName) @loc.deltai @loc.deltaij
+    loc.((deltai', c3i), fv6) = bigPlusMatrix (@loc.fv5, @lhs.toHsName) @loc.deltaij'
+    loc.((deltai'', c3i'), fv7) = computePlus (@loc.fv6, @lhs.toHsName) @loc.deltai @loc.deltai'
+    loc.c3' = genEq @loc.deltai @loc.deltai''
+    loc.c3 = @loc.c3' <> @loc.c3ij <> @loc.c3i <> @loc.c3i'
+    
+    loc.((nuij', c4ij), fv8) = computeCondMatrix (@loc.fv7, @lhs.toHsName) @loc.deltai @loc.nuij
+    loc.((nui', c4i), fv9) = bigPlusMatrix (@loc.fv8, @lhs.toHsName) @loc.nuij'
+    loc.((nu0i, c4i'), fv10) = computePlus (@loc.fv9, @lhs.toHsName) @loc.nui @loc.nui'
+    loc.c4' = mempty
+    -- loc.c4' = genEq @loc.nu0i @loc.nui
+    loc.c4 = @loc.c4' <> @loc.c4ij <> @loc.c4i <> @loc.c4i'
+    
+    loc.((tauij', c5ij), fv11) = computeCondMatrix (@loc.fv10, @lhs.toHsName) @loc.deltai @loc.tauij
+    loc.((taui', c5i), fv12) = bigPlusMatrix (@loc.fv11, @lhs.toHsName) @loc.tauij'
+    loc.c5' = genEq @loc.taui' @loc.taui
+    loc.c5 = @loc.c5' <> @loc.c5ij <> @loc.c5i
+    
+    loc.cGen = @loc.c1 <> @loc.c3 <> @loc.c4 <> @loc.c5
+    loc.c6 = mconcat $ zipWith6 (\t n d n0 d0 -> singleC . Constraint_Gen t n d n0 d0 @loc.cGen @loc.env) @loc.taui @loc.nui @loc.deltai @loc.nu0i @loc.delta0i @loc.sigmai
+    loc.c7i = zipWith3 (\x n d0 -> if x `S.member` @lhs.exports then genEq n annTop <> genEq d0 annTop else mempty) @binds.bindingNames @loc.nui @loc.deltai
+    
+    loc.etaTy = @loc.eta
+    lhs.freshVar = @loc.fv12
+    lhs.env = @loc.env
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("Let-annCopy: ", "Constraints: ", @loc.c6 , @loc.c0 , @loc.c0' , @loc.c2 , @loc.c2' , @loc.c2i , mconcat @loc.c7i) $ @loc.c6 <> @loc.c0 <> @loc.c0' <> @loc.c2 <> @loc.c2' <> @loc.c2i <> mconcat @loc.c7i
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_Let @binds.annCopy @e.annCopy
+    +bindingEnv = M.union (M.fromList $ zip @binds.bindingNames @loc.rho0i)
+  | LetBang
+    loc.env0 = M.delete @x @e2.env
+    loc.(rho0, fv) = envLookupFresh (@e2.freshVar, @lhs.toHsName) @e2.env @x
+    loc.sigma0 = getType @loc.rho0
+    loc.nu = getUsage @loc.rho0
+    loc.delta = getDemand @loc.rho0
+    loc.eta = @e2.etaTy
+    loc.c0 = @e2.constraints
+    loc.env1 = M.delete @x @e1.env
+    loc.(rho1, fv2) = envLookupFresh (@loc.fv, @lhs.toHsName) @e1.env @x
+    loc.sigma' = getType @loc.rho1
+    loc.nu1 = getUsage @loc.rho1
+    loc.delta1 = getDemand @loc.rho1
+    loc.tau = getType @e1.etaTy
+    loc.nu2 = getUsage @e1.etaTy
+    loc.c1 = @e1.constraints
+    loc.c1' = genEq @loc.sigma' (Scheme_Forall mempty mempty mempty @loc.tau) <> genSub annZero @loc.nu2
+    loc.((env, c2), fv3) = computePlus (@loc.fv2, @lhs.toHsName) @loc.env0 @loc.env1
+    loc.((delta0, c3), fv4) = computePlus (@loc.fv3, @lhs.toHsName) annOne @loc.delta
+    loc.((delta', c4), fv5) = computePlus (@loc.fv4, @lhs.toHsName) @loc.delta0 @loc.delta1
+    -- loc.c4' = mempty 
+    loc.c4' = genEq @loc.delta0 @loc.delta'
+    loc.((nu', c5), fv6) = computePlus (@loc.fv5, @lhs.toHsName) @loc.nu @loc.nu1
+    loc.c5' = mempty
+    -- loc.c5' = genEq @loc.nu @loc.nu'
+    loc.cGen = @loc.c1 <> @loc.c1' <> @loc.c3 <> @loc.c4 <> @loc.c4' <> @loc.c5 <> @loc.c5'
+    loc.c6 = singleC $ Constraint_Gen @loc.tau @loc.nu @loc.delta0 @loc.nu' @loc.delta' @loc.cGen @loc.env @loc.sigma0
+    loc.etaTy = @loc.eta
+    lhs.freshVar = @loc.fv6
+    lhs.env = @loc.env
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("LetBang-annCopy: ",@loc.annCopy, "Constraints: ") $ @loc.c6 <> @loc.c0 <> @loc.c2
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_LetBang @x @e1.annCopy @e2.annCopy
+    +bindingEnv = M.insert @x (RhoScheme_Rho (EtaScheme_Eta @loc.sigma0 @loc.nu') @loc.delta')
+  | Con
+    loc.env = @flds.env
+    loc.rho' = @flds.rhoTypes
+    loc.c1 = @flds.constraints
+    loc.data = fromMaybe (error "con") $ @tyNm `dataGamLookup` @lhs.dataEnv
+    loc.ul = annVars @loc.data
+    loc.ak = tyVars @loc.data
+    loc.rhoj = fromFields $ constrs @loc.data M.! @conNm
+    loc.phil = map (Annotation_Var . @lhs.toHsName) [@flds.freshVar .. @flds.freshVar + length @loc.ul - 1]
+    loc.tauk = map (Type_Var . @lhs.toHsName) [@flds.freshVar + length @loc.ul  .. @flds.freshVar + length @loc.ul + length @loc.ak - 1]
+    loc.sol = Solution (M.fromList $ zip @loc.ul @loc.phil) (M.fromList $ zip @loc.ak @loc.tauk) M.empty
+    loc.rhoj' = S.substSolution @loc.rhoj @loc.sol
+    loc.c2 = genEq @loc.rhoj' @loc.rho'
+    loc.nu = Annotation_Var $ @lhs.toHsName $ @flds.freshVar + length @loc.ul + length @loc.ak
+    loc.etaTy = EtaType_Eta (Type_Data @tyNm @loc.phil @loc.tauk) @loc.nu
+    lhs.freshVar = @flds.freshVar + length @loc.ul + length @loc.ak + 1
+    lhs.env = @loc.env
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("Con-annCopy: ",@loc.annCopy, "Constraints: ") $ @loc.c1 <> @loc.c2
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_Con @tyNm @conNm @flds.annCopy
+  | Tup
     -- copy rules
+    loc.nu = Annotation_Var $ @lhs.toHsName @flds.freshVar
+    loc.etaTy = EtaType_Eta (Type_Tup @flds.rhoTypes) @loc.nu
+    lhs.freshVar = @flds.freshVar + 1
+    lhs.etaTy = @loc.etaTy
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_Tup @flds.annCopy
+  | CaseCon
+    loc.data = fromMaybe (error "CaseCon") $ @alts.tyNm `dataGamLookup` @lhs.dataEnv
+    loc.ul = annVars @loc.data
+    loc.ak = tyVars @loc.data
+    loc.rhoijtau = map (fromFields . snd) $ M.toList $ constrs @loc.data
+    loc.phil = map (Annotation_Var . @lhs.toHsName) [@alts.freshVar .. @alts.freshVar + length @loc.ul - 1]
+    loc.tauk = map (Type_Var . @lhs.toHsName) [@alts.freshVar + length @loc.ul  .. @alts.freshVar + length @loc.ul + length @loc.ak - 1]
+    loc.sol = Solution (M.fromList $ zip @loc.ul @loc.phil) (M.fromList $ zip @loc.ak @loc.tauk) M.empty
+    loc.rhoijtau' = S.substSolution @loc.rhoijtau @loc.sol
+    loc.rhoijsigma = map (map $ fromGRho . fmap (Scheme_Forall mempty mempty mempty) . toGRho) @loc.rhoijtau'
+    loc.env0 = @e.env
+    loc.tau0 = getType @e.etaTy
+    loc.nu0 = getUsage @e.etaTy
+    loc.c1 = @e.constraints
+    loc.c1' = genEq @loc.tau0 (Type_Data @alts.tyNm @loc.phil @loc.tauk) <> genSub annOne @loc.nu0
+    loc.env' = @alts.env
+    loc.rhoij' = @alts.rhoSchemes
+    loc.eta1 = @alts.etaTy
+    loc.c2 = @alts.constraints
+    loc.c2' = genEq @loc.rhoijsigma @loc.rhoij'
+    loc.((env, c3'), fv) = computePlus (@alts.freshVar + length @loc.ul + length @loc.ak, @lhs.toHsName) @loc.env0 @loc.env'
+    loc.etaTy = @loc.eta1
+    lhs.freshVar = @loc.fv
+    lhs.env = @loc.env
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("CaseCon-annCopy: ",@loc.annCopy, "Constraints: ") $ @loc.c1 <> @loc.c1' <> @loc.c2 <> @loc.c2' <> @loc.c3'
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_CaseCon @e.annCopy @alts.annCopy
+  | CaseTup
+    loc.rhoitau = map (\n -> RhoType_Rho (EtaType_Eta (Type_Var $ @lhs.toHsName $ @e1.freshVar + 3 * n) $ Annotation_Var $ @lhs.toHsName $ @e1.freshVar + 1 + 3 * n) $ Annotation_Var $ @lhs.toHsName $ @e1.freshVar + 2 + 3 * n) [0 .. length @xs - 1]
+    loc.rhoisigma = map (fromGRho . fmap (Scheme_Forall mempty mempty mempty) . toGRho) @loc.rhoitau
+    loc.env0 = @e.env
+    loc.tau0 = getType @e.etaTy
+    loc.nu0 = getUsage @e.etaTy
+    loc.c1 = @e.constraints
+    loc.c1' = genEq @loc.tau0 (Type_Tup @loc.rhoitau) <> genSub annOne @loc.nu0
+    loc.env1 = envDeleteList @e1.env @xs
+    loc.(rhoi', fv) = envLookupFreshList (@e1.freshVar + 3 * length @xs, @lhs.toHsName) @e1.env @xs
+    loc.eta = @e1.etaTy
+    loc.c2 = @e1.constraints
+    loc.c2' = genEq @loc.rhoisigma @loc.rhoi'
+    loc.((env, c3), fv2) = computePlus (@loc.fv, @lhs.toHsName) @loc.env0 @loc.env1
+    loc.etaTy = @loc.eta
+    lhs.freshVar = @loc.fv2
+    lhs.env = @loc.env
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("CaseTup-annCopy: ",@loc.annCopy, "Constraints: ") $ @loc.c1 <> @loc.c1' <> @loc.c2 <> @loc.c2' <> @loc.c3
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_CaseTup @e.annCopy @xs @e1.annCopy
+    +bindingEnv = M.union (M.fromList $ zip @xs @loc.rhoisigma)
+  | CaseConst
+    loc.tau = @alts.ty
+    loc.env0 = @e.env
+    loc.tau0 = getType @e.etaTy
+    loc.nu0 = getUsage @e.etaTy
+    loc.c1 = @e.constraints
+    loc.c1' = genEq @loc.tau0 @loc.tau <> genSub annOne @loc.nu0
+    loc.env' = @alts.env
+    loc.eta1 = @alts.etaTy
+    loc.c2 = @alts.constraints
+    loc.((env, c3'), fv) = computePlus (@alts.freshVar, @lhs.toHsName) @loc.env0 @loc.env'
+    loc.etaTy = @loc.eta1
+    lhs.freshVar = @loc.fv
+    lhs.env = @loc.env
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("CaseConst-annCopy: ",@loc.annCopy, "Constraints: ") $ @loc.c1 <> @loc.c1' <> @loc.c2 <> @loc.c3'
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_CaseConst @e.annCopy @alts.annCopy
+  | FFI
+    loc.tau = Type_Var $ @lhs.toHsName @lhs.freshVar
+    loc.sigma = annotate @lhs.dataEnv @ty
+    loc.etaTy = EtaType_Eta @loc.tau annTop
+    lhs.freshVar = @lhs.freshVar + 1
+    lhs.env = M.empty
+    lhs.etaTy = @loc.etaTy
+    lhs.constraints = traceShow2 ("FFI-annCopy: ",@loc.annCopy, "Constraints: ") $ singleC $ Constraint_Inst @loc.sigma @loc.tau
+    loc.annCopy = Expr_Ann @loc.etaTy $ Expr_FFI @ty
+  | Error
+    lhs.env = panic "Error expression" 
+    lhs.constraints = panic "Error expression" 
+    lhs.etaTy = panic "Error expression" 
+
+SEM ConVars
+  | Cons
+    loc.((env, c'), fv) = if @tl.isNil then ((@hd.env, mempty), @tl.freshVar) else computePlus (@tl.freshVar, @lhs.toHsName) @hd.env @tl.env
+    loc.c = @hd.constraints <> if @tl.isNil then mempty else @tl.constraints
+    lhs.freshVar = @loc.fv
+    lhs.env = @loc.env
+    lhs.rhoTypes = @hd.rhoTy : if @tl.isNil then [] else @tl.rhoTypes
+    lhs.constraints = @loc.c' <> @loc.c
+  | Nil
+    lhs.env = M.empty
+    lhs.rhoTypes = []
+    lhs.constraints = mempty
+    
+SEM ConVar
+  | VarLocal
+    loc.tau = Type_Var $ @lhs.toHsName @lhs.freshVar
+    loc.sigma = Scheme_Var $ @lhs.toHsName $ @lhs.freshVar + 1
+    loc.nu = Annotation_Var $ @lhs.toHsName $ @lhs.freshVar + 2
+    loc.delta2 = Annotation_Var $ @lhs.toHsName $ @lhs.freshVar + 3
+    lhs.freshVar = @lhs.freshVar + 4
+    lhs.env = M.singleton @v $ RhoScheme_Rho (EtaScheme_Eta @loc.sigma @loc.nu) @loc.delta2 -- annOne
+    lhs.rhoTy = RhoType_Rho (EtaType_Eta @loc.tau @loc.nu) @loc.delta2
+    lhs.constraints = singleC $ Constraint_Inst @loc.sigma @loc.tau
+  | VarImport
+    loc.tau = Type_Var $ @lhs.toHsName @lhs.freshVar
+    loc.sigma = @lhs.importEnv M.! @v
+    loc.delta2 = Annotation_Var $ @lhs.toHsName $ @lhs.freshVar + 1
+    lhs.freshVar = @lhs.freshVar + 2
+    lhs.env = M.empty
+    lhs.rhoTy = RhoType_Rho (EtaType_Eta @loc.tau annTop) @loc.delta2
+    lhs.constraints = singleC $ Constraint_Inst @loc.sigma @loc.tau
+  | Const
+    loc.tau = @c.ty
+    loc.nu = Annotation_Var $ @lhs.toHsName @lhs.freshVar
+    loc.delta2 = Annotation_Var $ @lhs.toHsName $ @lhs.freshVar + 1
+    lhs.freshVar = @lhs.freshVar + 2
+    lhs.env = M.empty
+    lhs.rhoTy = RhoType_Rho (EtaType_Eta @loc.tau @loc.nu) @loc.delta2
+    lhs.constraints = mempty
+
+SEM AltCons AltConsts
+  | Cons
+    loc.((env, c1), fv) = if @tl.isNil then ((@hd.env, mempty), @hd.freshVar) 
+                            else computeUnion (@tl.freshVar, @lhs.toHsName) @hd.env @tl.env
+    loc.c2 = if @tl.isNil then mempty else genEq @hd.etaTy @tl.etaTy
+    lhs.freshVar = @loc.fv
+    lhs.env = @loc.env
+    lhs.etaTy = @hd.etaTy
+    lhs.constraints = @loc.c1 <> @loc.c2 <> @hd.constraints <> (if @tl.isNil then mempty else @tl.constraints)
+  | Nil
+    lhs.env = undefined
+    lhs.etaTy = undefined
+    lhs.constraints = undefined
+
+SEM AltCon
+  | Alt
+    loc.env = envDeleteList @e.env @xs
+    loc.(rhosigma, fv) = envLookupFreshList (@e.freshVar, @lhs.toHsName) @e.env @xs
+    lhs.freshVar = @loc.fv
+    lhs.env = @loc.env
+    lhs.etaTy = @e.etaTy
+    lhs.constraints = @e.constraints
+    lhs.rhoSchemes = @loc.rhosigma
+    +bindingEnv = M.union (M.fromList $ zip @xs @loc.rhosigma)
+    
+SEM AltConst
+  -- copy rules
+
+SEM AltCons AltConsts ConVars Bindings
+  | Cons
+    lhs.isNil = False
+  | Nil
+    lhs.isNil = True
+
+SEM AltCons
+  | Cons
+    lhs.rhoSchemes = @hd.rhoSchemes : (if @tl.isNil then [] else @tl.rhoSchemes)
+  | Nil
+    lhs.rhoSchemes = undefined
+
+SEM Const
+  | String
+    lhs.ty = Type_Data (mkHNm "UHC.Base.String") (map (Annotation_Var . @lhs.toHsName) [@lhs.freshVar .. @lhs.freshVar + 3]) []
+    lhs.freshVar = @lhs.freshVar + 4
+  | Integer
+    lhs.ty = Type_Data (mkHNm "Integer") [] []
+
+
+SEM AltConsts
+  | Cons
+    lhs.ty = @hd.ty
+  | Nil
+    lhs.ty = undefined
+
+SEM AltConst Const
+  | Int
+    lhs.ty = Type_Data (mkHNm "Int") [] []
+  | Char
+    lhs.ty = Type_Data (mkHNm "Char") [] []
+  
+
+SEM AltCons
+  | Cons
+    lhs.tyNm = @hd.tyNm
+  | Nil
+    lhs.tyNm = undefined
+
+SEM AltCon
+  | Alt
+    lhs.tyNm = @tyNm
+
+SEM Bindings
+  | Cons
+    lhs.bindingNames = @hd.bindingName : (if @tl.isNil then [] else @tl.bindingNames) 
+    lhs.envs = @hd.env : (if @tl.isNil then [] else @tl.envs) 
+    lhs.etaTypes = @hd.etaTy : (if @tl.isNil then [] else @tl.etaTypes) 
+    lhs.rhoSchemes = @hd.rhoSchemes : (if @tl.isNil then [] else @tl.rhoSchemes)
+    lhs.constraints = @hd.constraints <> (if @tl.isNil then mempty else @tl.constraints)
+  | Nil
+    lhs.bindingNames = undefined
+    lhs.constraints = undefined
+    lhs.envs = undefined
+    lhs.etaTypes = undefined
+    lhs.rhoSchemes = undefined
+
+SEM Binding
+  | Bind
+    lhs.bindingName = @n
+    loc.env = envDeleteList @e.env @lhs.allBindingNames
+    loc.(rhosigma, fv) = envLookupFreshList (@e.freshVar, @lhs.toHsName) @e.env @lhs.allBindingNames
+    lhs.freshVar = @loc.fv
+    lhs.env = @loc.env
+    lhs.etaTy = @e.etaTy
+    lhs.rhoSchemes = @loc.rhosigma
+    lhs.constraints = @e.constraints
+  
 %%]

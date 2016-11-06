@@ -27,7 +27,6 @@ PRAGMA strictcase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) hs export (Subst(..))
-
 class Subst a where
   substAnn :: a -> AnnSol -> a
   substAnn a m = subst a m Map.empty Map.empty
@@ -40,92 +39,68 @@ class Subst a where
 
   subst :: a -> AnnSol -> TySol -> SchemeSol -> a
 
+instance Subst Expr where
+  subst a am tm sm = subst_Syn_Expr $ wrap_Expr (sem_Expr a) 
+    (Inh_Expr am sm tm)
+
 instance Subst Annotation where
   subst a am tm sm = subst_Syn_Annotation $ wrap_Annotation (sem_Annotation a) 
     (Inh_Annotation am sm tm)
 
-instance Subst AnnotatedType where
-  subst a am tm sm = subst_Syn_AnnotatedType $ wrap_AnnotatedType (sem_AnnotatedType a) 
-    (Inh_AnnotatedType am sm tm)
+instance Subst Type where
+  subst a am tm sm = subst_Syn_Type $ wrap_Type (sem_Type a) 
+    (Inh_Type am sm tm)
 
-instance Subst CAnnotation where
-  subst a am tm sm = subst_Syn_CAnnotation $ wrap_CAnnotation (sem_CAnnotation a) 
-    (Inh_CAnnotation am sm tm)
-
-instance Subst CAnnotatedType where
-  subst a am tm sm = subst_Syn_CAnnotatedType $ wrap_CAnnotatedType (sem_CAnnotatedType a) 
-    (Inh_CAnnotatedType am sm tm)
-
-instance Subst CTyScheme where
-  subst a am tm sm = subst_Syn_CTyScheme $ wrap_CTyScheme (sem_CTyScheme a) 
-    (Inh_CTyScheme am sm tm)
+instance Subst Constraint where
+  subst a am tm sm = subst_Syn_Constraint $ wrap_Constraint (sem_Constraint a) 
+    (Inh_Constraint am sm tm)
 
 instance Subst Constraints where
   subst a am tm sm = subst_Syn_Constraints $ wrap_Constraints (sem_Constraints a) 
     (Inh_Constraints am sm tm)
 
-instance Subst EtaAnnotatedType where
-  subst a am tm sm = subst_Syn_EtaAnnotatedType $ wrap_EtaAnnotatedType (sem_EtaAnnotatedType a) 
-    (Inh_EtaAnnotatedType am sm tm)
+instance Subst Field where
+  subst a am tm sm = subst_Syn_Field $ wrap_Field (sem_Field a) 
+    (Inh_Field am sm tm)
 
-instance Subst RhoAnnotatedType where
-  subst a am tm sm = subst_Syn_RhoAnnotatedType $ wrap_RhoAnnotatedType (sem_RhoAnnotatedType a) 
-    (Inh_RhoAnnotatedType am sm tm)
+instance Subst EtaType where
+  subst a am tm sm = subst_Syn_EtaType $ wrap_EtaType (sem_EtaType a) 
+    (Inh_EtaType am sm tm)
 
-instance Subst RhoTyScheme where
-  subst a am tm sm = subst_Syn_RhoTyScheme $ wrap_RhoTyScheme (sem_RhoTyScheme a) 
-    (Inh_RhoTyScheme am sm tm)
+instance Subst RhoType where
+  subst a am tm sm = subst_Syn_RhoType $ wrap_RhoType (sem_RhoType a) 
+    (Inh_RhoType am sm tm)
+
+instance Subst RhoScheme where
+  subst a am tm sm = subst_Syn_RhoScheme $ wrap_RhoScheme (sem_RhoScheme a) 
+    (Inh_RhoScheme am sm tm)
 
 instance Subst Env where
   subst a am tm sm = subst_Syn_Env $ wrap_Env (sem_Env a) 
     (Inh_Env am sm tm)
 
-instance Subst TyScheme where
-  subst a am tm sm = subst_Syn_TyScheme $ wrap_TyScheme (sem_TyScheme a) 
-    (Inh_TyScheme am sm tm)
-
-instance Subst [Rho AnnotatedType] where
-  subst xs am tm sm = map (\x -> toRho $ subst (fromRho x) am tm sm) xs
-
--- instance Subst DataGamInfo where
---   subst a@DataGamInfo{..} am tm sm = a 
---     { dgiAnnVars = substAnn dgiAnnVars am
---     , dgiTyVars = substTy dgiTyVars tm
---     , dgiConstrTagMp = subst dgiConstrTagMp am tm sm
---     }
-
--- instance Subst [Var] where
---   subst as am _ _ = map (flip substAnn am) as
-
--- instance Subst Var where
---   subst v am _ _ = fromMaybe v $ do
---     mv <- Map.lookup v am
---     getAnnVar mv
-
--- instance Subst [HsName] where
---   subst as _ tm _ = map (flip substTy tm) as
-
--- instance Subst HsName where
---   subst v _ tm _ = fromMaybe v $ do
---     mv <- Map.lookup v tm
---     getTyVar mv
+instance Subst Scheme where
+  subst a am tm sm = subst_Syn_Scheme $ wrap_Scheme (sem_Scheme a) 
+    (Inh_Scheme am sm tm)
     
--- getAnnVar :: Annotation -> Maybe Var
--- getAnnVar (Annotation_AnnVar v) = Just v
--- getAnnVar _ = Nothing
+instance Subst [Annotation] where
+  subst xs am tm sm = map (\x -> subst x am tm sm) xs
 
--- getTyVar :: AnnotatedType -> Maybe HsName
--- getTyVar (AnnotatedType_TyVar v) = Just v
--- getTyVar _ = Nothing
+instance Subst [Type] where
+  subst xs am tm sm = map (\x -> subst x am tm sm) xs
 
--- instance Subst (Map.Map HsName DataTagInfo) where
---   subst m am tm sm = Map.map (\x -> subst x am tm sm) m
+instance Subst Fields where
+  subst xs am tm sm = map (\x -> subst x am tm sm) xs
+ 
+instance Subst [Fields] where
+  subst xss am tm sm = map (\xs -> subst xs am tm sm) xss
 
--- instance Subst DataTagInfo where
---   subst a@DataTagInfo{..} am tm sm = a 
---     { dtiFldAnnTyL = map toRho $ subst_Syn_RhoAnnotatedTypeL $ wrap_RhoAnnotatedTypeL (sem_RhoAnnotatedTypeL $ map fromRho dtiFldAnnTyL) 
---       (Inh_RhoAnnotatedTypeL am sm tm)
---     }
+instance Subst [RhoType] where
+  subst xs am tm sm = map (\x -> subst x am tm sm) xs
+
+instance Subst [[RhoType]] where
+  subst xss am tm sm = map (\xs -> subst xs am tm sm) xss
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,15 +112,15 @@ instance Subst [Rho AnnotatedType] where
 ATTR * [ substAnnMap: AnnSol substTyMap: TySol substSchemeMap: SchemeSol | | subst: SELF ]
 
 SEM Annotation
-  | AnnVar
-    lhs.subst = {-traceShow ("start sub ann", @loc.subst, @lhs.substAnnMap) $-} maybe @loc.subst (\x -> {-traceShow "Rec annSubst" $-} subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substAnnMap
+  | Var
+    lhs.subst = maybe @loc.subst (\x -> subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substAnnMap
 
-SEM AnnotatedType
-  | TyVar
-    lhs.subst = {-traceShow "start sub TyVar" $-} maybe @loc.subst (\x -> {-traceShow "Rec tySubst" $-} subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substTyMap
+SEM Type
+  | Var
+    lhs.subst = maybe @loc.subst (\x -> subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substTyMap
 
-SEM TyScheme
-  | SchemeVar
-    lhs.subst = {-traceShow "start sub SchemeVar" $-} maybe @loc.subst (\x -> {-traceShow "Rec schemeSubst" $-} subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substSchemeMap
+SEM Scheme
+  | Var
+    lhs.subst = maybe @loc.subst (\x -> subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substSchemeMap
 
 %%]

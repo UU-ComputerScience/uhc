@@ -44,7 +44,7 @@ Currently the following is maintained:
 %%]
 %%[(8 codegen) import(UHC.Util.Utils)
 %%]
-%%[(8 counting) import({%{EH}CountingAnalysis})
+%%[(8 counting) import(qualified {%{EH}CountingAnalysis} as CA)
 %%]
 
 -- PP
@@ -152,7 +152,7 @@ data LamInfo
       , laminfoGrinByteCode			:: Maybe GrinByteCodeLamInfo	-- GB specific info
 %%]]
 %%[[(8 counting)
-      , laminfoCaType   :: !EtaAnnotatedType
+      , laminfoCaType   :: !CA.Scheme
 %%]]
       , laminfoBindAspMp			:: !LamInfoBindAspMp			-- info organized per/keyed on aspect
       }
@@ -169,7 +169,7 @@ emptyLamInfo'
             (Just emptyGrinByteCodeLamInfo)
 %%]]
 %%[[(8 counting)
-            (EtaAnnotatedType_Eta (AnnotatedType_TyError "Empty lamInfo" ) (Annotation_AnnVar (-1)))
+            (CA.Scheme_Forall Set.empty Set.empty [] (CA.Type_Error "Empty lamInfo"))
 %%]]
             Map.empty
 
@@ -180,7 +180,7 @@ emptyLamInfo
             Nothing
 %%]]
 %%[[(8 counting)
-            (EtaAnnotatedType_Eta (AnnotatedType_TyError "Empty lamInfo" ) (Annotation_AnnVar (-1)))
+            (CA.Scheme_Forall Set.empty Set.empty [] (CA.Type_Error "Empty lamInfo"))
 %%]]
             Map.empty
 %%]

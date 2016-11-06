@@ -85,7 +85,7 @@ EHC_HS_UTIL_SRC_CHS_DFLT				:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix CoreRun/,Run Prim) \
 													$(addprefix CoreRun/Run/,Val) \
 													$(addprefix CoreRun/Run/Val/,RunImplStk RunExplStk Prim) \
-													$(addprefix CountingAnalysis/,ConstraintGeneration) \
+													$(addprefix CountingAnalysis/,ConstraintGeneration ConstraintSolver) \
 													$(addprefix Core/,Utils Merge FFI Coercion) \
 													$(addprefix Core/SysF/,AsTy) \
 													$(addprefix EHC/,Main Common FileSuffMp Environment CompileUnit CompileGroup CompileRun InitialSetup ASTHandler ASTPipeline ASTTypes BuildFunction \
