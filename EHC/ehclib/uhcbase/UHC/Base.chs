@@ -2022,8 +2022,9 @@ showLitChar '\v'           = showString "\\v"
 showLitChar '\SO'          = protectEsc ('H'==) (showString "\\SO")
 showLitChar c              = showString ('\\' : snd (asciiTab!!fromEnum c))
 
--- the composition with cont makes CoreToGrin break the GrinModeInvariant so we forget about protecting escapes for the moment
-protectEsc p f             = f  -- . cont
+-- the composition with cont makes CoreToGrin break the GrinModeInvariant so we forget about protecting escapes for the moment.
+-- 20161127 AD: re-introduced '. cont' invocation to allow support for unicode
+protectEsc p f             = f . cont
  where cont s@(c:_) | p c  = "\\&" ++ s
        cont s              = s
 

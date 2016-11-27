@@ -147,7 +147,7 @@ scan opts pos input
                                         _            -> ("",advc 2 p,xs)
    scanString d p xs = let (ch,cw,cr) = getchar d xs
                            (str,p',r) = scanString d (advc cw p) cr
-                       in  maybe ("",p,xs) (\c -> (c:str,p',r)) ch
+                       in  maybe ("",p,xs) (\c -> (c++str,p',r)) ch
 %%]
 
 %%[99
@@ -235,9 +235,12 @@ scan opts pos input
      = let (mc,cwidth,rest) = scanChar ss
        in case mc of
             Nothing -> errToken "Error in character literal" p : doScan (scSt {ssAfterQual=False}) (advc cwidth p) rest
+            Just [] -> if null rest || head rest /= '\''
+                          then errToken "Empty character literal" p : doScan scSt (advc (cwidth+1) p) rest
+                          else valueToken TkChar ['?'] p : doScan scSt (advc (cwidth+2) p) (tail rest)
             Just c  -> if null rest || head rest /= '\''
                           then errToken "Unterminated character literal" p : doScan scSt (advc (cwidth+1) p) rest
-                          else valueToken TkChar [c] p : doScan scSt (advc (cwidth+2) p) (tail rest)
+                          else valueToken TkChar c p : doScan scSt (advc (cwidth+2) p) (tail rest)
 
    doScan scSt p cs@(c:c2:s)
      | isPairSym sym = reserved sym p : doScan (scSt {ssAfterQual=False}) (advc 2 p) s
@@ -348,11 +351,11 @@ scanNestedComment cont scSt pos inp = nest cont scSt pos inp
        nest c scSt p (x:s)       = nest c scSt (adv p x) s
        nest _ _    _ []          = [ errToken "Unterminated nested comment" pos]
 
-scanChar :: [Char] -> (Maybe Char,Int,[Char])
-scanChar ('"' :xs) = (Just '"',1,xs)
+scanChar :: [Char] -> (Maybe [Char],Int,[Char])
+scanChar ('"' :xs) = (Just ['"'],1,xs)
 scanChar xs        = getchar '\'' xs
 
-getchar :: Char -> [Char] -> (Maybe Char,Int,[Char])
+getchar :: Char -> [Char] -> (Maybe [Char],Int,[Char])
 getchar d []          = (Nothing,0,[])
 getchar d s@('\n':_ ) = (Nothing,0,s )
 getchar d s@('\t':_ ) = (Nothing,0,s)
@@ -361,7 +364,7 @@ getchar d s@( c  :_ ) | c == d
                       = (Nothing,0,s)
 getchar d   ('\\':xs) = let (c,l,r) = getEscChar xs
                         in (c,l+1,r)
-getchar d (x:xs)      = (Just x,1,xs)
+getchar d (x:xs)      = (Just [x],1,xs)
 %%]
 
 %%[99
@@ -376,15 +379,17 @@ scanDQuoteIdent ('\'':'\'':xs) = ("",0,xs)
 scanDQuoteIdent (x:xs)         = let (s,w,r) = scanDQuoteIdent xs -- should check similar to getchar
                                   in (x:s,w+1,r)
 
-getEscChar :: [Char] -> (Maybe Char,Int,[Char])
+getEscChar :: [Char] -> (Maybe [Char],Int,[Char])
 getEscChar [] = (Nothing,0,[])
 %%[[99
+getEscChar s@('&':xs)           = let (tp,n,len,rest) = getNumber ('0' : s)
+                                  in  (Just [], 1, xs)
 getEscChar s@('x':xs)           = let (tp,n,len,rest) = getNumber ('0' : s)
-                                  in  (Just $ chr $ fromInteger $ getBaseNumber 16 n, len-1, rest)
+                                  in  (Just [chr $ fromInteger $ getBaseNumber 16 n], len-1, rest)
 getEscChar s@('o':xs)           = let (tp,n,len,rest) = getNumber ('0' : s)
-                                  in  (Just $ chr $ fromInteger $ getBaseNumber 8  n, len-1, rest)
+                                  in  (Just [chr $ fromInteger $ getBaseNumber 8  n], len-1, rest)
 getEscChar s@('^':x:xs)         = case x `lookup` cntrCntrs of
-                                    Just c -> (Just c,2,xs)
+                                    Just c -> (Just [c],2,xs)
                                     _      -> (Nothing,0,s)
                                 where cntrCntrs = [ ('@','\^@'), ('[','\^['), ('\\','\^\'), (']','\^]'), ('^','\^^'), ('_','\^_') ]
                                                   ++ zip ['A' .. 'Z'] ['\^A' .. '\^Z']
@@ -394,11 +399,9 @@ getEscChar s@(x:xs) | isDigit x = let (tp,n,len,rest) = getNumber s
                                               TkInteger8  -> getBaseNumber 8  n
                                               TkInteger16 -> getBaseNumber 16 n
                                               TkInteger10 -> getBaseNumber 10 n
-                                  in  if val >= 0 && val <= 255
-                                         then (Just (chr $ fromInteger val),len, rest)
-                                         else (Nothing,1,rest)
+                                  in  (Just [chr $ fromInteger val],len, rest)
                     | otherwise = case x `lookup` cntrChars of
-                                    Just c  -> (Just c,1,xs)
+                                    Just c  -> (Just [c],1,xs)
 %%[[5
                                     Nothing -> (Nothing,0,s)
 %%][99
@@ -406,7 +409,7 @@ getEscChar s@(x:xs) | isDigit x = let (tp,n,len,rest) = getNumber s
                                       -> case filter (flip isPrefixOf s . fst) cntrStrs of
                                            [] -> (Nothing,0,s)
                                            ((m,mr):_)
-                                              -> (Just mr,ml,drop ml s)
+                                              -> (Just [mr],ml,drop ml s)
                                               where ml = length m
 %%]]
   where cntrChars = [('a','\a'),('b','\b'),('f','\f'),('n','\n'),('r','\r'),('t','\t')

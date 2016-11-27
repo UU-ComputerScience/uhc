@@ -459,8 +459,8 @@ allocateBuffer sz state = IO $ \s ->
 
 writeCharIntoBuffer :: RawBuffer -> Int -> Char -> IO Int
 writeCharIntoBuffer slab off c
-  = IO $ \s -> case writeCharArray slab off c s of 
-               s' -> s' `seq` ( s', off + 1 )
+  = IO $ \s -> case writeUnicodeCharArray slab off c s of 
+               (s',n) -> s' `seq` ( s', off + n )
 
 readCharFromBuffer :: RawBuffer -> Int -> IO (Char, Int)
 readCharFromBuffer slab off

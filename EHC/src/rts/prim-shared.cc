@@ -277,7 +277,6 @@ PRIM Word primCharToLower( Word x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-
 PRIM Word primPackedStringNull(Word w)
 {
 	char *s = (char *)w;
@@ -288,19 +287,22 @@ PRIM Word primPackedStringNull(Word w)
 
 PRIM Word primPackedStringTail(Word w)
 {
-	char *s = (char *)w;
-  	return Cast(Word,s+1) ;
+	uint8_t *s = (uint8_t *)w;
+	uint32_t res;
+	int sz = u8_mbtouc( &res, s, 4 );
+  	return Cast(Word,s+sz) ;
 }
 
 
 PRIM Word primPackedStringHead(Word w)
 {
-	char *s = (char *)w;
-  	return Cast(Word,(*s)) ;
+	uint8_t *s = (uint8_t *)w;
+	uint32_t res = 0;
+	u8_mbtouc( &res, s, 4 );
+  	return Cast(Word,res) ;
 }
 
 %%]
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

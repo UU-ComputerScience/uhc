@@ -477,7 +477,7 @@ AC_PATH_PROG(hsc2hsCmd,hsc2hs)
 AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
-ghcLibsRequired="fgl vector uulib network binary hashable uhc-util base mtl transformers directory containers array process filepath"
+ghcLibsRequired="fgl vector uulib network binary hashable uhc-util base mtl transformers directory containers array process filepath utf8-string bytestring"
 #if test x$enableClr = "xyes"
 #then
 #  ghcLibsRequired="${ghcLibsRequired} primitive"
