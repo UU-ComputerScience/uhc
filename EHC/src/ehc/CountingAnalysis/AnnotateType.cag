@@ -34,17 +34,19 @@ numAnns :: HsName -> DataGam -> Int
 numAnns nm d 
   | show nm == "Char" = 0
   | show nm == "Int" = 0 
+  | show nm == "Integer" = 0 
   | otherwise = length $ dgiAnnVars $ fromMaybe (error $ "annCon: " ++ show nm) $ nm `dataGamLookup` d
 %%]
 
 
 %%[(8 counting) ag
 
-ATTR Ty [ dataEnv: {DataGam} | | annTy: {CA.Type} tyVars: {Set HsName} caIsFunc: {Maybe Bool}]
+ATTR Ty [ dataEnv: {DataGam} | | annTy: {CA.Type} tyVars: {Set HsName} caIsFunc: {Maybe Bool} isRec: {Bool}]
 
 SEM Ty
   | *
     loc.caIsFunc = Nothing
+    loc.isRec = False
   | Con
     lhs.caIsFunc = @loc.ismFunc
     loc.ismFunc = case hsnBaseUnpack @nm of
@@ -53,13 +55,18 @@ SEM Ty
     loc.isFunc = fromMaybe False @loc.ismFunc
     loc.annTops = replicate (numAnns @nm @lhs.dataEnv) CA.annTop
     loc.dataTy = CA.Type_Data @nm @loc.annTops []
-    lhs.annTy = if @loc.isFunc then panic "Function Constructor" else @loc.dataTy
+    lhs.annTy = if @loc.isFunc then panic "Function Constructor" else if @loc.isRec then panic "Record type" else @loc.dataTy
     lhs.tyVars = Set.empty
+    loc.isRec := case hsnBaseUnpack @nm of
+                    Just ("_Rec", _) -> True
+                    Just ("{||}", _) -> True
+                    _ -> False
   | App
     lhs.caIsFunc = case @func.caIsFunc of
                     Just True -> Just False
                     _ -> Nothing
-    lhs.annTy = case @func.caIsFunc of
+    lhs.annTy = if (@func.isRec) then @arg.annTy else
+                  case @func.caIsFunc of
                     Just True -> @arg.annTy
                     Just False -> CA.Type_Func (CA.RhoType_Rho (CA.EtaType_Eta @func.annTy CA.annTop) CA.annTop) $ CA.EtaType_Eta @arg.annTy CA.annTop
                     -- Assume type constructor application
@@ -76,19 +83,22 @@ SEM Ty
     lhs.annTy = CA.Type_Var $ uidHNm @tv
     lhs.tyVars = Set.empty
   | Ext
-    lhs.annTy = panic "unsupported Ty Ext"
+    lhs.annTy = if @ty.isRec then @extTy.annTy else case @extTy.annTy of 
+                  CA.Type_Tup xs -> CA.Type_Tup $ @loc.toRhoTy @ty.annTy : xs
+                  _ -> CA.Type_Tup [@loc.toRhoTy @ty.annTy, @loc.toRhoTy @extTy.annTy]
     lhs.tyVars = Set.empty
+    loc.toRhoTy = \x -> CA.RhoType_Rho (CA.EtaType_Eta x CA.annTop) CA.annTop
   | Any
-    lhs.annTy = panic "unsupported Ty Any"
+    lhs.annTy = panic "Annotate: unsupported Ty Any"
     lhs.tyVars = Set.empty   
   | Dbg
-    lhs.annTy = panic "unsupported Ty Dbg"
+    lhs.annTy = panic "Annotate: unsupported Ty Dbg"
     lhs.tyVars = Set.empty 
   | Pred
-    lhs.annTy = panic "unsupported Ty Pred"
+    lhs.annTy = panic "Annotate: unsupported Ty Pred"
     lhs.tyVars = Set.empty   
   | Impls
-    lhs.annTy = panic "unsupported Ty Impls"
+    lhs.annTy = panic "Annotate: unsupported Ty Impls"
     lhs.tyVars = Set.empty
     
 SEM Pred TyAGItf

@@ -10,7 +10,7 @@
 
 module UHC.Base   -- adapted from the Hugs prelude
 (
--- Classes
+-- -- Classes
 --     Eq         (..),
 --     Ord        (..),
 --     Bounded    (..),
@@ -28,15 +28,15 @@ module UHC.Base   -- adapted from the Hugs prelude
 --     Read       (..),
 
 -- -- Types
-    -- ''[]''     (..),
-    Bool       (..),
+--     ''[]''     (..),
+--     Bool       (..),
 --     Maybe      (..),
 --     Either     (..),
 --     Ordering   (..),
 --     Ratio      (..), (%), 
-    -- Char, 
+--     Char, 
 --     Int, 
-    -- String,
+--     String,
 --     Integer, 
 --     Float, 
 --     Double, 
@@ -51,22 +51,21 @@ module UHC.Base   -- adapted from the Hugs prelude
 --     IOWorld, ioWorld,
 --     RealWorld, realWorld,
     
-        -- IO Exception
-    SomeException'(..),
-    -- ArithException(..),
-    -- ArrayException(..),
-    -- AsyncException(..),
+--         -- IO Exception
+--     SomeException'(..),
+--     ArithException(..),
+--     ArrayException(..),
+--     AsyncException(..),
 --     IOException       ,
 --     ExitCode      (..),
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
-    forceString,
-#else
-    throw,
-#endif
+-- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+--     forceString,
+-- #else
+--     throw,
+-- #endif
 
---  dangerous functions
-    -- asTypeOf, error, undefined, seq, ($!),
-    error, undefined,
+-- --  dangerous functions
+--     asTypeOf, error, undefined, seq, ($!),
  
 -- -- functions on specific types    
 --     -- Bool
@@ -91,7 +90,7 @@ module UHC.Base   -- adapted from the Hugs prelude
 --     fromRat,
 
 -- --  standard functions
-    -- fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
+--     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
 --     map, (++), concat, filter,
 --     head, last, tail, init, null, length, (!!),
 --     foldl, foldl1, scanl, scanl1, foldr, foldr1, scanr, scanr1,
@@ -112,9 +111,8 @@ module UHC.Base   -- adapted from the Hugs prelude
 --     unsafeCoerce,
 
 -- -- EHC specific functions
-    PackedString,
-    packedStringToString, 
-    -- packedStringToInteger, primIntToInteger,
+--     PackedString,
+--     packedStringToString, packedStringToInteger, primIntToInteger,
 --     primGtInt, primEqChar,
 --     ByteArray,
 
@@ -143,13 +141,13 @@ module UHC.Base   -- adapted from the Hugs prelude
 --   , Arity(..), Fixity(..), Associativity(..)
 --   , NoSelector
 
-  -- * Representable type classes
+--   -- * Representable type classes
 --   , Representable0(..), Representable1(..)
 
 --   -- * Dummy class
 --   , Generic
 ) where
-
+data Test = Test !Int
 -- import UHC.Generics
 
 #include "IntLikeInstance.h"
@@ -213,7 +211,7 @@ error s         = throw (ErrorCall s)
 #endif
 
 undefined :: forall a . a
-undefined       = error "Prelude.undefined"
+undefined       = error "Prelude.unsssdefined"
 
 ----------------------------------------------------------------
 -- Throw exception
@@ -230,14 +228,14 @@ throw e = primThrowException e
 
 #endif
 
--- ----------------------------------------------------------------
--- -- PackedString
--- ----------------------------------------------------------------
+----------------------------------------------------------------
+-- PackedString
+----------------------------------------------------------------
 
 data PackedString
 --   deriving Generic
 
--- -- foreign import prim "primCStringToString"  packedStringToString  :: PackedString -> [Char]
+-- foreign import prim "primCStringToString"  packedStringToString  :: PackedString -> [Char]
 foreign import prim "primPackedStringNull" packedStringNull :: PackedString -> Bool
 foreign import prim "primPackedStringHead" packedStringHead :: PackedString -> Char
 foreign import prim "primPackedStringTail" packedStringTail :: PackedString -> PackedString
@@ -683,11 +681,11 @@ data Bool    = False | True
 --     minBound = False
 --     maxBound = True
 
---------------------------------------------------------------
--- Char type
---------------------------------------------------------------
+-- --------------------------------------------------------------
+-- -- Char type
+-- --------------------------------------------------------------
 
--- type Char builtin
+-- -- type Char builtin
 type String = [Char]    -- strings are lists of characters
 
 -- #if defined(__UHC_TARGET_JAZY__) || defined(__UHC_TARGET_CR__)
@@ -807,9 +805,9 @@ type String = [Char]    -- strings are lists of characters
 -- data Ordering = LT | EQ | GT
 --                 deriving (Eq, Ord, Enum, Show, Generic) -- TODO: Ix, Read, Bounded
 
---------------------------------------------------------------
--- Lists
---------------------------------------------------------------
+-- --------------------------------------------------------------
+-- -- Lists
+-- --------------------------------------------------------------
 
 data [] a = ''[]'' | a : [a]
 --             deriving Generic
@@ -1594,7 +1592,7 @@ data [] a = ''[]'' | a : [a]
 -- Some standard functions
 --------------------------------------------------------------
 
--- fst            :: (a,b) -> a
+-- --fst            :: (a,b) -> a
 -- fst            :: forall b . (a,b) -> a
 -- fst (x,_)       = x
 
@@ -2082,9 +2080,10 @@ data [] a = ''[]'' | a : [a]
 ----------------------------------------------------------------
 
 -- data ExitCode = ExitSuccess | ExitFailure Int
---                 -- deriving (Eq, Ord, Show, Generic)  -- TODO: Read
+                -- deriving (Eq, Ord, Show, Generic)  -- TODO: Read
 
-data SomeException' x    = Deadlock                      -- alphabetical order of constructors required, assumed Int encoding in comment
+data SomeException' x                          -- alphabetical order of constructors required, assumed Int encoding in comment
+  = ErrorCall String
 --   = ArithException      ArithException      -- 0
 --   | ArrayException      ArrayException      -- 1
 --   | AssertionFailed     String              -- 2
@@ -2092,7 +2091,7 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 --   | BlockedOnDeadMVar                       -- 4
 --   | Deadlock                                -- 5
 --   -- | DynException        Dynamic
-  | ErrorCall           String              -- 6
+--   | ErrorCall           String              -- 6
 --   | ExitException       ExitCode            -- 7 
 --   | IOException         x                   -- 8 -- IO exceptions (from 'ioError')
 --   | NoMethodError       String              -- 9
@@ -2120,7 +2119,7 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 --   = HeapOverflow							-- 0
 --   | StackOverflow		String				-- 1
 --   | ThreadKilled							-- 2
--- --   deriving (Eq, Ord, Generic)
+--   deriving (Eq, Ord, Generic)
 
 
 -- ----------------------------------------------------------------
@@ -2222,9 +2221,9 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 -- exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 
 
-%%]
+-- %%]
 
-%%[99
+-- %%[99
 
 -- ----------------------------------------------------------------
 -- -- Defaulting
@@ -2239,9 +2238,9 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 -- default Floating Double
 -- default RealFloat Double
 
-%%]
+-- %%]
 
-%%[99
+-- %%[99
 
 -- ----------------------------------------------------------------
 -- -- Generics
@@ -2479,9 +2478,9 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 --   from1  :: f a -> rep a
 --   -- | Convert from the representation to the datatype
 --   to1    :: rep a -> f a
-%%]
+-- %%]
 
-%%[99
+-- %%[99
 -- ----------------------------------------------------------------
 -- -- Stacktrace
 -- ----------------------------------------------------------------
@@ -2497,9 +2496,9 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 -- pushExplicitStackTrace :: String -> ExplicitStackTrace -> ExplicitStackTrace
 -- pushExplicitStackTrace = (:)
 
-%%]
+-- %%]
 
-%%[99
+-- %%[99
 -- --------------------------------------------------------------------------------
 -- -- Generic definition for deriving Bounded
 -- --------------------------------------------------------------------------------
@@ -2538,9 +2537,9 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 --                        =>  repT xT -> aT
 -- maxBoundDefault rep = to0 (maxBound' `asTypeOf` rep)
 
-%%]
+-- %%]
 
-%%[99
+-- %%[99
 -- --------------------------------------------------------------------------------
 -- -- Generic Eq
 -- --------------------------------------------------------------------------------
@@ -2573,9 +2572,9 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 
 -- geqdefault :: (Representable0 a rep0, Eq' rep0) => rep0 x -> a -> a -> Bool
 -- geqdefault (rep :: r) x y = geq' (from0 x :: r) (from0 y :: r)
-%%]
+-- %%]
 
-%%[99
+-- %%[99
 -- --------------------------------------------------------------------------------
 -- -- Generic definition for deriving Functor
 -- --------------------------------------------------------------------------------
@@ -2618,4 +2617,3 @@ data SomeException' x    = Deadlock                      -- alphabetical order o
 -- deriving instance Functor Maybe
 -- deriving instance Functor []
 %%]
-

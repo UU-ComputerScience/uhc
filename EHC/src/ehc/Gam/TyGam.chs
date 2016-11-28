@@ -49,6 +49,7 @@ data TyGamInfo
 %%]]
 %%[[(8 counting)
       , tgiAnnVars      :: ![HsName] 
+      , tgiTyVars      :: ![HsName] 
       , tgiAnnTy        :: !CA.Type
 %%]]
       }
@@ -63,16 +64,17 @@ deriving instance Typeable TyGamInfo
 mkTGIData :: Ty -> Ty
 %%[[(8 counting)
           -> [HsName]
+          -> [HsName]
           -> CA.Type
 %%]] 
           -> TyGamInfo
 mkTGIData t _ 
 %%[[(8 counting)
-  annVars annTy
+  tyVars annVars annTy
 %%]]
   = TyGamInfo t
 %%[[(8 counting)
-      annVars annTy
+      tyVars annVars annTy
 %%]]
 %%]
 
@@ -80,17 +82,11 @@ mkTGIData t _
 mkTGI :: Ty
 %%[[(8 counting)
           -> [HsName]
+          -> [HsName]
           -> CA.Type
 %%]] 
           -> TyGamInfo
-mkTGI t 
-%%[[(8 counting)
-  annVars annTy
-%%]]
-  = mkTGIData t Ty_Any
-%%[[(8 counting)
-      annVars annTy
-%%]]
+mkTGI t   = mkTGIData t Ty_Any
 %%]
 
 %%[1.emptyTGI export(emptyTGI)
@@ -101,7 +97,7 @@ emptyTGI
       Ty_Any
 %%]]
 %%[[(8 counting)
-      [] (CA.Type_Error "emptyTGI")
+      [] [] (CA.Type_Error "emptyTGI")
 %%]]
 %%]
 
@@ -179,120 +175,120 @@ initTyGam
 %%[[(6 hmtyinfer || hmtyast)
       [ (hsnArrow			, mkTGI (appCon hsnArrow)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnArrow")
+                                                                            [] [] (CA.Type_Error "hsnArrow")
 %%]]
           )
       , (hsnInt				, mkTGI tyInt
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnInt")
+                                                                            [] [] (CA.Type_Data (mkHNm "Int") [] [])
 %%]]
           )
       , (hsnChar			, mkTGI tyChar
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnChar")
+                                                                            [] [] (CA.Type_Data (mkHNm "Char") [] [])
 %%]]
           )
 %%[[7
       , (hsnRow				, mkTGI (appCon hsnUnknown)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnRow")
+                                                                            [] [] (CA.Type_Error "hsnRow")
 %%]]
           )
       , (hsnRec				, mkTGI (appCon hsnRec)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnRec")
+                                                                            [] [] (CA.Type_Error "hsnRec")
 %%]]
           )
       , (hsnSum				, mkTGI (appCon hsnSum)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnSum")
+                                                                            [] [] (CA.Type_Error "hsnSum")
 %%]]
           )
 %%]]
 %%[[9
       , (hsnPrArrow			, mkTGI (appCon hsnPrArrow)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnPrArrow")
+                                                                            [] [] (CA.Type_Error "hsnPrArrow")
 %%]]
           )
 %%]]
 %%[[18
       , (hsnRecUnboxed		, mkTGI (appCon hsnRecUnboxed)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnRecUnboxed")
+                                                                            [] [] (CA.Type_Error "hsnRecUnboxed")
 %%]]
           )
       , (hsnIntUnboxed		, mkTGI tyIntUnboxed
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnIntUnboxed")
+                                                                            [] [] (CA.Type_Error "hsnIntUnboxed")
 %%]]
           )
 %%]]
 %%[[31
       , (hsnEqTilde			, mkTGI (appCon hsnEqTilde)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnEqTilde")
+                                                                            [] [] (CA.Type_Error "hsnEqTilde")
 %%]]
           )
 %%]]
 %%[[97
       , (hsnInteger			, mkTGI tyInteger		
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnInteger")
+                                                                            [] [] (CA.Type_Error "hsnInteger")
 %%]]
           )
 %%]]
 %%[[9797
       , (hsnInt8Unboxed  	, mkTGI (appCon hsnInt8Unboxed  )	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnInt8Unboxed")
+                                                                            [] [] (CA.Type_Error "hsnInt8Unboxed")
 %%]]
           )
       , (hsnInt16Unboxed 	, mkTGI (appCon hsnInt16Unboxed )	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnInt16Unboxed")
+                                                                            [] [] (CA.Type_Error "hsnInt16Unboxed")
 %%]]
           )
       , (hsnInt32Unboxed 	, mkTGI (appCon hsnInt32Unboxed )	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnInt32Unboxed")
+                                                                            [] [] (CA.Type_Error "hsnInt32Unboxed")
 %%]]
           )
       , (hsnInt64Unboxed 	, mkTGI (appCon hsnInt64Unboxed )	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnInt64Unboxed")
+                                                                            [] [] (CA.Type_Error "hsnInt64Unboxed")
 %%]]
           )
       , (hsnWordUnboxed  	, mkTGI (appCon hsnWordUnboxed  )	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnWordUnboxed")
+                                                                            [] [] (CA.Type_Error "hsnWordUnboxed")
 %%]]
           )
       , (hsnWord8Unboxed 	, mkTGI (appCon hsnWord8Unboxed )	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnWord8Unboxed")
+                                                                            [] [] (CA.Type_Error "hsnWord8Unboxed")
 %%]]
           )
       , (hsnWord16Unboxed	, mkTGI (appCon hsnWord16Unboxed)	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnWord16Unboxed")
+                                                                            [] [] (CA.Type_Error "hsnWord16Unboxed")
 %%]]
           )
       , (hsnWord32Unboxed	, mkTGI (appCon hsnWord32Unboxed)	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnWord32Unboxed")
+                                                                            [] [] (CA.Type_Error "hsnWord32Unboxed")
 %%]]
           )
       , (hsnWord64Unboxed	, mkTGI (appCon hsnWord64Unboxed)	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnWord64Unboxed")
+                                                                            [] [] (CA.Type_Error "hsnWord64Unboxed")
 %%]]
           )
 %%]]
 %%[[99
       , (hsnAddrUnboxed		, mkTGI (appCon hsnAddrUnboxed  )	
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "hsnAddrUnboxed")
+                                                                            [] [] (CA.Type_Error "hsnAddrUnboxed")
 %%]]
           )
 %%]]  

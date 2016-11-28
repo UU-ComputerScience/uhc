@@ -215,7 +215,7 @@ SEM Expr
                                                                       ]
                             .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (appCon n) (appDbg $ "Generics.Expr.Let.TyGam.DataTyAndCon: " ++ show n)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "generTyGam1")
+                                                                            [] [] (CA.Type_Error "generTyGam1")
 %%]]
                                                                           )
                                                                       | n <- @generDataTyAndConNmL
@@ -223,7 +223,7 @@ SEM Expr
                                                         `gamUnion`
                                                         gamFromAssocL [ ( tnm, mkTGIData syn (appDbg $ "Generics.Expr.Let.TyGam.TySyn: " ++ show tnm)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "generTyGam1")
+                                                                            [] [] (CA.Type_Error "generTyGam1")
 %%]]
                                                                           )
                                                                       | (_,_,_,ts) <- @generTySynProjL

@@ -76,6 +76,68 @@ ATTR AGItf [ | | gathDataGam: DataGam ]
 SEM AGItf
   | AGItf       expr        .   gathDataGam         =   emptyGam
 
+%%[[(8 counting)
+SEM AGItf
+  | AGItf
+    lhs.gathDataGam = expandTypeDefs @loc.gathTyGam @lhs.tyGam @expr.gathDataGam
+
+{
+expandTypeDefs :: TyGam -> TyGam -> DataGam -> DataGam
+expandTypeDefs ltg tg d = if change then expandTypeDefs ltg tg d' else d'
+  where (d', change) = gamMapThr expandTypeDefsDgi False d
+        
+        expandTypeDefsDgi :: (HsName, DataGamInfo) -> Bool -> ((HsName, DataGamInfo), Bool)
+        expandTypeDefsDgi (k,dgi) c = ((k, dgi {dgiConstrTagMp = Map.fromList dtis}), or (c:cs))
+          where (dtis, cs) = unzip $ map expandTypeDefsDti $ Map.toList $ dgiConstrTagMp dgi
+
+        expandTypeDefsDti :: (HsName, DataTagInfo) -> ((HsName, DataTagInfo), Bool)
+        expandTypeDefsDti (n, dti) = ((n, dti {dtiFldAnnTyL = fields}), or cs)
+          where (fields, cs) = unzip $ map expandTypeDefsField $ dtiFldAnnTyL dti
+
+        expandTypeDefsField :: CA.Field -> (CA.Field, Bool)
+        expandTypeDefsField  (CA.Field_Lazy t) = (CA.Field_Lazy t', c')
+          where (t',c') = expandTypeDefsRhoType t
+        expandTypeDefsField  (CA.Field_Strict t) = (CA.Field_Strict t', c')
+          where (t',c') = expandTypeDefsRhoType t
+
+        expandTypeDefsType :: CA.Type -> (CA.Type, Bool)
+        expandTypeDefsType  (CA.Type_Data n as ts)
+          | n == mkHNm "_Rec" = (trec, True)
+          -- | isJust mt && isNothing mdt && n /= mkHNm "Char" && n /= mkHNm "Int" = traceShow ("Subst: ", show n) (ty', True)
+          | isJust mt && isNothing mdt && n /= mkHNm "Char" && n /= mkHNm "Int" = (ty', True)
+          | otherwise = (CA.Type_Data n as fields, or cs)
+          where (fields, cs) = unzip $ map expandTypeDefsType ts
+                mt = n `tyGamLookup` ltg <|> n `tyGamLookup` tg
+                mdt = n `dataGamLookup` d
+                tgi = fromJust mt
+                ty = tgiAnnTy tgi
+                ans = tgiAnnVars tgi
+                tvs = tgiTyVars tgi
+                asol = Map.fromList $ zip ans as
+                tsol = Map.fromList $ zip tvs fields
+                ty' = if length ans == length as && length tvs == length fields then S.substSolution ty (CA.Solution asol tsol Map.empty)
+                  else error ("lengths don't match for " ++ show n ++ ": " ++ show (as, ans) ++ show (fields, tvs) ++ ". Type: " ++ show ty)
+                trec = if (length ts /= 1) then error ("_rec is no singleton" ++ show ts)  else head ts
+        expandTypeDefsType  (CA.Type_App t1 t2) = (CA.Type_App t1' t2', c1 || c2)
+          where (t1',c1) = expandTypeDefsType t1
+                (t2',c2) = expandTypeDefsType t2
+        expandTypeDefsType  (CA.Type_Func t1 t2) = (CA.Type_Func t1' t2', c1 || c2)
+          where (t1',c1) = expandTypeDefsRhoType t1
+                (t2',c2) = expandTypeDefsEtaType t2
+        expandTypeDefsType  (CA.Type_Tup ts) = (CA.Type_Tup fields, or cs)
+          where (fields, cs) = unzip $ map expandTypeDefsRhoType ts
+        expandTypeDefsType kv = (kv, False)
+
+        expandTypeDefsRhoType :: CA.RhoType -> (CA.RhoType, Bool)
+        expandTypeDefsRhoType (CA.RhoType_Rho t a) = (CA.RhoType_Rho t' a, c')
+          where (t',c') = expandTypeDefsEtaType t
+
+        expandTypeDefsEtaType :: CA.EtaType -> (CA.EtaType, Bool)
+        expandTypeDefsEtaType (CA.EtaType_Eta t a) = (CA.EtaType_Eta t' a, c')
+          where (t',c') = expandTypeDefsType t
+}
+%%]]
+
 SEM CaseAlt
   | Pat         expr        .   gathDataGam         =   emptyGam
 
@@ -98,13 +160,20 @@ SEM AGItf
 ATTR AGItf [ dataGam: DataGam | | ]
 
 SEM AGItf
-  | AGItf       expr        .   dataGam             =   (specialtrace $ expandTypeDefs @expr.gathDataGam @lhs.dataGam) `gamUnion` @lhs.dataGam
+  | AGItf       expr        .   dataGam             = specialTgiTrace @loc.gathTyGam $ (specialtrace @expr.gathDataGam) `gamUnion` @lhs.dataGam
 
 {
 specialtrace :: DataGam -> DataGam
+-- specialtrace = id
 specialtrace dg = traceShow ("DataGam:", dgl) dg
   where dgl = map f $ gamToAssocL dg
         f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
+
+specialTgiTrace :: TyGam -> a -> a
+specialTgiTrace tg = id
+-- specialTgiTrace tg = traceShow ("TyGam:", tgl)
+  -- where tgl = map f $ gamToAssocL tg
+  --       f (n, tgi) = (n, tgiAnnTy tgi) 
 }
 
 %%]
@@ -120,13 +189,15 @@ ATTR AllNT [ caIota: {Int} caLocalDataGam: {Map.Map HsName Int} | | ]
 ATTR Decl Decls DataFields DataField TyExpr RowTyExpr DataConstrs DataConstr [ caLocalDataNames: {Set.Set HsName} caLocalAnnVars: {[HsName]} | | ]
 ATTR Decl [  | | caLocalDataNamesGath:  {Set.Set HsName} caLocalAnnVarsGath: {[HsName]} caLocalDataGamGath: {Map.Map HsName Int}]
 ATTR Decls [ | | caLocalDataNamesGath USE {Set.union} {Set.empty}: {Set.Set HsName} caLocalAnnVarsGath USE {++} {[]}: {[HsName]} caLocalDataGamGath USE {Map.union} {Map.empty} : {Map.Map HsName Int} ]
-ATTR TyExpr [ | | caIsFunc: {Maybe Bool} caIsStrict USE {(||)} {False}: {Bool} caType: {CA.Type}]
+ATTR TyExpr [ | | caIsFunc: {Maybe Bool} caType: {CA.Type}]
+ATTR TyExpr TyExprAnn [ | | caIsStrict USE {(||)} {False}: {Bool}]
 ATTR DataFields [ | | caFields USE {(++)} {[]}: {[CA.Field]}]
 ATTR DataField [ | | caFields: {[CA.Field]}]
 ATTR TyVars [ | | caTyVars USE {(++)} {[]}: {[HsName]} ]
-ATTR TyVar [ | | caTyVars: {[HsName]} ]
+ATTR TyVar TyExpr [ | | caTyVars: {[HsName]} ]
 ATTR RowTyExpr [ | | caTypes: {[CA.Type]} caLength: {Int}]
 ATTR TyExpr RowTyExpr [ caLevel: {Int} | | ]
+ATTR Expr Decl Decls [ | | caGathTyGam USE {Map.union} {Map.empty}: {Map.Map HsName ([HsName], [HsName], CA.Type)}]
 
 SEM TyVar
   | Var
@@ -138,7 +209,7 @@ SEM AGItf
     expr.caDataGam = @lhs.dataGam
     expr.caTyGam = @lhs.tyGam
     expr.caLocalDataGam = Map.empty
-    expr.caIota = 3
+    expr.caIota = 4
 
 SEM Expr
   | Let
@@ -156,6 +227,7 @@ SEM Decl
     lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
     lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
     tyExpr.caLevel = 1
+    lhs.caGathTyGam = Map.singleton @tyNm (@lhs.caLocalAnnVars, @tyExpr.caTyVars, @tyExpr.caType)
 
 SEM DataField
   | Field
@@ -165,7 +237,7 @@ SEM DataField
     loc.(nu,delta,fv) = if 0 < @lhs.caIota then 
                             (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, @lhs.caFreshVar + 2) 
                           else (CA.annTop, CA.annTop, @lhs.caFreshVar)
-    tyExpr.caFreshVar = @fv
+    tyExpr.caFreshVar = @loc.fv
 
 SEM RowTyExpr
   | Empty
@@ -177,6 +249,16 @@ SEM RowTyExpr
   | Var
     lhs.caTypes = panic "Unsupported Var case of RowTyExpr (types)"
     lhs.caLength = panic "Unsupported Var case of RowTyExpr (length)"
+
+SEM TyExprAnn
+  | Strictness
+    lhs.caIsStrict = @strictness /= Strictness_NonStrict
+
+SEM TyExpr
+  | Lam
+    lhs.caTyVars = @tyVar : @tyExpr.caTyVars
+  | * - Lam Ann
+    lhs.caTyVars = []
 
 SEM TyExpr
   | *
@@ -213,7 +295,7 @@ SEM TyExpr
                           CA.Type_Var _ -> CA.Type_App @func.caType @arg.caType
                           CA.Type_App{} -> CA.Type_App @func.caType @arg.caType
                           _ -> panic $ "not supported left hand side of application" ++ show @func.caType
-    loc.(nu1,delta, nu2,fv) = if @lhs.caLevel < @lhs.caIota && not @loc.isCurFunc then 
+    loc.(nu1,delta, nu2,fv) = if @lhs.caLevel < @lhs.caIota && @loc.isCurFunc then 
                                 (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 2, @lhs.caFreshVar + 3) 
                               else (CA.annTop, CA.annTop, CA.annTop, @lhs.caFreshVar)
     func.caFreshVar = @loc.fv
@@ -231,7 +313,7 @@ SEM TyExpr
     rowTyExpr.caFreshVar = @loc.fv
     lhs.caType = CA.Type_Tup $ map (\(t,u,d) -> CA.RhoType_Rho (CA.EtaType_Eta t u) d) $ zip3 @rowTyExpr.caTypes @loc.nus @loc.deltas 
   | Ann
-  -- TODO strictness annotation
+    -- strictness through copy rule
   | AppTop
     -- copy rules
     tyExpr.caLevel = @lhs.caLevel + 1
@@ -239,12 +321,10 @@ SEM TyExpr
     -- copy rules
   
   -- TODO this is forgotten
-  | Quant
+  | Quant Lam
     tyExpr.caLevel = @lhs.caLevel + 1
   
   -- unused but prevents ag warnings
-  | Lam
-    lhs.caType = panic "Unsupported construct during data type annotation algorithm: Lam"
   | Wild
     lhs.caType = panic "Unsupported construct during data type annotation algorithm: Wild"
   | Mono
@@ -484,7 +564,7 @@ SEM Decl
   | Data        loc         .   dataAltTy           =   recSum @constrs.dataAltTyL
                             .   dataTgi             :=  mkTGIData (appCon @tyNm) Ty_Any {- ([@dataTy] `appArr` @dataAltTy) -}
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "dataTgi")
+                                                                            [] [] (CA.Type_Error "dataTgi")
 %%]]
 %%]
   | Constr      loc         -- .   dataConTy2          =   @dataConTyL `appArr` @lhs.dataTy 

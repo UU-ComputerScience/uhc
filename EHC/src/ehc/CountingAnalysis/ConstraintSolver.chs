@@ -7,10 +7,12 @@
 
 import %%@{%{EH}%%}Base.HsName (HsName, mkHNm)
 import %%@{%{EH}%%}CountingAnalysis.ConstraintGeneration
+import %%@{%{EH}%%}CountingAnalysis.Pretty
 import %%@{%{EH}%%}CountingAnalysis
 import qualified %%@{%{EH}%%}CountingAnalysis.Substitution as S
 import qualified %%@{%{EH}%%}CountingAnalysis.ExtractVar as E
 import UHC.Util.Utils (panic)
+import UHC.Util.Pretty
 
 import %%@{%{EH}%%}Base.Target (FFIWay)
 import %%@{%{EH}%%}Foreign (ForeignEnt)
@@ -51,6 +53,7 @@ traceShow2def = flip const
 data SolveState = SolveState
   { _solution :: Solution
   , _partSolution :: PartSolution
+  , _constraintMap :: Map Var Constraints
   , _freshVar :: Var
   , _toHsName :: Var -> HsName
   , _dontDefault :: Set HsName
@@ -60,6 +63,7 @@ emptySolveState :: SolveState
 emptySolveState = SolveState
   { _solution = emptySolution
   , _partSolution = M.empty
+  , _constraintMap = M.empty
   , _freshVar = 0
   , _toHsName = error "empty toHsName"
   , _dontDefault = S.empty
@@ -86,9 +90,11 @@ class Solve a where
   solve :: a -> SolveT Constraints
 
 instance Solve Constraints where
-  solve [] = return mempty
+  solve [] = return $ traceShow "empty" mempty
   solve (c1:c2) = do
     s <- use solution
+    cm <- use constraintMap
+    -- c1' <- solve (if isTypeConstraint c1 then traceShow (ppAnnFree s >-< "constraint:" >-< ppAnnFree (c1, cm)) c1 else c1)
     c1' <- solve c1
     phi1 <- use solution
     let c2' = S.substSolution c2 phi1 
@@ -99,7 +105,9 @@ instance Solve Constraint where
   solve (Constraint_Ann c) = traceShowS ("annStart",c,"annend") $ solve c
   solve (Constraint_Eq c) = traceShowS ("eqStart", c, "eqend") $ solve c
   solve (Constraint_Gen tau nu delta nu0 delta0 c1 env sigma) = do
-    c2 <- genTrace2 ("Gen: ", sigma) $ solveFixMulti c1
+    conMap <- use constraintMap
+    c2 <- genTrace2 ("Gen: ", sigma) $ solveFixMulti $ conMap M.! c1
+    constraintMap %= M.insert c1 c2
     checkConstraints c2
     s <- traceShowS ("#######",c2,"$$$$$") $ use solution
     let tau' = S.substSolution tau s 
@@ -122,7 +130,7 @@ instance Solve Constraint where
     dontDefault %= S.union vbeta
     solve $ Constraint_Eq $ ConstraintEq_Scheme sigma $ Scheme_Forall vbeta valpha c2 tau'
     return []
-  solve (Constraint_Inst (Scheme_Forall alpha1 beta1 c tau1) tau2) = do
+  solve (Constraint_Inst (Scheme_Forall beta1 alpha1 c tau1) tau2) = do
     alpha2 <- replicateM (S.size alpha1) getFresh'
     beta2 <- replicateM (S.size beta1) getFresh'
     let sol = Solution (M.fromList $ zip (S.toList beta1) (map Annotation_Var beta2)) (M.fromList $ zip (S.toList alpha1) (map Type_Var alpha2)) M.empty
@@ -278,13 +286,19 @@ instance Solve ConstraintEq where
         addToSol x mu
         return mempty
   solve (ConstraintEq_Scheme mu a2@(Scheme_Var _)) = solve (ConstraintEq_Scheme a2 mu)
-  solve c@(ConstraintEq_Scheme mu1 mu2) = 
-    if mu1 /= mu2 then
-      panic $ "Unsatisfiable constraint (solve eqscheme): " ++ show c
+  solve c@(ConstraintEq_Scheme mu1@(Scheme_Forall as1 ts1 _ _) mu2@(Scheme_Forall as2 ts2 _ _)) = do
+    let asol = M.fromList $ zip (S.toList as1) $ map Annotation_Var $ S.toList as2
+        tsol = M.fromList $ zip (S.toList ts1) $ map Type_Var $ S.toList ts2
+        Scheme_Forall _ _ cs ts = S.substSolution mu1 $ Solution asol tsol M.empty
+        mu1' = Scheme_Forall as2 ts2 cs ts
+    if length as1 /= length as2 || length ts1 /= length ts2 then
+      panic $ "Unsatisfiable constraint (solve eqscheme). Quantfied variables cannot be matched: " ++ show c
+    else if mu1' /= mu2 then
+      panic $ "Unsatisfiable constraint (solve eqscheme): " ++ show (mu1, mu1', mu2)
     else
       return mempty
       
-  solve c = panic $ "Unsatisfiable constraint(solve eqtype): " ++ show c
+  solve c = panic $ "Unsatisfiable constraint(solve eq): " ++ show c
 
 class AddToSol a where
   addToSol :: HsName -> a -> SolveT ()
@@ -359,7 +373,7 @@ intToAnnVal n = case n of
 (.<) = (>) `on` annValToInt
 
 solveDef :: Constraints -> SolveState -> Solution
-solveDef c ss = if M.null psiFinal then solveFinalSchemes ss' else 
+solveDef c ss = if M.null psiFinal then traceShow "finished" $ solveFinalSchemes ss' else 
   traceShowS "solveDef" 
     $ solveDef (singleC (Constraint_Eq $ ConstraintEq_Ann (Annotation_Var beta) $ Annotation_Val w) <> c1)
     $ ss' & solution .~ phi1 & partSolution .~ psi1

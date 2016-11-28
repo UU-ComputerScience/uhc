@@ -23,7 +23,27 @@ SEM Expr
   | * - Let     lhs         .   gathTyGam           =   emptyGam
 
 SEM AGItf
-  | AGItf       lhs         .   gathTyGam           =   ehcOptTrace @lhs.opts "AGItf.lhs.gathTyGam" @expr.gathTyGam
+  | AGItf       
+                lhs         .   gathTyGam           =   ehcOptTrace @lhs.opts "AGItf.lhs.gathTyGam" @loc.gathTyGam
+                loc         .   gathTyGam           =
+%%[[(50 counting)
+                                                          mergeWithCaTyGam @expr.caGathTyGam
+%%]]
+                                                            @expr.gathTyGam
+
+%%[[(50 counting)
+{
+mergeWithCaTyGam :: Map HsName ([HsName], [HsName], CA.Type) -> TyGam -> TyGam
+mergeWithCaTyGam m = gamMap f
+  where f x@(n, tgi) = case Map.lookup n m of
+                        Nothing -> x
+                        Just (as,ts,t) -> (n, tgi
+                          { tgiAnnVars = as
+                          , tgiTyVars = ts
+                          , tgiAnnTy = t
+                          })
+}
+%%]]                                                           
 %%]
 
 %%[(50 hmtyinfer)
@@ -91,4 +111,5 @@ SEM Expr
 SEM AGItf
   | AGItf       lhs         .   gathPolGam          =   ehcOptTrace @lhs.opts "AGItf.lhs.gathPolGam" @expr.gathPolGam
 %%]
+
 

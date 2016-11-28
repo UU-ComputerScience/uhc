@@ -70,6 +70,9 @@ Running of BuildFunction
 %%[8 import({%{EH}Base.Trace})
 %%]
 
+%%[(8 counting) import(Debug.Trace)
+%%]
+
 %%[50 import(qualified UHC.Util.Rel as Rel)
 %%]
 -- timestamps

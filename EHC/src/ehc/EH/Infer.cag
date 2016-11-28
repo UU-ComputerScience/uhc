@@ -685,7 +685,7 @@ SEM Expr
 SEM Decl
   | KiSig       lhs         .   gathKiSigGam        =   gamAdd @nm (mkTGI (appCon @nm)
 %%[[(8 counting)
-                                                                            [] (CA.Type_Error "gathKiSigGam")
+                                                                            [] [] (CA.Type_Error "gathKiSigGam")
 %%]]
                                                           ) @lhs.gathKiSigGam
 %%]

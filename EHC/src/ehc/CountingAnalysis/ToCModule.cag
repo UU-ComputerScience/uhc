@@ -42,9 +42,60 @@ toCModule m = panic "toCModule"
 %%[(8 counting) ag
 
 ATTR Module [ | | trf: {CModule} ]
+ATTR Expr [ | | trf: {CExpr} ]
+ATTR Const [ | | trf: {CExpr} ]
 
 SEM Module
   | Module
-    lhs.trf = undefined
+    lhs.trf = CModule_Mod @loc.moduleNm @loc.exports @loc.imports @loc.declMetas @e.trf
+    loc.(moduleNm, exports, imports, declMetas) = @extra
 
+SEM Expr
+  | VarLocal
+    lhs.trf = CExpr_Var @extra
+  | VarImport
+    lhs.trf = CExpr_Var @extra
+  | Const
+    lhs.trf = undefined
+  | Abs
+    lhs.trf = undefined
+  | AppLocal
+    lhs.trf = undefined
+  | AppImport
+    lhs.trf = undefined
+  | AppConst
+    lhs.trf = undefined
+  | Let
+    lhs.trf = undefined
+  | LetBang
+    lhs.trf = undefined
+  | Con
+    lhs.trf = undefined
+  | Tup
+    lhs.trf = undefined
+  | CaseCon
+    lhs.trf = undefined
+  | CaseTup
+    lhs.trf = undefined
+  | CaseConst
+    lhs.trf = undefined
+  | FFI
+    lhs.trf = CExpr_FFI @loc.callConv @loc.safety @loc.empEnt @ty
+    loc.(callConv, safety, empEnt) = @extra
+  | Ann
+    lhs.trf = undefined
+  | Error
+    lhs.trf = panic $ "Translating error expression: " ++ @e
+
+SEM Const
+  | Int
+    lhs.trf = CExpr_Int @c
+  | Char
+    lhs.trf = CExpr_Char @c
+  | String
+    lhs.trf = CExpr_String @c
+%%[[(97 core)
+  | Integer
+    lhs.trf = CExpr_Integer @c
+%%]]
 %%]

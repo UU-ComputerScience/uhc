@@ -1,7 +1,7 @@
 %%[(8 counting) hs module {%{EH}CountingAnalysis.ExtractVar} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map hiding (foldr),qualified Data.Map as Map)
 %%]
 
-%%[(8 counting) hs import({%{EH}Base.HsName (HsName)})
+%%[(8 counting) hs import({%{EH}Base.HsName (HsName)}, {%{EH}Core}, {%{EH}CodeGen.Tag (CTag)})
 %%]
 
 %%[(8 counting) hs import({%{EH}CountingAnalysis})

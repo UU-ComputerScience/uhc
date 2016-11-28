@@ -53,8 +53,8 @@ TYPE ConVars = [ConVar]
 TYPE Bindings = [Binding]
 
 TYPE Expr
-  | VarLocal v : {HsName}
-  | VarImport v : {HsName}
+  | VarLocal v : {HsName} extra : {ACoreBindRef}
+  | VarImport v : {HsName} extra : {ACoreBindRef}
   | Const c : Const
   | Abs bind : {HsName} body : Expr
   | AppLocal func : Expr  arg : {HsName}
@@ -62,18 +62,18 @@ TYPE Expr
   | AppConst func : Expr  arg : Const
   | Let binds : Bindings e : Expr
   | LetBang x : {HsName} e1 : Expr e2 : Expr
-  | Con tyNm : {HsName} conNm : {HsName} flds : ConVars
-  | Tup flds : ConVars
+  | Con tyNm : {HsName} conNm : {HsName} flds : ConVars extra : {CTag}
+  | Tup flds : ConVars extra : {CTag}
   | CaseCon e : Expr alts : AltCons
   | CaseTup e : Expr xs : {HsNames} e1 : Expr
   | CaseConst e : Expr alts : AltConsts
-  | FFI ty : {Ty}
+  | FFI ty : {Ty} extra : {(FFIWay, String, ForeignEnt)}
   | Ann ann : EtaType e : Expr
   | Error e : {String}
 
 DATA ConVar
-  | VarLocal v : {HsName}
-  | VarImport v : {HsName}
+  | VarLocal v : {HsName} extra : {ACoreBindRef}
+  | VarImport v : {HsName} extra : {ACoreBindRef} 
   | Const c : Const
 
 DATA Binding
@@ -83,7 +83,9 @@ DATA Const
   | Int c : {Int}
   | Char c : {Char}
   | String c : {String}
+%%[[(97 core)
   | Integer c : {Integer}
+%%]]
 
 DATA AltCon
   | Alt tyNm : {HsName} conNm : {HsName} xs : {HsNames} e : Expr
@@ -95,8 +97,8 @@ DATA AltConst
 DATA Constraint
   | Ann c : ConstraintAnn
   | Eq c : ConstraintEq
-  | Inst s : Scheme t : Type
-  | Gen t : Type u : Annotation d : Annotation v0: Annotation d0: Annotation c : Constraints e : Env s : Scheme
+  | Inst name : {HsName} s : Scheme t : Type
+  | Gen name : {HsName} t : Type u : Annotation d : Annotation v0: Annotation d0: Annotation c : {Var} e : Env s : Scheme
 
 DATA ConstraintAnn
   | Plus a1 : Annotation a2 : Annotation a : Annotation
@@ -110,5 +112,5 @@ DATA ConstraintEq
   | Scheme s1 : Scheme s2 : Scheme
 
 DATA Module
-  | Module e : Expr
+  | Module e : Expr extra : {(HsName, CExportL, CImportL, CDeclMetaL)}
 %%]

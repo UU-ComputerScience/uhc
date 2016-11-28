@@ -47,8 +47,8 @@ toCAModule lamMap cmod
 %%[(8 counting) hs
 
 getConVar :: CA.Expr -> CA.ConVar
-getConVar (CA.Expr_VarLocal v) = CA.ConVar_VarLocal v
-getConVar (CA.Expr_VarImport v) = CA.ConVar_VarImport v
+getConVar (CA.Expr_VarLocal v x) = CA.ConVar_VarLocal v x
+getConVar (CA.Expr_VarImport v x) = CA.ConVar_VarImport v x
 getConVar (CA.Expr_Const c) = CA.ConVar_Const c
 getConVar e = panic $ "getting app bound failed from: " ++ show e
 
@@ -56,7 +56,7 @@ getConVar e = panic $ "getting app bound failed from: " ++ show e
 
 %%[(8 counting) ag
 
-ATTR * [lamMp: {Map HsName CA.Scheme} | | ]
+ATTR * [lamMp: {Map HsName CA.Scheme} | | copy: SELF ]
 
 ATTR CodeAGItf [ | | trf: {CA.Module} ]
 ATTR CModule [ | | trf: {CA.Module} ]
@@ -74,11 +74,11 @@ ATTR CPatFld [ | | trf: {HsName} ]
 
 SEM CModule 
   | Mod
-   lhs.trf = CA.Module_Module @expr.trf
+   lhs.trf = CA.Module_Module @expr.trf (@moduleNm, @exports.copy, @imports.copy, @declMetas.copy)
 
 SEM CExpr
   | Var
-    lhs.trf = (if @loc.isImported then CA.Expr_VarImport else CA.Expr_VarLocal) $ acbrefNm @ref
+    lhs.trf = (if @loc.isImported then CA.Expr_VarImport else CA.Expr_VarLocal) (acbrefNm @ref) @ref
     loc.isImported = acbrefNm @ref `M.member` @lhs.lamMp
   | Int
     lhs.trf = CA.Expr_Const $ CA.Const_Int @int
@@ -100,7 +100,7 @@ SEM CExpr
                     CBindCateg_Strict -> True
                     _ -> False
   | Tup
-    lhs.trf = if @loc.isRec then CA.Expr_Tup [] else CA.Expr_Con (ctagTyNm @tag) (ctagNm @tag) []
+    lhs.trf = if @loc.isRec then CA.Expr_Tup [] @tag else CA.Expr_Con (ctagTyNm @tag) (ctagNm @tag) [] @tag
     loc.isRec = ctagIsRec @tag
   | Lam
     lhs.trf = CA.Expr_Abs @loc.arg @body.trf
@@ -116,15 +116,15 @@ SEM CExpr
 
   | App
     lhs.trf = case @func.trf of
-                CA.Expr_Con tn cn flds -> CA.Expr_Con tn cn $ flds ++ [getConVar @arg.trf]
-                CA.Expr_Tup flds -> CA.Expr_Tup $ flds ++ [getConVar @arg.trf]
+                CA.Expr_Con tn cn flds x -> CA.Expr_Con tn cn (flds ++ [getConVar @arg.trf]) x
+                CA.Expr_Tup flds x -> CA.Expr_Tup (flds ++ [getConVar @arg.trf]) x
                 _ -> case getConVar @arg.trf of
-                  CA.ConVar_VarLocal v -> CA.Expr_AppLocal @func.trf v
-                  CA.ConVar_VarImport v -> CA.Expr_AppImport @func.trf v
+                  CA.ConVar_VarLocal v x -> CA.Expr_AppLocal @func.trf v
+                  CA.ConVar_VarImport v x -> CA.Expr_AppImport @func.trf v
                   CA.ConVar_Const c -> CA.Expr_AppConst @func.trf c
 
   | FFI
-    lhs.trf = CA.Expr_FFI @ty
+    lhs.trf = CA.Expr_FFI @ty (@callconv, @safety, @impEnt)
 
 SEM CPat
   | Con

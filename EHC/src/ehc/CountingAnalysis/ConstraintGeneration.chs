@@ -25,7 +25,8 @@ annTimes a1 a2 = S.fromList [annFromInt (sum $ map annToInt y) | x <- S.toList a
         f n y@(x:xs) = f n xs ++ map (x:) (f (n-1) y)
 
 annCond :: AnnVal -> AnnVal -> AnnVal
-annCond a1 a2 = S.unions $ map (\x -> if x == AnnPrim_Zero then annZero' else a2) $ S.toList a1
+-- annCond a1 a2 = S.unions $ map (\x -> if x == AnnPrim_Zero then annZero' else a2) $ S.toList a1
+annCond a1 a2 = S.union a2 $ S.filter (== AnnPrim_Zero) a1
 
 (.+) :: AnnPrim -> AnnPrim -> AnnPrim
 x .+ y = annFromInt $ annToInt x + annToInt y
