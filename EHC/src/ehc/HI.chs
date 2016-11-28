@@ -32,7 +32,7 @@
 %%[50 hs import({%{EH}Config},{%{EH}Module.ImportExport})
 %%]
 
-%%[(50 hmtyinfer) hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve},qualified {%{EH}Gam.ClGam} as Pr)
+%%[(50 hmtyinfer) hs import({%{EH}Pred.CtxtRedOnly.ToCHR},{%{EH}CHR.CtxtRedOnly.Solve},qualified {%{EH}Gam.ClGam} as Pr)
 %%]
 
 %%[50 hs import(qualified Data.Set as Set,qualified Data.Map as Map,qualified UHC.Util.Rel as Rel,qualified UHC.Util.FastSeq as Seq,UHC.Util.Utils)

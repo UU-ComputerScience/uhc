@@ -552,7 +552,7 @@ tyQu_KiExists = TyQu_Exists metaLevTy
 %%% Properties of quantifier
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer || hmtyast) hs export(tyquIsExists, tyquIsForall)
+%%[(4 hmtyinfer || hmtyast) hs export(tyquEqModuloLev, tyquIsExists, tyquIsForall)
 tyquIsExists, tyquIsForall :: TyQu -> Bool
 %%]
 
@@ -562,6 +562,10 @@ tyquIsForall _                       = False
 
 tyquIsExists (TyQu_Exists _)         = True
 tyquIsExists _                       = False
+
+tyquEqModuloLev (TyQu_Forall {}) (TyQu_Forall {}) = True
+tyquEqModuloLev (TyQu_Exists {}) (TyQu_Exists {}) = True
+tyquEqModuloLev _                _                = False
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs export(tyquMetaLev)
@@ -1109,11 +1113,7 @@ tyMbVar = fmap fst . tyMbVar'
 tyMbQu :: Ty -> Maybe TyQu
 tyMbQu t
   = case tyUnAnn t of
-%%[[4
-      Ty_TBind q _ _
-%%][6
-      Ty_TBind q _ _ _
-%%]]
+      Ty_TBind {qu_Ty_TBind=q}
         -> Just q
       _ -> Nothing
 %%]
@@ -1161,8 +1161,8 @@ tyAllConS t
 tyQuant :: Ty -> Ty
 tyQuant t
   =  case tyUnAnn t of
-       Ty_TBind _ _ _ t'  -> tyQuant t'
-       _                  -> t
+       Ty_TBind {ty_Ty_TBind=t'} -> tyQuant t'
+       _                         -> t
 %%]
 
 Substitution aware variants
@@ -1227,8 +1227,8 @@ mkTyRecExt recd al
 tyVarChkVisitLift :: LookupTy -> (Ty -> x) -> (Ty -> x) -> Ty -> x
 tyVarChkVisitLift
   = withLkupChkVisitLift tyMbVar (noVisit . tyUnAnn)
-  where noVisit (Ty_TBind _ qv _ _) = Set.singleton qv
-        noVisit _                   = Set.empty
+  where noVisit (Ty_TBind {tv_Ty_TBind=qv}) = Set.singleton qv
+        noVisit _                           = Set.empty
 
 tyVarLift :: LookupTy -> (Ty -> x) -> (Ty -> x) -> Ty -> x
 tyVarLift = withLkupLift tyMbVar

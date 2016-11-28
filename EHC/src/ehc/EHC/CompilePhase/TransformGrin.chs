@@ -69,7 +69,7 @@ cpFromGrinTrf modNm trf m
 cpTransformGrin :: forall m . EHCCompileRunner m => HsName -> EHCompilePhaseT m ()
 cpTransformGrin modNm
   =  do  {  cr <- get
-         ;  cpMsg modNm VerboseDebug "cpTransformGrin"         
+         ;  cpMsg modNm VerboseALot "cpTransformGrin"         
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  forBytecode          = targetIsGrinBytecode (ehcOptTarget opts)
                  forBytecodeOrSimilar = not doesHPT -- targetIsGrinBytecode (ehcOptTarget opts)

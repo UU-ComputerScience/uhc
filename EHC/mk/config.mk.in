@@ -99,6 +99,11 @@ ifeq (@ENABLE_SANDBOX@,yes)
 ENABLE_SANDBOX				:= yes
 endif
 
+# include CHR based type system
+ifeq (@ENABLE_CHRTYSYS@,yes)
+ENABLE_CHRTYSYS				:= yes
+endif
+
 # include java code generation
 ifeq (@ENABLE_JAVA@,yes)
 ENABLE_JAVA					:= yes

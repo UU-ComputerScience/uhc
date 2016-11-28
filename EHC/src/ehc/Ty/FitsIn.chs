@@ -54,7 +54,7 @@
 %%]
 %%[(9 codegen coreout hmtyinfer) import({%{EH}Core.Pretty})
 %%]
-%%[(9 hmtyinfer) import({%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) import({%{EH}CHR.CtxtRedOnly.Constraint})
 %%]
 %%[(9 hmtyinfer) export(fitsIn')
 %%]
@@ -141,7 +141,8 @@ fiAppSpineLookup fi n gappSpineGam = asGamLookup n $ feAppSpineGam $ fiEnv fi
 fiAppSpineLookup
   :: forall gm .
      ( VarLookupCmb VarMp gm
-     , VarLookup gm TyVarId VarMpInfo
+     , VarLookup gm
+     , VarLookupKey gm ~ TyVarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIIn' gm -> HsName -> AppSpineGam -> Maybe AppSpineInfo
 fiAppSpineLookup fi n gappSpineGam
@@ -294,9 +295,9 @@ fitsIn
      , VarLookupCmb gm gm
      )
      => -} 
-     ( VarLookup gm TyVarId VarMpInfo
+     ( VarLookup gm
      , VarLookupCmb VarMp gm
-     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
+     , VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIOpts -> FIEnv -> UID -> gm -> Ty -> Ty
      -> FIOut
@@ -325,9 +326,9 @@ fitsInFI
      , VarLookupCmb gm gm
      )
      => -} 
-     ( VarLookup gm TyVarId VarMpInfo
+     ( VarLookup gm
      , VarLookupCmb VarMp gm
-     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
+     , VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Ty -> Ty
      -> FIOut
@@ -460,6 +461,13 @@ fitsInFI fi ty1 ty2
                        (uqt,rtvs,instto) = tyInst1Quants uq howToInst t
                        back              = if hide  then  \fo -> foSetVarMp (varmpDel rtvs (foVarMp fo)) $ foUpdTy t fo
                                                     else  id
+
+            -- removal of multiple quantifiers
+            unquants fi t@(Ty_TBind {qu_Ty_TBind=q}) qu howToInst | qu `tyquEqModuloLev` q
+                = unquants fi' t' qu howToInst
+                where (fi', t', _, _) = unquant fi t False howToInst
+            unquants fi t _ _
+                = (fi, t)
 %%]
 
 %%[(41 hmtyinfer).fitsIn.eqProofAssume
@@ -1188,33 +1196,24 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QLR
-%%[[4
-            fBase fi updTy t1@(Ty_TBind q1 _ _)   t2@(Ty_TBind q2 _ _)
-%%][6
-            fBase fi updTy t1@(Ty_TBind q1 _ _ _) t2@(Ty_TBind q2 _ _ _)
-%%]]
-                | fioMode (fiFIOpts fi) == FitUnify && q1 == q2
-                                                    = fVar' fTySyn fi2 id uqt1 uqt2
-                where  (fi1,uqt1,_,_) = unquant fi   t1 False instCoConst
-                       (fi2,uqt2,_,_) = unquant fi1  t2 False instCoConst
+            fBase fi updTy t1@(Ty_TBind {qu_Ty_TBind=q1})   t2@(Ty_TBind {qu_Ty_TBind=q2})
+                | fiom `elem` [FitSubLR,FitUnify]
+                                                    = if q1 `tyquEqModuloLev` q2 
+                                                      then fVar' fTySyn fi2 id uqt1 uqt2
+                                                      else errClash fi t1 t2
+                where  fiom = fioMode (fiFIOpts fi)
+                       (fi1,uqt1) = unquants fi   t1 q1 instCoConst
+                       (fi2,uqt2) = unquants fi1  t2 q1 (if fiom == FitSubLR then instContra else instCoConst)
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QR
-%%[[4
-            fBase fi updTy t1                     t2@(Ty_TBind _ _ _)
-%%][6
-            fBase fi updTy t1                     t2@(Ty_TBind _ _ _ _)
-%%]]
+            fBase fi updTy t1                     t2@(Ty_TBind {})
                 | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
                                                     = back2 (fo { foRInstToL = instto2 ++ foRInstToL fo
                                                                 })
                 where (fi2,uqt2,back2,instto2) = unquant fi t2 False instCoConst
                       fo = fVar' fTySyn fi2 id t1 uqt2
-%%[[4
-            fBase fi updTy t1                     t2@(Ty_TBind _ _ _)
-%%][6
-            fBase fi updTy t1                     t2@(Ty_TBind _ _ _ _)
-%%]]
+            fBase fi updTy t1                     t2@(Ty_TBind {})
                 | fioIsSubsume (fiFIOpts fi) && not (fioLeaveRInst (fiFIOpts fi))
                                                     = back2 (fo { foRInstToL = instto2 ++ foRInstToL fo
                                                                 })
@@ -1223,11 +1222,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QL
-%%[[4
-            fBase fi updTy t1@(Ty_TBind _ _ _)    t2
-%%][6
-            fBase fi updTy t1@(Ty_TBind _ _ _ _)  t2
-%%]]
+            fBase fi updTy t1@(Ty_TBind {})    t2
                 | fioIsSubsume (fiFIOpts fi)        = fo { foLInstToL = instto1 ++ foLInstToL fo
                                                          }
                 where (fi1,uqt1,back1,instto1) = unquant fi t1 False instCoConst
@@ -1641,8 +1636,8 @@ fitsInFold opts env uniq varmp tyl
 %%[(9 hmtyinfer) export(fitPredIntoPred)
 fitPredIntoPred
   :: ( VarLookupCmb VarMp gm
-     , VarLookup gm TyVarId VarMpInfo
-     , SubstVarKey gm ~ VarId, SubstVarVal gm ~ VarMpInfo
+     , VarLookup gm
+     , VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Pred -> Pred
      -> Maybe (Pred,VarMp)

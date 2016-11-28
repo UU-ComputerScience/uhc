@@ -17,6 +17,7 @@ EHC_ASPECTS								:= $(strip $(sort $(if $(ASPECTS),$(ASPECTS) \
 											 $(if $(ENABLE_JAVA),java jazy,) \
 											 $(if $(ENABLE_LLVM),llvm,) \
 											 $(if $(ENABLE_CMM),cmm,) \
+											 $(if $(ENABLE_CHRTYSYS),chrtysys,) \
 											 $(if $(ENABLE_JS),javascript,) \
 											 $(if $(ENABLE_CORESYSF),coresysf,) \
 											 $(if $(ENABLE_CORE_ASINPOUTP),corebackend corerun,) \

@@ -205,7 +205,7 @@ cpTranslateCore2Grin modNm
                  mbCoreSem = _ecuMbCoreSem ecu
                  coreSem   = panicJust "cpTranslateCore2Grin" mbCoreSem
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
-         ;  cpMsg modNm VerboseDebug $ "cpTranslateCore2Grin, has coresem " ++ show (isJust mbCoreSem) ++ ", via grin " ++ show (ehcOptIsViaGrin opts)
+         ;  cpMsg modNm VerboseALot $ "cpTranslateCore2Grin, has coresem " ++ show (isJust mbCoreSem) ++ ", via grin " ++ show (ehcOptIsViaGrin opts)
          ;  when (isJust mbCoreSem && ehcOptIsViaGrin opts)
                  (cpUpdCU modNm $! ecuStoreGrin $! grin)
          }
@@ -326,10 +326,9 @@ cpTranslateGrin2Bytecode modNm
                (liftIO $ putStrLn ("expNmFldMp: " ++ show expNmFldMp))
 %%]]
 
-        ; cpMsg modNm VerboseDebug $ "cpTranslateGrin2Bytecode: store bytecode, has grin " ++ show (isJust mbGrin)
+        ; cpMsg modNm VerboseALot $ "cpTranslateGrin2Bytecode: store bytecode, has grin " ++ show (isJust mbGrin)
         ; when (isJust mbGrin)
                (cpUpdCU modNm $! ecuStoreBytecode bc)
-        ; cpMsg modNm VerboseDebug ("cpTranslateGrin2Bytecode: stored bytecode")
         ; when (ehcOptErrAboutBytecode opts)
                (cpSetLimitErrsWhen 5 "Grin to ByteCode" errs)
         }

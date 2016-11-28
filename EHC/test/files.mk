@@ -148,21 +148,15 @@ test-expect test-regress: test-lists
 	            tb2="$${tb}" ; \
 	            t2="$${t}" ; \
 	          fi ; \
-	          tc=$${tb2}.core ; tg=$${tb2}.grin2 ; texe=$${tb2}$(EXEC_SUFFIX) ; \
+	          tc=$${tb2}.cr ; tg=$${tb2}.grin2 ; th=$${tb2}.hi ; texe=$${tb2}$(EXEC_SUFFIX) ; \
 	          cleanup="$${cleanup} $${texe}" ; \
-	          rm -f $${tc} $${tg} ; \
+	          rm -f $${tc} $${tg} $${th} ; \
 	          $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} -v --code=core $${t2} > $${th} 2>&1 ; \
 	          if test -r $${tc} ; \
 	          then \
 	            echo "== core ==" >> $${th} ; \
 	            cat $${tc} >> $${th} ; \
 	            rm -f $${tg} ; \
-	            if test -x $${gri} ; \
-	            then \
-	              $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} --code=grin $${t2} > /dev/null ; \
-	              echo "== grin interpreter execution ==" >> $${th} ; \
-	              $${gri} $${tg} >> $${th} 2>&1 ; \
-	            fi ; \
 	            rm -f $${texe} ; \
 	            echo "== grin bytecode (GBM) compilation ==" >> $${th} ; \
 	            $${ehc} $${ehcOpts} $${ehcTargetOpts} $${TEST_OPTIONS} --pretty=- --code=bexe $${t2} >> $${th} 2>&1 ; \
@@ -182,7 +176,10 @@ test-expect test-regress: test-lists
 	          fi \
 	        else \
 	          texe=$${tb}$${texeSuffix} ; \
-	          cleanup="$${cleanup} $${texe}" ; \
+	          texeh=$${tb}.hi ; \
+	          texec=$${tb}.cr ; \
+	          texeo=$${tb}.o ; \
+	          cleanup="$${cleanup} $${texec} $${texeh} $${texeo} $${texe}" ; \
 	          platformDpd="`grep platform: $${t}`" ; \
 	          targetExclude="`grep exclude-if-$(EHC_VARIANT_TARGET) $${t}`" ; \
 	          platformMsg="" ; \

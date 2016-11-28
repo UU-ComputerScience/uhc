@@ -186,6 +186,10 @@ AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)
 AC_ARG_ENABLE(sandbox, AS_HELP_STRING([--enable-sandbox],[build EHC/UHC libs with cabal sandbox]), [enableSandbox=yes], [enableSandbox=no])
 AC_SUBST(ENABLE_SANDBOX,$enableSandbox)
 
+### enable options: turn on CHR based type system impl
+AC_ARG_ENABLE(chrtysys, AS_HELP_STRING([--enable-chrtysys],[build EHC/UHC with CHR based type system]), [enableChrTySys=yes], [enableChrTySys=no])
+AC_SUBST(ENABLE_CHRTYSYS,$enableChrTySys)
+
 ### cpp
 AC_ARG_WITH(cpp,
 [AS_HELP_STRING([--with-cpp=<cpp preprocessor>],[Use a command different from 'cpp' to compile with CPP.])],
@@ -473,7 +477,7 @@ AC_PATH_PROG(hsc2hsCmd,hsc2hs)
 AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
-ghcLibsRequired="fgl vector uulib network binary hashable uhc-util base mtl dequeue lens transformers directory containers array process filepath"
+ghcLibsRequired="fgl vector uulib network binary hashable uhc-util base mtl dequeue lens transformers directory containers array process filepath utf8-string bytestring"
 #if test x$enableClr = "xyes"
 #then
 #  ghcLibsRequired="${ghcLibsRequired} primitive"
@@ -496,7 +500,7 @@ then
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
           uhc-util)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.5&&<0.1.7"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.7&&<0.1.7"
             ;;
           uulib)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"

@@ -27,6 +27,10 @@ SEM Pragma
     | ExcludeIfTarget
         loc				.	targets		=	catMaybes $ map (\t -> Map.lookup t supportedTargetMp) @targetNames
         lhs             .   gathPragmas =   Set.singleton (Pragma.Pragma_ExcludeIfTarget @targets)
+{-
+    | CHR
+        lhs             .   gathPragmas =   Set.singleton (Pragma.Pragma_CHR @chrRules)
+-}
 
 SEM Module
     | Module

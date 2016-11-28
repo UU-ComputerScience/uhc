@@ -292,6 +292,7 @@ PRIM Word primHFlush( GB_NodePtr handle )
 	return gb_Unit ;
 }
 
+// 20161127 both below are partially implemented w.r.t. unicode...
 PRIM Word primHGetChar( GB_NodePtr handle )
 {
 %%[[98
@@ -316,9 +317,14 @@ PRIM Word primHPutChar( GB_NodePtr handle, Word c )
 	gb_assert_IsEvaluated( (Word)chan, "primHPutChar" ) ;
 %%]]
 	// int c2 = putc( GB_GBInt2Int(c), chan->content.chan.file ) ;
-	int c2 = putc( (c), chan->content.chan.file ) ;
-	if (c2 == EOF) {
-		GB_PassExc_Cast( Word, gb_ThrowWriteChanError( chan ) ) ;
+	uint8_t buf[8];
+	int sz = u8_uctomb (buf, (uint32_t)c, 8);
+	buf[sz] = 0;
+	for (int i = 0; i < sz ; i++ ) {
+        int c2 = putc( buf[i], chan->content.chan.file ) ;
+        if (c2 == EOF) {
+            GB_PassExc_Cast( Word, gb_ThrowWriteChanError( chan ) ) ;
+        }
 	}
 	return gb_Unit ;
 }

@@ -9,6 +9,8 @@
 %%]
 %%[(8 codegen grin) hs import(qualified {%{EH}GrinCode} as G)
 %%]
+%%[(8 codegen grin) hs import(qualified Data.ByteString.UTF8 as UTF8, qualified Data.ByteString as BS, Data.Word(Word8))
+%%]
 %%[(8 codegen grin) hs import({%{EH}CodeGen.Const} as Const)
 %%]
 
@@ -343,28 +345,51 @@ SEM Instr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% BytePoolString
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+type BytePoolString = UTF8.ByteString
+
+bytePoolStringEncodedLength :: BytePoolString -> Int
+bytePoolStringEncodedLength = BS.length
+
+bytePoolStringRaw :: BytePoolString -> [Word8]
+bytePoolStringRaw = BS.unpack
+
+toBytePoolString :: String -> BytePoolString
+toBytePoolString = UTF8.fromString
+
+fromBytePoolString :: BytePoolString -> String
+fromBytePoolString = UTF8.toString
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% BytePool
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
 data BytePoolEntry
-  = BytePool_String !String
+  = BytePool_String !BytePoolString
   | BytePool_Bytes  ![Int]
   | BytePool_None
   deriving(Eq,Ord)
 
+mkBytePoolEntryString :: String -> BytePoolEntry
+mkBytePoolEntryString = BytePool_String . toBytePoolString
+
 bytePoolEntrySize :: BytePoolEntry -> Int
-bytePoolEntrySize (BytePool_String s) = length s + 1
+bytePoolEntrySize (BytePool_String s) = bytePoolStringEncodedLength s + 1
 bytePoolEntrySize (BytePool_Bytes  b) = length b
 bytePoolEntrySize _                   = 0
 
 bytePoolEntryEncoding :: BytePoolEntry -> [GenC]
-bytePoolEntryEncoding (BytePool_String s) = [ppCommas $ ppStringAsHex' s]
+bytePoolEntryEncoding (BytePool_String s) = [ppCommas $ ppWord8sAsHex' $ bytePoolStringRaw s]
 bytePoolEntryEncoding (BytePool_Bytes  b) = [ppCommas $ ppIntsAsHex' b]
 bytePoolEntryEncoding _                   = []
 
 bytePoolEntryComment :: BytePoolEntry -> GenC
-bytePoolEntryComment (BytePool_String s) = genc s
+bytePoolEntryComment (BytePool_String s) = genc $ fromBytePoolString s
 bytePoolEntryComment _                   = empty
 
 type BytePoolLoc = (Int,Int)    -- mp key, bytepool offset
@@ -478,7 +503,7 @@ SEM Module
 type StringConstMp = BPEBasedMp StringConst' ()
 
 stringConstMpAdd :: StringConst -> StringConstMp -> BytePoolMp -> (StringConstMp,BytePoolMp,Maybe Int)
-stringConstMpAdd = bpeBasedMpAdd (const True) (\(StringConst s) -> Just $ BytePool_String s) (\loc _ -> StringConst ((),loc)) (\_ loc -> bytePoolLocOff loc)
+stringConstMpAdd = bpeBasedMpAdd (const True) (\(StringConst s) -> Just $ mkBytePoolEntryString s) (\loc _ -> StringConst ((),loc)) (\_ loc -> bytePoolLocOff loc)
 %%]
 
 %%[(8 codegen grin)
@@ -574,7 +599,7 @@ type StringConstRepl x = x
 type StringConstMp = BPEBasedMp StringConst' StringConstRepl
 
 stringConstMpAdd :: StringConst -> StringConstMp -> BytePoolMp -> (StringConstMp,BytePoolMp,Maybe Int)
-stringConstMpAdd = bpeBasedMpAdd (const True) (\(StringConst s) -> BytePool_String s) (\loc _ -> StringConst loc) (\_ loc -> bytePoolLocOff loc)
+stringConstMpAdd = bpeBasedMpAdd (const True) (\(StringConst s) -> mkBytePoolEntryString s) (\loc _ -> StringConst loc) (\_ loc -> bytePoolLocOff loc)
 
 EH100/GrinByteCode/ToC.hs:149:107:
     Couldn't match expected type `(Int, Int)'
@@ -592,7 +617,7 @@ EH100/GrinByteCode/ToC.hs:149:107:
 type FunctionInfoMp = BPEBasedMp FunctionInfo' ()
 
 functionInfoMpAdd :: FunctionInfo -> FunctionInfoMp -> BytePoolMp -> (FunctionInfoMp,BytePoolMp,Maybe Int)
-functionInfoMpAdd = bpeBasedMpAdd (const True) (\i -> Just $ BytePool_String $ funinfoKey i) (\loc i -> i { funinfoKey = ((),loc) }) const
+functionInfoMpAdd = bpeBasedMpAdd (const True) (\i -> Just $ mkBytePoolEntryString $ funinfoKey i) (\loc i -> i { funinfoKey = ((),loc) }) const
 %%]
 
 %%[(8 codegen grin)
@@ -1500,8 +1525,14 @@ ppIntsAsHex = ppCurlysCommas . ppIntsAsHex'
 ppBytesAsString :: [Int] -> GenC
 ppBytesAsString xx = "\"" >|< hlist [ ppHex'' "\\x" (Just 2) 2 x | x <- xx ] >|< "\""
 
+ppEnum8sAsHex' :: Enum x => [x] -> [GenC]
+ppEnum8sAsHex' s = ppIntsAsHex' $ map fromEnum s ++ [0]
+
 ppStringAsHex' :: String -> [GenC]
-ppStringAsHex' s = ppIntsAsHex' [ ord c | c <- s ++ [chr 0] ]
+ppStringAsHex' = ppEnum8sAsHex'
+
+ppWord8sAsHex' :: [Word8] -> [GenC]
+ppWord8sAsHex' = ppEnum8sAsHex'
 
 ppStringAsHex :: String -> GenC
 ppStringAsHex = ppCurlysCommas . ppStringAsHex'

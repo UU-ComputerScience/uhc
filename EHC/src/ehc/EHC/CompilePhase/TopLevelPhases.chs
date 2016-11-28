@@ -1127,7 +1127,7 @@ cpEhcCorePerModulePart2 modNm
 %%][50
              earlyMerge = ehcOptOptimizationScope opts >= OptimizationScope_WholeCore
 %%]]
-       ; cpMsg modNm VerboseDebug $ "cpEhcCorePerModulePart2"
+       ; cpMsg modNm VerboseALot $ "cpEhcCorePerModulePart2"
        ; cpSeq [ when earlyMerge $ cpProcessCoreRest modNm
 %%[[(8 grin)
                , when (ehcOptIsViaGrin opts) (cpProcessGrin modNm)
@@ -1148,7 +1148,7 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis :: EHCCompileRunner m => EHCOpts ->
 cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec modNm
   = cpSeq (  [ cpEhcCorePerModulePart2 modNm
 %%[[50
-             , cpMsg modNm VerboseDebug "cpFlowOptim"
+             , cpMsg modNm VerboseALot "cpFlowOptim"
              , cpFlowOptim modNm
 %%]]
 %%[[(99 grin)

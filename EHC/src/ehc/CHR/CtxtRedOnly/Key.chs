@@ -2,7 +2,7 @@
 %%% Constraint Handling Rules: Key to be used as part of TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},UHC.Util.TreeTrie)
+%%[9 module {%{EH}CHR.CtxtRedOnly.Key} import({%{EH}Base.Common},UHC.Util.TreeTrie)
 %%]
 
 %%[9 import(UHC.Util.Pretty, UHC.Util.Utils)
@@ -135,9 +135,9 @@ instance Keyable x => TrieKeyable x Key where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-type instance TrTrKey x = TTKey x
+-- type instance TrTrKey x = TTKey x
 
-instance TTKeyable x => TreeTrieKeyable x where
+instance (TrTrKey x ~ TTKey x, TTKeyable x) => TreeTrieKeyable x where
   toTreeTrieKey = toTTKey
 %%]
 

@@ -4,10 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}CHR.Instances} import(UHC.Util.CHR,{%{EH}CHR.Key})
+%%[(9 hmtyinfer) module {%{EH}CHR.CtxtRedOnly.Instances} import(UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Key})
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}CHR.Constraint}, {%{EH}CHR.Guard}) export(module {%{EH}CHR.Constraint}, module {%{EH}CHR.Guard})
+%%[(9 hmtyinfer) import({%{EH}CHR.CtxtRedOnly.Constraint}, {%{EH}CHR.CtxtRedOnly.Guard}) export(module {%{EH}CHR.CtxtRedOnly.Constraint}, module {%{EH}CHR.CtxtRedOnly.Guard})
 %%]
 
 %%[(9 hmtyinfer) import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
@@ -89,7 +89,7 @@ instance VarExtractable VarUIDHsName where
   varFreeSet          _                 = Set.empty
 
 -- instance VarUpdatable VarUIDHsName VarMp where
-instance (VarLookup m (SubstVarKey m) (SubstVarVal m), SubstVarKey m ~ ImplsVarId, SubstVarVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
+instance (VarLookup m, VarLookupKey m ~ ImplsVarId, VarLookupVal m ~ VarMpInfo) => VarUpdatable VarUIDHsName m where
   varUpd s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 
@@ -304,5 +304,7 @@ instance CHRCheckable FIIn Guard VarMp where
 instance IsCHRConstraint FIIn Constraint VarMp
 
 instance IsCHRGuard FIIn Guard VarMp
+
+-- instance IsCHRPrio FIIn Prio VarMp
 %%]
 

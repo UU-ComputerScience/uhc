@@ -103,10 +103,10 @@
 %%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) hs import({%{EH}Gam.ClGam},{%{EH}Pred},{%{EH}Pred.CtxtRedOnly.RedGraph}(redPruneReductionsUntil),UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Constraint},{%{EH}CHR.CtxtRedOnly.Guard},{%{EH}Pred.CtxtRedOnly.ToCHR},{%{EH}Pred.CtxtRedOnly.Heuristics},{%{EH}Pred.CtxtRedOnly.Evidence},{%{EH}CHR.CtxtRedOnly.Solve})
 %%]
 
-%%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
+%%[(9 codegen) hs import({%{EH}Pred.CtxtRedOnly.EvidenceToCore})
 %%]
 %%[(9 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
 %%]
@@ -147,6 +147,9 @@
 %%[(99 hmtyinfer) hs import({%{EH}VarMp.Utils})
 %%]
 
+%%[(99 chrtysys) hs import({%{EH}CHR.TySys.Types})
+%%]
+
 %%[(8 counting) hs import(Debug.Trace)
 %%]
 
@@ -158,8 +161,7 @@
 WRAPPER AGItf
 %%]
 
-
-%%[(1 hmtyinfer) ag import({EH/InferUtils},{EH/Infer},{EH/InferExpr},{EH/InferTyUpDown},{EH/InferPatExpr},{EH/InferTyExpr},{EH/InferInit})
+%%[(1 hmtyinfer) ag import({EH/HMTySys/InferUtils},{EH/HMTySys/Infer},{EH/HMTySys/InferExpr},{EH/HMTySys/InferTyUpDown},{EH/HMTySys/InferPatExpr},{EH/HMTySys/InferTyExpr},{EH/HMTySys/InferInit})
 %%]
 %%[(2 hmtyinfer) ag import({EH/FinalInfo})
 %%]
@@ -214,13 +216,16 @@ WRAPPER AGItf
 %%[102 -1.Pretty
 %%]
 
-%%[(2 hmtyinfer) ag import({EH/InferIncrFtv})
+%%[(2 hmtyinfer) ag import({EH/HMTySys/InferIncrFtv})
 %%]
 
-%%[(5 hmtyinfer) ag import({EH/InferCaseExpr},{EH/InferData})
+%%[(5 hmtyinfer) ag import({EH/HMTySys/InferCaseExpr})
 %%]
 
-%%[(6 hmtyinfer) ag import({EH/InferKiExpr})
+%%[5 ag import({EH/HMTySys/InferData})
+%%]
+
+%%[(6 hmtyinfer) ag import({EH/HMTySys/InferKiExpr})
 %%]
 
 %%[(8 codegen) ag import({EH/ToCore})
@@ -228,13 +233,13 @@ WRAPPER AGItf
 %%[(8 hmtyinfer codegen) ag import({EH/SysfTy},{EH/SysfEnv})
 %%]
 
-%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})
+%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/HMTySys/InferClass},{EH/HMTySys/InferClassCHR},{EH/ResolvePredCHR},{EH/HMTySys/InferDefault})
 %%]
 
 %%[9 ag import({EH/GatherGam})
 %%]
 
-%%[(17 hmtyinfer) ag import({EH/InferPolarity})
+%%[(17 hmtyinfer) ag import({EH/HMTySys/InferPolarity})
 %%]
 
 %%[(50 hmtyinfer codegen) ag import({EH/UsedNames},{EH/Orphan})

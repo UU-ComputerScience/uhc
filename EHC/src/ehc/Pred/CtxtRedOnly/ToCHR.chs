@@ -6,16 +6,16 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.ToCHR} import({%{EH}Opts},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(9 hmtyinfer) module {%{EH}Pred.CtxtRedOnly.ToCHR} import({%{EH}Opts},{%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer) import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(9 hmtyinfer) import(UHC.Util.CHR,{%{EH}CHR.Constraint},{%{EH}CHR.Guard},{%{EH}CHR.Solve},{%{EH}CHR.Key})
+%%[(9 hmtyinfer) import(UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Constraint},{%{EH}CHR.CtxtRedOnly.Guard},{%{EH}CHR.CtxtRedOnly.Solve},{%{EH}CHR.CtxtRedOnly.Key})
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
+%%[(9 hmtyinfer) import({%{EH}Pred.CtxtRedOnly.Heuristics},{%{EH}Pred.CtxtRedOnly.Evidence},{%{EH}Pred.CtxtRedOnly.RedGraph})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
@@ -118,22 +118,22 @@ initCHRStore
         p1s3         = mkCHRPredOcc pr1 sc3
         scopeProve   = [mkProve p1s1, mkProve p1s2] 
                          ==> [mkReduction p1s2 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "prv")) [p1s3]]
-                          |> [IsStrictParentScope sc3 sc1 sc2]
+                          =| [IsStrictParentScope sc3 sc1 sc2]
 {-
         scopeAssum1  = [mkProve p1s1, mkAssume p1s2] 
                          ==> [mkReduction p1s1 (RedHow_Assumption sc2) []]
-                          |> [EqualScope sc1 sc2]
+                          =| [EqualScope sc1 sc2]
 -}
         scopeAssum2  = [mkProve p1s1, mkAssume p1s2] 
                          ==> [mkReduction p1s1 (RedHow_ByScope ByScopeRedHow_Assume) [p1s2]]
-                          |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
+                          =| [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
 %%[[10
         l1s1         = mkCHRPredOcc (Pred_Lacks ty1 lab1) sc1
         l2s1         = mkCHRPredOcc (Pred_Lacks ty2 lab1) sc1
         l3s1         = mkCHRPredOcc (Pred_Lacks recRowEmp lab1) sc1
         labelProve1  = [mkProve l1s1]
                          ==> [mkProve l2s1, mkReduction l1s1 (RedHow_ByLabel lab1 off1 sc1) [l2s1]]
-                          |> [NonEmptyRowLacksLabel ty2 off1 ty1 lab1]
+                          =| [NonEmptyRowLacksLabel ty2 off1 ty1 lab1]
         labelProve2  = [mkProve l3s1]
                          ==> [mkReduction l3s1 (RedHow_ByLabel lab1 (LabelOffset_Off 0) sc1) []]
 %%]]
@@ -151,9 +151,9 @@ initCHRStore
         s2s1         = mkCHRPredOcc pr1 sc1
         s3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
         predSeq1     = [mkProve s1s1]
-                         <==> [mkProve s2s1, mkProve s3s1]
+                         <=> [mkProve s2s1, mkProve s3s1]
         predSeq2     = [mkProve $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
-                         <==> ([] :: [Constraint])
+                         <=> ([] :: [Constraint])
 %%]]
 %%[[41
         eqT1T2s1 = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
@@ -169,18 +169,18 @@ initCHRStore
         psHeads1 = mkCHRPredOcc pr1 sc1
 
         rlEqSym      = [mkAssume eqT1T2s1] ==> [mkAssume eqT2T1s1]                                                 -- symmetry
-        rlEqTrans    = [mkAssume eqT1T2s1, mkAssume eqT2T3s2] ==> [mkAssume eqT1T3s1] |> [IsVisibleInScope sc2 sc1]  -- transitivity
-        rlEqCongr    = [mkAssume eqT1T2s1] ==> [mkAssume psPreds1] |> [EqsByCongruence ty1 ty2 pa1]                -- congruence
+        rlEqTrans    = [mkAssume eqT1T2s1, mkAssume eqT2T3s2] ==> [mkAssume eqT1T3s1] =| [IsVisibleInScope sc2 sc1]  -- transitivity
+        rlEqCongr    = [mkAssume eqT1T2s1] ==> [mkAssume psPreds1] =| [EqsByCongruence ty1 ty2 pa1]                -- congruence
         rlUnpackCons = [mkAssume psConss1] ==> [mkAssume psHeads1, mkAssume psPreds1]                                -- unpack a list of assumptions
         
-        -- rlCtxToNil      = [mkProve eqT1T2s1] ==> [mkProve eqT1T3s1, mkReduction eqT1T2s1 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3s1]] |> [IsCtxNilReduction ty2 ty3]
-        rlEqSymPrv      = [mkProve eqT1T2s1] ==> [mkProve eqT2T1s1, mkReduction eqT1T2s1 RedHow_ByEqSymmetry [eqT2T1s1]] |> [UnequalTy ty1 ty2]
-        rlEqTransPrv    = [mkProve eqT1T2s1, mkAssume eqT2T3s2] ==> [mkProve eqT1T3s1, mkReduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1]] |> [IsVisibleInScope sc2 sc1, UnequalTy ty2 ty3]
-        rlEqCongrPrv    = [mkProve eqT1T2s1] ==> [mkProve psPreds1, mkReduction eqT1T2s1 RedHow_ByEqCongr [psPreds1]] |> [EqsByCongruence ty1 ty2 pa1]
+        -- rlCtxToNil      = [mkProve eqT1T2s1] ==> [mkProve eqT1T3s1, mkReduction eqT1T2s1 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3s1]] =| [IsCtxNilReduction ty2 ty3]
+        rlEqSymPrv      = [mkProve eqT1T2s1] ==> [mkProve eqT2T1s1, mkReduction eqT1T2s1 RedHow_ByEqSymmetry [eqT2T1s1]] =| [UnequalTy ty1 ty2]
+        rlEqTransPrv    = [mkProve eqT1T2s1, mkAssume eqT2T3s2] ==> [mkProve eqT1T3s1, mkReduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1]] =| [IsVisibleInScope sc2 sc1, UnequalTy ty2 ty3]
+        rlEqCongrPrv    = [mkProve eqT1T2s1] ==> [mkProve psPreds1, mkReduction eqT1T2s1 RedHow_ByEqCongr [psPreds1]] =| [EqsByCongruence ty1 ty2 pa1]
         rlUnpackConsPrv = [mkProve psConss1] ==> [mkProve psHeads1, mkProve psPreds1, mkReduction psConss1 RedHow_ByPredSeqUnpack [psHeads1, psPreds1]]
         rlUnpackNilPrv  = [mkProve psNils1]  ==> [mkReduction psNils1 RedHow_ByPredSeqUnpack []]
-        rlPrvByAssume   = [mkProve eqT1T2s1, mkAssume eqT1T2s2] ==> [mkReduction eqT1T2s1 RedHow_ByEqFromAssume []] |> [IsVisibleInScope sc2 sc1]  -- dirty hack: generated assumptions by chr are not added to the graph, so made a reduction instead
-        rlPrvByIdentity = [mkProve eqT1T2s1] ==> [mkReduction eqT1T2s1 RedHow_ByEqIdentity []] |> [EqualModuloUnification ty1 ty2]
+        rlPrvByAssume   = [mkProve eqT1T2s1, mkAssume eqT1T2s2] ==> [mkReduction eqT1T2s1 RedHow_ByEqFromAssume []] =| [IsVisibleInScope sc2 sc1]  -- dirty hack: generated assumptions by chr are not added to the graph, so made a reduction instead
+        rlPrvByIdentity = [mkProve eqT1T2s1] ==> [mkReduction eqT1T2s1 RedHow_ByEqIdentity []] =| [EqualModuloUnification ty1 ty2]
         
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
@@ -210,10 +210,10 @@ mkClassSimplChrs :: FIIn -> CHRStore -> CHRClassDecl -> CHRStore
 mkClassSimplChrs env rules (context, head, infos)
   = simps
   where simps        = chrStoreFromElems $ mapTrans (Set.fromList [head1]) [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
-        (superClassesWork, superClassesDone, _ :: SolveTrace FIIn Constraint Guard VarMp)
-                     = chrSolve' env rules (map (\p -> toSolverConstraint $ mkAssume $ mkCHRPredOcc p sc1) context)
+        (superClassesWork, superClassesDone, _ :: SolveTrace FIIn Constraint Guard Prio VarMp)
+                     = chrSolve' [] env rules (map (\p -> {- toSolverConstraint $ -} mkAssume $ mkCHRPredOcc p sc1) context)
         superClasses = superClassesWork ++ superClassesDone
-        graph        = mkRedGraphFromReductions $ filterMb fromSolverConstraint superClasses
+        graph        = mkRedGraphFromReductions {- $ filterMb fromSolverConstraint -} superClasses
         head1        = mkCHRPredOcc head sc1
         head2        = mkCHRPredOcc head sc2
         head3        = mkCHRPredOcc head sc3
@@ -230,10 +230,10 @@ mkClassSimplChrs env rules (context, head, infos)
                 superRule  = [mkProve head1, mkProve p] ==> reds'
                 scopeRule1 = [mkProve head1, mkProve super2] 
                                ==> [mkProve head3, mkReduction head1 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "sup1")) [head3]]
-                                 |> [HasStrictCommonScope sc3 sc1 sc2]
+                                 =| [HasStrictCommonScope sc3 sc1 sc2]
                 scopeRule2 = [mkProve head2, mkProve super1] 
                                ==> [mkProve super3, mkReduction super1 (RedHow_ByScope (ByScopeRedHow_Other $ AlwaysEq "sup2")) [super3]]
-                                 |> [HasStrictCommonScope sc3 sc1 sc2]
+                                 =| [HasStrictCommonScope sc3 sc1 sc2]
                 reds'      = mkReduction p info [par] : reds
                 rules      = mapTrans (Set.insert p done) reds' p (predecessors graph pr)
 
@@ -265,13 +265,13 @@ mkInstanceChr (context, hd, i, s)
   = ( chrStoreSingletonElem
       $ [mkProve constraint]
           ==> mkReduction constraint i body : map mkProve body
-            |> [s `IsVisibleInScope` sc1]
+            =| [s `IsVisibleInScope` sc1]
     , (body,constraint)
     )
   where constraint = mkCHRPredOcc hd sc1
         body = map (\p -> mkCHRPredOcc p sc1) context
 %%]
-  where superClasses = (\(w,d,t) -> trp "XX" (ppCHRStore' rules >-< context >#< ":" >#< (w++d) >-< ppSolveTrace t) (w++d)) $ chrSolve' env rules (map (\p -> mkAssume $ mkCHRPredOcc p sc1) context)
+  where superClasses = (\(w,d,t) -> trp "XX" (ppCHRStore' rules >-< context >#< ":" >#< (w++d) >-< ppSolveTrace t) (w++d)) $ chrSolve' [] env rules (map (\p -> mkAssume $ mkCHRPredOcc p sc1) context)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Simplification result which can be used as the starting point for further simplification
@@ -279,9 +279,9 @@ mkInstanceChr (context, hd, i, s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(SimplifyResult, SimplifyResult''(..),emptySimplifyResult)
-data SimplifyResult'' p i g s
+data SimplifyResult'' p i g pr s
   = SimplifyResult
-      { simpresSolveState		:: SolveState FIIn (Constraint' p i) g s
+      { simpresSolveState		:: SolveState FIIn (Constraint' p i) g pr s
       , simpresRedGraph			:: RedGraph' p i
 
       -- for debugging only:
@@ -291,7 +291,7 @@ data SimplifyResult'' p i g s
       , simpresRemPredL         :: [p]							-- remaining pred occurrences, which cannot be proven, as a list
       }
 
-type SimplifyResult' g s = SimplifyResult'' CHRPredOcc RedHowAnnotation g s
+type SimplifyResult' g s = SimplifyResult'' CHRPredOcc RedHowAnnotation g Prio s
 
 type SimplifyResult = SimplifyResult' Guard VarMp
 
@@ -448,10 +448,10 @@ chrSimplifySolveToRedGraph env chrStore cnstrInfoMpPrev cnstrInfoMp prevRes
         }
     )
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
-        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (map toSolverConstraint $ Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
+        solveState = chrSolve'' [] (env {fiUniq = u1}) chrStore ({- map toSolverConstraint $ -} Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
         cnstrInfoMpAll = cnstrMpUnion cnstrInfoMp cnstrInfoMpPrev
         redGraph
-          = addToRedGraphFromReductions (filterMb fromSolverConstraint $ chrSolveStateDoneConstraints solveState)
+          = addToRedGraphFromReductions ({- filterMb fromSolverConstraint $ -} chrSolveStateDoneConstraints solveState)
             $ addToRedGraphFromAssumes cnstrInfoMpAll
             $ simpresRedGraph prevRes
 %%]

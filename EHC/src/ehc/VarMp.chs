@@ -361,7 +361,7 @@ varmpTyUnit = varmpSingleton
 
 %%[(6 hmtyinfer || hmtyast).VarMp.varmpTyUnit -2.VarMp.varmpTyUnit export(varmpMetaLevTyUnit,varmpTyUnit)
 varmpMetaLevTyUnit :: Ord k => MetaLev -> k -> Ty -> VarMp' k VarMpInfo
-varmpMetaLevTyUnit mlev v t = varmpMetaLevSingleton mlev v (VMITy t)
+varmpMetaLevTyUnit mlev v t = varlookupSingletonWithMetaLev mlev v (VMITy t)
 
 varmpTyUnit :: Ord k => k -> Ty -> VarMp' k VarMpInfo
 varmpTyUnit = varmpMetaLevTyUnit metaLevVal
@@ -437,34 +437,34 @@ varmpLookup = varmpTyLookup
 %%]
 
 %%[(6 hmtyinfer || hmtyast) -2.varmpTyLookup export(varmpTyLookup)
-varmpTyLookup :: (VarLookup m k VarMpInfo,Ord k) => k -> m -> Maybe Ty
+varmpTyLookup :: (VarLookup m, Ord (VarLookupKey m), VarLookupVal m ~ VarMpInfo) => VarLookupKey m -> m -> Maybe Ty
 varmpTyLookup = varlookupMap vmiMbTy
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(varmpImplsLookup,varmpScopeLookup,varmpPredLookup)
-varmpImplsLookup :: VarLookup m ImplsVarId VarMpInfo => ImplsVarId -> m -> Maybe Impls
+varmpImplsLookup :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ ImplsVarId) => ImplsVarId -> m -> Maybe Impls
 varmpImplsLookup = varlookupMap vmiMbImpls
 
-varmpScopeLookup :: VarLookup m TyVarId VarMpInfo => TyVarId -> m -> Maybe PredScope
+varmpScopeLookup :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ TyVarId) => TyVarId -> m -> Maybe PredScope
 varmpScopeLookup = varlookupMap vmiMbScope
 
-varmpPredLookup :: VarLookup m TyVarId VarMpInfo => TyVarId -> m -> Maybe Pred
+varmpPredLookup :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ TyVarId) => TyVarId -> m -> Maybe Pred
 varmpPredLookup = varlookupMap vmiMbPred
 
-varmpAssNmLookup :: VarLookup m TyVarId VarMpInfo => TyVarId -> m -> Maybe VarUIDHsName
+varmpAssNmLookup :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ TyVarId) => TyVarId -> m -> Maybe VarUIDHsName
 varmpAssNmLookup = varlookupMap vmiMbAssNm
 %%]
 
 %%[(10 hmtyinfer || hmtyast) export(varmpLabelLookup,varmpOffsetLookup)
-varmpLabelLookup :: VarLookup m LabelVarId VarMpInfo => LabelVarId -> m -> Maybe Label
+varmpLabelLookup :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ LabelVarId) => LabelVarId -> m -> Maybe Label
 varmpLabelLookup = varlookupMap vmiMbLabel
 
-varmpOffsetLookup :: VarLookup m UID VarMpInfo => UID -> m -> Maybe LabelOffset
+varmpOffsetLookup :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ UID) => UID -> m -> Maybe LabelOffset
 varmpOffsetLookup = varlookupMap vmiMbOffset
 %%]
 
 %%[(13 hmtyinfer || hmtyast) export(varmpPredSeqLookup)
-varmpPredSeqLookup :: VarLookup m TyVarId VarMpInfo => TyVarId -> m -> Maybe PredSeq
+varmpPredSeqLookup :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ TyVarId) => TyVarId -> m -> Maybe PredSeq
 varmpPredSeqLookup = varlookupMap vmiMbPredSeq
 %%]
 
@@ -476,30 +476,30 @@ varmpPredSeqLookup = varlookupMap vmiMbPredSeq
 %%[[4
 varmpTyLookupCyc :: TyVarId -> VarMp -> Maybe Ty
 %%][8
-varmpTyLookupCyc :: VarLookup m TyVarId VarMpInfo => TyVarId -> m -> Maybe Ty
+varmpTyLookupCyc :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ TyVarId) => TyVarId -> m -> Maybe Ty
 %%]]
 varmpTyLookupCyc x m = lookupLiftCycMb2 tyMbVar (flip varmpTyLookup m) x
 %%]
 
 %%[(9 hmtyinfer || hmtyast) export(varmpImplsLookupImplsCyc,varmpImplsLookupCyc,varmpScopeLookupScopeCyc,varmpAssNmLookupAssNmCyc)
-varmpImplsLookupImplsCyc :: VarLookup m ImplsVarId VarMpInfo => Impls -> m -> Maybe Impls
+varmpImplsLookupImplsCyc :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ ImplsVarId) => Impls -> m -> Maybe Impls
 varmpImplsLookupImplsCyc x m = lookupLiftCycMb1 implsMbVar (flip varmpImplsLookup m) x
 
-varmpImplsLookupCyc :: VarLookup m ImplsVarId VarMpInfo => TyVarId -> m -> Maybe Impls
+varmpImplsLookupCyc :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ ImplsVarId) => TyVarId -> m -> Maybe Impls
 varmpImplsLookupCyc x m = lookupLiftCycMb2 implsMbVar (flip varmpImplsLookup m) x
 
-varmpScopeLookupScopeCyc :: VarLookup m ImplsVarId VarMpInfo => PredScope -> m -> Maybe PredScope
+varmpScopeLookupScopeCyc :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ ImplsVarId) => PredScope -> m -> Maybe PredScope
 varmpScopeLookupScopeCyc x m = lookupLiftCycMb1 pscpMbVar (flip varmpScopeLookup m) x
 
-varmpAssNmLookupAssNmCyc :: VarLookup m ImplsVarId VarMpInfo => VarUIDHsName -> m -> Maybe VarUIDHsName
+varmpAssNmLookupAssNmCyc :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ ImplsVarId) => VarUIDHsName -> m -> Maybe VarUIDHsName
 varmpAssNmLookupAssNmCyc x m = lookupLiftCycMb1 vunmMbVar (flip varmpAssNmLookup m) x
 %%]
 
 %%[(10 hmtyinfer || hmtyast) export(varmpLabelLookupCyc,varmpLabelLookupLabelCyc)
-varmpLabelLookupLabelCyc :: VarLookup m ImplsVarId VarMpInfo => Label -> m -> Maybe Label
+varmpLabelLookupLabelCyc :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ ImplsVarId) => Label -> m -> Maybe Label
 varmpLabelLookupLabelCyc x m = lookupLiftCycMb1 labelMbVar (flip varmpLabelLookup m) x
 
-varmpLabelLookupCyc :: VarLookup m ImplsVarId VarMpInfo => TyVarId -> m -> Maybe Label
+varmpLabelLookupCyc :: (VarLookup m, VarLookupVal m ~ VarMpInfo, VarLookupKey m ~ ImplsVarId) => TyVarId -> m -> Maybe Label
 varmpLabelLookupCyc x m = lookupLiftCycMb2 labelMbVar (flip varmpLabelLookup m) x
 %%]
 

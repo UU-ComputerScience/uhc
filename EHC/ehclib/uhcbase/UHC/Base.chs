@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE BangPatterns #-}
 
 module UHC.Base   -- adapted from the Hugs prelude
 (
@@ -1700,377 +1701,402 @@ data [] a = ''[]'' | a : [a]
 
 -- foldr1           :: (a -> a -> a) -> [a] -> a
 -- foldr1 f [x]      = x
--- foldr1 f (x:xs)   = f x (foldr1 f xs)
-
--- scanr            :: (a -> b -> b) -> b -> [a] -> [b]
--- scanr f q0 []     = [q0]
--- scanr f q0 (x:xs) = f x q : qs
---                     where qs@(q:_) = scanr f q0 xs
-
--- scanr1           :: (a -> a -> a) -> [a] -> [a]
--- scanr1 f []       = []
--- scanr1 f [x]      = [x]
--- scanr1 f (x:xs)   = f x q : qs
---                     where qs@(q:_) = scanr1 f xs
-
--- iterate          :: (a -> a) -> a -> [a]
--- iterate f x       = x : iterate f (f x)
-
--- repeat           :: a -> [a]
--- repeat x          = xs where xs = x:xs
-
--- replicate        :: Int -> a -> [a]
--- replicate n x     = take n (repeat x)
-
--- cycle            :: [a] -> [a]
--- cycle []          = error "Prelude.cycle: empty list"
--- cycle xs          = xs' where xs'=xs++xs'
-
--- take                :: Int -> [a] -> [a]
--- take n _  | n <= 0  = []
--- take _ []           = []
--- take n (x:xs)       = x : take (n-1) xs
-
--- drop                :: Int -> [a] -> [a]
--- drop n xs | n <= 0  = xs
--- drop _ []           = []
--- drop n (_:xs)       = drop (n-1) xs
-
--- splitAt               :: Int -> [a] -> ([a], [a])
--- splitAt n xs | n <= 0 = ([],xs)
--- splitAt _ []          = ([],[])
--- splitAt n (x:xs)      = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
-
--- takeWhile           :: (a -> Bool) -> [a] -> [a]
--- takeWhile p []       = []
--- takeWhile p (x:xs)
---          | p x       = x : takeWhile p xs
---          | otherwise = []
-
--- dropWhile           :: (a -> Bool) -> [a] -> [a]
--- dropWhile p []       = []
--- dropWhile p xs@(x:xs')
---          | p x       = dropWhile p xs'
---          | otherwise = xs
-
--- span, break         :: (a -> Bool) -> [a] -> ([a],[a])
--- span p []            = ([],[])
--- span p xs@(x:xs')
---          | p x       = (x:ys, zs)
---          | otherwise = ([],xs)
---                        where (ys,zs) = span p xs'
--- break p              = span (not . p)
-
--- lines     :: String -> [String]
--- lines ""   = []
--- lines s    = let (l,s') = break ('\n'==) s
---              in l : case s' of []      -> []
---                                (_:s'') -> lines s''
-
--- words     :: String -> [String]
--- words s    = case dropWhile isSpace s of
---                   "" -> []
---                   s' -> w : words s''
---                         where (w,s'') = break isSpace s'
-
--- unlines   :: [String] -> String
--- unlines []      = []
--- unlines (l:ls)  = l ++ '\n' : unlines ls
-
--- unwords   :: [String] -> String
--- unwords []      =  ""
--- unwords [w]     = w
--- unwords (w:ws)  = w ++ ' ' : unwords ws
-
--- reverse   :: [a] -> [a]
--- reverse    = foldl (flip (:)) []
-
--- and, or   :: [Bool] -> Bool
--- and        = foldr (&&) True
--- or         = foldr (||) False
-
--- any, all  :: (a -> Bool) -> [a] -> Bool
--- any p      = or  . map p
--- all p      = and . map p
-
--- elem, notElem    :: Eq a => a -> [a] -> Bool
--- elem              = any . (==)
--- notElem           = all . (/=)
-
--- lookup           :: Eq a => a -> [(a,b)] -> Maybe b
--- lookup k []       = Nothing
--- lookup k ((x,y):xys)
---       | k==x      = Just y
---       | otherwise = lookup k xys
-
--- sum, product     :: Num a => [a] -> a
--- sum               = foldl' (+) 0
--- product           = foldl' (*) 1
-
--- maximum, minimum :: Ord a => [a] -> a
--- maximum           = foldl1 max
--- minimum           = foldl1 min
-
--- concatMap        :: (a -> [b]) -> [a] -> [b]
--- -- concatMap f       = concat . map f    -- this definition cannot be used, because map is defined as a list comprehension, which is desugared using concatMap
--- concatMap _ []      = []
--- concatMap f (x:xs)  = f x ++ concatMap f xs
-
--- zip              :: [a] -> [b] -> [(a,b)]
--- zip               = zipWith  (\a b -> (a,b))
-
--- zip3             :: [a] -> [b] -> [c] -> [(a,b,c)]
--- zip3              = zipWith3 (\a b c -> (a,b,c))
-
--- zipWith                  :: (a->b->c) -> [a]->[b]->[c]
--- zipWith z (a:as) (b:bs)   = z a b : zipWith z as bs
--- zipWith _ _      _        = []
-
--- zipWith3                 :: (a->b->c->d) -> [a]->[b]->[c]->[d]
--- zipWith3 z (a:as) (b:bs) (c:cs)
---                           = z a b c : zipWith3 z as bs cs
--- zipWith3 _ _ _ _          = []
-
--- unzip                    :: [(a,b)] -> ([a],[b])
--- unzip                     = foldr (\(a,b) ~(as,bs) -> (a:as, b:bs)) ([], [])
-
--- unzip3                   :: [(a,b,c)] -> ([a],[b],[c])
--- unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
---                                   ([],[],[])
-
--- --------------------------------------------------------------
--- -- PreludeText
--- --------------------------------------------------------------
-
--- reads        :: Read a => ReadS a
--- reads         = readsPrec 0
-
--- shows        :: Show a => a -> ShowS
--- shows         = showsPrec 0
-
--- read         :: Read a => String -> a
--- read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
---                       [x] -> x
---                       []  -> error "Prelude.read: no parse"
---                       _   -> error "Prelude.read: ambiguous parse"
-
--- showChar     :: Char -> ShowS
--- showChar      = (:)
-
--- showString   :: String -> ShowS
--- showString    = (++)
-
--- showParen    :: Bool -> ShowS -> ShowS
--- showParen b p = if b then showChar '(' . p . showChar ')' else p
-
--- showField    :: Show a => String -> a -> ShowS
--- showField m@(c:_) v
---   | isAlpha c || c == '_' = showString m . showString " = " . shows v
---   | otherwise = showChar '(' . showString m . showString ") = " . shows v
-
--- readParen    :: Bool -> ReadS a -> ReadS a
--- readParen b g = if b then mandatory else optional
---                 where optional r  = g r ++ mandatory r
---                       mandatory r = [(x,u) | ("(",s) <- lex r,
---                                              (x,t)   <- optional s,
---                                              (")",u) <- lex t    ]
-
--- readField    :: Read a => String -> ReadS a
--- readField m s0 = [ r | (t,  s1) <- readFieldName m s0,
---                        ("=",s2) <- lex s1,
---                        r        <- reads s2 ]
-
--- readFieldName :: String -> ReadS String
--- readFieldName m@(c:_) s0
---   | isAlpha c || c == '_' = [ (f,s1) | (f,s1) <- lex s0, f == m ]
---   | otherwise = [ (f,s3) | ("(",s1) <- lex s0,
---                            (f,s2)   <- lex s1, f == m,
---                            (")",s3) <- lex s2 ]
-
--- lex                    :: ReadS String
--- lex ""                  = [("","")]
--- lex (c:s) | isSpace c   = lex (dropWhile isSpace s)
--- lex ('\'':s)            = [('\'':ch++"'", t) | (ch,'\'':t)  <- lexLitChar s,
---                                                -- head ch /= '\'' || not (null (tail ch))
---                                                ch /= "'"                
---                           ]
--- lex ('"':s)             = [('"':str, t)      | (str,t) <- lexString s]
---                           where
---                           lexString ('"':s) = [("\"",s)]
---                           lexString s = [(ch++str, u)
---                                                 | (ch,t)  <- lexStrItem s,
---                                                   (str,u) <- lexString t  ]
-
---                           lexStrItem ('\\':'&':s) = [("\\&",s)]
---                           lexStrItem ('\\':c:s) | isSpace c
---                               = [("",t) | '\\':t <- [dropWhile isSpace s]]
---                           lexStrItem s            = lexLitChar s
-
--- lex (c:s) | isSym c     = [(c:sym,t)         | (sym,t) <- [span isSym s]]
---           | isAlpha c   = [(c:nam,t)         | (nam,t) <- [span isIdChar s]]
---              -- '_' can be the start of a single char or a name/id.
---           | c == '_'    = case span isIdChar s of 
---                             ([],_) -> [([c],s)]
---                             (nm,t) -> [((c:nm),t)]
---           | isSingle c  = [([c],s)]
---           | isDigit c   = [(c:ds++fe,t)      | (ds,s)  <- [span isDigit s],
---                                                (fe,t)  <- lexFracExp s     ]
---           | otherwise   = []    -- bad character
---                 where
---                 isSingle c  =  c `elem` ",;()[]{}_`"
---                 isSym c     =  c `elem` "!@#$%&*+./<=>?\\^|:-~"
---                 isIdChar c  =  isAlphaNum c || c `elem` "_'"
-
---                 lexFracExp ('.':c:cs) | isDigit c 
---                             = [('.':ds++e,u) | (ds,t) <- lexDigits (c:cs),
---                                                (e,u)  <- lexExp t    ]
---                 lexFracExp s       = lexExp s
-
---                 lexExp (e:s) | e `elem` "eE"
---                          = [(e:c:ds,u) | (c:t)  <- [s], c `elem` "+-",
---                                                    (ds,u) <- lexDigits t] ++
---                            [(e:ds,t)   | (ds,t) <- lexDigits s]
---                 lexExp s = [("",s)]
-
--- lexDigits               :: ReadS String
--- lexDigits               =  nonnull isDigit
-
--- nonnull                 :: (Char -> Bool) -> ReadS String
--- nonnull p s             =  [(cs,t) | (cs@(_:_),t) <- [span p s]]
-
--- lexLitChar          :: ReadS String
--- lexLitChar ""       =  []
--- lexLitChar (c:s)
---  | c /= '\\'        =  [([c],s)]
---  | otherwise        =  map (prefix '\\') (lexEsc s)
---  where
---    lexEsc (c:s)     | c `elem` "abfnrtv\\\"'" = [([c],s)]
---    lexEsc ('^':c:s) | c >= '@' && c <= '_'    = [(['^',c],s)]
---     -- Numeric escapes
---    lexEsc ('o':s)  = [prefix 'o' (span isOctDigit s)]
---    lexEsc ('x':s)  = [prefix 'x' (span isHexDigit s)]
---    lexEsc s@(c:_) 
---      | isDigit c   = [span isDigit s]  
---      | isUpper c   = case [(mne,s') | (c, mne) <- table,
---                         ([],s') <- [lexmatch mne s]] of
---                        (pr:_) -> [pr]
---                        []     -> []
---    lexEsc _        = []
-
---    table = ('\DEL',"DEL") : asciiTab
---    prefix c (t,s) = (c:t, s)
-
--- isOctDigit c  =  c >= '0' && c <= '7'
--- isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
---                            || c >= 'a' && c <= 'f'
-
--- lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
--- lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
--- lexmatch xs     ys               =  (xs,ys)
-
--- asciiTab = zip ['\NUL'..' ']
---            (["NUL", "SOH", "STX", "ETX"]++[ "EOT", "ENQ", "ACK", "BEL"]++
---            [ "BS",  "HT",  "LF",  "VT" ]++[  "FF",  "CR",  "SO",  "SI"]++
---            [ "DLE", "DC1", "DC2", "DC3"]++[ "DC4", "NAK", "SYN", "ETB"]++
---            [ "CAN", "EM",  "SUB", "ESC"]++[ "FS",  "GS",  "RS",  "US"]++
---            [ "SP"])
-
--- readLitChar            :: ReadS Char
--- readLitChar ('\\':s)    = readEsc s
---  where
---        readEsc ('a':s)  = [('\a',s)]
---        readEsc ('b':s)  = [('\b',s)]
---        readEsc ('f':s)  = [('\f',s)]
---        readEsc ('n':s)  = [('\n',s)]
---        readEsc ('r':s)  = [('\r',s)]
---        readEsc ('t':s)  = [('\t',s)]
---        readEsc ('v':s)  = [('\v',s)]
---        readEsc ('\\':s) = [('\\',s)]
---        readEsc ('"':s)  = [('"',s)]
---        readEsc ('\'':s) = [('\'',s)]
---        readEsc ('^':c:s) | c >= '@' && c <= '_'
---                         = [(toEnum (fromEnum c - fromEnum '@'), s)]
---        readEsc s@(d:_) | isDigit d
---                         = [(toEnum n, t) | (n,t) <- readDec s]
---        readEsc ('o':s)  = [(toEnum n, t) | (n,t) <- readOct s]
---        readEsc ('x':s)  = [(toEnum n, t) | (n,t) <- readHex s]
---        readEsc s@(c:_) | isUpper c
---                         = let table = ('\DEL',"DEL") : asciiTab
---                           in case [(c,s') | (c, mne) <- table,
---                                             ([],s') <- [lexmatch mne s]]
---                              of (pr:_) -> [pr]
---                                 []     -> []
---        readEsc _        = []
--- readLitChar (c:s)       = [(c,s)]
-
--- showLitChar               :: Char -> ShowS
--- showLitChar c | c > '\DEL' = showChar '\\' .
---                              protectEsc isDigit (shows (fromEnum c))
--- showLitChar '\DEL'         = showString "\\DEL"
--- showLitChar '\\'           = showString "\\\\"
--- showLitChar c | c >= ' '   = showChar c
--- showLitChar '\a'           = showString "\\a"
--- showLitChar '\b'           = showString "\\b"
--- showLitChar '\f'           = showString "\\f"
--- showLitChar '\n'           = showString "\\n"
--- showLitChar '\r'           = showString "\\r"
--- showLitChar '\t'           = showString "\\t"
--- showLitChar '\v'           = showString "\\v"
--- showLitChar '\SO'          = protectEsc ('H'==) (showString "\\SO")
--- showLitChar c              = showString ('\\' : snd (asciiTab!!fromEnum c))
-
--- -- the composition with cont makes CoreToGrin break the GrinModeInvariant so we forget about protecting escapes for the moment
--- protectEsc p f             = f  -- . cont
---  where cont s@(c:_) | p c  = "\\&" ++ s
---        cont s              = s
-
--- -- Unsigned readers for various bases
--- readDec, readOct, readHex :: Integral a => ReadS a
--- readDec = readInt 10 isDigit    (\ d -> fromEnum d - fromEnum_0)
--- readOct = readInt  8 isOctDigit (\ d -> fromEnum d - fromEnum_0)
--- readHex = readInt 16 isHexDigit hex
---             where hex d = fromEnum d - (if isDigit d then fromEnum_0
---                                        else fromEnum (if isUpper d then 'A' else 'a') - 10)
-
--- fromEnum_0 :: Int
--- fromEnum_0 = fromEnum '0'
-
--- -- readInt reads a string of digits using an arbitrary base.  
--- -- Leading minus signs must be handled elsewhere.
-
--- readInt :: Integral a => a -> (Char -> Bool) -> (Char -> Int) -> ReadS a
--- readInt radix isDig digToInt s =
---     [(foldl1 (\n d -> n * radix + d) (map (fromIntegral . digToInt) ds), r)
---         | (ds,r) <- nonnull isDig s ]
-
--- readSigned:: Real a => ReadS a -> ReadS a
--- readSigned readPos = readParen False read'
---                      where read' r  = read'' r ++
---                                       [(-x,t) | ("-",s) <- lex r,
---                                                 (x,t)   <- read'' s]
---                            read'' r = [(n,s)  | (str,s) <- lex r,
---                                                 (n,"")  <- readPos str]
-
--- -- This floating point reader uses a less restrictive syntax for floating
--- -- point than the Haskell lexer.  The `.' is optional.
--- readFloat     :: RealFrac a => ReadS a
--- readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
---                                                        (k,t)   <- readExp s] ++
---                  [ (0/0, t) | ("NaN",t)      <- lex r] ++
---                  [ (1/0, t) | ("Infinity",t) <- lex r]
---                  where readFix r = [(read (ds++ds'), length ds', t)
---                                         | (ds, d) <- lexDigits r
---                                         , (ds',t) <- lexFrac d   ]
-
---                        lexFrac ('.':s) = lexDigits s
---                        lexFrac s       = [("",s)]
-
---                        readExp (e:s) | e `elem` "eE" = readExp' s
---                        readExp s                     = [(0::Int,s)]
-
---                        readExp' ('-':s) = [(-k,t) | (k,t) <- readDec s]
---                        readExp' ('+':s) = readDec s
---                        readExp' s       = readDec s
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+foldl' f a (x:xs) = (foldl' f $! f a x) xs
+#else
+foldl' f a (x:xs) = let !fax = f a x in foldl' f fax xs
+#endif
+
+foldl1           :: (a -> a -> a) -> [a] -> a
+foldl1 f (x:xs)   = foldl f x xs
+
+scanl            :: (a -> b -> a) -> a -> [b] -> [a]
+scanl f q xs      = q : (case xs of
+                         []   -> []
+                         x:xs -> scanl f (f q x) xs)
+
+scanl1           :: (a -> a -> a) -> [a] -> [a]
+scanl1 _ []       = []
+scanl1 f (x:xs)   = scanl f x xs
+
+foldr            :: (a -> b -> b) -> b -> [a] -> b
+foldr f z []      = z
+foldr f z (x:xs)  = f x (foldr f z xs)
+
+foldr1           :: (a -> a -> a) -> [a] -> a
+foldr1 f [x]      = x
+foldr1 f (x:xs)   = f x (foldr1 f xs)
+
+scanr            :: (a -> b -> b) -> b -> [a] -> [b]
+scanr f q0 []     = [q0]
+scanr f q0 (x:xs) = f x q : qs
+                    where qs@(q:_) = scanr f q0 xs
+
+scanr1           :: (a -> a -> a) -> [a] -> [a]
+scanr1 f []       = []
+scanr1 f [x]      = [x]
+scanr1 f (x:xs)   = f x q : qs
+                    where qs@(q:_) = scanr1 f xs
+
+iterate          :: (a -> a) -> a -> [a]
+iterate f x       = x : iterate f (f x)
+
+repeat           :: a -> [a]
+repeat x          = xs where xs = x:xs
+
+replicate        :: Int -> a -> [a]
+replicate n x     = take n (repeat x)
+
+cycle            :: [a] -> [a]
+cycle []          = error "Prelude.cycle: empty list"
+cycle xs          = xs' where xs'=xs++xs'
+
+take                :: Int -> [a] -> [a]
+take n _  | n <= 0  = []
+take _ []           = []
+take n (x:xs)       = x : take (n-1) xs
+
+drop                :: Int -> [a] -> [a]
+drop n xs | n <= 0  = xs
+drop _ []           = []
+drop n (_:xs)       = drop (n-1) xs
+
+splitAt               :: Int -> [a] -> ([a], [a])
+splitAt n xs | n <= 0 = ([],xs)
+splitAt _ []          = ([],[])
+splitAt n (x:xs)      = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
+
+takeWhile           :: (a -> Bool) -> [a] -> [a]
+takeWhile p []       = []
+takeWhile p (x:xs)
+         | p x       = x : takeWhile p xs
+         | otherwise = []
+
+dropWhile           :: (a -> Bool) -> [a] -> [a]
+dropWhile p []       = []
+dropWhile p xs@(x:xs')
+         | p x       = dropWhile p xs'
+         | otherwise = xs
+
+span, break         :: (a -> Bool) -> [a] -> ([a],[a])
+span p []            = ([],[])
+span p xs@(x:xs')
+         | p x       = (x:ys, zs)
+         | otherwise = ([],xs)
+                       where (ys,zs) = span p xs'
+break p              = span (not . p)
+
+lines     :: String -> [String]
+lines ""   = []
+lines s    = let (l,s') = break ('\n'==) s
+             in l : case s' of []      -> []
+                               (_:s'') -> lines s''
+
+words     :: String -> [String]
+words s    = case dropWhile isSpace s of
+                  "" -> []
+                  s' -> w : words s''
+                        where (w,s'') = break isSpace s'
+
+unlines   :: [String] -> String
+unlines []      = []
+unlines (l:ls)  = l ++ '\n' : unlines ls
+
+unwords   :: [String] -> String
+unwords []      =  ""
+unwords [w]     = w
+unwords (w:ws)  = w ++ ' ' : unwords ws
+
+reverse   :: [a] -> [a]
+reverse    = foldl (flip (:)) []
+
+and, or   :: [Bool] -> Bool
+and        = foldr (&&) True
+or         = foldr (||) False
+
+any, all  :: (a -> Bool) -> [a] -> Bool
+any p      = or  . map p
+all p      = and . map p
+
+elem, notElem    :: Eq a => a -> [a] -> Bool
+elem              = any . (==)
+notElem           = all . (/=)
+
+lookup           :: Eq a => a -> [(a,b)] -> Maybe b
+lookup k []       = Nothing
+lookup k ((x,y):xys)
+      | k==x      = Just y
+      | otherwise = lookup k xys
+
+sum, product     :: Num a => [a] -> a
+sum               = foldl' (+) 0
+product           = foldl' (*) 1
+
+maximum, minimum :: Ord a => [a] -> a
+maximum           = foldl1 max
+minimum           = foldl1 min
+
+concatMap        :: (a -> [b]) -> [a] -> [b]
+-- concatMap f       = concat . map f    -- this definition cannot be used, because map is defined as a list comprehension, which is desugared using concatMap
+concatMap _ []      = []
+concatMap f (x:xs)  = f x ++ concatMap f xs
+
+zip              :: [a] -> [b] -> [(a,b)]
+zip               = zipWith  (\a b -> (a,b))
+
+zip3             :: [a] -> [b] -> [c] -> [(a,b,c)]
+zip3              = zipWith3 (\a b c -> (a,b,c))
+
+zipWith                  :: (a->b->c) -> [a]->[b]->[c]
+zipWith z (a:as) (b:bs)   = z a b : zipWith z as bs
+zipWith _ _      _        = []
+
+zipWith3                 :: (a->b->c->d) -> [a]->[b]->[c]->[d]
+zipWith3 z (a:as) (b:bs) (c:cs)
+                          = z a b c : zipWith3 z as bs cs
+zipWith3 _ _ _ _          = []
+
+unzip                    :: [(a,b)] -> ([a],[b])
+unzip                     = foldr (\(a,b) ~(as,bs) -> (a:as, b:bs)) ([], [])
+
+unzip3                   :: [(a,b,c)] -> ([a],[b],[c])
+unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
+                                  ([],[],[])
+
+--------------------------------------------------------------
+-- PreludeText
+--------------------------------------------------------------
+
+reads        :: Read a => ReadS a
+reads         = readsPrec 0
+
+shows        :: Show a => a -> ShowS
+shows         = showsPrec 0
+
+read         :: Read a => String -> a
+read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
+                      [x] -> x
+                      []  -> error "Prelude.read: no parse"
+                      _   -> error "Prelude.read: ambiguous parse"
+
+showChar     :: Char -> ShowS
+showChar      = (:)
+
+showString   :: String -> ShowS
+showString    = (++)
+
+showParen    :: Bool -> ShowS -> ShowS
+showParen b p = if b then showChar '(' . p . showChar ')' else p
+
+showField    :: Show a => String -> a -> ShowS
+showField m@(c:_) v
+  | isAlpha c || c == '_' = showString m . showString " = " . shows v
+  | otherwise = showChar '(' . showString m . showString ") = " . shows v
+
+readParen    :: Bool -> ReadS a -> ReadS a
+readParen b g = if b then mandatory else optional
+                where optional r  = g r ++ mandatory r
+                      mandatory r = [(x,u) | ("(",s) <- lex r,
+                                             (x,t)   <- optional s,
+                                             (")",u) <- lex t    ]
+
+readField    :: Read a => String -> ReadS a
+readField m s0 = [ r | (t,  s1) <- readFieldName m s0,
+                       ("=",s2) <- lex s1,
+                       r        <- reads s2 ]
+
+readFieldName :: String -> ReadS String
+readFieldName m@(c:_) s0
+  | isAlpha c || c == '_' = [ (f,s1) | (f,s1) <- lex s0, f == m ]
+  | otherwise = [ (f,s3) | ("(",s1) <- lex s0,
+                           (f,s2)   <- lex s1, f == m,
+                           (")",s3) <- lex s2 ]
+
+lex                    :: ReadS String
+lex ""                  = [("","")]
+lex (c:s) | isSpace c   = lex (dropWhile isSpace s)
+lex ('\'':s)            = [('\'':ch++"'", t) | (ch,'\'':t)  <- lexLitChar s,
+                                               -- head ch /= '\'' || not (null (tail ch))
+                                               ch /= "'"                
+                          ]
+lex ('"':s)             = [('"':str, t)      | (str,t) <- lexString s]
+                          where
+                          lexString ('"':s) = [("\"",s)]
+                          lexString s = [(ch++str, u)
+                                                | (ch,t)  <- lexStrItem s,
+                                                  (str,u) <- lexString t  ]
+
+                          lexStrItem ('\\':'&':s) = [("\\&",s)]
+                          lexStrItem ('\\':c:s) | isSpace c
+                              = [("",t) | '\\':t <- [dropWhile isSpace s]]
+                          lexStrItem s            = lexLitChar s
+
+lex (c:s) | isSym c     = [(c:sym,t)         | (sym,t) <- [span isSym s]]
+          | isAlpha c   = [(c:nam,t)         | (nam,t) <- [span isIdChar s]]
+             -- '_' can be the start of a single char or a name/id.
+          | c == '_'    = case span isIdChar s of 
+                            ([],_) -> [([c],s)]
+                            (nm,t) -> [((c:nm),t)]
+          | isSingle c  = [([c],s)]
+          | isDigit c   = [(c:ds++fe,t)      | (ds,s)  <- [span isDigit s],
+                                               (fe,t)  <- lexFracExp s     ]
+          | otherwise   = []    -- bad character
+                where
+                isSingle c  =  c `elem` ",;()[]{}_`"
+                isSym c     =  c `elem` "!@#$%&*+./<=>?\\^|:-~"
+                isIdChar c  =  isAlphaNum c || c `elem` "_'"
+
+                lexFracExp ('.':c:cs) | isDigit c 
+                            = [('.':ds++e,u) | (ds,t) <- lexDigits (c:cs),
+                                               (e,u)  <- lexExp t    ]
+                lexFracExp s       = lexExp s
+
+                lexExp (e:s) | e `elem` "eE"
+                         = [(e:c:ds,u) | (c:t)  <- [s], c `elem` "+-",
+                                                   (ds,u) <- lexDigits t] ++
+                           [(e:ds,t)   | (ds,t) <- lexDigits s]
+                lexExp s = [("",s)]
+
+lexDigits               :: ReadS String
+lexDigits               =  nonnull isDigit
+
+nonnull                 :: (Char -> Bool) -> ReadS String
+nonnull p s             =  [(cs,t) | (cs@(_:_),t) <- [span p s]]
+
+lexLitChar          :: ReadS String
+lexLitChar ""       =  []
+lexLitChar (c:s)
+ | c /= '\\'        =  [([c],s)]
+ | otherwise        =  map (prefix '\\') (lexEsc s)
+ where
+   lexEsc (c:s)     | c `elem` "abfnrtv\\\"'" = [([c],s)]
+   lexEsc ('^':c:s) | c >= '@' && c <= '_'    = [(['^',c],s)]
+    -- Numeric escapes
+   lexEsc ('o':s)  = [prefix 'o' (span isOctDigit s)]
+   lexEsc ('x':s)  = [prefix 'x' (span isHexDigit s)]
+   lexEsc s@(c:_) 
+     | isDigit c   = [span isDigit s]  
+     | isUpper c   = case [(mne,s') | (c, mne) <- table,
+                        ([],s') <- [lexmatch mne s]] of
+                       (pr:_) -> [pr]
+                       []     -> []
+   lexEsc _        = []
+
+   table = ('\DEL',"DEL") : asciiTab
+   prefix c (t,s) = (c:t, s)
+
+isOctDigit c  =  c >= '0' && c <= '7'
+isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
+                           || c >= 'a' && c <= 'f'
+
+lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
+lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
+lexmatch xs     ys               =  (xs,ys)
+
+asciiTab = zip ['\NUL'..' ']
+           (["NUL", "SOH", "STX", "ETX"]++[ "EOT", "ENQ", "ACK", "BEL"]++
+           [ "BS",  "HT",  "LF",  "VT" ]++[  "FF",  "CR",  "SO",  "SI"]++
+           [ "DLE", "DC1", "DC2", "DC3"]++[ "DC4", "NAK", "SYN", "ETB"]++
+           [ "CAN", "EM",  "SUB", "ESC"]++[ "FS",  "GS",  "RS",  "US"]++
+           [ "SP"])
+
+readLitChar            :: ReadS Char
+readLitChar ('\\':s)    = readEsc s
+ where
+       readEsc ('a':s)  = [('\a',s)]
+       readEsc ('b':s)  = [('\b',s)]
+       readEsc ('f':s)  = [('\f',s)]
+       readEsc ('n':s)  = [('\n',s)]
+       readEsc ('r':s)  = [('\r',s)]
+       readEsc ('t':s)  = [('\t',s)]
+       readEsc ('v':s)  = [('\v',s)]
+       readEsc ('\\':s) = [('\\',s)]
+       readEsc ('"':s)  = [('"',s)]
+       readEsc ('\'':s) = [('\'',s)]
+       readEsc ('^':c:s) | c >= '@' && c <= '_'
+                        = [(toEnum (fromEnum c - fromEnum '@'), s)]
+       readEsc s@(d:_) | isDigit d
+                        = [(toEnum n, t) | (n,t) <- readDec s]
+       readEsc ('o':s)  = [(toEnum n, t) | (n,t) <- readOct s]
+       readEsc ('x':s)  = [(toEnum n, t) | (n,t) <- readHex s]
+       readEsc s@(c:_) | isUpper c
+                        = let table = ('\DEL',"DEL") : asciiTab
+                          in case [(c,s') | (c, mne) <- table,
+                                            ([],s') <- [lexmatch mne s]]
+                             of (pr:_) -> [pr]
+                                []     -> []
+       readEsc _        = []
+readLitChar (c:s)       = [(c,s)]
+
+showLitChar               :: Char -> ShowS
+showLitChar c | c > '\DEL' = showChar '\\' .
+                             protectEsc isDigit (shows (fromEnum c))
+showLitChar '\DEL'         = showString "\\DEL"
+showLitChar '\\'           = showString "\\\\"
+showLitChar c | c >= ' '   = showChar c
+showLitChar '\a'           = showString "\\a"
+showLitChar '\b'           = showString "\\b"
+showLitChar '\f'           = showString "\\f"
+showLitChar '\n'           = showString "\\n"
+showLitChar '\r'           = showString "\\r"
+showLitChar '\t'           = showString "\\t"
+showLitChar '\v'           = showString "\\v"
+showLitChar '\SO'          = protectEsc ('H'==) (showString "\\SO")
+showLitChar c              = showString ('\\' : snd (asciiTab!!fromEnum c))
+
+-- the composition with cont makes CoreToGrin break the GrinModeInvariant so we forget about protecting escapes for the moment.
+-- 20161127 AD: re-introduced '. cont' invocation to allow support for unicode
+protectEsc p f             = f . cont
+ where cont s@(c:_) | p c  = "\\&" ++ s
+       cont s              = s
+
+-- Unsigned readers for various bases
+readDec, readOct, readHex :: Integral a => ReadS a
+readDec = readInt 10 isDigit    (\ d -> fromEnum d - fromEnum_0)
+readOct = readInt  8 isOctDigit (\ d -> fromEnum d - fromEnum_0)
+readHex = readInt 16 isHexDigit hex
+            where hex d = fromEnum d - (if isDigit d then fromEnum_0
+                                       else fromEnum (if isUpper d then 'A' else 'a') - 10)
+
+fromEnum_0 :: Int
+fromEnum_0 = fromEnum '0'
+
+-- readInt reads a string of digits using an arbitrary base.  
+-- Leading minus signs must be handled elsewhere.
+
+readInt :: Integral a => a -> (Char -> Bool) -> (Char -> Int) -> ReadS a
+readInt radix isDig digToInt s =
+    [(foldl1 (\n d -> n * radix + d) (map (fromIntegral . digToInt) ds), r)
+        | (ds,r) <- nonnull isDig s ]
+
+readSigned:: Real a => ReadS a -> ReadS a
+readSigned readPos = readParen False read'
+                     where read' r  = read'' r ++
+                                      [(-x,t) | ("-",s) <- lex r,
+                                                (x,t)   <- read'' s]
+                           read'' r = [(n,s)  | (str,s) <- lex r,
+                                                (n,"")  <- readPos str]
+
+-- This floating point reader uses a less restrictive syntax for floating
+-- point than the Haskell lexer.  The `.' is optional.
+readFloat     :: RealFrac a => ReadS a
+readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
+                                                       (k,t)   <- readExp s] ++
+                 [ (0/0, t) | ("NaN",t)      <- lex r] ++
+                 [ (1/0, t) | ("Infinity",t) <- lex r]
+                 where readFix r = [(read (ds++ds'), length ds', t)
+                                        | (ds, d) <- lexDigits r
+                                        , (ds',t) <- lexFrac d   ]
+
+                       lexFrac ('.':s) = lexDigits s
+                       lexFrac s       = [("",s)]
+
+                       readExp (e:s) | e `elem` "eE" = readExp' s
+                       readExp s                     = [(0::Int,s)]
+
+                       readExp' ('-':s) = [(-k,t) | (k,t) <- readDec s]
+                       readExp' ('+':s) = readDec s
+                       readExp' s       = readDec s
 
 
 

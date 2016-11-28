@@ -4,10 +4,10 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[(9 hmtyinfer) module {%{EH}Pred.Evidence}
+%%[(9 hmtyinfer) module {%{EH}Pred.CtxtRedOnly.Evidence}
 %%]
 
-%%[(9 hmtyinfer) import(UHC.Util.CHR, {%{EH}Substitutable}, {%{EH}Ty}, {%{EH}VarMp}, {%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) import(UHC.Util.CHR, {%{EH}Substitutable}, {%{EH}Ty}, {%{EH}VarMp}, {%{EH}CHR.CtxtRedOnly.Constraint})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.Common})
@@ -58,7 +58,7 @@ instance (Eq p, Eq info) => Eq (Evidence' p info) where
 instance (Ord p, Ord info) => Ord (Evidence' p info) where
   Evid_Unresolved _ _    `compare` _                      = LT
   _                      `compare` Evid_Unresolved _ _    = GT
-  Evid_Proof _ i1 evs1   `compare` Evid_Proof _ i2 evs2   = orderingLexic (i1 `compare` i2 : zipWith compare evs1 evs2)
+  Evid_Proof _ i1 evs1   `compare` Evid_Proof _ i2 evs2   = orderingLexicList (i1 `compare` i2 : zipWith compare evs1 evs2)
   Evid_Proof _ _  _      `compare` _                      = LT
   _                      `compare` Evid_Proof _ _  _      = GT
   Evid_Recurse p1        `compare` Evid_Recurse p2        = p1 `compare` p2
@@ -85,8 +85,6 @@ instance (VarExtractable p) => VarExtractable (Evidence' p info) where
   varFreeSet            (Evid_Ambig       p  ess)    = Set.unions $ varFreeSet p : map (Set.unions . map varFreeSet . snd) ess
 
 instance VarUpdatable p s => VarUpdatable (Evidence' p info) s where
-  -- type SubstVarKey s = SubstVarKey s
-  -- type SubstVarVal s = SubstVarVal s
   varUpd s     (Evid_Unresolved  p   u )    = Evid_Unresolved (varUpd s p) u
   varUpd s     (Evid_Proof       p i es)    = Evid_Proof      (varUpd s p) i (map (varUpd s) es)
   varUpd s     (Evid_Recurse     p     )    = Evid_Recurse    (varUpd s p)  

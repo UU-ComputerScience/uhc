@@ -263,6 +263,7 @@ cpFoldHsMod modNm
                  (ecuOpts,modifiedOpts)
                          = ehcOptUpdateWithPragmas pragmas opts
 %%]]
+         -- ;  liftIO $ putStrLn $ "pragmas:" ++ show pragmas
          ;  when (isJust mbHS)
                  (cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
                                 . ecuSetHasMain hasMain

@@ -21,6 +21,9 @@
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as J)
 %%]
 
+%%[(8 jazy) hs import({%{EH}Gam}, {%{EH}Gam.DataGam})
+%%]
+
 %%[(8 codegen jazy) hs import({%{EH}CodeGen.CVar})
 %%]
 
@@ -35,7 +38,7 @@
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonBindNm},{Core/CommonJavaLike},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonFFI})
+%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLevAlt},{Core/CommonLevLamPer1Lam},{Core/CommonBindNm},{Core/CommonJavaLike},{Core/CommonPred},{Core/CommonCtxtPred},{Core/CommonDataGam1},{Core/CommonFFI})
 WRAPPER CodeAGItf
 %%]
 
@@ -833,7 +836,8 @@ SEM CModule
                                                         [ ( jCls [J.Flag_Public, J.Flag_Abstract] dn' nmData [] [ jmInit0Inst dn' nmData ] []
                                                           , conL
                                                           )
-                                                        | (dn,cs) <- @ctagsMp
+                                                        -- | (dn,cs) <- @ctagsMp
+                                                        | (dn,dgi) <- gamToAssocL @declMetas.gathDataGam
                                                         , let dn'   = hsnJavaLikeDataTy @cvarNmModCfg dn
                                                               conL  = [ jCls [J.Flag_Public] cn' dn'
                                                                           [ J.Field_Field [J.Flag_Public] f jtyObj Nothing | f <- fldL ]
@@ -847,8 +851,10 @@ SEM CModule
 %%]]
                                                                           ]
                                                                           []
-                                                                      | (cn,ctag) <- cs
-                                                                      , let cn'   = hsnJavaLikeDataCon @cvarNmModCfg cn
+                                                                      -- | (cn,ctag) <- cs
+                                                                      | (cn,dti) <- Map.toList $ dgiConstrTagMp dgi
+                                                                      , let ctag  = dtiCTag dti
+                                                                            cn'   = hsnJavaLikeDataCon @cvarNmModCfg cn
                                                                             cn'ty = J.Type_Class cn'
                                                                             fldL  = hsnJavaLikeDataFlds (ctagArity ctag)
                                                                       ]

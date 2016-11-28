@@ -126,7 +126,7 @@ cpGetCoreModnameAndImports modNm
                  mbCrSemMod = _ecuMbCoreSemMod ecu
                  crSemMod   = panicJust "cpGetCoreModnameAndImports" mbCrSemMod
                  modNm'     = Core2ChkSem.realModuleNm_Syn_CodeAGItf crSemMod
-         ;  cpMsg modNm VerboseDebug $ "cpGetCoreModnameAndImports: " ++ show modNm ++ " -> " ++ show modNm'
+         ;  cpMsg modNm VerboseALot $ "cpGetCoreModnameAndImports: " ++ show modNm ++ " -> " ++ show modNm'
          ;  case mbCrSemMod of
               Just _ -> cpUpdCUWithKey modNm $ \_ ecu ->
                           ( modNm'

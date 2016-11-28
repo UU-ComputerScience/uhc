@@ -1,6 +1,7 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# LANGUAGE GenericDeriving #-}
+{-# LANGUAGE BangPatterns #-}
 
 -----------------------------------------------------------------------------
 -- |

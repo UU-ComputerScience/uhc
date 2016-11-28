@@ -6,10 +6,10 @@
 %%% Constraint Handling Rules: Constraint language
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint}
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.CtxtRedOnly.Constraint}
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Ty},UHC.Util.CHR,{%{EH}CHR.Key},UHC.Util.TreeTrie,{%{EH}Substitutable})
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Ty},UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Key},UHC.Util.TreeTrie,{%{EH}Substitutable})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(UHC.Util.Pretty as PP, UHC.Util.Utils)
@@ -60,6 +60,7 @@ data Constraint' p info
 type Constraint = Constraint' CHRPredOcc RedHowAnnotation
 
 type instance TTKey (Constraint' p info) = TTKey p
+type instance TrTrKey (Constraint' p info) = TTKey p
 %%]
 
 %%[(50 hmtyinfer || hmtyast)
@@ -85,6 +86,13 @@ instance (CHRMatchable env p s, TTKey p ~ Key) => CHRMatchable env (Constraint' 
          ; (_,p2,_) <- cnstrReducablePart c2
          ; chrMatchTo env s p1 p2
          }
+  -- chrBuiltinSolve e s x = Nothing
+
+{-
+-- not yet supported
+instance (CHREmptySubstitution s, VarLookupCmb s s) => CHRBuiltinSolvable env (Constraint' p info) s where
+  chrBuiltinSolve e s x = Nothing
+-}
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

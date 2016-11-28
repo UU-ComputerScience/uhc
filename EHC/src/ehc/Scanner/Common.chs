@@ -18,7 +18,7 @@ Note: everything is exported.
 %%[1 import({%{EH}Opts.Base})
 %%]
 
-%%[1 import(qualified Data.Set as Set)
+%%[1 import(qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
 %%[1 import(UHC.Util.ScanUtils)
@@ -206,7 +206,7 @@ hsScanOpts opts
 %%]
 %%[99
         ,   scoPragmasTxt      =
-                (Set.fromList $
+                (Map.fromList $
                        tokPragmaStrsHS99
                 )
 %%]
@@ -989,6 +989,7 @@ pLANGUAGE_prag  		,
 	pOPTIONSUHC_prag  	,
 	pDERIVABLE_prag		,
 	pEXCLUDEIFTARGET_prag,
+	pCHR_prag           ,
     pOPRAGMA    		,
     pCPRAGMA
   :: IsParser p Token => p Token
@@ -997,10 +998,17 @@ pLANGUAGE_prag   = pKeyTk "LANGUAGE"
 pDERIVABLE_prag  = pKeyTk "DERIVABLE"
 pEXCLUDEIFTARGET_prag  = pKeyTk "EXCLUDE_IF_TARGET"
 pOPTIONSUHC_prag = pKeyTk "OPTIONS_UHC"
+pCHR_prag        = pKeyTk "CHR"
 pOPRAGMA         = pKeyTk "{-#"
 pCPRAGMA         = pKeyTk "#-}"
 
-tokPragmaStrsHS99= [ "LANGUAGE", "DERIVABLE", "EXCLUDE_IF_TARGET", "OPTIONS_UHC" {- , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
+tokPragmaStrsHS99=
+    [ mkf "LANGUAGE", mkf "DERIVABLE", mkf "EXCLUDE_IF_TARGET", mkf "OPTIONS_UHC"
+    , mkt "CHR"
+    {- , "INLINE", "NOINLINE", "SPECIALIZE" -}
+    ]
+  where mkt = flip (,) True
+        mkf = flip (,) False
 %%]
 
 pDEPRECATED_prag = pKeyTk "deprecated_prag"

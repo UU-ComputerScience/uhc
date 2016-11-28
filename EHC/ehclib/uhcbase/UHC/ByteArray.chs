@@ -9,6 +9,7 @@ For arrays with GC content see UHC.BoxArray.
 %%[99
 {-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# EXCLUDE_IF_TARGET cr #-}
+{-# LANGUAGE BangPatterns #-}
 
 module UHC.ByteArray
   ( MutableByteArray
@@ -37,7 +38,7 @@ module UHC.ByteArray
   , readInt8Array, readInt16Array, readInt32Array, readInt64Array
   , readWord8Array, readWord16Array, readWord32Array, readWord64Array
 
-  , writeCharArray, writeWideCharArray
+  , writeCharArray, writeWideCharArray, writeUnicodeCharArray
   , writeIntArray, writeWordArray, writeAddrArray
 #if !defined( __UHC_TARGET_JS__ )
   , writeStablePtrArray
@@ -46,6 +47,7 @@ module UHC.ByteArray
   , writeInt8Array, writeInt16Array, writeInt32Array, writeInt64Array
   , writeWord8Array, writeWord16Array, writeWord32Array, writeWord64Array
   -- , traceMBA
+  
   )
   where
 
@@ -240,6 +242,7 @@ foreign import prim "primWriteWord16Array" primWriteWord16Array		:: ByteArray ->
 foreign import prim "primWriteWord32Array" primWriteWord32Array 	:: ByteArray -> Int -> Word32 -> ()
 foreign import prim "primWriteWord64Array" primWriteWord64Array 	:: ByteArray -> Int -> Word64 -> ()
 
+foreign import prim "primWriteUnicodeArray" primWriteUnicodeArray 	:: ByteArray -> Int -> Char -> Int
 %%]
 
 %%[99
@@ -249,6 +252,9 @@ writeCharArray :: MutableByteArray s -> Int -> Char -> State s -> State s
 writeCharArray (MutableByteArray a) i x s = let !_ = primWriteCharArray a i x in s
 
 -- |Write 31-bit character; offset in 4-byte words.
+
+writeUnicodeCharArray :: MutableByteArray s -> Int -> Char -> State s -> (State s,Int)
+writeUnicodeCharArray (MutableByteArray a) i x s = let !n = primWriteUnicodeArray a i x in (s,n)
 
 writeWideCharArray :: MutableByteArray s -> Int -> Char -> State s -> State s
 writeWideCharArray (MutableByteArray a) i x s = let !_ = primWriteWideCharArray a i x in s

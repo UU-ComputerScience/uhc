@@ -89,7 +89,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+#if __GLASGOW_HASKELL__ < 800
 deriving instance Generic Version
+#endif
 %%]
 
 -- with hashable-1.2.4 no longer necessary
@@ -795,7 +797,10 @@ data LinkingStyle
 %%[[99
   | LinkingStyle_Pkg			-- ^ package linking
 %%]]
-  deriving (Eq,Ord,Enum,Bounded)
+  deriving (Eq, Ord, Show, Enum, Bounded, Generic)
+
+instance Hashable LinkingStyle
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

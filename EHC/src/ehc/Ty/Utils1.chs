@@ -16,7 +16,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast) hs export(ppTyS)
-ppTyS :: (VarUpdatable Ty m, SubstVarKey m ~ VarId) => m -> Ty -> PP_Doc
+ppTyS :: (VarUpdatable Ty m, VarLookupKey m ~ VarId) => m -> Ty -> PP_Doc
 ppTyS = ppS ppTy
 %%]
 

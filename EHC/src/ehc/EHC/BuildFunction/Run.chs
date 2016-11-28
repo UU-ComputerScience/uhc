@@ -1,5 +1,5 @@
 %%[0 hs
-{-# LANGUAGE GADTs, TemplateHaskell, KindSignatures, ImpredicativeTypes #-}
+{-# LANGUAGE GADTs, TemplateHaskell, KindSignatures #-}
 -- {-# LANGUAGE RecursiveDo #-}
 %%]
 
@@ -94,7 +94,7 @@ Running of BuildFunction
 %%]
 
 -- CHR solver
-%%[(50 hmtyinfer) import({%{EH}CHR.Solve}(chrStoreUnion))
+%%[(50 hmtyinfer) import({%{EH}CHR.CtxtRedOnly.Solve}(chrStoreUnion))
 %%]
 
 -- HS semantics
@@ -671,10 +671,17 @@ bcall bfun = do
                      Right (ast, _, _) -> return $ Just $ _asthdlrASTIsValid hdlr ast
                maybe (return False) breturn mbValid
 
-          DirOfModIsWriteable modSearchKey -> do
+          DirOfModIsWriteable modSearchKey linkingStyle -> do
                ecu <- bcall $ EcuOfPrevNameAndPath modSearchKey
+               opts <- bcall $ EHCOptsOf modSearchKey
                let fp = ecuSrcFilePath ecu
-               pm <- liftIO $ getPermissions (maybe "." id $ fpathMbDir fp)
+               pm <- liftIO $ getPermissions $
+%%[[99
+                   case mkOutputMbDir (if linkingStyle == LinkingStyle_Pkg then OutputFor_Pkg else OutputFor_Module) opts of
+                     Just d -> d
+                     _ ->
+%%]]
+                       maybe "." id $ fpathMbDir fp
                let res = writable pm
                -- liftIO $ putStrLn (fpathToStr fp ++ " writ " ++ show res)
                bUpdECU (ecuModNm ecu) $ ecuDirIsWritable ^= res
@@ -682,7 +689,8 @@ bcall bfun = do
 
           CanCompile modSearchKey -> do
                ecu  <- bcall $ EcuOfPrevNameAndPath modSearchKey
-               isWr <- bcall $ DirOfModIsWriteable modSearchKey
+               opts <- bcall $ EHCOptsOf modSearchKey
+               isWr <- bcall $ DirOfModIsWriteable modSearchKey (ehcOptLinkingStyle opts)
                mbTm <- bcall $ ModfTimeOfFile modSearchKey (ecu ^. ecuASTType) (ecu ^. ecuASTFileContent, ecu ^. ecuASTFileUse) ASTFileTiming_Current
                breturn $ isJust mbTm && isWr
 {-                     
@@ -1494,7 +1502,8 @@ bMkASTPMbChoice bglob modSearchKey astpipe = do
 
     -- cache: time recursively computed, if file can be cached
     tmOf modSearchKey (ASTPipe_Cache {astpPipe=p}) = do
-        ifM' (bcall $ DirOfModIsWriteable modSearchKey) (return Nothing) $ updTmChoiceM Choice_No $ bTmOf modSearchKey p
+        opts <- bcall $ EHCOptsOf modSearchKey
+        ifM' (bcall $ DirOfModIsWriteable modSearchKey (ehcOptLinkingStyle opts)) (return Nothing) $ updTmChoiceM Choice_No $ bTmOf modSearchKey p
 
     -- whole: time recursively computed, merged into 1 time for all
     tmOf modSearchKey (ASTPipe_Whole {astpPipe=p}) = do

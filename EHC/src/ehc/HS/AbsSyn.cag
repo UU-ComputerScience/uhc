@@ -341,6 +341,9 @@ DATA Pragma
     | ExcludeIfTarget
     	range					: Range
     	targetNames				: {[String]}
+    | CHR
+    	range					: Range
+    	chrRules				: {String}
 
 SET AllPragma
   = Pragma Pragmas

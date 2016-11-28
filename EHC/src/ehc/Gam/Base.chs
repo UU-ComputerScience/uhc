@@ -49,7 +49,7 @@ type Gam k v        =   SGam k v
 
 %%[1.Base.sigs
 emptyGam            ::            Gam k v
-gamSingleton        ::            k -> v        -> Gam k v
+gamSingleton        ::  Ord k =>  k -> v        -> Gam k v
 gamLookup           ::  Ord k =>  k -> Gam k v  -> Maybe v
 gamToAssocL         ::  Ord k =>  Gam k v       -> AssocL k v
 gamPushNew          ::            Gam k v       -> Gam k v
@@ -132,7 +132,8 @@ gamTopUpdate upd = sgamAlterDupOnTop $ maybe Nothing (Just . upd)
 %%]
 
 %%[8 export(gamMetaLevSingleton)
-gamMetaLevSingleton                        = sgamMetaLevSingleton
+gamMetaLevSingleton :: Ord k => MetaLev -> k -> v -> Gam k v
+gamMetaLevSingleton = sgamMetaLevSingleton
 {-# INLINE gamMetaLevSingleton #-}
 %%]
 

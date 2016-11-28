@@ -5,6 +5,7 @@
 %%[99
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE GenericDeriving #-}
+{-# LANGUAGE BangPatterns #-}
 
 module UHC.MutVar
   ( MutVar

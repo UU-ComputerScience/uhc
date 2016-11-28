@@ -86,6 +86,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <locale.h>
+// #include <unistr.h> // not standard it seems
 // #include <inttypes.h>
 // #include <limits.h>
 // #include "base/sizes.h"
@@ -97,6 +99,7 @@
 #include "base/sysalloc.h"
 #include "base/panic.h"
 #include "mm/mmitf.h"
+#include "base/unicode.h"
 #include "base/utils.h"
 
 %%[[97

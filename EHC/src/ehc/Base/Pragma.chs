@@ -18,6 +18,9 @@
 %%[99 import({%{EH}Opts.CommandLine})
 %%]
 
+%%[(99 chrtysys) import(UHC.Util.CHR.GTerm)
+%%]
+
 %%[doesWhat doclatex
 Internal representation of pragmas.
 %%]
@@ -50,11 +53,14 @@ data Pragma
   | Pragma_OptionsUHC              			-- commandline options
       { pragmaOptions   			:: String
       }
-%%[[99
   | Pragma_ExcludeIfTarget
       { pragmaExcludeTargets   		:: [Target]
       }
-%%]]
+{-
+  | Pragma_CHR              			    -- CHR rules
+      { pragmaCHR   			    :: String
+      }
+-}
   deriving (Eq,Ord,Show,Typeable,Generic)
 
 %%]

@@ -129,6 +129,8 @@ pPragma' mk
           <$> pEXCLUDEIFTARGET_prag  <*> pList1Sep pCOMMA (pList1 (conid <|> varid))
       <|> (\t targ r -> mk r $ Pragma_OptionsUHC (mkRange1 t) (tokMkStr targ))
           <$> pOPTIONSUHC_prag  <*> pStringTk
+      <|> (\t targ r -> mk r $ Pragma_CHR (mkRange1 t) (tokMkStr targ))
+          <$> pCHR_prag <*> pStringTk
       )
 
 pPragma :: HSParser Pragma

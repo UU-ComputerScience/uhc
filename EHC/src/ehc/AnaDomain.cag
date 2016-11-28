@@ -515,7 +515,7 @@ amsRunMb s ams
 %%[(8 codegenanalysis) hs
 -- | Lookup in VarMp's of AnaMatchState
 amsLookup :: UID -> AnaMatchState -> Maybe RVarMpInfo
-amsLookup i s = varmpLookup i (amsOuterVarMp s) <|> varmpLookup i (amsLocalVarMp s)
+amsLookup i s = varlookup i (amsOuterVarMp s) <|> varlookup i (amsLocalVarMp s)
 
 amsLookupEval :: UID -> AnaMatchState -> Maybe AnaEval
 amsLookupEval i s = do { i <- amsLookup i s ; rvmiMbEval i }

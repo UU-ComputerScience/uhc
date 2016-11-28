@@ -58,7 +58,7 @@ tyAppVarLookup varmp ty
 %%[[4
 tyAppVarLookup' :: SubstOpts -> VarMp -> TVUseMp -> Ty -> (Ty,VarMp)
 %%][6
-tyAppVarLookup' :: VarLookup m TyVarId VarMpInfo => SubstOpts -> m -> TVUseMp -> Ty -> (Ty,VarMp)
+tyAppVarLookup' :: (VarLookup m, VarLookupKey m ~ TyVarId, VarLookupVal m ~ VarMpInfo) => SubstOpts -> m -> TVUseMp -> Ty -> (Ty,VarMp)
 %%]]
 tyAppVarLookup' opts m usemp ty
   = (repl_Syn_TyAGItf t,cycVarMp_Syn_TyAGItf t)
@@ -73,7 +73,7 @@ tyAppVarLookup' opts m usemp ty
 %%[[4
 tyAppVarLookup :: VarMp -> Ty -> Ty
 %%][6
-tyAppVarLookup :: VarLookup m TyVarId VarMpInfo => m -> Ty -> Ty
+tyAppVarLookup :: (VarLookup m, VarLookupKey m ~ TyVarId, VarLookupVal m ~ VarMpInfo) => m -> Ty -> Ty
 %%]]
 tyAppVarLookup m ty
   = ty'
@@ -82,7 +82,7 @@ tyAppVarLookup m ty
 %%[[4
 tyAppVarLookup2 :: VarMp -> Ty -> (Ty,VarMp)
 %%][6
-tyAppVarLookup2 :: VarLookup m TyVarId VarMpInfo => m -> Ty -> (Ty,VarMp)
+tyAppVarLookup2 :: (VarLookup m, VarLookupKey m ~ TyVarId, VarLookupVal m ~ VarMpInfo) => m -> Ty -> (Ty,VarMp)
 %%]]
 tyAppVarLookup2 m ty
   = tyAppVarLookup' defaultOpts m Map.empty ty
@@ -130,7 +130,7 @@ mkLkup m = \mlev v -> varmpTyLookup v m
 %%[(6 hmtyinfer || hmtyast).Lkup -2.Lkup hs
 type Lkup = MetaLev -> TyVarId -> Maybe VarMpInfo
 
-mkLkup :: VarLookup m TyVarId VarMpInfo => m -> Lkup
+mkLkup :: (VarLookup m, VarLookupKey m ~ TyVarId, VarLookupVal m ~ VarMpInfo) => m -> Lkup
 mkLkup m = \mlev v -> {- trm "Subst.lkup" (\r -> mlev >#< v >#< r) $ -} varlookupWithMetaLev mlev v m
 %%]
 
