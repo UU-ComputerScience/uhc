@@ -73,6 +73,7 @@ PRIMS_STORABLE_INTERFACE(Double,double)
 
 %%[99
 extern Word primWriteUnicodeArray( GB_NodePtr bytearray, Word inx, Word val );
+extern GB_NodePtr primIndexUnicodeArray( GB_NodePtr bytearray, Word inx );
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

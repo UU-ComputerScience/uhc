@@ -191,6 +191,17 @@ PRIM float primIndexFloatArray( GB_NodePtr bytearray, Word inx )
 	return primReadFloatOffAddr( bytearray->content.bytearray.ptr, inx ) ;
 }
 
+PRIM GB_NodePtr primIndexUnicodeArray( GB_NodePtr bytearray, Word inx )
+{
+    uint32_t ch;
+    int sz = u8_mbtouc( &ch, (uint8_t*)(bytearray->content.bytearray.ptr) + inx, 4 );
+    GB_NodePtr res;
+    GB_MkTupNode2_In(res,GB_Int2GBInt(ch),GB_Int2GBInt(sz));
+    return res;
+}
+
+// u8_mbtouc (uint32_t *puc, const uint8_t *s, size_t n)
+
 %%]
 
 %%[99
@@ -198,11 +209,10 @@ PRIM Word primWriteUnicodeArray( GB_NodePtr bytearray, Word inx, Word val )
 {
 	uint8_t buf[8];
 	int sz = u8_uctomb (buf, (uint32_t)val, 8);
-	// int ix = GB_GBInt2Int(inx);
 	for (int i = 0 ; i < sz ; i++ ) {
 	    primWriteWord8OffAddr( bytearray->content.bytearray.ptr, inx+i, buf[i] ) ;
 	}
-	return sz ; // GB_Int2GBInt(sz);
+	return sz ;
 }
 
 PRIM Word primWriteWord8Array( GB_NodePtr bytearray, Word inx, Word8 val )

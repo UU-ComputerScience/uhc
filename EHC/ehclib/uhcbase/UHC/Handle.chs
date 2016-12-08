@@ -464,8 +464,9 @@ writeCharIntoBuffer slab off c
 
 readCharFromBuffer :: RawBuffer -> Int -> IO (Char, Int)
 readCharFromBuffer slab off
-  = IO $ \s -> case readCharArray slab off s of 
-                 ( s', c ) -> s' `seq` ( s', ( c,  off + 1) )
+  -- Note: this should be unicode reading (readUnicodeCharArray) but is no proper overflow handling and checks at call sites seem to assume +1 increments
+  = IO $ \s -> case {- readUnicodeCharArray -} readCharArray slab off s of 
+                 ( s', (c {- ,n -}) ) -> s' `seq` ( s', ( c,  off + 1 {- n -}) )
 
 getBuffer :: FD -> BufferState -> IO (IORef Buffer, BufferMode)
 getBuffer fd state = do
