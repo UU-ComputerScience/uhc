@@ -1,0 +1,33 @@
+%%[(8 counting) hs module {%{EH}CountingAnalysisExpr}
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.HsName (HsName, hsnIsNr)}, {%{EH}CodeGen.Tag (CTag)})
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
+%%]
+
+%%[(8 counting) hs import({%{EH}Core}, {%{EH}Base.Common(CLbl)})
+%%]
+
+%%[(8 counting) hs import(UHC.Util.VarLookup(MetaLev))]
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysisTy})
+%%]
+
+
+%%[(8 counting) hs import(UHC.Util.Binary, UHC.Util.Serialize)
+%%]
+
+%%[(8 counting) ag import({CountingAnalysis/AbsSynExpr})
+%%]
+
+%%[(8 counting) hs
+type HsNames = [HsName]
+%%]
+
+%%[(8 counting) ag
+DERIVING *
+  : Typeable, Show, Generic
+%%]

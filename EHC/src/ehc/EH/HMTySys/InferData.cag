@@ -83,7 +83,7 @@ SEM AGItf
 
 {
 expandTypeDefs :: TyGam -> TyGam -> DataGam -> DataGam
-expandTypeDefs ltg tg d = if change then expandTypeDefs ltg tg d' else d'
+expandTypeDefs ltg tg d = ltg `seq` tg `seq` d `seq` if change then expandTypeDefs ltg tg d' else d'
   where (d', change) = gamMapThr expandTypeDefsDgi False d
         
         expandTypeDefsDgi :: (HsName, DataGamInfo) -> Bool -> ((HsName, DataGamInfo), Bool)
@@ -174,6 +174,10 @@ specialTgiTrace tg = id
 -- specialTgiTrace tg = traceShow ("TyGam:", tgl)
   -- where tgl = map f $ gamToAssocL tg
   --       f (n, tgi) = (n, tgiAnnTy tgi) 
+deriving instance Show TyExpr
+deriving instance Show PrExpr
+deriving instance Show TyExprAnn
+deriving instance Show RowTyExpr
 }
 
 %%]
@@ -186,18 +190,34 @@ specialTgiTrace tg = id
 
 ATTR AllNT [ caDataGam: {DataGam} caTyGam: {TyGam} | caFreshVar: {CA.Var} | ]
 ATTR AllNT [ caIota: {Int} caLocalDataGam: {Map.Map HsName Int} | | ]
-ATTR Decl Decls DataFields DataField TyExpr RowTyExpr DataConstrs DataConstr [ caLocalDataNames: {Set.Set HsName} caLocalAnnVars: {[HsName]} | | ]
+ATTR Decl Decls DataFields DataField TyExpr TyExprs PrExpr PrExprs RowTyExpr DataConstrs DataConstr [ caLocalDataNames: {Set.Set HsName} caLocalAnnVars: {[HsName]} | | ]
 ATTR Decl [  | | caLocalDataNamesGath:  {Set.Set HsName} caLocalAnnVarsGath: {[HsName]} caLocalDataGamGath: {Map.Map HsName Int}]
 ATTR Decls [ | | caLocalDataNamesGath USE {Set.union} {Set.empty}: {Set.Set HsName} caLocalAnnVarsGath USE {++} {[]}: {[HsName]} caLocalDataGamGath USE {Map.union} {Map.empty} : {Map.Map HsName Int} ]
-ATTR TyExpr [ | | caIsFunc: {Maybe Bool} caType: {CA.Type}]
+ATTR TyExpr [ | | caIsFunc: {Maybe Bool} ]
+ATTR TyExpr PrExpr [ | | caType: {CA.Type}]
 ATTR TyExpr TyExprAnn [ | | caIsStrict USE {(||)} {False}: {Bool}]
 ATTR DataFields [ | | caFields USE {(++)} {[]}: {[CA.Field]}]
 ATTR DataField [ | | caFields: {[CA.Field]}]
 ATTR TyVars [ | | caTyVars USE {(++)} {[]}: {[HsName]} ]
 ATTR TyVar TyExpr [ | | caTyVars: {[HsName]} ]
 ATTR RowTyExpr [ | | caTypes: {[CA.Type]} caLength: {Int}]
-ATTR TyExpr RowTyExpr [ caLevel: {Int} | | ]
+ATTR TyExpr PrExpr PrExprs TyExprs RowTyExpr [ caLevel: {Int} | | ]
 ATTR Expr Decl Decls [ | | caGathTyGam USE {Map.union} {Map.empty}: {Map.Map HsName ([HsName], [HsName], CA.Type)}]
+ATTR Decl Decls [ | | caClassTySigs USE {++} {[]}: {[CA.Field]} caClassTyVars USE {++} {[]}: {[HsName]}]
+ATTR TyExprs [ | | caTypes: {[CA.Type]}]
+ATTR TyExpr PrExpr TyExprs PrExprs [ | | caPrExprs USE {(++)} {[]}: {[CA.Field]}]
+
+ATTR * [ | | copy: SELF]
+
+SEM TyExpr
+  | Pred
+    lhs.caPrExprs = (CA.Field_Lazy $ CA.RhoType_Rho (CA.EtaType_Eta @prExpr.caType @loc.nu) @loc.delta) : @prExpr.caPrExprs
+    loc.(nu,delta,fv) = if 0 < @lhs.caIota then 
+                            (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, @lhs.caFreshVar + 2) 
+                          else (CA.annTop, CA.annTop, @lhs.caFreshVar)
+    prExpr.caFreshVar = @loc.fv
+  -- | Con Wild Mono Var VarWild Row Impls NoImpls
+  --   lhs.caPrExprs = []
 
 SEM TyVar
   | Var
@@ -218,16 +238,31 @@ SEM Expr
     body.caLocalDataGam = Map.union @lhs.caLocalDataGam @decls.caLocalDataGamGath
 
 SEM Decl
+  | Data Type
+    lhs.caLocalDataNamesGath = Set.singleton @tyNm
+    lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
   | Data
-    lhs.caLocalDataNamesGath = Set.singleton @tyNm
     lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @constrs.caFreshVar - 1]
-    lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
-  | Type
-    lhs.caLocalDataNamesGath = Set.singleton @tyNm
-    lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
-    lhs.caLocalDataGamGath = Map.singleton @tyNm (length @lhs.caLocalAnnVars)
+  | Type TySig
     tyExpr.caLevel = 1
+  | Type
+    lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
     lhs.caGathTyGam = Map.singleton @tyNm (@lhs.caLocalAnnVars, @tyExpr.caTyVars, @tyExpr.caType)
+  | TySig
+    lhs.caClassTySigs = [CA.Field_Lazy $ CA.RhoType_Rho (CA.EtaType_Eta @tyExpr.caType @loc.nu) @loc.delta]
+    loc.(nu,delta,fv) = if 0 < @lhs.caIota then 
+                            (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, @lhs.caFreshVar + 2) 
+                          else (CA.annTop, CA.annTop, @lhs.caFreshVar)
+    tyExpr.caFreshVar = @loc.fv
+    lhs.caClassTyVars = @tyExpr.caTyVars
+  | Class
+    lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @decls.caFreshVar - 1]
+    lhs.caLocalDataNamesGath = Set.singleton @dataDictNm
+    lhs.caLocalDataGamGath = Map.singleton @dataDictNm (length @lhs.caLocalAnnVars)
+    lhs.caClassTySigs = []
+    lhs.caClassTyVars = []
+    loc.caClassTySigsWithPred = init @tyPrExpr.caPrExprs ++ @decls.caClassTySigs
+    tyPrExpr.caLevel = 1
 
 SEM DataField
   | Field
@@ -253,6 +288,30 @@ SEM RowTyExpr
 SEM TyExprAnn
   | Strictness
     lhs.caIsStrict = @strictness /= Strictness_NonStrict
+
+SEM TyExprs
+  | Cons
+    lhs.caTypes = @hd.caType : @tl.caTypes
+  | Nil
+    lhs.caTypes = []
+
+SEM PrExpr
+  | Class
+    loc.dictName = hsnClass2Dict @nm
+    loc.caToAnn = if @lhs.caLevel < @lhs.caIota then CA.Annotation_Var else const CA.annTop 
+    loc.localGroup = Set.member @dictName @lhs.caLocalDataNames 
+    tyExprs.caFreshVar = if @lhs.caLevel < @lhs.caIota then @lhs.caFreshVar + @loc.caNumAnn else @lhs.caFreshVar
+    loc.caNumAnn = fromJust $ @loc.caNumLoc <|> @loc.caNumLdg <|> @loc.caNumIdg <|> @loc.caNumPanic
+       .caNumLoc = if @loc.localGroup then Just 0 else Nothing
+       .caNumLdg = Map.lookup @dictName @lhs.caLocalDataGam
+       .caNumIdg = fmap (length . dgiAnnVars) $ @dictName `dataGamLookup` @lhs.caDataGam
+       .caNumPanic = panic $ "Could not find class data type " ++ show @loc.dictName
+    loc.anns = map (\x -> @loc.caToAnn $ mkHNm $ show $ @lhs.caFreshVar + x) [0 .. @loc.caNumAnn - 1]
+    lhs.caType = if @loc.localGroup then CA.Type_Data @dictName (map @loc.caToAnn @lhs.caLocalAnnVars) []
+                  else CA.Type_Data @dictName (map (\x -> @loc.caToAnn $ mkHNm $ show $ @lhs.caFreshVar + x) [0 .. @loc.caNumAnn - 1])  []
+  | * - Class
+    lhs.caType = panic "Unsupported construct during data type annotation algorithm: Pred"
+
 
 SEM TyExpr
   | Lam
@@ -317,7 +376,7 @@ SEM TyExpr
   | AppTop
     -- copy rules
     tyExpr.caLevel = @lhs.caLevel + 1
-  | Parens
+  | Parens Pred
     -- copy rules
   
   -- TODO this is forgotten
@@ -331,28 +390,36 @@ SEM TyExpr
     lhs.caType = panic "Unsupported construct during data type annotation algorithm: Mono"
   | VarWild
     lhs.caType = panic "Unsupported construct during data type annotation algorithm: VarWild"
-  | Pred
-    lhs.caType = panic "Unsupported construct during data type annotation algorithm: Pred"
   | Impls
     lhs.caType = panic "Unsupported construct during data type annotation algorithm: Impls"
   | NoImpls
     lhs.caType = panic "Unsupported construct during data type annotation algorithm: NoImpls"
 
 SEM Decl
-  | TySig FFI FFE
+  | FFI FFE
     tyExpr.caLevel = 100000000
-  | Class Instance
+  | Instance
     tyPrExpr.caLevel = 100000000
-  | * - Data Type
+  | * - Data Type Class
     lhs.caLocalAnnVarsGath = []
     lhs.caLocalDataGamGath = Map.empty
     lhs.caLocalDataNamesGath = Set.empty
+  | Default
+    tyExprs.caLevel = 100000000
+  | InstanceIntro
+    prExpr.caLevel = 100000000
     
 SEM Expr PatExpr
   | TypeAs 
     tyExpr.caLevel = 100000000
     tyExpr.caLocalAnnVars = panic "Unused AnnVars"
     tyExpr.caLocalDataNames = panic "Unused DataNames"
+
+SEM Expr
+  | AppImpl LamImpl
+    argPr.caLevel = 100000000
+    argPr.caLocalAnnVars = panic "Unused AnnVars"
+    argPr.caLocalDataNames = panic "Unused DataNames"
 
 SEM MbTyExpr
   | Just
@@ -376,12 +443,6 @@ SEM PrExpr
     tyExpr2.caLevel = 100000000
     tyExpr2.caLocalAnnVars = panic "Unused AnnVars"
     tyExpr2.caLocalDataNames = panic "Unused DataNames"
-
-SEM TyExprs
-  | Cons
-    hd.caLevel = 100000000
-    hd.caLocalAnnVars = panic "Unused AnnVars"
-    hd.caLocalDataNames = panic "Unused DataNames"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

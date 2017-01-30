@@ -37,7 +37,7 @@ data Fld' inx
       { _fldNm	:: !(Maybe HsName)
       , _fldInx	:: !(Maybe inx)
       }
-  deriving (Data, Generic)
+  deriving (Generic)
 
 type Fld = Fld' Int
 

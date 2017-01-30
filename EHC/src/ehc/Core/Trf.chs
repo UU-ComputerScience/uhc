@@ -44,7 +44,7 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
-%%[(8 counting) import({%{EH}Core.Trf.CountingAnalysis})
+%%[(8 counting) import({%{EH}Core.Trf.CountingAnalysis},{%{EH}Core.Trf.CAStrictnessOptimization})
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
 %%]
@@ -246,6 +246,7 @@ trfCore opts optimScope dataGam modNm trfcore
 
 %%[[(8 counting)
                ; t_counting_analysis
+              --  ; t_caStrictness_optimization
 %%]]
 
 %%[[(8 codegenanalysis)
@@ -303,6 +304,9 @@ trfCore opts optimScope dataGam modNm trfcore
         t_counting_analysis 
                         = liftTrfModWithStateExtra osm "counting-analysis" lamMpPropagate
                                                                $ \s -> cmodTrfAnalysisCounting dataGam (trfcoreInhLamMp $ trfstExtra s)
+        t_caStrictness_optimization
+                        = liftTrfModWithStateExtra osm "caStrictness_optimization" lamMpPropagate
+                                                               $ \s -> cmodTrfCaStrictnessOptimization dataGam (trfcoreInhLamMp $ trfstExtra s)
 %%]]
 
 %%[[(8 codegenanalysis)

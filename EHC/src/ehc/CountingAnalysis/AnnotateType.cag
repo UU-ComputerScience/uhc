@@ -13,6 +13,9 @@
 %%[(8 counting) hs import(UHC.Util.Utils)
 %%]
 
+%%[(8 counting) hs import(Debug.Trace)
+%%]
+
 %%[(8 counting) ag import({Ty/AbsSyn})
 WRAPPER Ty
 %%]
@@ -49,8 +52,8 @@ SEM Ty
     loc.isRec = False
   | Con
     lhs.caIsFunc = @loc.ismFunc
-    loc.ismFunc = case hsnBaseUnpack @nm of
-                    Just ("->", _) -> Just True
+    loc.ismFunc = case show @nm of
+                    "->" -> Just True
                     _ -> Nothing
     loc.isFunc = fromMaybe False @loc.ismFunc
     loc.annTops = replicate (numAnns @nm @lhs.dataEnv) CA.annTop

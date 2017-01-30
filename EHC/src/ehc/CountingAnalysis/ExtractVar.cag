@@ -10,7 +10,13 @@
 %%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
 %%]
 
-%%[(8 counting) ag import({CountingAnalysis/AbsSyn})
+%%[(8 counting) hs import({%{EH}Base.Common(CLbl)})
+%%]
+
+%%[(8 counting) hs import(UHC.Util.VarLookup(MetaLev))]
+%%]
+
+%%[(8 counting) ag import({CountingAnalysis/AbsSyn}, {CountingAnalysis/AbsSynExpr})
 WRAPPER *
 %%]
 
@@ -42,8 +48,8 @@ instance ExtractVar Type where
     where syn = wrap_Type (sem_Type a) Inh_Type
 
 instance ExtractVar Env where
-  extractVars env = (ks, ks, ks)
-    where ks = Set.fromList $ Map.keys env
+  extractVars a = (fav_Syn_Env syn, ftv_Syn_Env syn, fsv_Syn_Env syn)  
+    where syn = wrap_Env (sem_Env a) Inh_Env
 
 instance ExtractVar RhoScheme where
   extractVars a = (fav_Syn_RhoScheme syn, ftv_Syn_RhoScheme syn, fsv_Syn_RhoScheme syn)  

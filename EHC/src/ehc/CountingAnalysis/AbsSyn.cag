@@ -47,53 +47,7 @@ DATA RhoScheme
   | Rho e : EtaScheme a : Annotation
 
 TYPE Env = MAP {HsName} RhoScheme
-TYPE AltCons = [AltCon]
-TYPE AltConsts = [AltConst]
-TYPE ConVars = [ConVar]
-TYPE Bindings = [Binding]
 
-TYPE Expr
-  | VarLocal v : {HsName} extra : {ACoreBindRef}
-  | VarImport v : {HsName} extra : {ACoreBindRef}
-  | Const c : Const
-  | Abs bind : {HsName} body : Expr
-  | AppLocal func : Expr  arg : {HsName}
-  | AppImport func : Expr  arg : {HsName}
-  | AppConst func : Expr  arg : Const
-  | Let binds : Bindings e : Expr
-  | LetBang x : {HsName} e1 : Expr e2 : Expr
-  | Con tyNm : {HsName} conNm : {HsName} flds : ConVars extra : {CTag}
-  | Tup flds : ConVars extra : {CTag}
-  | CaseCon e : Expr alts : AltCons
-  | CaseTup e : Expr xs : {HsNames} e1 : Expr
-  | CaseConst e : Expr alts : AltConsts
-  | FFI ty : {Ty} extra : {(FFIWay, String, ForeignEnt)}
-  | Ann ann : EtaType e : Expr
-  | Error e : {String}
-
-DATA ConVar
-  | VarLocal v : {HsName} extra : {ACoreBindRef}
-  | VarImport v : {HsName} extra : {ACoreBindRef} 
-  | Const c : Const
-
-DATA Binding
-  | Bind n : {HsName} e : Expr
-
-DATA Const
-  | Int c : {Int}
-  | Char c : {Char}
-  | String c : {String}
-%%[[(97 core)
-  | Integer c : {Integer}
-%%]]
-
-DATA AltCon
-  | Alt tyNm : {HsName} conNm : {HsName} xs : {HsNames} e : Expr
-
-DATA AltConst 
-  | Int c : {Int} e : Expr
-  | Char c : {Char} e : Expr
-  
 DATA Constraint
   | Ann c : ConstraintAnn
   | Eq c : ConstraintEq
@@ -110,7 +64,4 @@ DATA ConstraintEq
   | Ann a1 : Annotation a2 : Annotation
   | Type t1 : Type t2 : Type
   | Scheme s1 : Scheme s2 : Scheme
-
-DATA Module
-  | Module e : Expr extra : {(HsName, CExportL, CImportL, CDeclMetaL)}
 %%]

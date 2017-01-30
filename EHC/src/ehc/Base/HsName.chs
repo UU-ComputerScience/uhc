@@ -99,7 +99,7 @@ data HsNameUniqifier
 %%[[(8 core)
   | HsNameUniqifier_CoreAPI             -- Used by the Core API, to allow external programs to generate new identifiers.
 %%]]
-  deriving (Eq,Ord,Enum,Data,Generic)
+  deriving (Eq,Ord,Enum,Generic)
 
 instance Hashable HsNameUniqifier
 
@@ -154,7 +154,7 @@ data HsNameUnique
   | HsNameUnique_String     !String
   | HsNameUnique_Int        !Int
   | HsNameUnique_UID        !UID
-  deriving (Eq,Ord,Data,Generic)
+  deriving (Eq,Ord,Generic)
 
 instance Hashable HsNameUnique
 
@@ -338,7 +338,7 @@ data HsName
 %%[[8
   |   HsName_Nr                     !Int !OrigName
 %%]]
-  deriving (Eq,Ord,Data,Generic)
+  deriving (Eq,Ord,Generic)
 
 -- instance Hashable HsName
 %%]
@@ -502,7 +502,7 @@ data OrigName
   | OrigLocal  HsName
   | OrigGlobal HsName
   | OrigFunc   HsName
-  deriving (Eq,Ord,Data,Generic)
+  deriving (Eq,Ord,Generic)
 
 instance Hashable OrigName
 %%]

@@ -157,7 +157,7 @@ newtype PredOccId
   = PredOccId
       { poiId       :: UID
       }
-  deriving (Show,Eq,Ord,Data)
+  deriving (Show,Eq,Ord)
 %%]
 
 %%[9 hs export(mkPrId,poiHNm)
@@ -482,7 +482,7 @@ data CompilePoint
 %%[1 export(Fixity(..))
 data Fixity
   = Fixity_Infix | Fixity_Infixr | Fixity_Infixl
-  deriving (Eq,Ord,Show,Enum, Data)
+  deriving (Eq,Ord,Show,Enum)
 
 instance PP Fixity where
   pp Fixity_Infix  = pp "infix"
@@ -1148,11 +1148,9 @@ deriving instance Typeable KnownPrim
 
 %%[50
 deriving instance Typeable VarUIDHsName
-deriving instance Data VarUIDHsName
 deriving instance Generic VarUIDHsName
 
 deriving instance Typeable TagDataInfo
-deriving instance Data TagDataInfo
 deriving instance Generic TagDataInfo
 
 deriving instance Typeable Fixity
@@ -1162,13 +1160,11 @@ deriving instance Typeable  AlwaysEq
 #else
 deriving instance Typeable1 AlwaysEq
 #endif
-deriving instance Data x => Data (AlwaysEq x)
 deriving instance Generic (AlwaysEq x)
 
 deriving instance Typeable PredOccId
 
 deriving instance Typeable CLbl
-deriving instance Data CLbl
 deriving instance Generic CLbl
 
 %%]

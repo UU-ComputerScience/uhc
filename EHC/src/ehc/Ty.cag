@@ -91,7 +91,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 DERIVING *
   : Show, Eq, Ord
 %%[[50
-  , Typeable, Data, Generic
+  , Typeable, Generic
 %%]]
 
 DERIVING TyVarCateg
@@ -330,7 +330,6 @@ initPredScope = PredScope_Lev LexScope.empty
 
 %%[(50 hmtyinfer || hmtyast) hs
 deriving instance Typeable PredScope
-deriving instance Data PredScope
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpMbVar)
@@ -418,7 +417,7 @@ data ImplsProveOcc
       { ipoId       :: !UID
       , ipoScope    :: !PredScope
       }
-  deriving (Eq,Show,Ord,Data)
+  deriving (Eq,Show,Ord)
 
 mkImplsProveOcc :: UID -> PredScope -> ImplsProveOcc
 mkImplsProveOcc = ImplsProveOcc

@@ -111,9 +111,6 @@
 %%[(9 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
 %%]
 
-%%[(9 codegen) hs import({%{EH}Pred.Evidence (InfoToEvidenceMap)})
-%%]
-
 %%[(11 hmtyinfer) hs import({%{EH}Ty.Trf.BetaReduce}(tyBetaRedFull))
 %%]
 

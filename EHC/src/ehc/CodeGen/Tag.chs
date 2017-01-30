@@ -39,7 +39,7 @@ data CTag
       , ctagArity       :: !Int
       , ctagMaxArity    :: !Int
       }
-  deriving (Show,Eq,Ord,Data)
+  deriving (Show,Eq,Ord)
 
 ctagIsRec :: CTag -> Bool
 ctagIsRec CTagRec = True

@@ -102,7 +102,10 @@ SEM Decl
                 decls           .   gathDataGam     =   emptyGam
                 lhs             .   gathDeclDataGam =   if ehcCfgClassViaRec @lhs.opts
                                                         then emptyGam
-                                                        else let dgi = mkDGIPlain @dataDictNm dty @clsKiVar [@dataDictNm] (@dataDictNm `Map.singleton` dti)
+                                                        else let dgi = (mkDGIPlain @dataDictNm dty @clsKiVar [@dataDictNm] (@dataDictNm `Map.singleton` dti))
+%%[[(8 counting)
+                                                                        {dgiAnnVars = @lhs.caLocalAnnVars, dgiTyVars = @decls.caClassTyVars}
+%%]]                                                       
                                                                  dty = [@dataDictTy] `appArr` recSum [(@dataDictNm,@clsTyRec)]
                                                                  fldTyL = @clsAllFldTyL -- assocLMapKey Just @clsAllFldL
                                                                  (fldMp, _, fldRefL) = mkFldRefAndMp fldTyL
@@ -110,6 +113,9 @@ SEM Decl
                                                                          { dtiCTag = @dataDictTag
                                                                          , dtiConNm = @dataDictNm
                                                                          , dtiFldTyL = fldTyL
+%%[[(8 counting)
+                                                                         , dtiFldAnnTyL = @loc.caClassTySigsWithPred
+%%]]
                                                                          , dtiFldRefL = assocLElts fldRefL
                                                                          , dtiFldMp = fldMp
                                                                          , dtiConTy = @dataDictConTy

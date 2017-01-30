@@ -151,7 +151,7 @@ UHCRUN_EXEC_NAME		:= $(UHC_EXEC_NAME)r
 
 GIT_VERSION_EXISTS		:= yes
 GIT_VERSION_CMD			:= cat GITHASH
-GIT_REVISION			:= TiborCountingAnalysis@ee98a405bc
+GIT_REVISION			:= TiborCountingAnalysis@41cb7bcb6f
 
 ###########################################################################################
 # Locations in source, build, install, distribution
@@ -508,7 +508,7 @@ FUN_GEN_CABAL		= \
 					echo   "Author:				$(UHC_TEAM)" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC" ; \
 					echo   "Category:			Testing" ; \
-					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.5&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.7&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath utf8-string bytestring  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "Build-Tools:		" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies TupleSections DeriveFunctor NamedFieldPuns RecordWildCards DisambiguateRecordFields $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
@@ -594,7 +594,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "" ; \
 					echo   "Library" ; \
 					echo   "  Hs-Source-Dirs:       $(17)" ; \
-					echo   "  Build-Depends:		$(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.5&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Build-Depends:		$(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.7&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath utf8-string bytestring  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Exposed-Modules:		$(7)" ; \
 					echo   "  Other-Modules:		$(8)" ; \
@@ -602,13 +602,13 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "" ; \
 					echo   "Executable $(strip $(10))" ; \
 					echo   "  Hs-Source-Dirs:       $(18)" ; \
-					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.5&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.7&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath utf8-string bytestring  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Main-Is:           	$(strip $(9)).hs" ; \
 					echo   "" ; \
 					echo   "Executable $(strip $(16))" ; \
 					echo   "  Hs-Source-Dirs:       $(18)" ; \
-					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.5&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
+					echo   "  Build-Depends:		$(strip $(1))==$(strip $(2)), $(subst $(space),$(comma),$(strip  fgl uulib>=0.9.19 hashable>=1.2.4&&<1.3 uhc-util>=0.1.6.7&&<0.1.7 base>=4.7&&<5  vector network binary mtl dequeue lens transformers directory containers array process filepath utf8-string bytestring  $(CABAL_ENABLEDASPECT_LIB_DEPENDS) $(3)))" ; \
 					echo   "  Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "  Main-Is:           	$(strip $(15)).hs" ; \
 					)

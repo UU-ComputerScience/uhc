@@ -1,40 +1,47 @@
-%%[(8 counting) hs module {%{EH}CountingAnalysis}
+%%[(8 counting) hs module {%{EH}CountingAnalysisTy}
 %%]
 
 %%[(8 counting) hs import(Data.Set (Set),qualified Data.Set as S,Data.Map (Map),qualified Data.Map as M)
 %%]
 
-%%[(8 counting) hs import({%{EH}Base.HsName (HsName, hsnIsNr)}, {%{EH}Core}, {%{EH}CodeGen.Tag (CTag)})
+%%[(8 counting) hs import({%{EH}Base.HsName (HsName, hsnIsNr)}, {%{EH}CodeGen.Tag (CTag)})
 %%]
 
 %%[(8 counting) hs import(UHC.Util.Binary, UHC.Util.Serialize)
 %%]
 
-%%[(8 counting) hs import(Control.Monad)
+%%[(8 counting) hs import(Control.Monad, Data.Monoid(Endo(..)))
 %%]
 
 %%[(8 counting) hs import(qualified Data.Sequence as Seq, qualified Data.Foldable as Fold)
 %%]
 
-%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
-%%]
-
 %%[(8 counting) ag import({CountingAnalysis/AbsSyn})
--- optpragmas
--- {
--- {-# LANGUAGE TypeFamilies #-}
--- {-# LANGUAGE RankNTypes #-}
--- {-# LANGUAGE MultiParamTypeClasses #-}
--- {-# LANGUAGE FunctionalDependencies #-}
--- {-# LANGUAGE DeriveFunctor #-}
--- {-# LANGUAGE TemplateHaskell #-}
--- }
+optpragmas
+{
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+}
 %%]
 
 %%[(8 counting) hs
 
 singleC :: Constraint -> Constraints
-singleC x =[x]
+singleC x = [x]
+
+singleGC :: Constraint -> GatherConstraints
+singleGC x = GC $ Endo ([x]++)
+
+toConstraints :: GatherConstraints -> Constraints
+toConstraints = flip appEndo [] . unGc
+
+isEmptyGC :: GatherConstraints -> Bool
+isEmptyGC gc = toConstraints gc == []
+
+newtype GatherConstraints = GC {unGc:: Endo Constraints}
+  deriving (Monoid)
+
+instance Show GatherConstraints where
+  show = show . toConstraints
 
 %%]
 
@@ -67,13 +74,12 @@ DERIVING *
 
 DERIVING Annotation Type AnnPrim Scheme RhoType EtaType RhoScheme 
   EtaScheme Constraint ConstraintAnn ConstraintEq Field
-  : Eq, Ord, Data
+  : Eq, Ord
 
 %%]
 
 %%[(8 counting) hs
 type Var = Int
-type HsNames = [HsName]
 type AnnVal = Set AnnPrim
 type AnnotationValue = AnnVal
 
@@ -109,6 +115,7 @@ type instance UType EtaType = Type
 type instance UType EtaScheme = Scheme
 type instance UType RhoType = Type
 type instance UType RhoScheme = Scheme
+type instance UType Field = Type
 type instance UType (GEta a) = a
 type instance UType (GRho a) = a
 
@@ -164,6 +171,13 @@ instance Eta RhoScheme where
   getUsage (RhoScheme_Rho e _) = getUsage e
   fromGEta = undefined
 
+instance Eta Field where
+  getType (Field_Strict t) = getType t
+  getType (Field_Lazy t) = getType t
+  getUsage (Field_Strict t) = getUsage t
+  getUsage (Field_Lazy t) = getUsage t
+  fromGEta = undefined
+
 instance Rho RhoType where
   getDemand (RhoType_Rho _ d) = d
   fromGRho (GRho e d) = RhoType_Rho (fromGEta e) d
@@ -172,6 +186,11 @@ instance Rho RhoScheme where
   getDemand (RhoScheme_Rho _ d) = d
   fromGRho (GRho e d) = RhoScheme_Rho (fromGEta e) d
   
+instance Rho Field where
+  getDemand (Field_Strict t) = getDemand t
+  getDemand (Field_Lazy t) = getDemand t
+  fromGRho _ = undefined
+
 %%]
 
 Serialize

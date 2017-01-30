@@ -243,6 +243,9 @@ DATA CExprAnn
   | Coe			coe				: {RelevCoe}
 %%]]
   | Debug		info			: {String}
+%%[[(8 counting)
+  | CAType ty : {EtaType}
+%%]]
 
 -- | ann for name intro
 DATA CBindAnn

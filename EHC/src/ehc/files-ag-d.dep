@@ -2,7 +2,8 @@ EH
 HS
 Ty
 Core
-CountingAnalysis
+CountingAnalysisTy
+CountingAnalysisExpr
 CoreRun
 JVMClass
 JavaScript

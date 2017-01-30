@@ -1,0 +1,260 @@
+%%[(8 counting) hs module {%{EH}Core.Trf.CAStrictnessOptimization} import(Data.Maybe,Data.Set (Set),qualified Data.Set as S,Data.Map (Map),qualified Data.Map as M, qualified Data.Map as Data.Map)
+%%]
+
+%%[(8 counting) hs import({%{EH}LamInfo},{%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysis})
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysis.ToCAModule}, {%{EH}CountingAnalysis.ToCModule})
+%%]
+
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis.Substitution} as S)
+%%]
+
+%%[(8 counting) hs import(UHC.Util.Utils)
+%%]
+
+%%[(8 counting) hs import(Data.List(foldl'))
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
+%%]
+
+Debugging
+%%[(8 counting) hs import(Debug.Trace)
+%%]
+
+%%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSynExpr})
+WRAPPER Module
+%%]
+
+
+%%[(99 counting)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) hs export(cmodTrfCaStrictnessOptimization)
+cmodTrfCaStrictnessOptimization :: DataGam -> LamMp -> CModule -> (CModule, LamMp)
+cmodTrfCaStrictnessOptimization d imps cmod = traceShow ("Transformation applied: ", count_Syn_Module syn) (toCModule $ trf_Syn_Module syn, imps)
+  where syn = wrap_Module (sem_Module $ toCAModule (toImports imps) cmod) Inh_Module
+                  { dataEnv_Inh_Module = d
+                  , lamMp_Inh_Module = imps
+                  , whnf_Inh_Module = S.empty
+                  , toHsName_Inh_Module = toHsName
+                  , freshvar_Inh_Module = 0
+                  , count_Inh_Module = 0
+                  }
+        toHsName v = mkHNm $ show modName ++ ".CAStrictOpt@" ++ show v
+        modName = moduleNm_CModule_Mod cmod
+    
+%%]
+
+%%[(8 counting) hs
+getBindRefBind :: CBind -> ACoreBindRef
+getBindRefBind (CBind_Bind _ cbl) | length cbl == 1 = getBindRefBound $ head cbl
+getBindRefBind c = panic $ "multiple cbounds present in getBindRefBind: " ++ show c
+
+getBindRefBound :: CBound -> ACoreBindRef
+getBindRefBound (CBound_Bind e) = getBindRefExpr e
+getBindRefBound (CBound_Val _ _ _ e) = getBindRefExpr e
+getBindRefBound _ = panic "CBound variant unsupported during ACoreBindRef extraction"
+
+getBindRefExpr :: CExpr -> ACoreBindRef
+getBindRefExpr (CExpr_Ann _ e) = getBindRefExpr e
+getBindRefExpr (CExpr_Var r) = r
+getBindRefExpr _ = panic "Cexpr is no var during ACoreBindRef extraction"
+
+lookupTy :: HsName -> LamMp -> RhoScheme
+lookupTy n m = laminfoCaType $ m M.! n
+
+getIsStrictField :: Field -> Bool
+getIsStrictField (Field_Strict{}) = True
+getIsStrictField _ = False
+
+constrs :: DataGamInfo -> Map HsName Fields
+constrs = M.map dtiFldAnnTyL . dgiConstrTagMp
+
+toImports :: LamMp -> Imports
+toImports x = M.map getType $ M.filter (/= (RhoScheme_Rho (EtaScheme_Eta 
+              (Scheme_Forall S.empty S.empty [] (Type_Error "Empty lamInfo")) $ Annotation_Val S.empty)
+                 $ Annotation_Val S.empty)) $ M.map laminfoCaType x
+
+combineNamesInPat :: [(HsName, Bool)] -> CPat -> [(HsName, Bool, ACoreBindRef)]
+combineNamesInPat xs cpat = case cpat of
+  CPat_Con _ _ cpfl -> zipWith f xs cpfl
+  _ -> panic "Incorrect CPat in combineNamesInPat"
+  where f (hsNm,s) cpatFld = case cpatFld of
+          CPatFld_Fld _ _ b _ -> (hsNm, s, getBindRefBind b)
+
+getDemandsTup :: Type -> [Annotation]
+getDemandsTup (Type_Tup ts) = map getDemand ts
+getDemandsTup _ = panic "No tuple type"
+
+getTyAnnsCon :: Type -> [Annotation]
+getTyAnnsCon (Type_Data _ as _) = as
+getTyAnnsCon _ = panic "No con type"
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) ag
+
+ATTR * [ dataEnv : {DataGam} lamMp : {LamMp} toHsName: {Var -> HsName} whnf : {Set HsName} | freshvar : {Var} | trf: SELF ]
+ATTR Expr [ ownTy: EtaType | | ty: EtaType var: {Maybe HsName} ]
+ATTR ConVar [ demand: {Annotation} cBound : {CBound} strictField : {Bool} | | makeStrict : {Maybe Expr}]
+ATTR ConVars [ demands: {[Annotation]} cBoundL : {CBoundL} strictFieldL : {[Bool]} | | makeStrictVars : {[Expr]}]
+ATTR Expr Binding Bindings [ | | isWhnf : {Bool}]
+ATTR * [ | count: {Int} | ]
+
+SEM ConVars
+  | Cons
+    lhs.makeStrictVars = case @hd.makeStrict of
+                          Just v -> v : @tl.makeStrictVars
+                          Nothing -> @tl.makeStrictVars
+    hd.cBound = head @lhs.cBoundL
+    tl.cBoundL = tail @lhs.cBoundL
+
+    hd.strictField = head @lhs.strictFieldL
+    tl.strictFieldL = tail @lhs.strictFieldL
+
+    hd.demand = head @lhs.demands
+    tl.demands = tail @lhs.demands
+  | Nil
+    lhs.makeStrictVars = if @lhs.cBoundL /= [] then panic "Non empty cBound list but no convar present" else 
+                            if @lhs.strictFieldL /= [] then panic "Non empty strictFieldL list but no convar present" else 
+                              if @lhs.demands /= [] then panic "Non empty demands list but no convar present" else []
+
+SEM ConVar
+  | VarLocal VarImport
+    lhs.makeStrict = if @loc.doMakeStrict then Just (Expr_VarLocal @v $ getBindRefBound @lhs.cBound) else Nothing 
+    loc.doMakeStrict = case @lhs.demand of
+                          Annotation_Val v -> v `S.isSubsetOf` S.fromList [AnnPrim_One, AnnPrim_Infinity] && not @lhs.strictField
+                          _ -> False
+    lhs.count = if @loc.doMakeStrict then @lhs.count + 1 else @lhs.count
+  | Const
+    lhs.makeStrict = Nothing
+
+SEM Expr
+  | Ann
+    lhs.ty = @ann
+    e.ownTy = @ann
+  | * - Ann AnnCore
+    lhs.ty = panic "Access non existing ty"
+    loc.ownTy = panic "Access non existing ownTy"
+
+SEM AltCon AltConst Binding Module
+  | *
+    e.ownTy = panic "No wrapper ownty present"
+
+SEM Expr
+  | VarLocal VarImport
+    lhs.var = Just @v
+  | * - VarLocal VarImport Ann AnnCore
+    lhs.var = Nothing
+
+SEM Bindings
+  | Cons 
+    lhs.isWhnf = @hd.isWhnf
+  | Nil 
+    lhs.isWhnf = False
+
+SEM Binding
+  | Bind
+    -- isWhnf copy rule
+
+SEM Expr
+  | Const Abs Con Tup FFI
+    lhs.isWhnf = True
+  | * - Const Abs Con Tup FFI
+    lhs.isWhnf = False
+
+SEM Expr
+  | AppLocal AppImport
+    loc.trf = if @loc.doTrf then Expr_LetBang @loc.x (Expr_VarLocal @arg $ getBindRefBound @extra) @loc.copy Nothing else @loc.copy
+    func.count = if @loc.doTrf then @lhs.count + 1 else @lhs.count
+    loc.doTrf = traceShow ("dotrfApp", @x, @lhs.whnf, @loc.isStrictArg) $ @x `S.notMember` @lhs.whnf && @loc.isStrictArg
+    loc.isStrictArg = case @func.ty of
+                          EtaType_Eta (Type_Func (RhoType_Rho _ (Annotation_Val v)) _) _ 
+                            -> v `S.isSubsetOf` S.fromList [AnnPrim_One, AnnPrim_Infinity]
+                          _ -> False
+    func.freshvar = if @loc.doTrf then @lhs.freshvar + 1 else @lhs.freshvar
+    func.whnf = if @loc.doTrf then S.insert @loc.x @lhs.whnf else @lhs.whnf
+    loc.x = @lhs.toHsName @lhs.freshvar
+    loc.copy = @loc.con @func.trf @arg @extra
+  | AppLocal
+    loc.con = Expr_AppLocal
+  | AppImport
+    loc.con = Expr_AppImport
+  | Let
+    binds.count = if @loc.doTrf then @lhs.count + 1 else @lhs.count
+    loc.(x, e1, ex) = case @binds.trf of
+                        [Binding_Bind n e x] -> (n, e, x)
+                        _ -> panic "No single binding for let bang Transformation"
+    loc.doTrf = length @binds.trf == 1 && not @binds.isWhnf && @loc.isStrictArg
+    loc.isStrictArg = case lookupTy @loc.x @lhs.lamMp of
+                          RhoScheme_Rho _ (Annotation_Val v) 
+                            -> v `S.isSubsetOf` S.fromList [AnnPrim_One, AnnPrim_Infinity]
+                          _ -> False
+    e.whnf = if @loc.doTrf then S.insert @loc.x @lhs.whnf else @lhs.whnf
+    loc.trf = if @loc.doTrf then Expr_LetBang @loc.x @loc.e1 @e.trf @loc.ex else Expr_Let @binds.trf @e.trf @extra
+  | LetBang
+    e2.whnf = S.union (S.fromList $ catMaybes [Just @x, @e1.var]) @lhs.whnf
+  | Con Tup
+    lhs.trf = foldr (\(v,e1) e2 -> Expr_LetBang (@lhs.toHsName v) e1 e2 Nothing) @loc.copy $ zip [@lhs.freshvar .. ] @flds.makeStrictVars
+    lhs.freshvar = @lhs.freshvar + length @flds.makeStrictVars
+    flds.cBoundL = @loc.cbl
+    loc.(ctag,cbl) = @extra
+  | Con
+    loc.copy = Expr_Con @tyNm @conNm @flds.trf @extra
+    loc.data = fromMaybe (error "con") $ @tyNm `dataGamLookup` @lhs.dataEnv
+    loc.dataAnns = dgiAnnVars @loc.data
+    loc.tyAnns = getTyAnnsCon $ getType @lhs.ownTy
+    loc.flds = (constrs @loc.data) M.! @conNm
+    loc.deltas = map getDemand @loc.flds
+    flds.strictFieldL = map getIsStrictField @loc.flds
+    loc.sub = if length @loc.dataAnns /= length @loc.tyAnns then panic "Lengths annotations do not match"
+                else M.fromList $ zip @loc.dataAnns @loc.tyAnns
+    flds.demands = S.substAnn @loc.deltas @loc.sub
+  | Tup
+    loc.copy = Expr_Tup @flds.trf @extra
+    flds.strictFieldL = replicate (length @flds.trf) False
+    flds.demands = getDemandsTup $ getType @lhs.ownTy
+  | CaseTup
+    e.count = @lhs.count + length @loc.makeStrictVars
+    loc.trs = foldr (\(v,e1) e2 -> Expr_LetBang (@lhs.toHsName v) e1 e2 Nothing) @e1.trf $ zip [@lhs.freshvar .. ] $ map (uncurry Expr_VarLocal)  @loc.makeStrictVars
+    lhs.trf = Expr_CaseTup @e.trf @xs @loc.trs @extra
+    e.freshvar = @lhs.freshvar + length @loc.makeStrictVars
+    e.whnf = S.union @lhs.whnf $ S.fromList $ map fst @loc.makeStrictVars
+    loc.makeStrictVars = filter @loc.testStrict $ map (\(a,_,b) -> (a,b)) $ combineNamesInPat (zip @xs $ repeat False) @loc.cpat
+    loc.testStrict = \(x,_) -> x `S.notMember` @lhs.whnf && @loc.testStrictInLamMp x
+    loc.testStrictInLamMp = \x -> case lookupTy x @lhs.lamMp of
+                                    RhoScheme_Rho _ (Annotation_Val v) 
+                                      -> v `S.isSubsetOf` S.fromList [AnnPrim_One, AnnPrim_Infinity]
+                                    _ -> False
+    loc.(cpat,cexpr) = @extra
+SEM AltCon
+  | Alt
+    e.count = @lhs.count + length @loc.makeStrictVars
+    loc.flds = map getIsStrictField $ (constrs $ fromMaybe (error "con") $ @tyNm `dataGamLookup` @lhs.dataEnv) M.! @conNm
+    loc.trs = foldr (\(v,e1) e2 -> Expr_LetBang (@lhs.toHsName v) e1 e2 Nothing) @e.trf $ zip [@lhs.freshvar .. ] $ map (uncurry Expr_VarLocal) @loc.makeStrictVars
+    lhs.trf = AltCon_Alt @tyNm @conNm @xs @loc.trs @extra
+    e.freshvar = @lhs.freshvar + length @loc.makeStrictVars
+    e.whnf = S.union (S.fromList @loc.strictFlds) $ S.union @lhs.whnf $ S.fromList $ map fst @loc.makeStrictVars
+    loc.strictFlds = map fst $ filter snd $ zip @xs @loc.flds
+    loc.makeStrictVars = map (\(a,_,b) -> (a,b)) $ filter @loc.testStrict $ combineNamesInPat (zip @xs @loc.flds) @extra
+    loc.testStrict = \(x, b, _) -> not b && x `S.notMember` @lhs.whnf && @loc.testStrictInLamMp x
+    loc.testStrictInLamMp = \x -> case lookupTy x @lhs.lamMp of
+                                    RhoScheme_Rho _ (Annotation_Val v) 
+                                      -> v `S.isSubsetOf` S.fromList [AnnPrim_One, AnnPrim_Infinity]
+                                    _ -> False
+
+%%]

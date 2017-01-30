@@ -45,6 +45,7 @@ Core/Trf/ConstProp.cag
 Core/Trf/EtaRed.cag
 Core/Trf/ANormal.cag
 Core/Trf/CountingAnalysis.cag
+Core/Trf/CAStrictnessOptimization.cag
 Core/Trf/InlineLetAlias.cag
 Core/Trf/LamGlobalAsArg.cag
 Core/Trf/CAFGlobalAsArg.cag

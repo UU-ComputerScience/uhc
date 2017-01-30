@@ -10,6 +10,9 @@
 %%[(8 counting) hs import(UHC.Util.Utils)
 %%]
 
+%%[(8 counting) hs import(Data.List(foldl'))
+%%]
+
 %%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
 %%]
 
@@ -17,7 +20,7 @@ Debugging
 %%[(8 counting) hs import(Debug.Trace)
 %%]
 
-%%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSyn})
+%%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSynExpr})
 WRAPPER Module
 %%]
 
@@ -32,7 +35,9 @@ PRAGMA strictcase
 
 %%[(8 counting) hs export(toCModule)
 toCModule :: Module -> CModule
-toCModule m = panic "toCModule"
+toCModule cmod
+  =  let t = wrap_Module (sem_Module cmod) Inh_Module
+     in trf_Syn_Module t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,6 +49,10 @@ toCModule m = panic "toCModule"
 ATTR Module [ | | trf: {CModule} ]
 ATTR Expr [ | | trf: {CExpr} ]
 ATTR Const [ | | trf: {CExpr} ]
+ATTR AltCons AltConsts [ | | trf : {CAltL}]
+ATTR AltCon AltConst [ | | trf : {CAlt}]
+ATTR Bindings [ | | trf : {CBindL}]
+ATTR Binding [ | | trf : {CBind}]
 
 SEM Module
   | Module
@@ -56,34 +65,38 @@ SEM Expr
   | VarImport
     lhs.trf = CExpr_Var @extra
   | Const
-    lhs.trf = undefined
+    -- copy rule
   | Abs
-    lhs.trf = undefined
+    lhs.trf = CExpr_Lam @extra @body.trf
   | AppLocal
-    lhs.trf = undefined
+    lhs.trf = CExpr_App @func.trf @extra
   | AppImport
-    lhs.trf = undefined
+    lhs.trf = CExpr_App @func.trf @extra
   | AppConst
-    lhs.trf = undefined
+    lhs.trf = CExpr_App @func.trf @extra
   | Let
-    lhs.trf = undefined
+    lhs.trf = CExpr_Let @extra @binds.trf @e.trf
   | LetBang
-    lhs.trf = undefined
-  | Con
-    lhs.trf = undefined
-  | Tup
-    lhs.trf = undefined
-  | CaseCon
-    lhs.trf = undefined
+    lhs.trf = CExpr_Let CBindCateg_Strict [CBind_Bind @x [@loc.bound]] @e2.trf
+    loc.bound = case @extra of
+                  Nothing -> CBound_Bind @e1.trf
+                  Just (aks,mlev,lbl) -> CBound_Val aks mlev lbl @e1.trf
+  | Con Tup
+    lhs.trf = foldl' CExpr_App @loc.base @loc.bounds
+    loc.base = CExpr_Tup @loc.tag
+    loc.(tag,bounds) = @extra
+  | CaseCon CaseConst
+    lhs.trf = CExpr_Case @e.trf @alts.trf @extra
   | CaseTup
-    lhs.trf = undefined
-  | CaseConst
-    lhs.trf = undefined
+    lhs.trf = CExpr_Case @e.trf [CAlt_Alt @loc.pat @e1.trf] @loc.dflt
+    loc.(pat, dflt) = @extra
   | FFI
     lhs.trf = CExpr_FFI @loc.callConv @loc.safety @loc.empEnt @ty
     loc.(callConv, safety, empEnt) = @extra
   | Ann
-    lhs.trf = undefined
+    lhs.trf = CExpr_Ann (CExprAnn_CAType @ann) @e.trf
+  | AnnCore
+    lhs.trf = CExpr_Ann @ann @e.trf
   | Error
     lhs.trf = panic $ "Translating error expression: " ++ @e
 
@@ -98,4 +111,22 @@ SEM Const
   | Integer
     lhs.trf = CExpr_Integer @c
 %%]]
+
+SEM AltCons AltConsts Bindings
+  | Cons
+    lhs.trf = @hd.trf : @tl.trf
+  | Nil
+    lhs.trf = []
+
+SEM AltCon AltConst
+  | *
+    lhs.trf = CAlt_Alt @extra @e.trf
+
+SEM Binding
+  | Bind
+    lhs.trf = CBind_Bind @n [@loc.bound]
+    loc.bound = case @extra of
+                  Nothing -> CBound_Bind @e.trf
+                  Just (aks,mlev,lbl) -> CBound_Val aks mlev lbl @e.trf
+
 %%]

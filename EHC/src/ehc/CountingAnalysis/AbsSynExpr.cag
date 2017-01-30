@@ -1,0 +1,56 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expressions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) ag
+DATA Module
+  | Module e : Expr extra : {(HsName, CExportL, CImportL, CDeclMetaL)}
+
+TYPE AltCons = [AltCon]
+TYPE AltConsts = [AltConst]
+TYPE ConVars = [ConVar]
+TYPE Bindings = [Binding]
+
+TYPE Expr
+  | VarLocal v : {HsName} extra : {ACoreBindRef}
+  | VarImport v : {HsName} extra : {ACoreBindRef}
+  | Const c : Const
+  | Abs bind : {HsName} body : Expr extra : {CBind}
+  | AppLocal func : Expr  arg : {HsName} extra : {CBound}
+  | AppImport func : Expr  arg : {HsName} extra : {CBound}
+  | AppConst func : Expr  arg : Const extra : {CBound}
+  | Let binds : Bindings e : Expr extra : {CBindCateg}
+  | LetBang x : {HsName} e1 : Expr e2 : Expr extra : {Maybe (ACoreBindAspectKeyS, MetaLev, CLbl)}
+  | Con tyNm : {HsName} conNm : {HsName} flds : ConVars extra : {(CTag, CBoundL)}
+  | Tup flds : ConVars extra : {(CTag, CBoundL)}
+  | CaseCon e : Expr alts : AltCons extra : {CExpr}
+  | CaseTup e : Expr xs : {HsNames} e1 : Expr extra : {(CPat, CExpr)}
+  | CaseConst e : Expr alts : AltConsts extra : {CExpr}
+  | FFI ty : {Ty} extra : {(FFIWay, String, ForeignEnt)}
+  | Ann ann : EtaType e : Expr
+  | AnnCore ann : {CExprAnn} e : Expr
+  | Error e : {String}
+
+DATA ConVar
+  | VarLocal v : {HsName}
+  | VarImport v : {HsName}
+  | Const c : Const
+
+DATA Binding
+  | Bind n : {HsName} e : Expr extra : {Maybe (ACoreBindAspectKeyS, MetaLev, CLbl)}
+
+DATA Const
+  | Int c : {Int}
+  | Char c : {Char}
+  | String c : {String}
+%%[[(97 core)
+  | Integer c : {Integer}
+%%]]
+
+DATA AltCon
+  | Alt tyNm : {HsName} conNm : {HsName} xs : {HsNames} e : Expr extra : {CPat}
+
+DATA AltConst 
+  | Int c : {Int} e : Expr extra : {CPat}
+  | Char c : {Char} e : Expr extra : {CPat}
+%%]

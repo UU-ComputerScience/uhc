@@ -47,9 +47,10 @@ toCAModule lamMap cmod
 %%[(8 counting) hs
 
 getConVar :: CA.Expr -> CA.ConVar
-getConVar (CA.Expr_VarLocal v x) = CA.ConVar_VarLocal v x
-getConVar (CA.Expr_VarImport v x) = CA.ConVar_VarImport v x
+getConVar (CA.Expr_VarLocal v _) = CA.ConVar_VarLocal v
+getConVar (CA.Expr_VarImport v _) = CA.ConVar_VarImport v
 getConVar (CA.Expr_Const c) = CA.ConVar_Const c
+getConVar (CA.Expr_AnnCore _ e) = getConVar e
 getConVar e = panic $ "getting app bound failed from: " ++ show e
 
 %%]
@@ -64,10 +65,10 @@ ATTR CExpr [ | | trf: {CA.Expr} ]
 ATTR CPat [ | | trf: {Either (Either Int Char) (Either (HsName, HsName, [HsName]) [HsName])} ]
 ATTR CBind [ | | trf: {Either CA.Binding HsName} ]
 ATTR CBound [ | | trf: {CA.Expr} ]
-ATTR CAlt [ | | trf: {Either (Either CA.AltCon ([HsName], CA.Expr)) CA.AltConst} ]
+ATTR CAlt [ | | trf: {Either (Either CA.AltCon ([HsName], CA.Expr, CPat)) CA.AltConst} ]
 ATTR CBindL [ | | trf: {CA.Bindings} ]
 ATTR CBoundL [ | | trf: {[CA.Expr]} ]
-ATTR CAltL [ | | trf: {Either (Either CA.AltCons ([HsName], CA.Expr)) (Either CA.AltConsts ())} ]
+ATTR CAltL [ | | trf: {Either (Either CA.AltCons ([HsName], CA.Expr, CPat)) (Either CA.AltConsts ())} ]
 ATTR CPatRest [ | | isEmpty: {Bool} ]
 ATTR CPatFldL [ | | trf: {[HsName]} ]
 ATTR CPatFld [ | | trf: {HsName} ]
@@ -91,40 +92,44 @@ SEM CExpr
     lhs.trf = CA.Expr_Const $ CA.Const_Integer @integer
 %%]] 
   | Let
-    lhs.trf = (if @loc.isStrict then 
+    lhs.trf = if @loc.isStrict then 
                 case @binds.trf of
-                  [CA.Binding_Bind n e] -> CA.Expr_LetBang n e
+                  [CA.Binding_Bind n e ex] -> CA.Expr_LetBang n e @body.trf ex
                   _ -> panic "multiple bindings in let!"
-               else CA.Expr_Let @binds.trf) @body.trf
+               else CA.Expr_Let @binds.trf @body.trf @categ
     loc.isStrict = case @categ of
                     CBindCateg_Strict -> True
                     _ -> False
   | Tup
-    lhs.trf = if @loc.isRec then CA.Expr_Tup [] @tag else CA.Expr_Con (ctagTyNm @tag) (ctagNm @tag) [] @tag
+    lhs.trf = if @loc.isRec then CA.Expr_Tup [] (@tag, []) else CA.Expr_Con (ctagTyNm @tag) (ctagNm @tag) [] (@tag, [])
     loc.isRec = ctagIsRec @tag
   | Lam
-    lhs.trf = CA.Expr_Abs @loc.arg @body.trf
+    lhs.trf = CA.Expr_Abs @loc.arg @body.trf @bind.copy
     loc.arg = case @bind.trf of 
                 Right n -> n
-                Left (CA.Binding_Bind n _) -> n
+                Left (CA.Binding_Bind n _ _) -> n
     -- totally ignore dflt
   | Case
     lhs.trf = case @alts.trf of
-                Left (Left cs) -> CA.Expr_CaseCon @expr.trf cs
-                Left (Right (xs, e)) -> CA.Expr_CaseTup @expr.trf xs e
-                Right (Left cs) -> CA.Expr_CaseConst @expr.trf cs
+                Left (Left cs) -> CA.Expr_CaseCon @expr.trf cs @dflt.copy
+                Left (Right (xs, e, p)) -> CA.Expr_CaseTup @expr.trf xs e (p, @dflt.copy)
+                Right (Left cs) -> CA.Expr_CaseConst @expr.trf cs @dflt.copy
 
   | App
     lhs.trf = case @func.trf of
-                CA.Expr_Con tn cn flds x -> CA.Expr_Con tn cn (flds ++ [getConVar @arg.trf]) x
-                CA.Expr_Tup flds x -> CA.Expr_Tup (flds ++ [getConVar @arg.trf]) x
-                _ -> case getConVar @arg.trf of
-                  CA.ConVar_VarLocal v x -> CA.Expr_AppLocal @func.trf v
-                  CA.ConVar_VarImport v x -> CA.Expr_AppImport @func.trf v
-                  CA.ConVar_Const c -> CA.Expr_AppConst @func.trf c
-
+                CA.Expr_Con tn cn flds (t,bl) -> CA.Expr_Con tn cn (flds ++ [@loc.cv]) (t, bl ++ [@arg.copy])
+                CA.Expr_Tup flds (t,bl) -> CA.Expr_Tup (flds ++ [@loc.cv]) (t, bl ++ [@arg.copy])
+                _ -> case @loc.cv of
+                  CA.ConVar_VarLocal v -> CA.Expr_AppLocal @func.trf v @arg.copy
+                  CA.ConVar_VarImport v -> CA.Expr_AppImport @func.trf v @arg.copy
+                  CA.ConVar_Const c -> CA.Expr_AppConst @func.trf c @arg.copy
+    loc.cv = getConVar @arg.trf
   | FFI
     lhs.trf = CA.Expr_FFI @ty (@callconv, @safety, @impEnt)
+  | Ann
+    lhs.trf = case @ann.copy of
+                CExprAnn_CAType t -> CA.Expr_Ann t @expr.trf
+                _ -> CA.Expr_AnnCore @ann.copy @expr.trf
 
 SEM CPat
   | Con
@@ -159,8 +164,13 @@ SEM CBind
   | Bind
     lhs.trf = case length @bindAspects.trf of
                 0 -> Right @nm
-                1 -> Left $ CA.Binding_Bind @nm $ head @bindAspects.trf 
+                1 -> Left $ CA.Binding_Bind @nm (head @bindAspects.trf) @loc.ex
                 _ -> traceShow (@bindAspects.trf) $ panic $ "Multiple bounds for single bind: " ++ show @nm
+    loc.ex = case @bindAspects.copy of
+              [CBound_Bind _] -> Nothing
+              [CBound_Val aks mlev lbl _] -> Just (aks, mlev, lbl)
+              [CBound_Ty _ _] -> Just $ panic $ "Ty Found in toCAModule.CBind_Bind: " ++ show @bindAspects.copy
+              _ -> panic $ "Laziness error in toCAModule.CBind_Bind: " ++ show @bindAspects.copy
 
 SEM CBound
   | Bind Val
@@ -179,10 +189,10 @@ SEM CBound
 SEM CAlt
   | Alt
     lhs.trf = case @pat.trf of
-                Left (Left n) -> Right $ CA.AltConst_Int n @expr.trf
-                Left (Right c) -> Right $ CA.AltConst_Char c @expr.trf
-                Right (Left (d,c,xs)) -> Left $ Left $ CA.AltCon_Alt d c xs @expr.trf
-                Right (Right xs) -> Left $ Right (xs, @expr.trf)
+                Left (Left n) -> Right $ CA.AltConst_Int n @expr.trf @pat.copy
+                Left (Right c) -> Right $ CA.AltConst_Char c @expr.trf @pat.copy
+                Right (Left (d,c,xs)) -> Left $ Left $ CA.AltCon_Alt d c xs @expr.trf @pat.copy
+                Right (Right xs) -> Left $ Right (xs, @expr.trf, @pat.copy)
 
 SEM CBindL
   | Cons

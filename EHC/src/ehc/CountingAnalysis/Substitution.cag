@@ -10,11 +10,17 @@
 %%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
 %%]
 
+%%[(8 counting) hs import({%{EH}Base.Common(CLbl)})
+%%]
+
+%%[(8 counting) hs import(UHC.Util.VarLookup(MetaLev))]
+%%]
+
 Debugging
 %%[(8 counting) hs import(Debug.Trace)
 %%]
 
-%%[(8 counting) ag import({CountingAnalysis/AbsSyn})
+%%[(8 counting) ag import({CountingAnalysis/AbsSyn}, {CountingAnalysis/AbsSynExpr})
 WRAPPER *
 %%]
 

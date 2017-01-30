@@ -37,8 +37,8 @@ import Debug.Trace
 
 traceShowS = flip const
 traceShowT = flip const
--- genTrace2 = flip const
-genTrace2 = traceShow
+genTrace2 = flip const
+-- genTrace2 = traceShow
 traceShow2def = flip const
 
 %%]
@@ -89,6 +89,9 @@ type SolveT a = StateT SolveState Identity a
 class Solve a where
   solve :: a -> SolveT Constraints
 
+instance Solve GatherConstraints where
+  solve = solve . toConstraints
+
 instance Solve Constraints where
   solve [] = return $ traceShow "empty" mempty
   solve (c1:c2) = do
@@ -104,9 +107,13 @@ instance Solve Constraints where
 instance Solve Constraint where
   solve (Constraint_Ann c) = traceShowS ("annStart",c,"annend") $ solve c
   solve (Constraint_Eq c) = traceShowS ("eqStart", c, "eqend") $ solve c
-  solve (Constraint_Gen tau nu delta nu0 delta0 c1 env sigma) = do
+  solve (Constraint_Gen name tau nu delta nu0 delta0 c1 env sigma) = do
+    solve $ genEq delta delta0
+    solve $ genEq nu nu0
+    s1 <- use solution
     conMap <- use constraintMap
-    c2 <- genTrace2 ("Gen: ", sigma) $ solveFixMulti $ conMap M.! c1
+    let c1' = S.substSolution (conMap M.! c1) s1
+    c2 <- genTrace2 (name,"Gen: ", sigma) $ solveFixMulti c1' 
     constraintMap %= M.insert c1 c2
     checkConstraints c2
     s <- traceShowS ("#######",c2,"$$$$$") $ use solution
@@ -124,13 +131,14 @@ instance Solve Constraint where
         favnu0' = E.extractAnnVars nu0'
         favdelta0' = E.extractAnnVars delta0'
         valpha = S.union ftvc2 ftvtau' S.\\ ftvenv'
-        vbeta = S.union favc2 favtau' S.\\ S.unions [favenv', favnu', favdelta', favnu0', favdelta0']
+        -- vbeta = S.union favc2 favtau' S.\\ S.unions [favenv', favnu', favdelta', favnu0', favdelta0']
+        vbeta = favtau' S.\\ S.unions [favenv', favnu', favdelta', favnu0', favdelta0']
     solution %= \x -> x & annSol %~ flip (foldr M.delete) (traceShowT vbeta vbeta)
     solution %= \x -> x & tySol %~ flip (foldr M.delete) valpha
     dontDefault %= S.union vbeta
     solve $ Constraint_Eq $ ConstraintEq_Scheme sigma $ Scheme_Forall vbeta valpha c2 tau'
     return []
-  solve (Constraint_Inst (Scheme_Forall beta1 alpha1 c tau1) tau2) = do
+  solve (Constraint_Inst _ (Scheme_Forall beta1 alpha1 c tau1) tau2) = do
     alpha2 <- replicateM (S.size alpha1) getFresh'
     beta2 <- replicateM (S.size beta1) getFresh'
     let sol = Solution (M.fromList $ zip (S.toList beta1) (map Annotation_Var beta2)) (M.fromList $ zip (S.toList alpha1) (map Type_Var alpha2)) M.empty
@@ -144,7 +152,7 @@ instance Solve Constraint where
 checkConstraints :: Constraints -> SolveT ()
 checkConstraints [] = return ()
 checkConstraints (c@Constraint_Gen{} :_) = panic $ "GenConstraint in GenConstraint: " ++ show c
-checkConstraints (c@Constraint_Inst{} :_) = panic $ "InstConstraint in GenConstraint: " ++ show c
+checkConstraints (c@(Constraint_Inst name _ _):_) = panic $ show name ++ ": InstConstraint in GenConstraint: " ++ show c
 checkConstraints (c@Constraint_Eq{} :_) = panic $ "EqConstraint in GenConstraint " ++ show c
 checkConstraints (_:xs) = checkConstraints xs
 
@@ -231,10 +239,15 @@ instance Solve ConstraintEq where
         return mempty
   solve (ConstraintEq_Ann mu a2@(Annotation_Var _)) = solve (ConstraintEq_Ann a2 mu)
   solve c@(ConstraintEq_Ann mu1 mu2) = 
-    if mu1 /= mu2 then do
-      s <- use solution
-      ps <- use partSolution
-      panic $ "Unsatisfiable constraint (solve eqann): " ++ show c ++ ", sol and part: " ++ show (s, ps)
+    if mu1 /= mu2 then 
+      if mu1 == annTop || mu2 == annTop then
+        -- forget information
+        return mempty
+      else do
+        s <- use solution
+        ps <- use partSolution
+        -- panic $ "Unsatisfiable constraint (solve eqann): " ++ show c ++ ", sol and part: " ++ show (s, ps)
+        return mempty
     else
       return mempty
       

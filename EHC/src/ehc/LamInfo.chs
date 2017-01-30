@@ -152,7 +152,7 @@ data LamInfo
       , laminfoGrinByteCode			:: Maybe GrinByteCodeLamInfo	-- GB specific info
 %%]]
 %%[[(8 counting)
-      , laminfoCaType   :: !CA.Scheme
+      , laminfoCaType   :: !CA.RhoScheme
 %%]]
       , laminfoBindAspMp			:: !LamInfoBindAspMp			-- info organized per/keyed on aspect
       }
@@ -169,7 +169,7 @@ emptyLamInfo'
             (Just emptyGrinByteCodeLamInfo)
 %%]]
 %%[[(8 counting)
-            (CA.Scheme_Forall Set.empty Set.empty [] (CA.Type_Error "Empty lamInfo"))
+            (CA.RhoScheme_Rho (CA.EtaScheme_Eta (CA.Scheme_Forall Set.empty Set.empty [] (CA.Type_Error "Empty lamInfo")) $ CA.Annotation_Val Set.empty) $ CA.Annotation_Val Set.empty)
 %%]]
             Map.empty
 
@@ -180,7 +180,7 @@ emptyLamInfo
             Nothing
 %%]]
 %%[[(8 counting)
-            (CA.Scheme_Forall Set.empty Set.empty [] (CA.Type_Error "Empty lamInfo"))
+            (CA.RhoScheme_Rho (CA.EtaScheme_Eta (CA.Scheme_Forall Set.empty Set.empty [] (CA.Type_Error "Empty lamInfo")) $ CA.Annotation_Val Set.empty) $ CA.Annotation_Val Set.empty)
 %%]]
             Map.empty
 %%]

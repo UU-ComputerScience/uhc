@@ -28,27 +28,28 @@ instance PP Expr where
   pp (Expr_VarLocal v _) = pp v
   pp (Expr_VarImport v _) = pp v
   pp (Expr_Const c) = pp c
-  pp (Expr_Let binds body) = "let" >-< indent 2 (vlist binds) >-< "in" >#< body
-  pp (Expr_LetBang x e1 e2) = "let!" >#< x >#< "=" >#< e1 >-< "in" >#< e2
+  pp (Expr_Abs bind body _) = "\\" >|< bind >#< "->" >-< indent 2 body
+  pp (Expr_AppLocal func arg _) = func >#< arg
+  pp (Expr_AppImport func arg _) = func >#< arg
+  pp (Expr_AppConst func arg _) = func >#< arg
+  pp (Expr_Let binds body _) = "let" >-< indent 2 (vlist binds) >-< "in" >#< body
+  pp (Expr_LetBang x e1 e2 _) = "let!" >#< x >#< "=" >#< e1 >-< "in" >#< e2
   pp (Expr_Con _ conNm flds _) = conNm >#< ppSpaces flds 
   pp (Expr_Tup flds _) = ppParensCommas flds
-  pp (Expr_AppLocal func arg) = func >#< arg
-  pp (Expr_AppImport func arg) = func >#< arg
-  pp (Expr_AppConst func arg) = func >#< arg
-  pp (Expr_Abs bind body) = "\\" >|< bind >#< "->" >-< indent 2 body
-  pp (Expr_CaseCon e alts) = "case" >#< e >#< "of" >-< indent 2 (vlist alts)
-  pp (Expr_CaseTup e xs e1) = "case" >#< e >#< "of" >-< indent 2 (ppParensCommas xs >#< "->" >#< e1)
-  pp (Expr_CaseConst e alts) = "case" >#< e >#< "of" >-< indent 2 (vlist alts)
+  pp (Expr_CaseCon e alts _) = "case" >#< e >#< "of" >-< indent 2 (vlist alts)
+  pp (Expr_CaseTup e xs e1 _) = "case" >#< e >#< "of" >-< indent 2 (ppParensCommas xs >#< "->" >#< e1)
+  pp (Expr_CaseConst e alts _) = "case" >#< e >#< "of" >-< indent 2 (vlist alts)
   pp Expr_FFI{} = text "FFI"
   pp (Expr_Ann t e) = ppParens e >#< "::" >#< t
+  pp (Expr_AnnCore _ e) = pp e
 
 instance PP ConVar where
-  pp (ConVar_VarLocal v _) = pp v
-  pp (ConVar_VarImport v _) = pp v
+  pp (ConVar_VarLocal v) = pp v
+  pp (ConVar_VarImport v) = pp v
   pp (ConVar_Const c) = pp c
 
 instance PP Binding where
-  pp (Binding_Bind n e) = n >#< "=" >#< e
+  pp (Binding_Bind n e _) = n >#< "=" >#< e
 
 instance PP Const where
   pp (Const_Int c) = pp c
@@ -57,11 +58,11 @@ instance PP Const where
   pp (Const_Integer c) = pp c
 
 instance PP AltCon where
-  pp (AltCon_Alt _ c xs e) = c >#< ppSpaces xs >#< "->" >#< e
+  pp (AltCon_Alt _ c xs e _) = c >#< ppSpaces xs >#< "->" >#< e
 
 instance PP AltConst where
-  pp (AltConst_Int c e) = c >#< "->" >#< e
-  pp (AltConst_Char c e) = c >#< "->" >#< e
+  pp (AltConst_Int c e _) = c >#< "->" >#< e
+  pp (AltConst_Char c e _) = c >#< "->" >#< e
   
 instance PP Scheme where
   pp (Scheme_Var v) = pp v
@@ -102,14 +103,14 @@ instance PP AnnPrim where
 instance PP Constraint where
   pp (Constraint_Ann c) = pp c
   pp (Constraint_Eq c) = pp c
-  pp (Constraint_Inst s t) = "inst(" >|< s >|< ") ==" >#< t
-  pp (Constraint_Gen t u d n0 d0 c e s) = error "Cannot print Gen constraint without ConstraintMap"
+  pp (Constraint_Inst n s t) = n >|< ": inst(" >|< s >|< ") ==" >#< t
+  pp (Constraint_Gen n t u d n0 d0 c e s) = error "Cannot print Gen constraint without ConstraintMap"
 
 instance {-# OVERLAPPING #-} PP (Constraints, Map Var Constraints) where
   pp (cs, cm) = vlist $ map (,cm) cs
 
 instance {-# OVERLAPPING #-} PP (Constraint, Map Var Constraints) where
-  pp (Constraint_Gen t u d n0 d0 c e s, cm) = "gen" 
+  pp (Constraint_Gen n t u d n0 d0 c e s, cm) = n >|< ": gen" 
     >|< ppParensCommas [t >#< "^" >#< ppParensCommas [u, d], pp $ "cs: " ++ show (length cs), pp $ "e: " ++ show (M.size e)]
     >#< "==" >#< s >#< "^" >#< ppParensCommas [n0, d0]
     >-< indent 4 (pp (cs, cm)) >-< indent 4 (ppMap e)
@@ -167,14 +168,14 @@ instance PPAnnFree EtaType where
 instance PPAnnFree Constraint where
   ppAnnFree (Constraint_Ann c) = empty
   ppAnnFree (Constraint_Eq c) = ppAnnFree c
-  ppAnnFree (Constraint_Inst s t) = "inst(" >|< ppAnnFree s >|< ") ==" >#< ppAnnFree t
-  ppAnnFree (Constraint_Gen t u d n0 d0 c e s) = error "Cannot printAnnFree Gen constraint without conMap"
+  ppAnnFree (Constraint_Inst n s t) = n >|< ": inst(" >|< ppAnnFree s >|< ") ==" >#< ppAnnFree t
+  ppAnnFree (Constraint_Gen n t u d n0 d0 c e s) = error "Cannot printAnnFree Gen constraint without conMap"
 
 instance {-# OVERLAPPING #-} PPAnnFree (Constraints, Map Var Constraints) where
   ppAnnFree (cs, cm) = vlist $ map (ppAnnFree . (,cm)) cs
 
 instance {-# OVERLAPPING #-} PPAnnFree (Constraint, Map Var Constraints) where
-  ppAnnFree (Constraint_Gen t u d n0 d0 c e s, cm) = "gen" 
+  ppAnnFree (Constraint_Gen n t u d n0 d0 c e s, cm) = n >|< ": gen" 
     >|< ppParensCommas [ppAnnFree t , text $ "cs: " ++ show (length cs), text $ "e: " ++ show (M.size e)]
     >#< "==" >#< s
     >-< indent 4 (ppAnnFree (cs, cm)) >-< indent 4 (ppMapAnnFree e)
