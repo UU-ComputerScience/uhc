@@ -20,7 +20,7 @@ module UHC.ByteArray
   , mutableByteArrayContents, mutableByteArrayPtr
   , unsafeFreezeByteArray
   
-  , indexCharArray, indexWideCharArray
+  , indexCharArray, indexWideCharArray, indexUnicodeCharArray
   , indexIntArray, indexWordArray, indexAddrArray
 #if !defined( __UHC_TARGET_JS__ )
   , indexStablePtrArray
@@ -29,7 +29,7 @@ module UHC.ByteArray
   , indexInt8Array, indexInt16Array, indexInt32Array, indexInt64Array
   , indexWord8Array, indexWord16Array, indexWord32Array, indexWord64Array
 
-  , readCharArray, readWideCharArray
+  , readCharArray, readWideCharArray, readUnicodeCharArray
   , readIntArray, readWordArray, readAddrArray
 #if !defined( __UHC_TARGET_JS__ )
   , readStablePtrArray
@@ -124,6 +124,7 @@ foreign import prim "primIndexWord8Array" indexCharArray :: ByteArray -> Int -> 
 -- |Read 31-bit character; offset in 4-byte words.
 
 foreign import prim "primIndexWord32Array" indexWideCharArray :: ByteArray -> Int -> Char
+foreign import prim "primIndexUnicodeArray" indexUnicodeCharArray :: ByteArray -> Int -> (Char,Int)
 
 #if USE_64_BITS
 foreign import prim "primIndexWord64Array" 	indexIntArray 		:: ByteArray -> Int -> Int
@@ -158,15 +159,17 @@ indexStablePtrArray a i = let !x = indexAddrArray a i in StablePtr x
 %%]
 
 %%[99
--- |Read 8-bit character; offset in bytes.
-
+-- | Read 8-bit character; offset in bytes.
 readCharArray :: MutableByteArray s -> Int -> State s -> ( State s,Char )
 readCharArray (MutableByteArray a) i s = let !x = indexCharArray a i in (s, x)
 
--- |Read 31-bit character; offset in 4-byte words.
-
+-- | Read 31-bit character; offset in 4-byte words.
 readWideCharArray :: MutableByteArray s -> Int -> State s -> ( State s,Char )
 readWideCharArray (MutableByteArray a) i s = let !x = indexWideCharArray a i in (s, x)
+
+-- | Read unicode character; offset in bytes.
+readUnicodeCharArray :: MutableByteArray s -> Int -> State s -> ( State s, (Char, Int) )
+readUnicodeCharArray (MutableByteArray a) i s = let !x = indexUnicodeCharArray a i in (s, x)
 
 readIntArray :: MutableByteArray s -> Int -> State s -> ( State s,Int )
 readIntArray (MutableByteArray a) i s = let !x = indexIntArray a i in (s, x)

@@ -1,5 +1,9 @@
 - [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
 
+## 1.1.9.5 - 20161223
+
+- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
+
 ## 1.1.9.4 - 20160521
 
 - [compatibility] with ghc 8.0.1

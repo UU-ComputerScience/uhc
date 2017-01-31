@@ -289,8 +289,12 @@ unpack buf r len = IO $ \s -> unpackRB [] (len - 1) s
     unpackRB acc i s
       | i < r  = (s, acc)
       | otherwise = 
+          case readUnicodeCharArray buf i s of
+            (s', (ch,n)) -> unpackRB (ch : acc) (i - n) s'
+{-
           case readCharArray buf i s of
             (s', ch) -> unpackRB (ch : acc) (i - 1) s'
+-}
 
 hGetLineUnBuffered :: Handle -> IO String
 hGetLineUnBuffered h = do
@@ -449,8 +453,12 @@ unpackAcc buf r len acc0 = IO $ \s -> unpackRB acc0 (len - 1) s
     unpackRB acc i s
      | i < r  = (s, acc)
      | otherwise = 
+          case readUnicodeCharArray buf i s of
+          (s', (ch,n)) -> unpackRB (ch : acc) (i - n) s'
+{-
           case readCharArray buf i s of
           (s', ch) -> unpackRB (ch : acc) (i - 1) s'
+-}
 #endif
 %%]
 
