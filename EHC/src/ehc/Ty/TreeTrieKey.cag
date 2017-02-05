@@ -15,10 +15,13 @@ In this way search via a TreeTrie proceeds breadth first top to bottom.
 %%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.TreeTrieKey} import({%{EH}Base.Common},{%{EH}Base.TermLike},{%{EH}Base.HsName},{%{EH}Base.HsName.Builtin},{%{EH}Ty})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,UHC.Util.FastSeq as Seq,UHC.Util.TreeTrie,{%{EH}CHR.CtxtRedOnly.Key})
+%%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,UHC.Util.FastSeq as Seq,{%{EH}CHR.CtxtRedOnly.Key})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs import(UHC.Util.CHR.Key)
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs import(UHC.Util.TreeTrie, qualified UHC.Util.TreeTrie2 as TT2, UHC.Util.Utils)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG})
@@ -36,45 +39,74 @@ tyTreeTrieKey opts ty
 
 %%[(9 hmtyinfer || hmtyast) hs
 type instance TTKey Ty = Key
+type instance TT2.TrTrKey Ty = Key
 
 instance TTKeyable Ty where
   toTTKey' o = tyTreeTrieKey o
 
+instance TT2.TreeTrieKeyable Ty where
+  toTreeTriePreKey1 _ = panic "Not yet implemented: TT2.TreeTrieKeyable Ty"
+
 type instance TTKey Pred = Key
+type instance TT2.TrTrKey Pred = Key
 
 instance TTKeyable Pred where
   toTTKey' o pr = tyTreeTrieKey o $ mkTyPr pr
 
+instance TT2.TreeTrieKeyable Pred where
+  toTreeTriePreKey1 _ = panic "Not yet implemented: TT2.TreeTrieKeyable Pred"
+
 type instance TTKey PredScope = Key
+type instance TT2.TrTrKey PredScope = Key
 
 instance TTKeyable PredScope where
   toTTKey' o (PredScope_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
                                | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
   toTTKey' o (PredScope_Lev l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
 
+instance TT2.TreeTrieKeyable PredScope where
+  toTreeTriePreKey1 (PredScope_Var _) = TT2.prekey1Wild
+  toTreeTriePreKey1 (PredScope_Lev l) = TT2.prekey1 $ Key_Str $ show l
+
 type instance TTKey CHRPredOccCxt = Key
+-- type instance TTKey CHRPredOccCxt = Key
+type instance TT2.TrTrKey CHRPredOccCxt = Key
 
 instance TTKeyable CHRPredOccCxt where
   toTTKey' o (CHRPredOccCxt_Scope1 sc) = toTTKey' o sc -- for now
 
+instance TT2.TreeTrieKeyable CHRPredOccCxt where
+  toTreeTriePreKey1 (CHRPredOccCxt_Scope1 sc) = TT2.prekey1Delegate sc
+
 type instance TTKey PredOcc = Key
+type instance TT2.TrTrKey PredOcc = Key
 
 instance TTKeyable PredOcc where
   toTTKey' o po = toTTKey' o (poPr po)
 
+instance TT2.TreeTrieKeyable PredOcc where
+  toTreeTriePreKey1 po = TT2.prekey1Delegate $ poPr po
+
 type instance TTKey CHRPredOcc = Key
+type instance TT2.TrTrKey CHRPredOcc = Key
 
 instance TTKeyable CHRPredOcc where
   -- toTTKey' o po = ttkAdd (TT1K_One $ Key_Str "occ") [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)]
   toTTKeyParentChildren' o po = (TT1K_One $ Key_Str "occ", ttkChildren [toTTKey' o (cpoCxt po), toTTKey' o (cpoPr po)])
 
+instance TT2.TreeTrieKeyable CHRPredOcc where
+  toTreeTriePreKey1 po = TT2.prekey1With2Children (Key_Str "occ") (cpoCxt po) (cpoPr po)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
 type instance TTKey PredOccId = Key
+type instance TT2.TrTrKey PredOccId = Key
 
 instance TTKeyable PredOccId where
   toTTKey' o (PredOccId     i) = ttkSingleton $ TT1K_One $ Key_UID i
+
+instance TT2.TreeTrieKeyable PredOccId where
+  toTreeTriePreKey1 (PredOccId i) = TT2.prekey1 $ Key_UID i
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
@@ -92,16 +124,25 @@ labelTreeTrieKey opts label
 
 %%[(10 hmtyinfer || hmtyast) hs
 type instance TTKey LabelOffset = Key
+type instance TT2.TrTrKey LabelOffset = Key
 
 instance TTKeyable LabelOffset where
   toTTKey' o (LabelOffset_Var v) | ttkoptsVarsAsWild o = ttkSingleton TT1K_Any
                                  | otherwise           = ttkSingleton (TT1K_One $ Key_UID v)
   toTTKey' o (LabelOffset_Off l) = ttkSingleton $ TT1K_One $ Key_Str $ show l
 
+instance TT2.TreeTrieKeyable LabelOffset where
+  toTreeTriePreKey1 (LabelOffset_Var _) = TT2.prekey1Wild
+  toTreeTriePreKey1 (LabelOffset_Off l) = TT2.prekey1 $ Key_Str $ show l
+
 type instance TTKey Label = Key
+type instance TT2.TrTrKey Label = Key
 
 instance TTKeyable Label where
   toTTKey' = labelTreeTrieKey
+
+instance TT2.TreeTrieKeyable Label where
+  toTreeTriePreKey1 _ = panic "Not yet implemented: TT2.TreeTrieKeyable Label"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
