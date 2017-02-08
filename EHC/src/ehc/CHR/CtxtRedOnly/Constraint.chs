@@ -9,7 +9,10 @@
 %%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.CtxtRedOnly.Constraint}
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Ty},UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Key},UHC.Util.TreeTrie,{%{EH}Substitutable})
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Ty},UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Key},{%{EH}Substitutable})
+%%]
+
+%%[(9 hmtyinfer || hmtyast) import(UHC.Util.TreeTrie, qualified UHC.Util.TreeTrie2 as TT2)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(UHC.Util.Pretty as PP, UHC.Util.Utils)
@@ -61,6 +64,7 @@ type Constraint = Constraint' CHRPredOcc RedHowAnnotation
 
 type instance TTKey (Constraint' p info) = TTKey p
 type instance TrTrKey (Constraint' p info) = TTKey p
+type instance TT2.TrTrKey (Constraint' p info) = TT2.TrTrKey p
 %%]
 
 %%[(50 hmtyinfer || hmtyast)
@@ -103,6 +107,12 @@ instance (TTKeyable p, TTKey p ~ Key) => TTKeyable (Constraint' p info) where
         Just (s,p,_) -> ttkAdd' (TT1K_One $ Key_Str s) cs
                      where (_,cs) = toTTKeyParentChildren' o p
         _            -> panic "TTKeyable (Constraint' p info).toTTKey'" -- ttkEmpty
+
+instance (TT2.TreeTrieKeyable p, TT2.TrTrKey p ~ Key) => TT2.TreeTrieKeyable (Constraint' p info) where
+  toTreeTriePreKey1 c
+    = case cnstrReducablePart c of
+        Just (s,p,_) -> TT2.prekey1WithChild (Key_Str s) p
+        _            -> panic "TT2.TTKeyable (Constraint' p info).toTTKey'" -- ttkEmpty
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

@@ -53,7 +53,7 @@ type ClassDefaultGam = Gam HsName ClassDefaultGamInfo
 -- | Lookup a matching default for a predicate
 clDfGamLookupDefault
   :: ( VarLookup gm
-     , VarLookupCmb VarMp gm
+     , LookupApply VarMp gm
      , VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo
      )
      => FIIn' gm -> Pred -> ClassDefaultGam

@@ -39,14 +39,14 @@ For debug/trace:
 %%[[4
 ppTyWithFI :: FIIn -> Ty -> PP_Doc
 %%][8
-ppTyWithFI :: (VarLookupCmb VarMp gm, VarUpdatable Ty gm, VarLookupKey gm ~ VarId) => FIIn' gm -> Ty -> PP_Doc
+ppTyWithFI :: (LookupApply VarMp gm, VarUpdatable Ty gm, VarLookupKey gm ~ VarId) => FIIn' gm -> Ty -> PP_Doc
 %%]]
 ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi |+> fiVarMp fi) t
 
 %%[[4
 ppTyWithFIFO :: FIIn -> FIOut -> Ty -> PP_Doc
 %%][8
-ppTyWithFIFO :: (VarLookupCmb VarMp gm, VarUpdatable Ty gm, VarLookupKey gm ~ VarId) => FIIn' gm -> FIOut -> Ty -> PP_Doc
+ppTyWithFIFO :: (LookupApply VarMp gm, VarUpdatable Ty gm, VarLookupKey gm ~ VarId) => FIIn' gm -> FIOut -> Ty -> PP_Doc
 %%]]
 ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo |+> fiVarMp fi) t
 %%]

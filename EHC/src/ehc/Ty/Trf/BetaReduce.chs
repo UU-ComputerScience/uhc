@@ -126,7 +126,7 @@ betaRedTyLookAhead renv lkup ty
 %%[(11 hmtyinfer)
 -- | one expansion step of type level beta reduction
 tyBetaRed1
-  :: (VarLookup gm, VarLookupCmb VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
+  :: (VarLookup gm, LookupApply VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Either Ty TyBetaRedLookAheadExpansion
      -> Maybe TyBetaRedOut
 tyBetaRed1 renv lkup tyOrFunAndArgs
@@ -178,7 +178,7 @@ tyBetaRed1 renv lkup tyOrFunAndArgs
 
 %%[(11 hmtyinfer) export(tyBetaRed,tyBetaRedAndInit)
 tyBetaRed'
-  :: (VarLookup gm, VarLookupCmb VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
+  :: (VarLookup gm, LookupApply VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Either Ty TyBetaRedLookAheadExpansion
      -> [TyBetaRedOut]
 tyBetaRed' renv lkup tyOrFunArgs
@@ -187,13 +187,13 @@ tyBetaRed' renv lkup tyOrFunArgs
       _       -> []
 
 tyBetaRed
-  :: (VarLookup gm, VarLookupCmb VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
+  :: (VarLookup gm, LookupApply VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Ty
      -> [TyBetaRedOut]
 tyBetaRed renv lkup ty = tyBetaRed' renv lkup (Left ty)
 
 tyBetaRedAndInit
-  :: (VarLookup gm, VarLookupCmb VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
+  :: (VarLookup gm, LookupApply VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> Ty
      -> [TyBetaRedOut]
 tyBetaRedAndInit renv lkup ty
@@ -208,7 +208,7 @@ Additional substitutions found are assumed to be non-contradictory, so threading
 
 %%[(11 hmtyinfer) export(tyBetaRedFullMb)
 tyBetaRedFullMb
-  :: (VarLookup gm, VarLookupCmb VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
+  :: (VarLookup gm, LookupApply VarMp gm, VarLookupKey gm ~ VarId, VarLookupVal gm ~ VarMpInfo)
      => TyBetaRedEnv gm -> TyBetaRedLkup gm -> (Ty -> Maybe TyBetaRedOut) -> Ty
      -> Maybe TyBetaRedOut
 tyBetaRedFullMb renv lkup redSub ty
@@ -231,7 +231,7 @@ Just expand, recursively, without intermediate external expanding.
 
 %%[(11 hmtyinfer) export(tyBetaRedFull)
 tyBetaRedFull
-  :: (VarLookup gm, VarLookupKey gm ~ TyVarId, VarLookupVal gm ~ VarMpInfo, VarLookupCmb VarMp gm)
+  :: (VarLookup gm, VarLookupKey gm ~ TyVarId, VarLookupVal gm ~ VarMpInfo, LookupApply VarMp gm)
      => TyBetaRedEnv gm -> VarMp -> Ty
      -> Ty
 tyBetaRedFull renv varmp ty
