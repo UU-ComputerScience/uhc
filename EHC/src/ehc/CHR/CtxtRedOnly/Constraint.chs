@@ -216,7 +216,7 @@ predOccCnstrMpLiftScope sc
 %%% Reduction info: how reduction was done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(RedHowAnnotation(..))
+%%[(9 hmtyinfer || hmtyast) export(RedHowAnnotation(..))
 data RedHowAnnotation
   =  RedHow_ByInstance    !HsName  !Pred  !PredScope		-- inst name, for pred, in scope
   |  RedHow_BySuperClass  !HsName  !Int   !CTag						-- field name, offset, tag info of dict
@@ -286,7 +286,7 @@ instance PP RedHowAnnotation where
 %%% Reduction info: specifically, how scope reduction was done, (1) for comparison (2) for debugging
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(ByScopeRedHow(..))
+%%[(9 hmtyinfer || hmtyast) export(ByScopeRedHow(..))
 data ByScopeRedHow
   = ByScopeRedHow_Prove							-- scope reduction based on Prove
   | ByScopeRedHow_Assume						-- scope reduction based on Assume

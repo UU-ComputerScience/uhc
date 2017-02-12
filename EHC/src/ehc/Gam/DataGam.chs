@@ -218,8 +218,8 @@ data DataGamInfo
       , dgiMbGenerInfo		:: !(Maybe Int)			-- max kind arity for generic behavior, currently \in {0,1}
 %%]]
       }
-    deriving Generic
 %%]]
+    deriving Generic
 
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
@@ -474,6 +474,9 @@ instance Serialize DataFldInConstr where
 
 %%[(50 hmtyinfer)
 instance Serialize DataTagInfo
+%%]
+
+%%[50
 instance Serialize DataGamInfo
 %%]
 
