@@ -59,12 +59,12 @@ version
       , verMajor            = "1"
       , verMinor            = "1"
       , verMinorMinor       = "9"
-      , verMinorMinorMinor  = "5"
+      , verMinorMinorMinor  = "6"
       , verQuality          = "alpha"
       , verShort            = "1.1"
       , verMedium           = "1.1.9"
-      , verFull             = "1.1.9.5"
-      , verAsNumber         = "1010905"
+      , verFull             = "1.1.9.6"
+      , verAsNumber         = "1010906"
       , verProg             = "ehc"
 %%[[5050
       , verTimestamp        = Sig.timestamp

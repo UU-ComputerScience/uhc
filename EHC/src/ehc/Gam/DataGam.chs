@@ -122,10 +122,10 @@ data DataTagInfo
       , dtiMbFixityPrio 	:: !(Maybe (Int,Fixity))	-- if defined as infix, with priority
 %%]]
       }
-    deriving Generic
+    deriving (Generic, Show)
 
-instance Show DataTagInfo where
-  show _ = "DataTagInfo"
+-- instance Show DataTagInfo where
+--   show _ = "DataTagInfo"
 
 instance PP DataTagInfo where
   pp i = dtiConNm i >-< indent 2 (
@@ -185,7 +185,7 @@ data DataFldInConstr
   = DataFldInConstr
       { dficInTagMp	:: !(Map.Map CTag Fld)
       }
-  deriving Generic
+  deriving (Generic, Show)
 
 type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 %%]
@@ -200,7 +200,7 @@ data DataGamInfoVariant
 %%[[92
   | DataGamInfoVariant_Rec			-- tuple, record
 %%]]
-  deriving (Eq, Generic)
+  deriving (Eq, Generic, Show)
 %%]
 
 %%[(7 hmtyinfer) export(DataGamInfo(..))
@@ -232,10 +232,10 @@ data DataGamInfo
       , dgiMbGenerInfo		:: !(Maybe Int)			-- max kind arity for generic behavior, currently \in {0,1}
 %%]]
       }
-    deriving Generic
+    deriving (Generic, Show)
 
-instance Show DataGamInfo where
-  show _ = "DataGamInfo"
+-- instance Show DataGamInfo where
+--   show _ = "DataGamInfo"
 
 instance PP DataGamInfo where
   pp i@(DataGamInfo {dgiTyNm=nm, dgiDataTy=sumprod, dgiDataKi=ki}) = nm >-< indent 2 (

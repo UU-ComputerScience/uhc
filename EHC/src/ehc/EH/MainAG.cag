@@ -147,7 +147,7 @@
 %%[(99 chrtysys) hs import({%{EH}CHR.TySys.Types})
 %%]
 
-%%[(8 counting) hs import(Debug.Trace)
+%%[(8 counting) hs import(qualified Debug.Trace as T)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

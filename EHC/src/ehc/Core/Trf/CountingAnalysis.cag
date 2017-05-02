@@ -40,7 +40,7 @@ Implementation of Hidde's counting Analysis
 %%]
 
 Debugging
-%%[(8 counting) hs import(Debug.Trace)
+%%[(8 counting) hs import(qualified Debug.Trace as T)
 %%]
 
 %%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSynExpr})
@@ -56,13 +56,47 @@ PRAGMA strictcase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 counting) hs
+traceShow :: Show a => a -> b -> b
+-- traceShow x = id
+-- traceShow x = seq (length $ show x)
+-- traceShow = T.traceShow
+-- traceShow x = T.traceShow (length $ show x)
+traceShow x = T.traceShow (length $ show x, x)
+
+traceShowId x = traceShow x x
+
+traceShowTrip :: Show a => (String, a, String) -> b -> b
+traceShowTrip (n, e, _) = T.traceShow (n, length $ show e, n)
+-- traceShowId :: Show a => a -> a
+-- -- traceShowId x = T.traceShow (length $ show x) x
+-- traceShowId = T.traceShowId
+
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
-cmodTrfAnalysis subeff d imps m = traceShow (pp e, e) $ traceShow (ppMap bi) $ test `seq` res
+-- cmodTrfAnalysis subeff d imps m = 
+--   traceShowTrip ("im", im, "im") $
+--   traceShowTrip ("e", e, "e") $
+--   traceShowTrip ("extra", extra, "extra") $
+--   traceShowTrip ("modName", modName, "modName") $
+--   traceShowTrip ("ex", ex, "ex") $
+--   -- traceShowTrip ("syn", syn, "syn") $
+--   traceShowTrip ("c", c, "c") $
+--   traceShowTrip ("conMap", conMap, "conMap") $
+--   traceShowTrip ("e'", e', "e'") $
+--   traceShowTrip ("bindingEnv", bindingEnv, "bindingEnv") $
+--   traceShowTrip ("s", s, "s") $
+--   traceShowTrip ("finalBindEnv", finalBindEnv, "finalBindEnv") $
+--   traceShowTrip ("newLamMap", newLamMap, "newLamMap") $
+--   traceShowTrip ("finalLamMap", finalLamMap, "finalLamMap") $
+--   traceShowTrip ("bi", bi, "bi") $
+--   traceShowTrip ("res", res, "res") $
+--   traceShowTrip ("test", test, "test") $ 
+--   panic "finished with everything"
+cmodTrfAnalysis subeff d imps m = traceShow (pp e, e) $ traceShow (ppMapAnnFree bi) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow (pp e, e, m) $ traceShow (ppMapAnnFree bi, ex) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow m (m,imps)
   where Module_Module e extra = toCAModule im m
-        syn = wrap_Expr (sem_Expr e)
+        syn = wrap_Expr (sem_Expr $ traceShowId $ fixInstanceScopeFull e)
                 Inh_Expr
                   { dataEnv_Inh_Expr = specialtrace d
                   , exports_Inh_Expr = ex
@@ -72,12 +106,12 @@ cmodTrfAnalysis subeff d imps m = traceShow (pp e, e) $ traceShow (ppMap bi) $ t
                   , freshVar_Inh_Expr = 0
                   }
         im = toImports imps
-        ex = traceShowId $ S.map (fixHsName modName) $ toExports d m
+        ex = S.map (fixHsName modName) $ toExports d m
         c = toConstraints $ constraints_Syn_Expr syn
         conMap = constraintsMap_Syn_Expr syn
         e' = annCopy_Syn_Expr syn
         bindingEnv = bindingEnv_Syn_Expr syn
-        finalBindEnv = S.substSolution bindingEnv s
+        finalBindEnv = traceShow "subbind" $ S.substSolution bindingEnv s
         newLamMap = toLamMp finalBindEnv
         finalLamMap = lamMpMergeInto (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType=a}) const newLamMap imps
         s = traceShow ("num constraints: ", countConstraints c conMap) $ printTrace c conMap $ solveDef c 
@@ -86,7 +120,7 @@ cmodTrfAnalysis subeff d imps m = traceShow (pp e, e) $ traceShow (ppMap bi) $ t
         modName = moduleNm_CModule_Mod m
         bi = envFilterList finalBindEnv ex
         res = if M.size bi == S.size ex 
-          then (toCModule $ Module_Module (S.substSolution e' s) extra, finalLamMap) 
+          then traceShow "return info" $ (toCModule $ Module_Module (S.substSolution e' s) extra, finalLamMap) 
           else panic $ "not all exported symbols have a type: " ++ show (ppMap finalBindEnv)
         test = if m /= toCModule (Module_Module e extra) then panic "toCModule . toCAModule /= id"  else ()
 
@@ -149,7 +183,81 @@ fromField :: Field -> RhoType
 fromField (Field_Lazy t) = t
 fromField (Field_Strict t) = t
 
+seqUnion :: (Ord a, Show a, Show b) => Map a b -> Map a b -> Map a b
+seqUnion m1 m2 = traceShow (m1,m2) $ M.union m1 m2
+
 -- temp
+fixInstanceScopeFull :: Expr -> Expr
+fixInstanceScopeFull e = traceShow ("start fixScope", length bs) $ fromBindingList (fixInstanceScope bs, ex)
+  where (bs,ex) = toBindingList e
+
+toBindingList :: Expr -> ([(Bindings, CBindCateg)], Expr)
+toBindingList (Expr_Let b e extra) = ((b,extra):bs,ex)
+  where (bs, ex) = toBindingList e
+toBindingList e = ([],e)
+
+fromBindingList :: ([(Bindings, CBindCateg)], Expr) -> Expr
+fromBindingList (bs, e) = foldr (\(b,extra) ex -> Expr_Let b ex extra) e bs
+
+fixInstanceScope :: [(Bindings, CBindCateg)] -> [(Bindings, CBindCateg)]
+fixInstanceScope (x@(bs1,c1):y@(bs2,c2):xs)
+  | plain && single && scopeError = traceShowTrip ("Swapped instances","","") $ y:x:fixInstanceScope xs
+  | otherwise = traceShow ("fix not swapped", length $ y:xs) $ x : fixInstanceScope (y:xs) 
+  where plain = c1 == CBindCateg_Plain && c2 == CBindCateg_Plain
+        single = True -- length bs1 == 1 && length bs2 == 1
+        scopeError = not $ S.null $ S.intersection defVars scopeVars
+        defVars = definedVars bs2
+        scopeVars = usedVars bs1
+fixInstanceScope x = x
+-- fixInstanceScope [] = []
+
+definedVars :: Bindings -> Set HsName
+definedVars [] = S.empty
+definedVars (Binding_Bind n _ _:xs) = S.insert n $ definedVars xs
+
+class ExtractExprVar a where
+  usedVars :: a -> Set HsName
+  usedVars _ = S.empty
+
+instance ExtractExprVar a => ExtractExprVar [a] where
+  usedVars [] = S.empty
+  usedVars (x:xs) = S.union (usedVars x) $ usedVars xs
+
+instance ExtractExprVar Binding where
+  usedVars (Binding_Bind n e _) = usedVars e
+  -- usedVars (Binding_Bind n e _) = traceShow ("UsedVars:",n, usedVars e) usedVars e
+
+instance ExtractExprVar Expr where
+  usedVars (Expr_VarLocal v _) = S.singleton v
+  usedVars (Expr_VarImport v _) = S.singleton v 
+  usedVars (Expr_Const _) = S.empty 
+  usedVars (Expr_Abs n e _) = S.delete n $ usedVars e
+  usedVars (Expr_AppLocal e n _) = S.insert n $ usedVars e 
+  usedVars (Expr_AppImport e n _) = S.insert n $ usedVars e
+  usedVars (Expr_AppConst e _ _) = usedVars e 
+  usedVars (Expr_Let bs e _) = S.union (usedVars e) (usedVars bs) S.\\ definedVars bs
+  -- usedVars (Expr_Let bs e _) = traceShow ("letVars:", usedVars e, definedVars bs) $ S.union (usedVars e) (usedVars bs) S.\\ definedVars bs
+  usedVars (Expr_LetBang x e1 e2 _) = S.delete x $ S.union (usedVars e1) $ usedVars e2 
+  usedVars (Expr_Con _ _ flds _) = usedVars flds
+  usedVars (Expr_Tup flds _) = usedVars flds 
+  usedVars (Expr_CaseCon e alts _) = S.union (usedVars e) $ usedVars alts
+  usedVars (Expr_CaseTup e xs e1 _) = S.unions [usedVars e, S.fromList xs, usedVars e1] 
+  usedVars (Expr_CaseConst e alts _) = S.union (usedVars e) $ usedVars alts
+  usedVars (Expr_FFI{}) = S.empty 
+  usedVars (Expr_Ann _ e) = usedVars e 
+  usedVars (Expr_AnnCore _ e) = usedVars e
+
+instance ExtractExprVar ConVar where
+  usedVars (ConVar_VarLocal v) = S.singleton v
+  usedVars (ConVar_VarImport v) = S.singleton v
+  usedVars (ConVar_Const v) = S.empty
+
+instance ExtractExprVar AltCon where
+  usedVars (AltCon_Alt _ _ xs e _) = S.union (S.fromList xs) $ usedVars e
+
+instance ExtractExprVar AltConst where
+  usedVars (AltConst_Int _ e _) = usedVars e
+  usedVars (AltConst_Char _ e _) = usedVars e
 
 -- TODO ask atze as this is basically hope it works stuff
 fixHsName :: HsName -> HsName -> HsName
@@ -181,7 +289,7 @@ cmodTrfAnalysisCountingUnique = cmodTrfAnalysis False
 
 %%[(8 counting) ag
 ATTR * [ toHsName: {Var -> HsName} importEnv: {Imports} exports: {Exports} dataEnv: {DataEnv} subeffecting: {Annotation -> Annotation -> GatherConstraints} | freshVar: {Var} | annCopy: SELF ]
-ATTR * [ | | bindingEnv USE {M.union} {M.empty}: {BindingEnv} constraintsMap USE {M.union} {M.empty}: {Map Var Constraints}]
+ATTR * [ | | bindingEnv USE {M.union} {M.empty}: {BindingEnv} constraintsMap USE {seqUnion} {M.empty}: {Map Var Constraints}]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,7 +483,7 @@ SEM Expr
     loc.c5 = @loc.c5' <> @loc.c5ij <> @loc.c5i
     
     loc.cGen = @loc.c1 <> @loc.c3 <> @loc.c4 <> @loc.c5
-    loc.c6 = mconcat $ zipWith7 (\nm t n d n0 d0 s -> traceShow ("let:", nm, s) $ singleGC $ Constraint_Gen nm t n d n0 d0 @loc.fv12 @loc.env s) @binds.bindingNames @loc.taui @loc.nui @loc.deltai @loc.nu0i @loc.delta0i @loc.sigmai
+    loc.c6 = mconcat $ zipWith7 (\nm t n d n0 d0 s -> singleGC $ Constraint_Gen nm t n d n0 d0 @loc.fv12 @loc.env s) @binds.bindingNames @loc.taui @loc.nui @loc.deltai @loc.nu0i @loc.delta0i @loc.sigmai
     loc.c7i = zipWith3 (\x n d0 -> if x `S.member` @lhs.exports then genEq n annTop <> genEq d0 annTop else mempty) @binds.bindingNames @loc.nu0i @loc.deltai
     
     loc.etaTy = @loc.eta
@@ -653,7 +761,7 @@ SEM Bindings
     lhs.rhoSchemes = @hd.rhoSchemes : (if @tl.isNil then [] else @tl.rhoSchemes)
     lhs.constraints = @hd.constraints <> (if @tl.isNil then mempty else @tl.constraints)
   | Nil
-    lhs.bindingNames = panic "bindingNames"
+    lhs.bindingNames = [] -- panic "bindingNames"
     lhs.constraints = panic "constraints"
     lhs.envs = panic "envs"
     lhs.etaTypes = panic "etaTypes"

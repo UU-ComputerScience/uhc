@@ -35,6 +35,7 @@ PRAGMA strictcase
 
 %%[(8 counting) hs export(toCModule)
 toCModule :: Module -> CModule
+-- toCModule cmod = panic "tocmod"
 toCModule cmod
   =  let t = wrap_Module (sem_Module cmod) Inh_Module
      in trf_Syn_Module t

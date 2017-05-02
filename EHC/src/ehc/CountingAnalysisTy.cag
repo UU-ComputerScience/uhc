@@ -31,6 +31,9 @@ singleC x = [x]
 singleGC :: Constraint -> GatherConstraints
 singleGC x = GC $ Endo ([x]++)
 
+toGatherConstraints :: Constraints -> GatherConstraints
+toGatherConstraints xs = GC $ Endo (xs++)
+
 toConstraints :: GatherConstraints -> Constraints
 toConstraints = flip appEndo [] . unGc
 

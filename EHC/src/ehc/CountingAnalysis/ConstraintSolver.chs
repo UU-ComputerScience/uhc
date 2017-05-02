@@ -39,7 +39,8 @@ traceShowS = flip const
 traceShowT = flip const
 genTrace2 = flip const
 -- genTrace2 = traceShow
-traceShow2def = flip const
+-- traceShow2def = flip const
+traceShow2def x y = traceShow (x,y) y
 
 %%]
 
@@ -87,7 +88,7 @@ isTypeConstraint _ = True
 type SolveT a = StateT SolveState Identity a
 
 class Solve a where
-  solve :: a -> SolveT Constraints
+  solve :: a -> SolveT GatherConstraints
 
 instance Solve GatherConstraints where
   solve = solve . toConstraints
@@ -137,7 +138,7 @@ instance Solve Constraint where
     solution %= \x -> x & tySol %~ flip (foldr M.delete) valpha
     dontDefault %= S.union vbeta
     solve $ Constraint_Eq $ ConstraintEq_Scheme sigma $ Scheme_Forall vbeta valpha c2 tau'
-    return []
+    return mempty
   solve (Constraint_Inst _ (Scheme_Forall beta1 alpha1 c tau1) tau2) = do
     alpha2 <- replicateM (S.size alpha1) getFresh'
     beta2 <- replicateM (S.size beta1) getFresh'
@@ -145,9 +146,9 @@ instance Solve Constraint where
         c' = S.substSolution c sol
         tau' = S.substSolution tau1 sol
     solve $ singleC (Constraint_Eq $ ConstraintEq_Type tau' tau2)
-    return c' 
+    return $ toGatherConstraints c' 
   -- solve c = panic $ "help me: " ++ show c 
-  solve c = return [c]
+  solve c = return $ singleGC c
 
 checkConstraints :: Constraints -> SolveT ()
 checkConstraints [] = return ()
@@ -162,28 +163,52 @@ instance Solve ConstraintAnn where
   solve c@(ConstraintAnn_Times a1 a2 a) = solveAnnConstraint annTimes c a a1 a2
   solve c@(ConstraintAnn_Cond a1 a2 a) = solveAnnConstraint annCond c a a1 a2
 
-solveAnnConstraint :: (AnnVal -> AnnVal -> AnnVal) -> ConstraintAnn -> Annotation -> Annotation -> Annotation -> SolveT Constraints
+solveAnnConstraint :: (AnnVal -> AnnVal -> AnnVal) -> ConstraintAnn -> Annotation -> Annotation -> Annotation -> SolveT GatherConstraints
 solveAnnConstraint diamond c phi (Annotation_Val w1) (Annotation_Val w2) = traceShowS ("help4", diamond w1 w2, phi, w1, w2, c) $ solve (ConstraintEq_Ann phi $ Annotation_Val $ diamond w1 w2)
+
 solveAnnConstraint diamond c phi3 phi1 phi2 = do
   let favs = E.extractAnnVars c
   phiw <- mapM lookUpPartSol $ S.toList favs
   let phiw' = [[(a, av) | av <- S.toList avs] | (a,avs) <- phiw]
       phiw4 = sequence phiw'
       phiw5 = [phiw4' | phiw4' <- phiw4, S.substAnn phi3 (makeSol phiw4') == diamond' (S.substAnn phi1 $ makeSol phiw4') (S.substAnn phi2 $ makeSol phiw4')]
-  ps' <- use partSolution
-  sol'<- use solution
-  when (null phiw5) $ panic $ "Unsatisfiable Constraint - solveAnn: " ++ show c ++ ", partSol: " ++ show ps' ++ "sol: " ++ show sol'
-  let phiw6 = M.fromListWith S.union $ map (second S.singleton) $ concat phiw5
-  partSolution %= M.unionWith (flip const) phiw6
-  ps <- use partSolution
-  let useless = S.size favs == 1 && ps M.! traceShowS "useless" (head $ S.toList favs) == annPowWithoutEmpty annTop' 
-      c2 = if useless then mempty else singleC $ Constraint_Ann c
-  solve $ singles phiw6
-  solve $ equals $ M.toList $ equalVars phiw5
-  return c2
+  if null phiw5 then
+    testForTop c phi1 phi2
+  else do
+    let phiw6 = M.fromListWith S.union $ map (second S.singleton) $ concat phiw5
+    partSolution %= M.unionWith (flip const) phiw6
+    ps <- use partSolution
+    let useless = S.size favs == 1 && ps M.! traceShowS "useless" (head $ S.toList favs) == annPowWithoutEmpty annTop' 
+        c2 = if useless then mempty else singleGC $ Constraint_Ann c
+    solve $ singles phiw6
+    solve $ equals $ M.toList $ equalVars phiw5
+    return c2
   where diamond' (Annotation_Val x1) (Annotation_Val x2) = Annotation_Val $ diamond x1 x2
         diamond' _  _ = panic "BUG: Substitution did not result in values for ann constraint solving"
         makeSol = M.fromList . map (second Annotation_Val)
+
+testForTop :: ConstraintAnn -> Annotation -> Annotation -> SolveT GatherConstraints
+testForTop c phi1 phi2
+  | phi1 == annTop = do
+    fresh <- fv
+    solve $ replace (fresh, phi2)
+  | phi2 == annTop = do
+    fresh <- fv
+    solve $ replace (phi1, fresh)
+  | otherwise = do
+    ps' <- use partSolution
+    sol'<- use solution
+    -- error unolvable ignored
+    return mempty
+    -- panic $ "Unsatisfiable Constraint - solveAnn: " ++ show c ++ ", partSol: " ++ show ps' ++ "sol: " ++ show sol'
+  where fv = do
+              v <- getFresh'
+              return $ Annotation_Var v
+        replace (a1, a2) = case c of
+          ConstraintAnn_Plus _ _ a ->  ConstraintAnn_Plus a1 a2 a
+          ConstraintAnn_Union _ _ a -> ConstraintAnn_Union a1 a2 a
+          ConstraintAnn_Times _ _ a -> ConstraintAnn_Times a1 a2 a
+          ConstraintAnn_Cond _ _ a -> ConstraintAnn_Cond a1 a2 a
 
 lookUpPartSol :: HsName -> SolveT (HsName, Set AnnVal)
 lookUpPartSol n = do
@@ -332,20 +357,32 @@ solveFix c = traceShowS "startFix" $ do
   s <- use solution
   ps <- use partSolution
   let c' = S.substSolution c s
-  c1 <- traceShowT ("solveFixStart", c, c', "SolveFixEnd") $ solve c'
+  c1' <- traceShowT ("solveFixStart", c, c', "SolveFixEnd") $ solve c'
+  let c1 = toConstraints c1'
+  cm <- use constraintMap
   s' <- use solution
   ps' <- use partSolution
+  -- let changed = traceShow ("nc:",countConstraints c1 cm, length $ show s', length $ show ps') $ c1 /= c' || s /= s' || ps /= ps'
   let changed = c1 /= c' || s /= s' || ps /= ps'
   if changed then
     solveFix c1
   else
     return c1
 
+countConstraints :: Constraints -> Map a Constraints -> Int
+countConstraints c cm = length c + sum (map length $ M.elems cm) 
+
 solveFixMulti :: Constraints -> SolveT Constraints
 solveFixMulti c = do
   let (bc, gc, ic) = sortConstraints c
+  cm1 <- use constraintMap
+  -- cs <- traceShow ("sort",countConstraints (bc <> gc <> ic) cm1) $ solveFix bc
   cs <- solveFix bc
+  cm2 <- use constraintMap
+  -- cs' <- traceShow ("first", countConstraints cs cm2) $ solveFix $ cs <> ic
   cs' <- solveFix $ cs <> ic
+  cm3 <- use constraintMap
+  -- traceShow ("second", countConstraints cs' cm3) $ solveFix $ cs' <> gc
   solveFix $ cs' <> gc
 
 defaulting :: [(HsName, Set AnnVal)] -> (HsName, AnnVal)
@@ -387,7 +424,7 @@ intToAnnVal n = case n of
 
 solveDef :: Constraints -> SolveState -> Solution
 solveDef c ss = if M.null psiFinal then traceShow "finished" $ solveFinalSchemes ss' else 
-  traceShowS "solveDef" 
+  traceShow "solveDef" 
     $ solveDef (singleC (Constraint_Eq $ ConstraintEq_Ann (Annotation_Var beta) $ Annotation_Val w) <> c1)
     $ ss' & solution .~ phi1 & partSolution .~ psi1
   where phi = ss ^. solution
@@ -420,10 +457,10 @@ solveFinalSchemes' = traceShowT "solveFinal:" $ do
   s <- use solution 
   s' <- traceShowS s $ mapM solveFinalScheme $ s ^. schemeSol
   solution %= \x -> x & schemeSol .~ s'
-  use solution
+  traceShow "solve ready" $ use solution
 
 solveFinalScheme :: Scheme -> SolveT Scheme
-solveFinalScheme s@(Scheme_Forall as ts cs t) = do
+solveFinalScheme s@(Scheme_Forall as ts cs t) = traceShow ("finalSub") $ do
   cs' <- solveFixMulti cs
   s <- use solution
   let as' = S.fromList $ S.substSolution (map Annotation_Var $ S.toList as) s

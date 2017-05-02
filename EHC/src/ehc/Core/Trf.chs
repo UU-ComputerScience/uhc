@@ -246,7 +246,7 @@ trfCore opts optimScope dataGam modNm trfcore
 
 %%[[(8 counting)
                ; t_counting_analysis
-              --  ; t_caStrictness_optimization
+               ; t_caStrictness_optimization
 %%]]
 
 %%[[(8 codegenanalysis)

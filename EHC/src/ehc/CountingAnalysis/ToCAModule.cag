@@ -170,7 +170,7 @@ SEM CBind
               [CBound_Bind _] -> Nothing
               [CBound_Val aks mlev lbl _] -> Just (aks, mlev, lbl)
               [CBound_Ty _ _] -> Just $ panic $ "Ty Found in toCAModule.CBind_Bind: " ++ show @bindAspects.copy
-              _ -> panic $ "Laziness error in toCAModule.CBind_Bind: " ++ show @bindAspects.copy
+              _ -> Nothing -- panic $ "Laziness error in toCAModule.CBind_Bind: " ++ show @bindAspects.copy
 
 SEM CBound
   | Bind Val
