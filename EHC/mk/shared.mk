@@ -132,7 +132,7 @@ endif
 # whether GMP library should be build and linked in when compiling
 ifeq (ltm,gmp)
 EHC_CFG_USE_GMP							:= $(filter $(EHC_VARIANT),$(EHC_GMP_VARIANTS))
-EHC_CFG_GMP_LIB_ARCHIVE					:= /home/tibor_admin/Documents/thesis/uhc/EHC/extlibs/gmp/gmp-4.2.1.tar.gz
+EHC_CFG_GMP_LIB_ARCHIVE					:= /mnt/g/universiteit/thesis/uhcCA/EHC/extlibs/gmp/gmp-4.2.1.tar.gz
 endif
 
 ###########################################################################################
@@ -240,16 +240,16 @@ EHCLIB_SHARED						:= shared
 ###########################################################################################
 
 # compilers and tools used
-AGC							:= /home/tibor_admin/.cabal/bin/uuagc
-SHUFFLE						:= /home/tibor_admin/.cabal/bin/shuffle
+AGC							:= /home/tibor/.cabal/bin/uuagc
+SHUFFLE						:= /home/tibor/.cabal/bin/shuffle
 RULER2						:= echo "**** ERROR **** A tool or library is missing. Check ./configure summary." ; exit 1
 GHC							:= /usr/local/bin/ghc
 GHC1						:= /usr/local/bin/ghc
 GHC_VERSION         		:= 8.0.2
-CABAL						:= /home/tibor_admin/.cabal/bin/cabal
+CABAL						:= /home/tibor/.cabal/bin/cabal
 HSC2HS						:= /usr/local/bin/hsc2hs
-HADDOCK						:= /usr/local/bin/haddock
-HADDOCK_VERSION     		:= Haddock version 2.17.3, (c) Simon Marlow 2006
+HADDOCK						:= /home/tibor/.cabal/bin/haddock
+HADDOCK_VERSION     		:= Haddock version 2.17.4, (c) Simon Marlow 2006
 GCC							:= /usr/bin/gcc
 AR							:= /usr/bin/ar
 RANLIB						:= /usr/bin/ranlib
