@@ -29,5 +29,5 @@ type HsNames = [HsName]
 
 %%[(8 counting) ag
 DERIVING *
-  : Typeable, Show, Generic
+  : Typeable, Show, Generic, Eq
 %%]

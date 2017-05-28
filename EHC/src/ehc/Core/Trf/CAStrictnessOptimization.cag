@@ -41,8 +41,8 @@ PRAGMA strictcase
 
 %%[(8 counting) hs export(cmodTrfCaStrictnessOptimization)
 cmodTrfCaStrictnessOptimization :: DataGam -> LamMp -> CModule -> (CModule, LamMp)
-cmodTrfCaStrictnessOptimization d imps cmod = traceShow "Optimizing skipped" (cmod, imps)
--- cmodTrfCaStrictnessOptimization d imps cmod = traceShow "start optimizing" $ traceShow ("Transformation applied: ", count_Syn_Module syn) (toCModule $ trf_Syn_Module syn, imps)
+-- cmodTrfCaStrictnessOptimization d imps cmod = traceShow "Optimizing skipped" (cmod, imps)
+cmodTrfCaStrictnessOptimization d imps cmod = traceShow "start optimizing" $ traceShow ("Transformation applied: ", count_Syn_Module syn) (toCModule $ trf_Syn_Module syn, imps)
 -- cmodTrfCaStrictnessOptimization d imps cmod = panic "Optimize"
   where syn = wrap_Module (sem_Module $ toCAModule (toImports imps) cmod) Inh_Module
                   { dataEnv_Inh_Module = d

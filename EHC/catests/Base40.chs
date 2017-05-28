@@ -15,7 +15,7 @@ module UHC.Base   -- adapted from the Hugs prelude
     Eq         (..),
     Ord        (..),
     Bounded    (..),
-    Num        (..),
+    -- Num        (..),
     -- Real       (..),
     -- Integral   (..),
     -- Fractional (..),
@@ -41,24 +41,24 @@ module UHC.Base   -- adapted from the Hugs prelude
     Integer, 
     -- Float, 
     -- Double, 
-    IO,
+    -- IO,
     -- ShowS,
     -- ReadS,
     -- Rational, 
 
-    IO            (..), 
+    -- IO            (..), 
     -- IOResult      (..),
-    State         (..),
-    IOWorld, ioWorld,
-    RealWorld, realWorld,
+    -- State         (..),
+    -- IOWorld, ioWorld,
+    -- RealWorld, realWorld,
     
         -- IO Exception
     SomeException'(..),
-    ArithException(..),
-    ArrayException(..),
-    AsyncException(..),
-    IOException       ,
-    ExitCode      (..),
+    -- ArithException(..),
+    -- ArrayException(..),
+    -- AsyncException(..),
+    -- IOException       ,
+    -- ExitCode      (..),
 #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
     forceString,
 #else
@@ -92,37 +92,41 @@ module UHC.Base   -- adapted from the Hugs prelude
     -- fromRat,
 
 --  standard functions
-    fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
-    map, (++), concat, filter,
-    head, last, tail, init, null, length, (!!),
-    foldl, foldl1, scanl, scanl1, foldr, foldr1, scanr, scanr1,
-    iterate, repeat, replicate, cycle,
-    take, drop, splitAt, takeWhile, dropWhile, span, break,
-    lines, words, unlines, unwords, reverse, and, or,
-    any, all, elem, notElem, lookup,
-    sum, product, maximum, minimum, concatMap, 
-    zip, zip3, zipWith, zipWith3, unzip, unzip3,
+    -- fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
+    -- map, (++), concat, filter,
+    -- head, last, tail, init, null, 
+    -- length, (!!),
+    -- foldl, foldl1, scanl, scanl1, foldr, foldr1, scanr, scanr1,
+    -- iterate, repeat, 
+    -- replicate, 
+    -- cycle,
+    -- take, drop, splitAt, takeWhile, dropWhile, span, break,
+    -- lines, words, unlines, unwords, reverse, and, or,
+    -- any, all, elem, notElem, lookup,
+    -- sum, product, maximum, minimum, concatMap, 
+    -- zip, zip3, zipWith, zipWith3, unzip, unzip3,
 
 --  standard functions for Char
     -- ord, chr,
 
 -- IO functions
-    ioFromPrim,
+    -- ioFromPrim,
 
 -- Unsafe
     unsafeCoerce,
 
 -- EHC specific functions
     PackedString,
-    packedStringToString, packedStringToInteger, primIntToInteger,
-    primGtInt, primEqChar,
+    packedStringToString, packedStringToInteger, 
+    -- primIntToInteger,
+    -- primGtInt, primEqChar,
     ByteArray,
 
 -- EHC primitives, only exported to UHC. modules, hidden outside Prelude
     -- primEqInt,
     
 -- System
-    exitWithIntCode,
+    -- exitWithIntCode,
 
 -- StackTrace
     ExplicitStackTrace,
@@ -349,12 +353,12 @@ class Bounded a where
 --                                where p | n' >= n   = (<= m + (n'-n)/2)
 --                                        | otherwise = (>= m + (n'-n)/2)
 
-iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
-iterate' f x = x : (iterate' f $! f x)
-#else
-iterate' f x = x : (let !fx = f x in iterate' f fx)
-#endif
+-- iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
+-- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+-- iterate' f x = x : (iterate' f $! f x)
+-- #else
+-- iterate' f x = x : (let !fx = f x in iterate' f fx)
+-- #endif
 
 --------------------------------------------------------------
 -- Numeric classes: Num, Real, Integral, 
@@ -363,17 +367,17 @@ iterate' f x = x : (let !fx = f x in iterate' f fx)
 --------------------------------------------------------------
 
 -- class (Eq a, Show a) => Num a where
-class (Eq a) => Num a where
-    (+), (-), (*)  :: a -> a -> a
-    negate         :: a -> a
-    abs, signum    :: a -> a
-    fromInteger    :: Integer -> a
-    fromInt        :: Int -> a
+-- class (Eq a) => Num a where
+--     (+), (-), (*)  :: a -> a -> a
+--     negate         :: a -> a
+--     abs, signum    :: a -> a
+--     fromInteger    :: Integer -> a
+--     fromInt        :: Int -> a
 
-    -- Minimal complete definition: All, except negate or (-)
-    x - y           = x + negate y
-    -- fromInt         = fromIntegral
-    negate x        = 0 - x
+--     -- Minimal complete definition: All, except negate or (-)
+--     x - y           = x + negate y
+--     -- fromInt         = fromIntegral
+--     negate x        = 0 - x
 
 -- class (Num a, Ord a) => Real a where
 --     toRational     :: a -> Rational
@@ -505,8 +509,8 @@ class (Eq a) => Num a where
 -- Overloaded numeric functions
 --------------------------------------------------------------
 
-subtract       :: Num a => a -> a -> a
-subtract        = flip (-)
+-- subtract       :: Num a => a -> a -> a
+-- subtract        = flip (-)
 
 -- even, odd        :: (Integral a) => a -> Bool
 -- even n           =  n `rem` 2 == 0
@@ -541,14 +545,14 @@ subtract        = flip (-)
 -- realToFrac     :: (Real a, Fractional b) => a -> b
 -- realToFrac      = fromRational . toRational
 
-absReal :: (Ord a,Num a) => a -> a
-absReal x    | x >= 0    = x
-             | otherwise = -x
+-- absReal :: (Ord a,Num a) => a -> a
+-- absReal x    | x >= 0    = x
+--              | otherwise = -x
 
-signumReal :: (Ord a,Num a) => a -> a
-signumReal x | x == 0    =  0
-             | x > 0     =  1
-             | otherwise = -1
+-- signumReal :: (Ord a,Num a) => a -> a
+-- signumReal x | x == 0    =  0
+--              | x > 0     =  1
+--              | otherwise = -1
 
 
 
@@ -692,25 +696,25 @@ instance Bounded Bool where
 -- type Char builtin
 type String = [Char]    -- strings are lists of characters
 
-#if defined(__UHC_TARGET_JAZY__) || defined(__UHC_TARGET_CR__)
-foreign import prim   primEqChar    :: Char -> Char -> Bool
-foreign import prim   primCmpChar   :: Char -> Char -> Ordering
-foreign import prim   primCharToInt   :: Char -> Int
-foreign import prim   primIntToChar   :: Int -> Char
-#else
-foreign import prim "primEqInt"   primEqChar    :: Char -> Char -> Bool
-foreign import prim "primCmpInt"  primCmpChar   :: Char -> Char -> Ordering
-foreign import prim "primUnsafeId"  primCharToInt   :: Char -> Int
-foreign import prim "primUnsafeId"  primIntToChar   :: Int -> Char
-#endif
-foreign import prim "primCharIsUpper"   isUpper    :: Char -> Bool
-foreign import prim "primCharIsLower"   isLower    :: Char -> Bool
+-- #if defined(__UHC_TARGET_JAZY__) || defined(__UHC_TARGET_CR__)
+-- foreign import prim   primEqChar    :: Char -> Char -> Bool
+-- foreign import prim   primCmpChar   :: Char -> Char -> Ordering
+-- foreign import prim   primCharToInt   :: Char -> Int
+-- foreign import prim   primIntToChar   :: Int -> Char
+-- #else
+-- foreign import prim "primEqInt"   primEqChar    :: Char -> Char -> Bool
+-- foreign import prim "primCmpInt"  primCmpChar   :: Char -> Char -> Ordering
+-- foreign import prim "primUnsafeId"  primCharToInt   :: Char -> Int
+-- foreign import prim "primUnsafeId"  primIntToChar   :: Int -> Char
+-- #endif
+-- foreign import prim "primCharIsUpper"   isUpper    :: Char -> Bool
+-- foreign import prim "primCharIsLower"   isLower    :: Char -> Bool
 
-instance Eq Char  where 
-    (==)    = primEqChar
+-- instance Eq Char  where 
+--     (==)    = primEqChar
 
-instance Ord Char where 
-    compare = primCmpChar
+-- instance Ord Char where 
+--     compare = primCmpChar
 
 -- instance Enum Char where
 --     toEnum           = primIntToChar
@@ -742,24 +746,24 @@ instance Ord Char where
 --     minBound = '\0'
 --     maxBound = '\xff' -- primMaxChar
 
-isSpace :: Char -> Bool
-isSpace c              =  c == ' '  ||
-                          c == '\t' ||
-                          c == '\n' ||
-                          c == '\r' ||
-                          c == '\f' ||
-                          c == '\v' ||
-                          c == '\xa0'
+-- isSpace :: Char -> Bool
+-- isSpace c              =  c == ' '  ||
+--                           c == '\t' ||
+--                           c == '\n' ||
+--                           c == '\r' ||
+--                           c == '\f' ||
+--                           c == '\v' ||
+--                           c == '\xa0'
 
-isDigit :: Char -> Bool
-isDigit c              =  c >= '0'   &&  c <= '9'
+-- isDigit :: Char -> Bool
+-- isDigit c              =  c >= '0'   &&  c <= '9'
 
 
-isAlpha :: Char -> Bool
-isAlpha c    = isUpper c || isLower c
+-- isAlpha :: Char -> Bool
+-- isAlpha c    = isUpper c || isLower c
 
-isAlphaNum :: Char -> Bool
-isAlphaNum c = isAlpha c || isDigit c
+-- isAlphaNum :: Char -> Bool
+-- isAlphaNum c = isAlpha c || isDigit c
 
 -- ord :: Char -> Int
 -- ord = fromEnum
@@ -866,23 +870,23 @@ primCompAux x y o = case compare x y of EQ -> o; LT -> LT; GT -> GT
 -- type Int builtin
 
 PRIMS_BOUNDED(Int,primMinInt,primMaxInt)
-PRIMS_CONVERSION_INTEGER(Int,primIntegerToInt,primIntToInteger)
+-- PRIMS_CONVERSION_INTEGER(Int,primIntegerToInt,primIntToInteger)
 
 PRIMS_EQ(Int,primEqInt,primNeInt)
 PRIMS_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
-PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
+-- -- PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
 
 INSTANCE_EQ(Int,primEqInt,primNeInt)
 INSTANCE_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
 INSTANCE_BOUNDED(Int,primMinInt,primMaxInt)
--- INSTANCE_REAL(Int)
-INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
+-- -- INSTANCE_REAL(Int)
+-- -- INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
 
 
-foreign import prim primDivInt       :: Int -> Int -> Int
-foreign import prim primModInt       :: Int -> Int -> Int
-foreign import prim primQuotInt      :: Int -> Int -> Int
-foreign import prim primRemInt       :: Int -> Int -> Int
+-- foreign import prim primDivInt       :: Int -> Int -> Int
+-- foreign import prim primModInt       :: Int -> Int -> Int
+-- foreign import prim primQuotInt      :: Int -> Int -> Int
+-- foreign import prim primRemInt       :: Int -> Int -> Int
 
 
 -- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
@@ -954,63 +958,63 @@ foreign import prim primRemInt       :: Int -> Int -> Int
 -- Integer type
 --------------------------------------------------------------
 
-foreign import prim primEqInteger   :: Integer -> Integer -> Bool
-foreign import prim primCmpInteger  :: Integer -> Integer -> Ordering
+-- foreign import prim primEqInteger   :: Integer -> Integer -> Bool
+-- foreign import prim primCmpInteger  :: Integer -> Integer -> Ordering
 
-foreign import prim primDivInteger  :: Integer -> Integer -> Integer
-foreign import prim primModInteger  :: Integer -> Integer -> Integer
+-- foreign import prim primDivInteger  :: Integer -> Integer -> Integer
+-- foreign import prim primModInteger  :: Integer -> Integer -> Integer
 
-#if defined(__UHC_TARGET_JS__)
--- Integers are represented by `jsbn' BigInteger library
-{-
-foreign import prim "primEqInt"   primEqInteger      :: Integer -> Integer -> Bool
-foreign import prim "primCmpInt"  primCmpInteger     :: Integer -> Integer -> Ordering
-foreign import prim "primAddInt"  primAddInteger     :: Integer -> Integer -> Integer
-foreign import prim "primSubInt"  primSubInteger     :: Integer -> Integer -> Integer
-foreign import prim "primMulInt"  primMulInteger     :: Integer -> Integer -> Integer
-foreign import prim "primNegInt"  primNegInteger     :: Integer -> Integer
-foreign import prim "primQuotInt" primQuotInteger    :: Integer -> Integer -> Integer
-foreign import prim "primRemInt"  primRemInteger     :: Integer -> Integer -> Integer
-foreign import prim "primDivInt"  primDivInteger     :: Integer -> Integer -> Integer
-foreign import prim "primModInt"  primModInteger     :: Integer -> Integer -> Integer
-foreign import prim "primQuotRemInt" primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
-foreign import prim "primDivModInt"  primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
--}
-foreign import js "%1.add(%*)"				primAddInteger 				:: Integer -> Integer -> Integer
-foreign import js "%1.subtract(%*)" 		primSubInteger 				:: Integer -> Integer -> Integer
-foreign import js "%1.multiply(%*)" 		primMulInteger 				:: Integer -> Integer -> Integer
-foreign import js "%1.negate(%*)" 			primNegInteger 				:: Integer -> Integer
-foreign import js "%1.divide(%*)" 			primQuotInteger 			:: Integer -> Integer -> Integer
-foreign import js "%1.remainder(%*)" 		primRemInteger 				:: Integer -> Integer -> Integer
-#else
-foreign import prim primAddInteger  :: Integer -> Integer -> Integer
-foreign import prim primSubInteger  :: Integer -> Integer -> Integer
-foreign import prim primMulInteger  :: Integer -> Integer -> Integer
-foreign import prim primNegInteger  :: Integer -> Integer
-foreign import prim primQuotInteger :: Integer -> Integer -> Integer
-foreign import prim primRemInteger  :: Integer -> Integer -> Integer
-#endif
+-- #if defined(__UHC_TARGET_JS__)
+-- -- Integers are represented by `jsbn' BigInteger library
+-- {-
+-- foreign import prim "primEqInt"   primEqInteger      :: Integer -> Integer -> Bool
+-- foreign import prim "primCmpInt"  primCmpInteger     :: Integer -> Integer -> Ordering
+-- foreign import prim "primAddInt"  primAddInteger     :: Integer -> Integer -> Integer
+-- foreign import prim "primSubInt"  primSubInteger     :: Integer -> Integer -> Integer
+-- foreign import prim "primMulInt"  primMulInteger     :: Integer -> Integer -> Integer
+-- foreign import prim "primNegInt"  primNegInteger     :: Integer -> Integer
+-- foreign import prim "primQuotInt" primQuotInteger    :: Integer -> Integer -> Integer
+-- foreign import prim "primRemInt"  primRemInteger     :: Integer -> Integer -> Integer
+-- foreign import prim "primDivInt"  primDivInteger     :: Integer -> Integer -> Integer
+-- foreign import prim "primModInt"  primModInteger     :: Integer -> Integer -> Integer
+-- foreign import prim "primQuotRemInt" primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
+-- foreign import prim "primDivModInt"  primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
+-- -}
+-- foreign import js "%1.add(%*)"				primAddInteger 				:: Integer -> Integer -> Integer
+-- foreign import js "%1.subtract(%*)" 		primSubInteger 				:: Integer -> Integer -> Integer
+-- foreign import js "%1.multiply(%*)" 		primMulInteger 				:: Integer -> Integer -> Integer
+-- foreign import js "%1.negate(%*)" 			primNegInteger 				:: Integer -> Integer
+-- foreign import js "%1.divide(%*)" 			primQuotInteger 			:: Integer -> Integer -> Integer
+-- foreign import js "%1.remainder(%*)" 		primRemInteger 				:: Integer -> Integer -> Integer
+-- #else
+-- foreign import prim primAddInteger  :: Integer -> Integer -> Integer
+-- foreign import prim primSubInteger  :: Integer -> Integer -> Integer
+-- foreign import prim primMulInteger  :: Integer -> Integer -> Integer
+-- foreign import prim primNegInteger  :: Integer -> Integer
+-- foreign import prim primQuotInteger :: Integer -> Integer -> Integer
+-- foreign import prim primRemInteger  :: Integer -> Integer -> Integer
+-- #endif
 
-#if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
-foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
-foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
-#endif
+-- #if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
+-- foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
+-- foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
+-- #endif
 
-instance Eq  Integer where 
-    (==)    = primEqInteger
+-- instance Eq  Integer where 
+--     (==)    = primEqInteger
     
-instance Ord Integer where
-    compare = primCmpInteger
+-- instance Ord Integer where
+--     compare = primCmpInteger
 
-instance Num Integer where
-    (+)           = primAddInteger
-    (-)           = primSubInteger
-    negate        = primNegInteger
-    (*)           = primMulInteger
-    abs           = absReal
-    signum        = signumReal
-    fromInteger x = x
-    fromInt       = primIntToInteger
+-- instance Num Integer where
+--     (+)           = primAddInteger
+--     (-)           = primSubInteger
+--     negate        = primNegInteger
+--     (*)           = primMulInteger
+--     abs           = absReal
+--     signum        = signumReal
+--     fromInteger x = x
+--     fromInt       = primIntToInteger
 
 -- instance Real Integer where
 --     toRational x = x % 1
@@ -1600,21 +1604,21 @@ instance Num Integer where
 
 --------------------------------------------------------------
 -- Some standard functions
---------------------------------------------------------------
+-- --------------------------------------------------------------
 
---fst            :: (a,b) -> a
-fst            :: forall b . (a,b) -> a
-fst (x,_)       = x
+-- --fst            :: (a,b) -> a
+-- fst            :: forall b . (a,b) -> a
+-- fst (x,_)       = x
 
---snd            :: (a,b) -> b
-snd            :: forall a . (a,b) -> b
-snd (_,y)       = y
+-- --snd            :: (a,b) -> b
+-- snd            :: forall a . (a,b) -> b
+-- snd (_,y)       = y
 
-curry          :: ((a,b) -> c) -> (a -> b -> c)
-curry f x y     = f (x,y)
+-- curry          :: ((a,b) -> c) -> (a -> b -> c)
+-- curry f x y     = f (x,y)
 
-uncurry        :: (a -> b -> c) -> ((a,b) -> c)
-uncurry f p     = f (fst p) (snd p)
+-- uncurry        :: (a -> b -> c) -> ((a,b) -> c)
+-- uncurry f p     = f (fst p) (snd p)
 
 id             :: a -> a
 id    x         = x
@@ -1622,231 +1626,231 @@ id    x         = x
 const          :: a -> b -> a
 const k _       = k
 
-(.)            :: (b -> c) -> (a -> b) -> (a -> c)
-(f . g) x       = f (g x)
+-- (.)            :: (b -> c) -> (a -> b) -> (a -> c)
+-- (f . g) x       = f (g x)
 
-flip           :: (a -> b -> c) -> b -> a -> c
-flip f x y      = f y x
+-- flip           :: (a -> b -> c) -> b -> a -> c
+-- flip f x y      = f y x
 
-($)            :: (a -> b) -> a -> b
-f $ x           = f x
+-- ($)            :: (a -> b) -> a -> b
+-- f $ x           = f x
 
-until          :: (a -> Bool) -> (a -> a) -> a -> a
-until p f x     = if p x then x else until p f (f x)
-
-
---------------------------------------------------------------
--- Standard list functions
---------------------------------------------------------------
+-- until          :: (a -> Bool) -> (a -> a) -> a -> a
+-- until p f x     = if p x then x else until p f (f x)
 
 
-head             :: [a] -> a
-head (x:_)        = x
+-- --------------------------------------------------------------
+-- -- Standard list functions
+-- --------------------------------------------------------------
 
-last             :: [a] -> a
-last [x]          = x
-last (_:xs)       = last xs
 
-tail             :: [a] -> [a]
-tail (_:xs)       = xs
+-- head             :: [a] -> a
+-- head (x:_)        = x
 
-init             :: [a] -> [a]
-init [x]          = []
-init (x:xs)       = x : init xs
+-- last             :: [a] -> a
+-- last [x]          = x
+-- last (_:xs)       = last xs
 
-null             :: [a] -> Bool
-null []           = True
-null (_:_)        = False
+-- tail             :: [a] -> [a]
+-- tail (_:xs)       = xs
 
-(++)             :: [a] -> [a] -> [a]
-[]     ++ ys      = ys
-(x:xs) ++ ys      = x : (xs ++ ys)
+-- init             :: [a] -> [a]
+-- init [x]          = []
+-- init (x:xs)       = x : init xs
 
-map              :: (a -> b) -> [a] -> [b]
-map f xs          = [ f x | x <- xs ]
+-- null             :: [a] -> Bool
+-- null []           = True
+-- null (_:_)        = False
 
-filter           :: (a -> Bool) -> [a] -> [a]
-filter p xs       = [ x | x <- xs, p x ]
+-- (++)             :: [a] -> [a] -> [a]
+-- []     ++ ys      = ys
+-- (x:xs) ++ ys      = x : (xs ++ ys)
 
-concat           :: [[a]] -> [a]
-concat            = foldr (++) []
+-- map              :: (a -> b) -> [a] -> [b]
+-- map f xs          = [ f x | x <- xs ]
 
-length           :: [a] -> Int
-length            = foldl' (\n _ -> n + (1::Int)) (0::Int)
+-- filter           :: (a -> Bool) -> [a] -> [a]
+-- filter p xs       = [ x | x <- xs, p x ]
 
-(!!)             :: [a] -> Int -> a
-xs     !! n | n<0 = error "Prelude.!!: negative index"
-[]     !! _       = error "Prelude.!!: index too large"
-(x:_)  !! 0       = x
-(_:xs) !! n       = xs !! (n-1)
+-- concat           :: [[a]] -> [a]
+-- concat            = foldr (++) []
 
-foldl            :: (a -> b -> a) -> a -> [b] -> a
-foldl f z []      = z
-foldl f z (x:xs)  = foldl f (f z x) xs
+-- -- length           :: [a] -> Int
+-- -- length            = foldl' (\n _ -> n + (1::Int)) (0::Int)
 
-foldl'           :: (a -> b -> a) -> a -> [b] -> a
-foldl' f a []     = a
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
-foldl' f a (x:xs) = (foldl' f $! f a x) xs
-#else
-foldl' f a (x:xs) = let !fax = f a x in foldl' f fax xs
-#endif
+-- -- (!!)             :: [a] -> Int -> a
+-- -- xs     !! n | n<0 = error "Prelude.!!: negative index"
+-- -- []     !! _       = error "Prelude.!!: index too large"
+-- -- (x:_)  !! 0       = x
+-- -- (_:xs) !! n       = xs !! (n-1)
 
-foldl1           :: (a -> a -> a) -> [a] -> a
-foldl1 f (x:xs)   = foldl f x xs
+-- foldl            :: (a -> b -> a) -> a -> [b] -> a
+-- foldl f z []      = z
+-- foldl f z (x:xs)  = foldl f (f z x) xs
 
-scanl            :: (a -> b -> a) -> a -> [b] -> [a]
-scanl f q xs      = q : (case xs of
-                         []   -> []
-                         x:xs -> scanl f (f q x) xs)
+-- foldl'           :: (a -> b -> a) -> a -> [b] -> a
+-- foldl' f a []     = a
+-- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+-- foldl' f a (x:xs) = (foldl' f $! f a x) xs
+-- #else
+-- foldl' f a (x:xs) = let !fax = f a x in foldl' f fax xs
+-- #endif
 
-scanl1           :: (a -> a -> a) -> [a] -> [a]
-scanl1 _ []       = []
-scanl1 f (x:xs)   = scanl f x xs
+-- foldl1           :: (a -> a -> a) -> [a] -> a
+-- foldl1 f (x:xs)   = foldl f x xs
 
-foldr            :: (a -> b -> b) -> b -> [a] -> b
-foldr f z []      = z
-foldr f z (x:xs)  = f x (foldr f z xs)
+-- scanl            :: (a -> b -> a) -> a -> [b] -> [a]
+-- scanl f q xs      = q : (case xs of
+--                          []   -> []
+--                          x:xs -> scanl f (f q x) xs)
 
-foldr1           :: (a -> a -> a) -> [a] -> a
-foldr1 f [x]      = x
-foldr1 f (x:xs)   = f x (foldr1 f xs)
+-- scanl1           :: (a -> a -> a) -> [a] -> [a]
+-- scanl1 _ []       = []
+-- scanl1 f (x:xs)   = scanl f x xs
 
-scanr            :: (a -> b -> b) -> b -> [a] -> [b]
-scanr f q0 []     = [q0]
-scanr f q0 (x:xs) = f x q : qs
-                    where qs@(q:_) = scanr f q0 xs
+-- foldr            :: (a -> b -> b) -> b -> [a] -> b
+-- foldr f z []      = z
+-- foldr f z (x:xs)  = f x (foldr f z xs)
 
-scanr1           :: (a -> a -> a) -> [a] -> [a]
-scanr1 f []       = []
-scanr1 f [x]      = [x]
-scanr1 f (x:xs)   = f x q : qs
-                    where qs@(q:_) = scanr1 f xs
+-- foldr1           :: (a -> a -> a) -> [a] -> a
+-- foldr1 f [x]      = x
+-- foldr1 f (x:xs)   = f x (foldr1 f xs)
 
-iterate          :: (a -> a) -> a -> [a]
-iterate f x       = x : iterate f (f x)
+-- scanr            :: (a -> b -> b) -> b -> [a] -> [b]
+-- scanr f q0 []     = [q0]
+-- scanr f q0 (x:xs) = f x q : qs
+--                     where qs@(q:_) = scanr f q0 xs
 
-repeat           :: a -> [a]
-repeat x          = xs where xs = x:xs
+-- scanr1           :: (a -> a -> a) -> [a] -> [a]
+-- scanr1 f []       = []
+-- scanr1 f [x]      = [x]
+-- scanr1 f (x:xs)   = f x q : qs
+--                     where qs@(q:_) = scanr1 f xs
 
-replicate        :: Int -> a -> [a]
-replicate n x     = take n (repeat x)
+-- iterate          :: (a -> a) -> a -> [a]
+-- iterate f x       = x : iterate f (f x)
 
-cycle            :: [a] -> [a]
-cycle []          = error "Prelude.cycle: empty list"
-cycle xs          = xs' where xs'=xs++xs'
+-- repeat           :: a -> [a]
+-- repeat x          = xs where xs = x:xs
 
-take                :: Int -> [a] -> [a]
-take n _  | n <= 0  = []
-take _ []           = []
-take n (x:xs)       = x : take (n-1) xs
+-- -- replicate        :: Int -> a -> [a]
+-- -- replicate n x     = take n (repeat x)
 
-drop                :: Int -> [a] -> [a]
-drop n xs | n <= 0  = xs
-drop _ []           = []
-drop n (_:xs)       = drop (n-1) xs
+-- cycle            :: [a] -> [a]
+-- cycle []          = error "Prelude.cycle: empty list"
+-- cycle xs          = xs' where xs'=xs++xs'
 
-splitAt               :: Int -> [a] -> ([a], [a])
-splitAt n xs | n <= 0 = ([],xs)
-splitAt _ []          = ([],[])
-splitAt n (x:xs)      = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
+-- take                :: Int -> [a] -> [a]
+-- take n _  | n <= 0  = []
+-- take _ []           = []
+-- take n (x:xs)       = x : take (n-1) xs
 
-takeWhile           :: (a -> Bool) -> [a] -> [a]
-takeWhile p []       = []
-takeWhile p (x:xs)
-         | p x       = x : takeWhile p xs
-         | otherwise = []
+-- drop                :: Int -> [a] -> [a]
+-- drop n xs | n <= 0  = xs
+-- drop _ []           = []
+-- drop n (_:xs)       = drop (n-1) xs
 
-dropWhile           :: (a -> Bool) -> [a] -> [a]
-dropWhile p []       = []
-dropWhile p xs@(x:xs')
-         | p x       = dropWhile p xs'
-         | otherwise = xs
+-- splitAt               :: Int -> [a] -> ([a], [a])
+-- splitAt n xs | n <= 0 = ([],xs)
+-- splitAt _ []          = ([],[])
+-- splitAt n (x:xs)      = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
 
-span, break         :: (a -> Bool) -> [a] -> ([a],[a])
-span p []            = ([],[])
-span p xs@(x:xs')
-         | p x       = (x:ys, zs)
-         | otherwise = ([],xs)
-                       where (ys,zs) = span p xs'
-break p              = span (not . p)
+-- takeWhile           :: (a -> Bool) -> [a] -> [a]
+-- takeWhile p []       = []
+-- takeWhile p (x:xs)
+--          | p x       = x : takeWhile p xs
+--          | otherwise = []
 
-lines     :: String -> [String]
-lines ""   = []
-lines s    = let (l,s') = break ('\n'==) s
-             in l : case s' of []      -> []
-                               (_:s'') -> lines s''
+-- dropWhile           :: (a -> Bool) -> [a] -> [a]
+-- dropWhile p []       = []
+-- dropWhile p xs@(x:xs')
+--          | p x       = dropWhile p xs'
+--          | otherwise = xs
 
-words     :: String -> [String]
-words s    = case dropWhile isSpace s of
-                  "" -> []
-                  s' -> w : words s''
-                        where (w,s'') = break isSpace s'
+-- span, break         :: (a -> Bool) -> [a] -> ([a],[a])
+-- span p []            = ([],[])
+-- span p xs@(x:xs')
+--          | p x       = (x:ys, zs)
+--          | otherwise = ([],xs)
+--                        where (ys,zs) = span p xs'
+-- break p              = span (not . p)
 
-unlines   :: [String] -> String
-unlines []      = []
-unlines (l:ls)  = l ++ '\n' : unlines ls
+-- lines     :: String -> [String]
+-- lines ""   = []
+-- lines s    = let (l,s') = break ('\n'==) s
+--              in l : case s' of []      -> []
+--                                (_:s'') -> lines s''
 
-unwords   :: [String] -> String
-unwords []      =  ""
-unwords [w]     = w
-unwords (w:ws)  = w ++ ' ' : unwords ws
+-- words     :: String -> [String]
+-- words s    = case dropWhile isSpace s of
+--                   "" -> []
+--                   s' -> w : words s''
+--                         where (w,s'') = break isSpace s'
 
-reverse   :: [a] -> [a]
-reverse    = foldl (flip (:)) []
+-- unlines   :: [String] -> String
+-- unlines []      = []
+-- unlines (l:ls)  = l ++ '\n' : unlines ls
 
-and, or   :: [Bool] -> Bool
-and        = foldr (&&) True
-or         = foldr (||) False
+-- unwords   :: [String] -> String
+-- unwords []      =  ""
+-- unwords [w]     = w
+-- unwords (w:ws)  = w ++ ' ' : unwords ws
 
-any, all  :: (a -> Bool) -> [a] -> Bool
-any p      = or  . map p
-all p      = and . map p
+-- reverse   :: [a] -> [a]
+-- reverse    = foldl (flip (:)) []
 
-elem, notElem    :: Eq a => a -> [a] -> Bool
-elem              = any . (==)
-notElem           = all . (/=)
+-- and, or   :: [Bool] -> Bool
+-- and        = foldr (&&) True
+-- or         = foldr (||) False
 
-lookup           :: Eq a => a -> [(a,b)] -> Maybe b
-lookup k []       = Nothing
-lookup k ((x,y):xys)
-      | k==x      = Just y
-      | otherwise = lookup k xys
+-- any, all  :: (a -> Bool) -> [a] -> Bool
+-- any p      = or  . map p
+-- all p      = and . map p
 
-sum, product     :: Num a => [a] -> a
-sum               = foldl' (+) 0
-product           = foldl' (*) 1
+-- elem, notElem    :: Eq a => a -> [a] -> Bool
+-- elem              = any . (==)
+-- notElem           = all . (/=)
 
-maximum, minimum :: Ord a => [a] -> a
-maximum           = foldl1 max
-minimum           = foldl1 min
+-- lookup           :: Eq a => a -> [(a,b)] -> Maybe b
+-- lookup k []       = Nothing
+-- lookup k ((x,y):xys)
+--       | k==x      = Just y
+--       | otherwise = lookup k xys
 
-concatMap        :: (a -> [b]) -> [a] -> [b]
--- concatMap f       = concat . map f    -- this definition cannot be used, because map is defined as a list comprehension, which is desugared using concatMap
-concatMap _ []      = []
-concatMap f (x:xs)  = f x ++ concatMap f xs
+-- -- sum, product     :: Num a => [a] -> a
+-- -- sum               = foldl' (+) 0
+-- -- product           = foldl' (*) 1
 
-zip              :: [a] -> [b] -> [(a,b)]
-zip               = zipWith  (\a b -> (a,b))
+-- maximum, minimum :: Ord a => [a] -> a
+-- maximum           = foldl1 max
+-- minimum           = foldl1 min
 
-zip3             :: [a] -> [b] -> [c] -> [(a,b,c)]
-zip3              = zipWith3 (\a b c -> (a,b,c))
+-- concatMap        :: (a -> [b]) -> [a] -> [b]
+-- -- concatMap f       = concat . map f    -- this definition cannot be used, because map is defined as a list comprehension, which is desugared using concatMap
+-- concatMap _ []      = []
+-- concatMap f (x:xs)  = f x ++ concatMap f xs
 
-zipWith                  :: (a->b->c) -> [a]->[b]->[c]
-zipWith z (a:as) (b:bs)   = z a b : zipWith z as bs
-zipWith _ _      _        = []
+-- zip              :: [a] -> [b] -> [(a,b)]
+-- zip               = zipWith  (\a b -> (a,b))
 
-zipWith3                 :: (a->b->c->d) -> [a]->[b]->[c]->[d]
-zipWith3 z (a:as) (b:bs) (c:cs)
-                          = z a b c : zipWith3 z as bs cs
-zipWith3 _ _ _ _          = []
+-- zip3             :: [a] -> [b] -> [c] -> [(a,b,c)]
+-- zip3              = zipWith3 (\a b c -> (a,b,c))
 
-unzip                    :: [(a,b)] -> ([a],[b])
-unzip                     = foldr (\(a,b) ~(as,bs) -> (a:as, b:bs)) ([], [])
+-- zipWith                  :: (a->b->c) -> [a]->[b]->[c]
+-- zipWith z (a:as) (b:bs)   = z a b : zipWith z as bs
+-- zipWith _ _      _        = []
 
-unzip3                   :: [(a,b,c)] -> ([a],[b],[c])
-unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
-                                  ([],[],[])
+-- zipWith3                 :: (a->b->c->d) -> [a]->[b]->[c]->[d]
+-- zipWith3 z (a:as) (b:bs) (c:cs)
+--                           = z a b c : zipWith3 z as bs cs
+-- zipWith3 _ _ _ _          = []
+
+-- unzip                    :: [(a,b)] -> ([a],[b])
+-- unzip                     = foldr (\(a,b) ~(as,bs) -> (a:as, b:bs)) ([], [])
+
+-- unzip3                   :: [(a,b,c)] -> ([a],[b],[c])
+-- unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
+--                                   ([],[],[])
 
 -- --------------------------------------------------------------
 -- -- PreludeText
@@ -2096,141 +2100,142 @@ data ExitCode = ExitSuccess | ExitFailure Int
                 
 
 data SomeException' x                          -- alphabetical order of constructors required, assumed Int encoding in comment
-  = ArithException      ArithException      -- 0
-  | ArrayException      ArrayException      -- 1
-  | AssertionFailed     String              -- 2
-  | AsyncException      AsyncException      -- 3
-  | BlockedOnDeadMVar                       -- 4
-  | Deadlock                                -- 5
-  -- | DynException        Dynamic
-  | ErrorCall           String              -- 6
-  | ExitException       ExitCode            -- 7 
-  | IOException         x                   -- 8 -- IO exceptions (from 'ioError')
-  | NoMethodError       String              -- 9
-  | NonTermination                          -- 10
-  | PatternMatchFail    String              -- 11
-  | RecConError         String              -- 12
-  | RecSelError         String              -- 13
-  | RecUpdError         String              -- 14
-  deriving (Generic)
+  = ErrorCall           String              -- 6
+--   = ArithException      ArithException      -- 0
+--   | ArrayException      ArrayException      -- 1
+--   | AssertionFailed     String              -- 2
+--   | AsyncException      AsyncException      -- 3
+--   | BlockedOnDeadMVar                       -- 4
+--   | Deadlock                                -- 5
+--   -- | DynException        Dynamic
+--   | ErrorCall           String              -- 6
+--   | ExitException       ExitCode            -- 7 
+--   | IOException         x                   -- 8 -- IO exceptions (from 'ioError')
+--   | NoMethodError       String              -- 9
+--   | NonTermination                          -- 10
+--   | PatternMatchFail    String              -- 11
+--   | RecConError         String              -- 12
+--   | RecSelError         String              -- 13
+--   | RecUpdError         String              -- 14
+--   deriving (Generic)
 
-data ArithException
-  = Overflow
-  | Underflow
-  | LossOfPrecision
-  | DivideByZero
-  | Denormal
-  deriving (Eq, Ord, Generic)
+-- data ArithException
+--   = Overflow
+--   | Underflow
+--   | LossOfPrecision
+--   | DivideByZero
+--   | Denormal
+--   deriving (Eq, Ord, Generic)
 
-data ArrayException
-  = IndexOutOfBounds    String
-  | UndefinedElement    String
-  deriving (Eq, Ord, Generic)
+-- data ArrayException
+--   = IndexOutOfBounds    String
+--   | UndefinedElement    String
+--   deriving (Eq, Ord, Generic)
 
-data AsyncException
-  = HeapOverflow							-- 0
-  | StackOverflow		String				-- 1
-  | ThreadKilled							-- 2
-  deriving (Eq, Ord, Generic)
-
-
-----------------------------------------------------------------
--- Monadic I/O implementation
-----------------------------------------------------------------
-
-newtype State s = State s
-data RealWorld = RealWorld			-- known to compiler
-  deriving Generic
-type IOWorld = State RealWorld
-
--- newtype IO a = IO (IOWorld -> IOResult a)
-newtype IO a = IO {unIO :: (IOWorld -> (IOWorld, a))}
--- newtype IO a = IO (IOWorld -> a)
-
--- newtype IOResult a = IOResult a
-
--- Only 1 real world exist, never make a RealWorld elsewhere. Currently it is just there for the type system only.
--- This should be in the RTS... as a primitive?
-realWorld :: RealWorld
-realWorld = RealWorld
-ioWorld :: IOWorld
-ioWorld = State realWorld
-
-{-
-ioFromPrim :: (IOWorld -> a) -> IO a
-ioFromPrim f
-  = IO (\w -> let !x = f w 
-              in (w, x)
-       )
-
-primbindIO :: IO a -> (a -> IO b) -> IO b
-primbindIO (IO io) f
-  = IO (\w -> case io w of
-                (w', x) -> let !x' = x
-                           in case f x' of
-                               IO fx -> fx w'
-       )
--}
-
--- This IO variant behaves just like a ST: s -> (s,a), threading a state
-ioFromPrim :: (IOWorld -> a) -> IO a
-ioFromPrim f
-  = IO (\w -> let !x = f w
-              in (w, x)
-       )
-
-primbindIO :: IO a -> (a -> IO b) -> IO b
-primbindIO (IO io) f
-  = IO (\w -> case io w of
-                (!w', x) -> case f x of
-                               IO fx -> fx w'
-       )
-
-primretIO :: a -> IO a
-primretIO x
-  = IO (\w -> (w, x))
-
-{-
--- This IO variant only gets an additional state param which triggers the computation, but returns only a result (no tupling with state)
-ioFromPrim :: (IOWorld -> a) -> IO a
-ioFromPrim f
-  = IO (\w -> let x = f w
-              in  let !x2 = x   -- as a side effect, this will update x
-                  in x               -- do not use x2 here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
-       )
-
-primbindIO :: IO a -> (a -> IO b) -> IO b
-primbindIO (IO io) f
-  = IO (\w -> case io w of
-                x -> let !x' = x    -- as a side effect, this will update x
-                     in case f x of      -- do not use x' here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
-                         IO fx -> fx w
-       )
-
-primretIO :: a -> IO a
-primretIO x
-  = IO (\w -> x)
--}
-
--- instance Functor IO where
---     fmap f x = x >>= (return . f)
-
--- instance Monad IO where
---     (>>=)  = primbindIO
---     return = primretIO
---     -- fail s = ioError (userError s)
+-- data AsyncException
+--   = HeapOverflow							-- 0
+--   | StackOverflow		String				-- 1
+--   | ThreadKilled							-- 2
+--   deriving (Eq, Ord, Generic)
 
 
+-- ----------------------------------------------------------------
+-- -- Monadic I/O implementation
+-- ----------------------------------------------------------------
+
+-- newtype State s = State s
+-- data RealWorld = RealWorld			-- known to compiler
+--   deriving Generic
+-- type IOWorld = State RealWorld
+
+-- -- newtype IO a = IO (IOWorld -> IOResult a)
+-- newtype IO a = IO {unIO :: (IOWorld -> (IOWorld, a))}
+-- -- newtype IO a = IO (IOWorld -> a)
+
+-- -- newtype IOResult a = IOResult a
+
+-- -- Only 1 real world exist, never make a RealWorld elsewhere. Currently it is just there for the type system only.
+-- -- This should be in the RTS... as a primitive?
+-- realWorld :: RealWorld
+-- realWorld = RealWorld
+-- ioWorld :: IOWorld
+-- ioWorld = State realWorld
+
+-- {-
+-- ioFromPrim :: (IOWorld -> a) -> IO a
+-- ioFromPrim f
+--   = IO (\w -> let !x = f w 
+--               in (w, x)
+--        )
+
+-- primbindIO :: IO a -> (a -> IO b) -> IO b
+-- primbindIO (IO io) f
+--   = IO (\w -> case io w of
+--                 (w', x) -> let !x' = x
+--                            in case f x' of
+--                                IO fx -> fx w'
+--        )
+-- -}
+
+-- -- This IO variant behaves just like a ST: s -> (s,a), threading a state
+-- ioFromPrim :: (IOWorld -> a) -> IO a
+-- ioFromPrim f
+--   = IO (\w -> let !x = f w
+--               in (w, x)
+--        )
+
+-- primbindIO :: IO a -> (a -> IO b) -> IO b
+-- primbindIO (IO io) f
+--   = IO (\w -> case io w of
+--                 (!w', x) -> case f x of
+--                                IO fx -> fx w'
+--        )
+
+-- primretIO :: a -> IO a
+-- primretIO x
+--   = IO (\w -> (w, x))
+
+-- {-
+-- -- This IO variant only gets an additional state param which triggers the computation, but returns only a result (no tupling with state)
+-- ioFromPrim :: (IOWorld -> a) -> IO a
+-- ioFromPrim f
+--   = IO (\w -> let x = f w
+--               in  let !x2 = x   -- as a side effect, this will update x
+--                   in x               -- do not use x2 here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
+--        )
+
+-- primbindIO :: IO a -> (a -> IO b) -> IO b
+-- primbindIO (IO io) f
+--   = IO (\w -> case io w of
+--                 x -> let !x' = x    -- as a side effect, this will update x
+--                      in case f x of      -- do not use x' here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
+--                          IO fx -> fx w
+--        )
+
+-- primretIO :: a -> IO a
+-- primretIO x
+--   = IO (\w -> x)
+-- -}
+
+-- -- instance Functor IO where
+-- --     fmap f x = x >>= (return . f)
+
+-- -- instance Monad IO where
+-- --     (>>=)  = primbindIO
+-- --     return = primretIO
+-- --     -- fail s = ioError (userError s)
 
 
-----------------------------------------------------------------
--- exit is also an IO primitive
-----------------------------------------------------------------
 
-foreign import prim primExitWith      :: forall a . Int -> a
 
-exitWithIntCode     :: Int -> IO a
-exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
+-- ----------------------------------------------------------------
+-- -- exit is also an IO primitive
+-- ----------------------------------------------------------------
+
+-- foreign import prim primExitWith      :: forall a . Int -> a
+
+-- exitWithIntCode     :: Int -> IO a
+-- exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 
 
 %%]
@@ -2241,7 +2246,7 @@ exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 -- Defaulting
 ----------------------------------------------------------------
 
-default Num Integer
+-- default Num Integer
 -- default Real Integer
 -- default Enum Integer
 -- default Integral Integer

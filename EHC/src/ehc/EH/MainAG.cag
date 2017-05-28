@@ -84,6 +84,8 @@
 %%]
 %%[(8 counting) hs import(qualified {%{EH}CountingAnalysis.Substitution} as S)
 %%]
+%%[(8 counting) hs import(Control.Arrow (first))
+%%]
 
 %%[(90 codegen) hs import({%{EH}CodeGen.BuiltinPrims},{%{EH}Foreign})
 %%]

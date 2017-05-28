@@ -7,6 +7,9 @@
 %%[(8 counting) hs import({%{EH}CountingAnalysis})
 %%]
 
+%%[(8 counting) hs import({%{EH}CountingAnalysis.Pretty}, UHC.Util.Pretty)
+%%]
+
 %%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
 %%]
 
@@ -44,68 +47,71 @@ class Subst a where
   substSolution a (Solution as ts ss) = subst a as ts ss
 
   subst :: a -> AnnSol -> TySol -> SchemeSol -> a
+  subst = substM Set.empty
+
+  substM :: Set HsName -> a -> AnnSol -> TySol -> SchemeSol -> a
 
 instance Subst Expr where
-  subst a am tm sm = subst_Syn_Expr $ wrap_Expr (sem_Expr a) 
-    (Inh_Expr am sm tm)
+  substM m a am tm sm = subst_Syn_Expr $ wrap_Expr (sem_Expr a) 
+    (Inh_Expr am sm tm m)
 
 instance Subst Annotation where
-  subst a am tm sm = subst_Syn_Annotation $ wrap_Annotation (sem_Annotation a) 
-    (Inh_Annotation am sm tm)
+  substM m a am tm sm = subst_Syn_Annotation $ wrap_Annotation (sem_Annotation a) 
+    (Inh_Annotation am sm tm m)
 
 instance Subst Type where
-  subst a am tm sm = subst_Syn_Type $ wrap_Type (sem_Type a) 
-    (Inh_Type am sm tm)
+  substM m a am tm sm = subst_Syn_Type $ wrap_Type (sem_Type a) 
+    (Inh_Type am sm tm m)
 
 instance Subst Constraint where
-  subst a am tm sm = subst_Syn_Constraint $ wrap_Constraint (sem_Constraint a) 
-    (Inh_Constraint am sm tm)
+  substM m a am tm sm = subst_Syn_Constraint $ wrap_Constraint (sem_Constraint a) 
+    (Inh_Constraint am sm tm m)
 
 instance Subst Constraints where
-  subst a am tm sm = subst_Syn_Constraints $ wrap_Constraints (sem_Constraints a) 
-    (Inh_Constraints am sm tm)
+  substM m a am tm sm = subst_Syn_Constraints $ wrap_Constraints (sem_Constraints a) 
+    (Inh_Constraints am sm tm m)
 
 instance Subst Field where
-  subst a am tm sm = subst_Syn_Field $ wrap_Field (sem_Field a) 
-    (Inh_Field am sm tm)
+  substM m a am tm sm = subst_Syn_Field $ wrap_Field (sem_Field a) 
+    (Inh_Field am sm tm m)
 
 instance Subst EtaType where
-  subst a am tm sm = subst_Syn_EtaType $ wrap_EtaType (sem_EtaType a) 
-    (Inh_EtaType am sm tm)
+  substM m a am tm sm = subst_Syn_EtaType $ wrap_EtaType (sem_EtaType a) 
+    (Inh_EtaType am sm tm m)
 
 instance Subst RhoType where
-  subst a am tm sm = subst_Syn_RhoType $ wrap_RhoType (sem_RhoType a) 
-    (Inh_RhoType am sm tm)
+  substM m a am tm sm = subst_Syn_RhoType $ wrap_RhoType (sem_RhoType a) 
+    (Inh_RhoType am sm tm m)
 
 instance Subst RhoScheme where
-  subst a am tm sm = subst_Syn_RhoScheme $ wrap_RhoScheme (sem_RhoScheme a) 
-    (Inh_RhoScheme am sm tm)
+  substM m a am tm sm = subst_Syn_RhoScheme $ wrap_RhoScheme (sem_RhoScheme a) 
+    (Inh_RhoScheme am sm tm m)
 
 instance Subst Env where
-  subst a am tm sm = subst_Syn_Env $ wrap_Env (sem_Env a) 
-    (Inh_Env am sm tm)
+  substM m a am tm sm = subst_Syn_Env $ wrap_Env (sem_Env a) 
+    (Inh_Env am sm tm m)
 
 instance Subst Scheme where
-  subst a am tm sm = subst_Syn_Scheme $ wrap_Scheme (sem_Scheme a) 
-    (Inh_Scheme am sm tm)
+  substM m a am tm sm = subst_Syn_Scheme $ wrap_Scheme (sem_Scheme a) 
+    (Inh_Scheme am sm tm m)
     
 instance Subst [Annotation] where
-  subst xs am tm sm = map (\x -> subst x am tm sm) xs
+  substM m xs am tm sm = map (\x -> substM m x am tm sm) xs
 
 instance Subst [Type] where
-  subst xs am tm sm = map (\x -> subst x am tm sm) xs
+  substM m xs am tm sm = map (\x -> substM m x am tm sm) xs
 
 instance Subst Fields where
-  subst xs am tm sm = map (\x -> subst x am tm sm) xs
+  substM m xs am tm sm = map (\x -> substM m x am tm sm) xs
  
 instance Subst [Fields] where
-  subst xss am tm sm = map (\xs -> subst xs am tm sm) xss
+  substM m xss am tm sm = map (\xs -> substM m xs am tm sm) xss
 
 instance Subst [RhoType] where
-  subst xs am tm sm = map (\x -> subst x am tm sm) xs
+  substM m xs am tm sm = map (\x -> substM m x am tm sm) xs
 
 instance Subst [[RhoType]] where
-  subst xss am tm sm = map (\xs -> subst xs am tm sm) xss
+  substM m xss am tm sm = map (\xs -> substM m xs am tm sm) xss
 
 %%]
 
@@ -115,18 +121,25 @@ instance Subst [[RhoType]] where
 
 %%[(8 counting) ag
 
-ATTR * [ substAnnMap: AnnSol substTyMap: TySol substSchemeMap: SchemeSol | | subst: SELF ]
+ATTR * [ substVars: {Set HsName} substAnnMap: AnnSol substTyMap: TySol substSchemeMap: SchemeSol | | subst: SELF ]
+
+SEM Annotation Type Scheme
+  | Var
+    lhs.subst = maybe @loc.subst @loc.newSubst $ Map.lookup @v @loc.subMap
+    loc.newSet = Set.insert @v @lhs.substVars
+    loc.newSubst = \x -> if @v `Set.member` @lhs.substVars then error (show $ ("recursive sub", @v, @lhs.substVars, ppMap @loc.subMap)) else
+                      substM @loc.newSet x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap
 
 SEM Annotation
   | Var
-    lhs.subst = maybe @loc.subst (\x -> subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substAnnMap
+    loc.subMap = @lhs.substAnnMap
 
 SEM Type
   | Var
-    lhs.subst = maybe @loc.subst (\x -> subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substTyMap
+    loc.subMap = @lhs.substTyMap
 
 SEM Scheme
   | Var
-    lhs.subst = maybe @loc.subst (\x -> subst x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap) $ Map.lookup @v @lhs.substSchemeMap
+    loc.subMap = @lhs.substSchemeMap
 
 %%]

@@ -234,7 +234,7 @@ initTyGam
 %%[[97
       , (hsnInteger			, mkTGI tyInteger		
 %%[[(8 counting)
-                                                                            [] [] (CA.Type_Error "hsnInteger")
+                                                                            [] [] (CA.Type_Data (mkHNm "Integer") [] [])
 %%]]
           )
 %%]]

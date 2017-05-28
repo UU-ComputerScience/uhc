@@ -15,7 +15,7 @@ module UHC.Base   -- adapted from the Hugs prelude
     Eq         (..),
     Ord        (..),
     Bounded    (..),
-    Num        (..),
+    -- Num        (..),
     -- Real       (..),
     -- Integral   (..),
     -- Fractional (..),
@@ -94,13 +94,16 @@ module UHC.Base   -- adapted from the Hugs prelude
 --  standard functions
     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
     map, (++), concat, filter,
-    head, last, tail, init, null, length, (!!),
+    head, last, tail, init, null, 
+    -- length, (!!),
     foldl, foldl1, scanl, scanl1, foldr, foldr1, scanr, scanr1,
-    iterate, repeat, replicate, cycle,
-    take, drop, splitAt, takeWhile, dropWhile, span, break,
+    iterate, repeat, 
+    -- replicate, 
+    cycle,
+    -- take, drop, splitAt, takeWhile, dropWhile, span, break,
     lines, words, unlines, unwords, reverse, and, or,
     any, all, elem, notElem, lookup,
-    sum, product, maximum, minimum, concatMap, 
+    -- sum, product, maximum, minimum, concatMap, 
     zip, zip3, zipWith, zipWith3, unzip, unzip3,
 
 --  standard functions for Char
@@ -363,17 +366,17 @@ iterate' f x = x : (let !fx = f x in iterate' f fx)
 --------------------------------------------------------------
 
 -- class (Eq a, Show a) => Num a where
-class (Eq a) => Num a where
-    (+), (-), (*)  :: a -> a -> a
-    negate         :: a -> a
-    abs, signum    :: a -> a
-    fromInteger    :: Integer -> a
-    fromInt        :: Int -> a
+-- class (Eq a) => Num a where
+--     (+), (-), (*)  :: a -> a -> a
+--     negate         :: a -> a
+--     abs, signum    :: a -> a
+--     fromInteger    :: Integer -> a
+--     fromInt        :: Int -> a
 
-    -- Minimal complete definition: All, except negate or (-)
-    x - y           = x + negate y
-    -- fromInt         = fromIntegral
-    negate x        = 0 - x
+--     -- Minimal complete definition: All, except negate or (-)
+--     x - y           = x + negate y
+--     -- fromInt         = fromIntegral
+--     negate x        = 0 - x
 
 -- class (Num a, Ord a) => Real a where
 --     toRational     :: a -> Rational
@@ -505,8 +508,8 @@ class (Eq a) => Num a where
 -- Overloaded numeric functions
 --------------------------------------------------------------
 
-subtract       :: Num a => a -> a -> a
-subtract        = flip (-)
+-- subtract       :: Num a => a -> a -> a
+-- subtract        = flip (-)
 
 -- even, odd        :: (Integral a) => a -> Bool
 -- even n           =  n `rem` 2 == 0
@@ -541,14 +544,14 @@ subtract        = flip (-)
 -- realToFrac     :: (Real a, Fractional b) => a -> b
 -- realToFrac      = fromRational . toRational
 
-absReal :: (Ord a,Num a) => a -> a
-absReal x    | x >= 0    = x
-             | otherwise = -x
+-- absReal :: (Ord a,Num a) => a -> a
+-- absReal x    | x >= 0    = x
+--              | otherwise = -x
 
-signumReal :: (Ord a,Num a) => a -> a
-signumReal x | x == 0    =  0
-             | x > 0     =  1
-             | otherwise = -1
+-- signumReal :: (Ord a,Num a) => a -> a
+-- signumReal x | x == 0    =  0
+--              | x > 0     =  1
+--              | otherwise = -1
 
 
 
@@ -870,13 +873,13 @@ PRIMS_CONVERSION_INTEGER(Int,primIntegerToInt,primIntToInteger)
 
 PRIMS_EQ(Int,primEqInt,primNeInt)
 PRIMS_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
-PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
+-- PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
 
 INSTANCE_EQ(Int,primEqInt,primNeInt)
 INSTANCE_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
 INSTANCE_BOUNDED(Int,primMinInt,primMaxInt)
 -- INSTANCE_REAL(Int)
-INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
+-- INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
 
 
 foreign import prim primDivInt       :: Int -> Int -> Int
@@ -1002,15 +1005,15 @@ instance Eq  Integer where
 instance Ord Integer where
     compare = primCmpInteger
 
-instance Num Integer where
-    (+)           = primAddInteger
-    (-)           = primSubInteger
-    negate        = primNegInteger
-    (*)           = primMulInteger
-    abs           = absReal
-    signum        = signumReal
-    fromInteger x = x
-    fromInt       = primIntToInteger
+-- instance Num Integer where
+--     (+)           = primAddInteger
+--     (-)           = primSubInteger
+--     negate        = primNegInteger
+--     (*)           = primMulInteger
+--     abs           = absReal
+--     signum        = signumReal
+--     fromInteger x = x
+--     fromInt       = primIntToInteger
 
 -- instance Real Integer where
 --     toRational x = x % 1
@@ -1671,14 +1674,14 @@ filter p xs       = [ x | x <- xs, p x ]
 concat           :: [[a]] -> [a]
 concat            = foldr (++) []
 
-length           :: [a] -> Int
-length            = foldl' (\n _ -> n + (1::Int)) (0::Int)
+-- length           :: [a] -> Int
+-- length            = foldl' (\n _ -> n + (1::Int)) (0::Int)
 
-(!!)             :: [a] -> Int -> a
-xs     !! n | n<0 = error "Prelude.!!: negative index"
-[]     !! _       = error "Prelude.!!: index too large"
-(x:_)  !! 0       = x
-(_:xs) !! n       = xs !! (n-1)
+-- (!!)             :: [a] -> Int -> a
+-- xs     !! n | n<0 = error "Prelude.!!: negative index"
+-- []     !! _       = error "Prelude.!!: index too large"
+-- (x:_)  !! 0       = x
+-- (_:xs) !! n       = xs !! (n-1)
 
 foldl            :: (a -> b -> a) -> a -> [b] -> a
 foldl f z []      = z
@@ -1729,27 +1732,27 @@ iterate f x       = x : iterate f (f x)
 repeat           :: a -> [a]
 repeat x          = xs where xs = x:xs
 
-replicate        :: Int -> a -> [a]
-replicate n x     = take n (repeat x)
+-- replicate        :: Int -> a -> [a]
+-- replicate n x     = take n (repeat x)
 
 cycle            :: [a] -> [a]
 cycle []          = error "Prelude.cycle: empty list"
 cycle xs          = xs' where xs'=xs++xs'
 
-take                :: Int -> [a] -> [a]
-take n _  | n <= 0  = []
-take _ []           = []
-take n (x:xs)       = x : take (n-1) xs
+-- take                :: Int -> [a] -> [a]
+-- take n _  | n <= 0  = []
+-- take _ []           = []
+-- take n (x:xs)       = x : take (n-1) xs
 
-drop                :: Int -> [a] -> [a]
-drop n xs | n <= 0  = xs
-drop _ []           = []
-drop n (_:xs)       = drop (n-1) xs
+-- drop                :: Int -> [a] -> [a]
+-- drop n xs | n <= 0  = xs
+-- drop _ []           = []
+-- drop n (_:xs)       = drop (n-1) xs
 
-splitAt               :: Int -> [a] -> ([a], [a])
-splitAt n xs | n <= 0 = ([],xs)
-splitAt _ []          = ([],[])
-splitAt n (x:xs)      = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
+-- splitAt               :: Int -> [a] -> ([a], [a])
+-- splitAt n xs | n <= 0 = ([],xs)
+-- splitAt _ []          = ([],[])
+-- splitAt n (x:xs)      = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
 
 takeWhile           :: (a -> Bool) -> [a] -> [a]
 takeWhile p []       = []
@@ -1813,9 +1816,9 @@ lookup k ((x,y):xys)
       | k==x      = Just y
       | otherwise = lookup k xys
 
-sum, product     :: Num a => [a] -> a
-sum               = foldl' (+) 0
-product           = foldl' (*) 1
+-- sum, product     :: Num a => [a] -> a
+-- sum               = foldl' (+) 0
+-- product           = foldl' (*) 1
 
 maximum, minimum :: Ord a => [a] -> a
 maximum           = foldl1 max
@@ -2241,7 +2244,7 @@ exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 -- Defaulting
 ----------------------------------------------------------------
 
-default Num Integer
+-- default Num Integer
 -- default Real Integer
 -- default Enum Integer
 -- default Integral Integer

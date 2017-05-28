@@ -97,22 +97,32 @@ instance Solve Constraints where
   solve [] = return $ traceShow "empty" mempty
   solve (c1:c2) = do
     s <- use solution
+    return $ traceRun "solveConstraints-s" s
     cm <- use constraintMap
+    return $ traceRun "solveConstraints-cm" cm
     -- c1' <- solve (if isTypeConstraint c1 then traceShow (ppAnnFree s >-< "constraint:" >-< ppAnnFree (c1, cm)) c1 else c1)
     c1' <- solve c1
+    return $ traceRun "solveConstraints-c1'" c1'
     phi1 <- use solution
-    let c2' = S.substSolution c2 phi1 
+    return $ traceRun "solveConstraints-phi1" phi1
+    let c2' = traceRun2 ("solveConstraints-c2'", c2, phi1) $ S.substSolution c2 phi1 
     c3 <- solve c2'
-    traceShowT ("*****************c13:", c1, c2, c2', c3, "#######################") $ return $ c1' <> c3    
+    return $ traceRun "solveConstraints-c3" c3
+    r <- return $ c1' <> c3    
+    return $ traceRun "solveConstraints-r" r    
 
 instance Solve Constraint where
-  solve (Constraint_Ann c) = traceShowS ("annStart",c,"annend") $ solve c
-  solve (Constraint_Eq c) = traceShowS ("eqStart", c, "eqend") $ solve c
+  solve (Constraint_Ann c) = solve c
+  solve (Constraint_Eq c) = solve c
   solve (Constraint_Gen name tau nu delta nu0 delta0 c1 env sigma) = do
-    solve $ genEq delta delta0
-    solve $ genEq nu nu0
+    r1 <- solve $ genEq delta delta0
+    return $ traceRun "solveConstraint_Gen-r1" r1    
+    r2 <- solve $ genEq nu nu0
+    return $ traceRun "solveConstraint_Gen-r2" r2    
     s1 <- use solution
+    return $ traceRun "solveConstraint_Gen-s1" s1    
     conMap <- use constraintMap
+    return $ traceRun "solveConstraint_Gen-conMap" conMap
     let c1' = S.substSolution (conMap M.! c1) s1
     c2 <- genTrace2 (name,"Gen: ", sigma) $ solveFixMulti c1' 
     constraintMap %= M.insert c1 c2
@@ -304,6 +314,14 @@ instance Solve ConstraintEq where
     solve $ genEq r1 r2 <> genEq e1 e2
   solve c@(ConstraintEq_Type (Type_Tup ts1) (Type_Tup ts2)) = 
     solve $ genEq ts1 ts2
+  solve (ConstraintEq_Type (Type_App t1f t1a) (Type_App t2f t2a)) =
+    solve $ genEq t1f t2f <> genEq t1a t2a  
+  solve (ConstraintEq_Type a@(Type_Data{}) b@(Type_App{})) =
+    solve $ ConstraintEq_Type b a
+  solve (ConstraintEq_Type (Type_App t1f t1a) (Type_Data n as ts)) = if ts == [] then solve $ genEq t1f (Type_Data n as ts) else
+      let t = last ts
+          ts' = traceShow ("appError:", n) $ init ts
+      in solve $ genEq t1f (Type_Data n as ts') <> genEq t1a t
   
   solve (ConstraintEq_Scheme a1@(Scheme_Var x1) a2@(Scheme_Var x2)) = do
     s <- use solution
@@ -353,40 +371,58 @@ instance AddToSol Scheme where
   addToSol n s = solution %= \x -> x & schemeSol %~ M.insert n s
 
 solveFix :: Constraints -> SolveT Constraints
-solveFix c = traceShowS "startFix" $ do
+solveFix c = do
   s <- use solution
   ps <- use partSolution
   let c' = S.substSolution c s
-  c1' <- traceShowT ("solveFixStart", c, c', "SolveFixEnd") $ solve c'
+  c1' <- solve c'
   let c1 = toConstraints c1'
   cm <- use constraintMap
   s' <- use solution
   ps' <- use partSolution
   -- let changed = traceShow ("nc:",countConstraints c1 cm, length $ show s', length $ show ps') $ c1 /= c' || s /= s' || ps /= ps'
   let changed = c1 /= c' || s /= s' || ps /= ps'
-  if changed then
-    solveFix c1
-  else
-    return c1
+  r <- if changed then
+        solveFix c1
+       else
+        return c1
+  return $ traceRun "solveFix" r
+
+traceRun :: Show a => String -> a -> a
+-- traceRun m x = traceShow (m ++ ".start") $ seqForce x $ traceShow (m ++ ".end") x 
+traceRun m x = seqForce x x
+
+traceRun2 :: (Show c) => (String, Constraints, Solution) -> c -> c
+-- traceRun2 (m,cs,sol) x = traceShow (m ++ ".start" ++ ms) $ seqForce x $ traceShow (m ++ ".end") x 
+  -- where ms = if length cs == 78 then show sol else ""
+traceRun2 _ x = seqForce x x
+
+seqForce :: Show a => a -> b -> b
+seqForce x = seq (length $ show x)
+
+force :: Show a => String -> a -> a
+force s = id
+-- force s x = traceShow ("forceSolving", s, length $ show x) x
 
 countConstraints :: Constraints -> Map a Constraints -> Int
-countConstraints c cm = length c + sum (map length $ M.elems cm) 
+countConstraints c cm = traceRun "countConstraints" $ length c + sum (map length $ M.elems cm) 
 
 solveFixMulti :: Constraints -> SolveT Constraints
 solveFixMulti c = do
   let (bc, gc, ic) = sortConstraints c
-  cm1 <- use constraintMap
+  -- cm1 <- use constraintMap
   -- cs <- traceShow ("sort",countConstraints (bc <> gc <> ic) cm1) $ solveFix bc
-  cs <- solveFix bc
-  cm2 <- use constraintMap
+  cs <- seq bc $ solveFix bc
+  -- cm2 <- use constraintMap
   -- cs' <- traceShow ("first", countConstraints cs cm2) $ solveFix $ cs <> ic
   cs' <- solveFix $ cs <> ic
-  cm3 <- use constraintMap
+  -- cm3 <- use constraintMap
   -- traceShow ("second", countConstraints cs' cm3) $ solveFix $ cs' <> gc
-  solveFix $ cs' <> gc
+  r <- solveFix $ cs' <> gc
+  return $ traceRun "solveFixMulti" r
 
 defaulting :: [(HsName, Set AnnVal)] -> (HsName, AnnVal)
-defaulting ((n, as):xs) = defaulting' n (maxAnnVal as) xs
+defaulting ((n, as):xs) = traceRun "defaulting" $ defaulting' n (maxAnnVal as) xs
   where defaulting' beta w [] = (beta, w)
         defaulting' beta2 w2 ((beta1,wi):psi) = if w2 .< w1 
           then 
@@ -396,7 +432,7 @@ defaulting ((n, as):xs) = defaulting' n (maxAnnVal as) xs
           where w1 = maxAnnVal wi
 
 maxAnnVal :: Set AnnVal -> AnnVal
-maxAnnVal = intToAnnVal . minimum . map annValToInt . S.toList
+maxAnnVal = traceRun "maxAnnVal" . intToAnnVal . minimum . map annValToInt . S.toList
 
 annValToInt :: AnnVal -> Int
 annValToInt x 
@@ -423,14 +459,13 @@ intToAnnVal n = case n of
 (.<) = (>) `on` annValToInt
 
 solveDef :: Constraints -> SolveState -> Solution
-solveDef c ss = if M.null psiFinal then traceShow "finished" $ solveFinalSchemes ss' else 
-  traceShow "solveDef" 
-    $ solveDef (singleC (Constraint_Eq $ ConstraintEq_Ann (Annotation_Var beta) $ Annotation_Val w) <> c1)
+solveDef c ss = traceRun "solveDef" $ if M.null psiFinal then traceShow "finished" $ solveFinalSchemes ss' else 
+  solveDef (singleC (Constraint_Eq $ ConstraintEq_Ann (Annotation_Var beta) $ Annotation_Val w) <> c1)
     $ ss' & solution .~ phi1 & partSolution .~ psi1
   where phi = ss ^. solution
         psi = ss ^. partSolution
         c' = S.substSolution c phi
-        (c1, ss') = traceShowS ("solveDefStart", c, c', "solveDefEnd") $ runState (solveFixMulti c') ss
+        (c1, ss') = runState (solveFixMulti c') ss
         phi1 = ss' ^. solution
         psi1 = ss' ^. partSolution
         psi1' = M.filter (\x -> S.size x > 1) psi1
@@ -439,7 +474,7 @@ solveDef c ss = if M.null psiFinal then traceShow "finished" $ solveFinalSchemes
         (beta, w) = traceShow2def "Def: " $ defaulting $ M.toList psiFinal
 
 sortConstraints :: Constraints -> (Constraints, Constraints, Constraints)
-sortConstraints = traceShowS "Sorting:" . sortConstraints'
+sortConstraints = traceRun "sortConstraints" . sortConstraints'
   where 
         sortConstraints' [] = ([],[],[])
         sortConstraints' (c:xs) = case c of
@@ -450,14 +485,14 @@ sortConstraints = traceShowS "Sorting:" . sortConstraints'
           where (ec, gcs, cs) = sortConstraints' xs
 
 solveFinalSchemes :: SolveState -> Solution
-solveFinalSchemes = evalState solveFinalSchemes'
+solveFinalSchemes = traceRun "solveFinalSchemes" . evalState solveFinalSchemes'
 
 solveFinalSchemes' :: SolveT Solution
-solveFinalSchemes' = traceShowT "solveFinal:" $ do
+solveFinalSchemes' = do
   s <- use solution 
-  s' <- traceShowS s $ mapM solveFinalScheme $ s ^. schemeSol
+  s' <- mapM solveFinalScheme $ s ^. schemeSol
   solution %= \x -> x & schemeSol .~ s'
-  traceShow "solve ready" $ use solution
+  use solution
 
 solveFinalScheme :: Scheme -> SolveT Scheme
 solveFinalScheme s@(Scheme_Forall as ts cs t) = traceShow ("finalSub") $ do

@@ -1,9 +1,22 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-  "files.exclude": {
-    "**/bin/": true,
-    "**/build/": true,
-    "**/install/": true,
-    "**/install-for-build/": true
-  }
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.ag": true,
+        "**/*.hs": true,
+        "**/*.hs-cpp": true,
+        "**/bin": true,
+        "**/build": true,
+        "**/install": true,
+        "**/install-for-build": true
+    },
+    "files.eol": "\n",
+    "terminal.integrated.scrollback": 10000,
+    "terminal.integrated.cwd": "EHC/catests",
+    "terminal.integrated.shell.windows": "C:\\Windows\\Sysnative\\bash.exe",
+    "search.useIgnoreFilesByDefault": true
 }

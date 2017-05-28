@@ -46,9 +46,6 @@ newtype GatherConstraints = GC {unGc:: Endo Constraints}
 instance Show GatherConstraints where
   show = show . toConstraints
 
-%%]
-
-%%[(8 counting) hs
 type AnnSol = Map HsName Annotation
 type TySol = Map HsName Type
 type SchemeSol = Map HsName Scheme

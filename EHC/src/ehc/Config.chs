@@ -169,7 +169,7 @@ shellCmdLLVMC opts variant = [mkInstallBindirPrefix opts variant ++ "llvmc", "",
 
 %%[8888 export(shellCmdLLVM)
 shellCmdLLVM :: String
-shellCmdLLVM = "" ++ "/mnt/g/universiteit/thesis/uhcCA/EHC/bin/llvm-compilerdriver"
+shellCmdLLVM = "" ++ "/mnt/d/thesis/uhcCA/EHC/bin/llvm-compilerdriver"
 %%]
 
 %%[(8 java || jazy) export(shellCmdJar)

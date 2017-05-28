@@ -132,7 +132,7 @@ endif
 # whether GMP library should be build and linked in when compiling
 ifeq (ltm,gmp)
 EHC_CFG_USE_GMP							:= $(filter $(EHC_VARIANT),$(EHC_GMP_VARIANTS))
-EHC_CFG_GMP_LIB_ARCHIVE					:= /mnt/g/universiteit/thesis/uhcCA/EHC/extlibs/gmp/gmp-4.2.1.tar.gz
+EHC_CFG_GMP_LIB_ARCHIVE					:= /mnt/d/thesis/uhcCA/EHC/extlibs/gmp/gmp-4.2.1.tar.gz
 endif
 
 ###########################################################################################
@@ -151,7 +151,7 @@ UHCRUN_EXEC_NAME		:= $(UHC_EXEC_NAME)r
 
 GIT_VERSION_EXISTS		:= yes
 GIT_VERSION_CMD			:= cat GITHASH
-GIT_REVISION			:= TiborCountingAnalysis@1ea414b8a1
+GIT_REVISION			:= TiborCountingAnalysis@7b9ca49ed1
 
 ###########################################################################################
 # Locations in source, build, install, distribution
@@ -410,7 +410,7 @@ SHUFFLE_OPTS_WHEN_EHC					:=
 SHUFFLE_OPTS_WHEN_UHC					:= --agmodheader=yes
 
 # UUAGC options
-UUAGC_OPTS_WHEN_EHC						:= --aoag 
+UUAGC_OPTS_WHEN_EHC						:= --aoag
 UUAGC_OPTS_WHEN_EHC_AST_DATA			:=  --datarecords
 UUAGC_OPTS_WHEN_EHC_AST_SEM				:= 
 

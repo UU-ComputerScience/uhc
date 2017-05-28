@@ -236,7 +236,7 @@ specialtrace :: DataGam -> DataGam
 -- specialtrace = id
 specialtrace dg = traceShow ("DataGam:", dgl) dg
   where dgl = map f $ gamToAssocL dg
-        f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
+        f (n, dgi) = (n, dgiTyVars dgi, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
 
 specialTgiTrace :: TyGam -> a -> a
 specialTgiTrace tg = id
@@ -268,19 +268,22 @@ ATTR TyExpr TyExprAnn [ | | caIsStrict USE {(||)} {False}: {Bool}]
 ATTR DataFields [ | | caFields USE {(++)} {[]}: {[CA.Field]}]
 ATTR DataField [ | | caFields: {[CA.Field]}]
 ATTR TyVars [ | | caTyVars USE {(++)} {[]}: {[HsName]} ]
+-- ATTR TyExpr [ | | caClassTyVars: {[HsName]} ]
 ATTR TyVar TyExpr [ | | caTyVars: {[HsName]} ]
 ATTR RowTyExpr [ | | caTypes: {[CA.Type]} caLength: {Int}]
 ATTR TyExpr PrExpr PrExprs TyExprs RowTyExpr [ caLevel: {Int} | | ]
+ATTR PrExpr [ | | caDictNm: {HsName} ]
 ATTR Expr Decl Decls [ | | caGathTyGam USE {Map.union} {Map.empty}: {Map.Map HsName ([HsName], [HsName], CA.Type)}]
-ATTR Decl Decls [ | | caClassTySigs USE {++} {[]}: {[CA.Field]} caClassTyVars USE {++} {[]}: {[HsName]}]
+ATTR Decl Decls [ | | caClassTySigs USE {++} {[]}: {[(HsName, CA.Field)]} ]
+-- ATTR Decl Decls [ | | caClassTySigs USE {++} {[]}: {[(HsName, CA.Field)]} caClassTyVars USE {++} {[]}: {[HsName]}]
 ATTR TyExprs [ | | caTypes: {[CA.Type]}]
-ATTR TyExpr PrExpr TyExprs PrExprs [ | | caPrExprs USE {(++)} {[]}: {[CA.Field]}]
+ATTR TyExpr PrExpr TyExprs PrExprs [ | | caPrExprs USE {(++)} {[]}: {[(HsName, CA.Field)]}]
 
 ATTR * [ | | copy: SELF]
 
 SEM TyExpr
   | Pred
-    lhs.caPrExprs = (CA.Field_Lazy $ CA.RhoType_Rho (CA.EtaType_Eta @prExpr.caType @loc.nu) @loc.delta) : @prExpr.caPrExprs
+    lhs.caPrExprs = (@prExpr.caDictNm, CA.Field_Lazy $ CA.RhoType_Rho (CA.EtaType_Eta @prExpr.caType @loc.nu) @loc.delta) : @prExpr.caPrExprs
     loc.(nu,delta,fv) = if 0 < @lhs.caIota then 
                             (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, @lhs.caFreshVar + 2) 
                           else (CA.annTop, CA.annTop, @lhs.caFreshVar)
@@ -316,22 +319,31 @@ SEM Decl
     tyExpr.caLevel = 1
   | Type
     lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
-    lhs.caGathTyGam = Map.singleton @tyNm (@lhs.caLocalAnnVars, @tyExpr.caTyVars, @tyExpr.caType)
+    lhs.caGathTyGam = Map.singleton @tyNm (@lhs.caLocalAnnVars, Set.toList $ Set.fromList @tyExpr.caTyVars, @tyExpr.caType)
   | TySig
-    lhs.caClassTySigs = [CA.Field_Lazy $ CA.RhoType_Rho (CA.EtaType_Eta @tyExpr.caType @loc.nu) @loc.delta]
+    lhs.caClassTySigs = [(@nm, CA.Field_Lazy $ CA.RhoType_Rho (CA.EtaType_Eta @tyExpr.caType @loc.nu) @loc.delta)]
     loc.(nu,delta,fv) = if 0 < @lhs.caIota then 
                             (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, @lhs.caFreshVar + 2) 
                           else (CA.annTop, CA.annTop, @lhs.caFreshVar)
     tyExpr.caFreshVar = @loc.fv
-    lhs.caClassTyVars = @tyExpr.caTyVars
+    -- lhs.caClassTyVars = @tyExpr.caClassTyVars
   | Class
     lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @decls.caFreshVar - 1]
     lhs.caLocalDataNamesGath = Set.singleton @dataDictNm
     lhs.caLocalDataGamGath = Map.singleton @dataDictNm (length @lhs.caLocalAnnVars)
     lhs.caClassTySigs = []
-    lhs.caClassTyVars = []
-    loc.caClassTySigsWithPred = init @tyPrExpr.caPrExprs ++ @decls.caClassTySigs
+    -- lhs.caClassTyVars = []
+    loc.caClassTyVars = extractVarNames $ snd $ last @tyPrExpr.caPrExprs
+    loc.camap = Map.fromList $ map (first show) $ init @tyPrExpr.caPrExprs ++ @decls.caClassTySigs
+    loc.caClassTySigsWithPred = traceShow ("prExpr:", @tyPrExpr.copy, @tyPrExpr.caPrExprs) $ Map.elems @loc.camap
     tyPrExpr.caLevel = 1
+
+{
+extractVarNames :: CA.Field -> [HsName]
+extractVarNames f = extractVarNamesData $ CA.getType f
+  where extractVarNamesData (CA.Type_Data _ _ ts) = map extractVarNamesType ts
+        extractVarNamesType (CA.Type_Var v) = v
+}
 
 SEM DataField
   | Field
@@ -376,10 +388,13 @@ SEM PrExpr
        .caNumIdg = fmap (length . dgiAnnVars) $ @dictName `dataGamLookup` @lhs.caDataGam
        .caNumPanic = Just $ panic $ "Could not find class data type " ++ show @loc.dictName
     loc.anns = map (\x -> @loc.caToAnn $ mkHNm $ show $ @lhs.caFreshVar + x) [0 .. @loc.caNumAnn - 1]
-    lhs.caType = if @loc.localGroup then CA.Type_Data @dictName (map @loc.caToAnn @lhs.caLocalAnnVars) []
-                  else CA.Type_Data @dictName (map (\x -> @loc.caToAnn $ mkHNm $ show $ @lhs.caFreshVar + x) [0 .. @loc.caNumAnn - 1])  []
+    loc.tys = @tyExprs.caTypes
+    lhs.caType = if @loc.localGroup then CA.Type_Data @dictName (map @loc.caToAnn @lhs.caLocalAnnVars) @loc.tys
+                  else CA.Type_Data @dictName (map (\x -> @loc.caToAnn $ mkHNm $ show $ @lhs.caFreshVar + x) [0 .. @loc.caNumAnn - 1]) @loc.tys
+    lhs.caDictNm = @loc.dictName
   | * - Class
     lhs.caType = panic "Unsupported construct during data type annotation algorithm: Pred"
+    lhs.caDictNm = panic "Unsupported construct during data type annotation algorithm: Pred"
 
 
 SEM TyExpr
@@ -387,6 +402,16 @@ SEM TyExpr
     lhs.caTyVars = @tyVar : @tyExpr.caTyVars
   | * - Lam Ann
     lhs.caTyVars = []
+
+-- SEM TyExpr
+--   | Lam
+--     lhs.caClassTyVars = @tyVar : @tyExpr.caClassTyVars
+--   | Var
+--     lhs.caClassTyVars = [@nm]
+--   | App
+--     lhs.caClassTyVars = @func.caClassTyVars ++ @arg.caClassTyVars 
+--   | * - Lam Ann Var App AppTop Parens
+--     lhs.caClassTyVars = []
 
 SEM TyExpr
   | *

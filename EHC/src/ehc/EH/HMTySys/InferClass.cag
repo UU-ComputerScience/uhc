@@ -104,7 +104,7 @@ SEM Decl
                                                         then emptyGam
                                                         else let dgi = (mkDGIPlain @dataDictNm dty @clsKiVar [@dataDictNm] (@dataDictNm `Map.singleton` dti))
 %%[[(8 counting)
-                                                                        {dgiAnnVars = @lhs.caLocalAnnVars, dgiTyVars = @decls.caClassTyVars}
+                                                                        {dgiAnnVars = @lhs.caLocalAnnVars, dgiTyVars = @loc.caClassTyVars}
 %%]]                                                       
                                                                  dty = [@dataDictTy] `appArr` recSum [(@dataDictNm,@clsTyRec)]
                                                                  fldTyL = @clsAllFldTyL -- assocLMapKey Just @clsAllFldL

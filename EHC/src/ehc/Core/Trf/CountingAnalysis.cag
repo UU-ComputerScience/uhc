@@ -39,6 +39,9 @@ Implementation of Hidde's counting Analysis
 %%[(8 counting) hs import(Data.List (zipWith7), Control.Arrow(first))
 %%]
 
+%%[(8 counting) hs import(Control.Applicative ((<|>)))
+%%]
+
 Debugging
 %%[(8 counting) hs import(qualified Debug.Trace as T)
 %%]
@@ -58,45 +61,47 @@ PRAGMA strictcase
 %%[(8 counting) hs
 traceShow :: Show a => a -> b -> b
 -- traceShow x = id
--- traceShow x = seq (length $ show x)
+traceShow x = seq (length $ show x)
 -- traceShow = T.traceShow
 -- traceShow x = T.traceShow (length $ show x)
-traceShow x = T.traceShow (length $ show x, x)
+-- traceShow x = T.traceShow (length $ show x, x)
 
 traceShowId x = traceShow x x
 
 traceShowTrip :: Show a => (String, a, String) -> b -> b
 traceShowTrip (n, e, _) = T.traceShow (n, length $ show e, n)
+-- traceShowTrip (n, e, _) = traceShow (n, length $ show e, n)
 -- traceShowId :: Show a => a -> a
 -- -- traceShowId x = T.traceShow (length $ show x) x
 -- traceShowId = T.traceShowId
 
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
--- cmodTrfAnalysis subeff d imps m = 
---   traceShowTrip ("im", im, "im") $
---   traceShowTrip ("e", e, "e") $
---   traceShowTrip ("extra", extra, "extra") $
---   traceShowTrip ("modName", modName, "modName") $
---   traceShowTrip ("ex", ex, "ex") $
---   -- traceShowTrip ("syn", syn, "syn") $
---   traceShowTrip ("c", c, "c") $
---   traceShowTrip ("conMap", conMap, "conMap") $
---   traceShowTrip ("e'", e', "e'") $
---   traceShowTrip ("bindingEnv", bindingEnv, "bindingEnv") $
---   traceShowTrip ("s", s, "s") $
---   traceShowTrip ("finalBindEnv", finalBindEnv, "finalBindEnv") $
---   traceShowTrip ("newLamMap", newLamMap, "newLamMap") $
---   traceShowTrip ("finalLamMap", finalLamMap, "finalLamMap") $
---   traceShowTrip ("bi", bi, "bi") $
---   traceShowTrip ("res", res, "res") $
---   traceShowTrip ("test", test, "test") $ 
---   panic "finished with everything"
-cmodTrfAnalysis subeff d imps m = traceShow (pp e, e) $ traceShow (ppMapAnnFree bi) $ test `seq` res
+cmodTrfAnalysis subeff d imps m = 
+  traceShowTrip ("im", im, "im") $
+  traceShowTrip ("e", e, "e") $
+  traceShowTrip ("extra", extra, "extra") $
+  traceShowTrip ("modName", modName, "modName") $
+  traceShowTrip ("ex", ex, "ex") $
+  -- traceShowTrip ("syn", syn, "syn") $
+  traceShowTrip ("c", c, "c") $
+  traceShowTrip ("conMap", conMap, "conMap") $
+  traceShowTrip ("e'", e', "e'") $
+  traceShowTrip ("bindingEnv", bindingEnv, "bindingEnv") $
+  traceShowTrip ("s", s, "s") $
+  traceShowTrip ("finalBindEnv", finalBindEnv, "finalBindEnv") $
+  traceShowTrip ("newLamMap", newLamMap, "newLamMap") $
+  traceShowTrip ("finalLamMap", finalLamMap, "finalLamMap") $
+  traceShowTrip ("bi", bi, "bi") $
+  traceShowTrip ("res", res, "res") $
+  traceShowTrip ("test", test, "test") $ 
+  panic "finished with everything"
+-- cmodTrfAnalysis subeff d imps m = T.traceShow (pp e) $ traceShow (ppMapAnnFree bi) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow (pp e, e, m) $ traceShow (ppMapAnnFree bi, ex) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow m (m,imps)
-  where Module_Module e extra = toCAModule im m
-        syn = wrap_Expr (sem_Expr $ traceShowId $ fixInstanceScopeFull e)
+  where Module_Module e1 extra = toCAModule im m
+        e = traceShowId $ scopeTest Nothing S.empty $ (\x -> T.traceShow (length $ show x) x) $ fixInstanceScopeFull $ (\x -> T.traceShow (length $ show x) x) $ scopeTest Nothing S.empty e1
+        syn = wrap_Expr (sem_Expr e)
                 Inh_Expr
                   { dataEnv_Inh_Expr = specialtrace d
                   , exports_Inh_Expr = ex
@@ -114,7 +119,7 @@ cmodTrfAnalysis subeff d imps m = traceShow (pp e, e) $ traceShow (ppMapAnnFree 
         finalBindEnv = traceShow "subbind" $ S.substSolution bindingEnv s
         newLamMap = toLamMp finalBindEnv
         finalLamMap = lamMpMergeInto (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType=a}) const newLamMap imps
-        s = traceShow ("num constraints: ", countConstraints c conMap) $ printTrace c conMap $ solveDef c 
+        s = T.traceShow ("num constraints: ", countConstraints c conMap) $ printTrace c conMap $ solveDef c 
           (emptySolveState {_freshVar = freshVar_Syn_Expr syn, _toHsName = toHsName, _constraintMap = conMap})
         toHsName v = mkHNm $ show modName ++ ".CA@" ++ show v
         modName = moduleNm_CModule_Mod m
@@ -122,13 +127,20 @@ cmodTrfAnalysis subeff d imps m = traceShow (pp e, e) $ traceShow (ppMapAnnFree 
         res = if M.size bi == S.size ex 
           then traceShow "return info" $ (toCModule $ Module_Module (S.substSolution e' s) extra, finalLamMap) 
           else panic $ "not all exported symbols have a type: " ++ show (ppMap finalBindEnv)
-        test = if m /= toCModule (Module_Module e extra) then panic "toCModule . toCAModule /= id"  else ()
+        test = if m /= toCModule (Module_Module e1 extra) then panic "toCModule . toCAModule /= id"  else ()
 
 specialtrace :: DataGam -> DataGam
 specialtrace = id
 -- specialtrace dg = traceShow ("DataGamGen:", dgl) dg
   -- where dgl = map f $ gamToAssocL dg
   --       f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
+
+traceRun :: Show a => String -> a -> a
+traceRun m x = traceShow (m ++ ".start") $ seqForce x $ traceShow (m ++ ".end") x 
+
+seqForce :: Show a => a -> b -> b
+seqForce x = seq (length $ show x)
+
 
 type DataEnv = DataGam
 
@@ -187,8 +199,52 @@ seqUnion :: (Ord a, Show a, Show b) => Map a b -> Map a b -> Map a b
 seqUnion m1 m2 = traceShow (m1,m2) $ M.union m1 m2
 
 -- temp
+class ScopeTest a where
+  scopeTest :: Maybe HsName -> Set HsName -> a -> a
+
+instance ScopeTest Expr where
+  scopeTest b i e@(Expr_VarLocal v ex) = (if S.member v i then id else T.traceShow ("Out of scope", v, "in binding", b)) e
+  scopeTest b i e@(Expr_VarImport v ex) = (if S.member v i then id else T.traceShow ("Out of scope", v, "in binding", b)) e
+  scopeTest b i e@(Expr_Const c) = e
+  scopeTest b i e@(Expr_Abs n e1 ex) = Expr_Abs n (scopeTest b (S.insert n i) e1) ex
+  scopeTest b i e@(Expr_AppLocal e1 n ex) = (if S.member n i then id else T.traceShow ("Out of scope", n, "in binding", b)) $ Expr_AppLocal (scopeTest b i e1) n ex
+  scopeTest b i e@(Expr_AppImport e1 n ex) = (if S.member n i then id else T.traceShow ("Out of scope", n, "in binding", b)) $ Expr_AppImport (scopeTest b i e1) n ex
+  scopeTest b i e@(Expr_AppConst e1 c ex) = Expr_AppConst (scopeTest b i e1) c ex
+  scopeTest b i e@(Expr_Let bs e1 ex) = Expr_Let (scopeTest b (S.union i $ definedVars bs) bs) (scopeTest b (S.union i $ definedVars bs) e1) ex
+  scopeTest b i e@(Expr_LetBang x e1 e2 ex) = Expr_LetBang x (scopeTest (b <|> Just x) (S.insert x i) e1) (scopeTest b (S.insert x i) e2) ex
+  scopeTest b i e@(Expr_Con tn cn flds ex) = Expr_Con tn cn (scopeTest b i flds) ex
+  scopeTest b i e@(Expr_Tup flds ex) = Expr_Tup (scopeTest b i flds) ex
+  scopeTest b i e@(Expr_CaseCon e1 alts ex) = Expr_CaseCon (scopeTest b i e1) (scopeTest b i alts) ex
+  scopeTest b i e@(Expr_CaseTup e1 xs e2 ex) = Expr_CaseTup (scopeTest b i e1) xs (scopeTest b (S.union i $ S.fromList xs) e2) ex
+  scopeTest b i e@(Expr_CaseConst e1 alts ex) = Expr_CaseConst (scopeTest b i e1) (scopeTest b i alts) ex
+  scopeTest b i e@(Expr_FFI{}) = e 
+  scopeTest b i e@(Expr_Ann a e1) = Expr_Ann a $ scopeTest b i e1
+  scopeTest b i e@(Expr_AnnCore a e1) = Expr_AnnCore a $ scopeTest b i e1
+
+instance ScopeTest a => ScopeTest [a] where
+  scopeTest b = map . scopeTest b
+
+instance ScopeTest ConVar where
+  scopeTest b i e@(ConVar_VarLocal v) = (if S.member v i then id else T.traceShow ("Out of scope", v, "in binding", b)) e
+  scopeTest b i e@(ConVar_VarImport v) = (if S.member v i then id else T.traceShow ("Out of scope", v, "in binding", b)) e
+  scopeTest b i e@(ConVar_Const c) = e
+
+instance ScopeTest Binding where
+  scopeTest b i (Binding_Bind n e ex) = Binding_Bind n (scopeTest (b <|> Just n) (S.insert n i) e) ex
+
+instance ScopeTest AltCon where
+  scopeTest b i (AltCon_Alt yn cn xs e ex) = AltCon_Alt yn cn xs (scopeTest b (S.union i $ S.fromList xs) e) ex
+
+instance ScopeTest AltConst where
+  scopeTest b i (AltConst_Int c e ex) = AltConst_Int c (scopeTest b i e) ex
+  scopeTest b i (AltConst_Char c e ex) = AltConst_Char c (scopeTest b i e) ex
+  
+
+force :: Show a => a -> a
+force x = T.traceShow ("forced", length $ show x) x
+
 fixInstanceScopeFull :: Expr -> Expr
-fixInstanceScopeFull e = traceShow ("start fixScope", length bs) $ fromBindingList (fixInstanceScope bs, ex)
+fixInstanceScopeFull e = traceShow ("start fixScope", length bs) $ fromBindingList $ force (fixInstanceScope $ force bs, ex)
   where (bs,ex) = toBindingList e
 
 toBindingList :: Expr -> ([(Bindings, CBindCateg)], Expr)
@@ -199,21 +255,79 @@ toBindingList e = ([],e)
 fromBindingList :: ([(Bindings, CBindCateg)], Expr) -> Expr
 fromBindingList (bs, e) = foldr (\(b,extra) ex -> Expr_Let b ex extra) e bs
 
-fixInstanceScope :: [(Bindings, CBindCateg)] -> [(Bindings, CBindCateg)]
-fixInstanceScope (x@(bs1,c1):y@(bs2,c2):xs)
-  | plain && single && scopeError = traceShowTrip ("Swapped instances","","") $ y:x:fixInstanceScope xs
-  | otherwise = traceShow ("fix not swapped", length $ y:xs) $ x : fixInstanceScope (y:xs) 
-  where plain = c1 == CBindCateg_Plain && c2 == CBindCateg_Plain
-        single = True -- length bs1 == 1 && length bs2 == 1
-        scopeError = not $ S.null $ S.intersection defVars scopeVars
-        defVars = definedVars bs2
+
+splitWhile2 :: (a -> a -> Bool) -> [a] -> ([a],[a])
+splitWhile2 f ys@(x:xs@(y:_))
+  | b && null fs = ([x,y], tail zs)
+  | b = (x:fs,zs)
+  | otherwise = ([],ys)
+  where (fs,zs) = splitWhile2 f $ xs
+        b = f x y
+splitWhile2 f x = (x, []) -- sinleton or empty
+
+fixInstanceScopeSingle :: [(Bindings, CBindCateg)] -> [(Bindings, CBindCateg)]
+fixInstanceScopeSingle ys@(x:xs@(y:_)) 
+  | hasScopeError x y = T.traceShow ("swapped", length fs) $ reverse fs ++ fixInstanceScopeSingle zs
+  | otherwise = x:fixInstanceScopeSingle xs
+  where (fs,zs) = splitWhile2 hasScopeError ys
+fixInstanceScopeSingle x = x
+
+hasScopeError :: (Bindings, CBindCateg) -> (Bindings, CBindCateg) -> Bool
+hasScopeError (bs1,c1) (bs2,c2) = not $ S.null $ S.intersection defVars scopeVars
+  where defVars = definedVars bs2
         scopeVars = usedVars bs1
-fixInstanceScope x = x
--- fixInstanceScope [] = []
+
+fixInstanceScope :: [(Bindings, CBindCateg)] -> [(Bindings, CBindCateg)]
+fixInstanceScope xs = T.traceShow (length xs, length xs') $ if xs == xs' then xs' else fixInstanceScope ((\x -> T.traceShow (length $ show x) $ T.traceShow "ScopRec" x) xs')
+  where xs' = fixInstanceScopeSingle xs
+
+-- fixInstanceScopeSingle  :: [(Bindings, CBindCateg)] -> [(Bindings, CBindCateg)]
+-- fixInstanceScopeSingle (x@(bs1,c1):y@(bs2,c2):z@(bs3, c3):xs)
+--   | scopeError12 && scopeError23 = 
+--     T.traceShow ("Swapped123", definedVars bs1, definedVars bs2, definedVars bs3) $ z:fixInstanceScopeSingle (y:x:xs)
+--   | scopeError12 = 
+--     T.traceShow ("Swapped12", definedVars bs1, definedVars bs2) $ y:fixInstanceScopeSingle (x:z:xs)
+--   | scopeError23 = 
+--     T.traceShow ("Swapped23", definedVars bs2, definedVars bs3) $ x:z:fixInstanceScopeSingle (y:xs)
+--   | otherwise = 
+--     x : fixInstanceScopeSingle (y:z:xs) 
+--   where scopeError12 = not $ S.null $ S.intersection defVars2 scopeVars1
+--         defVars2 = definedVars bs2
+--         scopeVars1 = usedVars bs1
+--         scopeError23 = not $ S.null $ S.intersection defVars3 scopeVars2
+--         defVars3 = definedVars bs3
+--         scopeVars2 = usedVars bs2
+-- fixInstanceScopeSingle [x@(bs1,c1),y@(bs2,c2)]
+--   | scopeError = 
+--     T.traceShow ("Swapped", definedVars bs1, definedVars bs2) $ [y,x]
+--   | otherwise = [x,y]
+--   where scopeError = not $ S.null $ S.intersection defVars scopeVars
+--         defVars = definedVars bs2
+--         scopeVars = usedVars bs1
+-- fixInstanceScopeSingle x = x
+-- -- fixInstanceScope [] = []
+
+-- fixInstanceScopeFull :: Expr -> Expr
+-- fixInstanceScopeFull e = fromBindingList (force $ reverse $ force $ fromScopeMap $ force $ toScopeMap $ force bs, ex)
+--   where (bs,ex) = toBindingList e
+
+-- toScopeMap :: [(Bindings, CBindCateg)] -> Map (Set HsName) [(Bindings, CBindCateg)]
+-- toScopeMap [] = M.empty
+-- toScopeMap (x@(bs,_):xs) = T.traceShow (definedVars bs, usedVars bs S.\\ definedVars bs) $  M.insertWith (++) (usedVars bs S.\\ definedVars bs) [x] $ toScopeMap xs
+
+-- fromScopeMap :: Map (Set HsName) [(Bindings, CBindCateg)] -> [(Bindings, CBindCateg)]
+-- fromScopeMap m 
+--   | M.null m = []
+--   | otherwise = bs ++ (fromScopeMap $ force $ M.mapKeysWith (++) (\x -> x S.\\ definedVarsList bs) m')
+--   where m' = M.delete S.empty m
+--         bs = m M.! S.empty
 
 definedVars :: Bindings -> Set HsName
 definedVars [] = S.empty
 definedVars (Binding_Bind n _ _:xs) = S.insert n $ definedVars xs
+
+definedVarsList :: [(Bindings, CBindCateg)] -> Set HsName
+definedVarsList = S.unions . map (definedVars . fst)
 
 class ExtractExprVar a where
   usedVars :: a -> Set HsName
@@ -241,7 +355,7 @@ instance ExtractExprVar Expr where
   usedVars (Expr_Con _ _ flds _) = usedVars flds
   usedVars (Expr_Tup flds _) = usedVars flds 
   usedVars (Expr_CaseCon e alts _) = S.union (usedVars e) $ usedVars alts
-  usedVars (Expr_CaseTup e xs e1 _) = S.unions [usedVars e, S.fromList xs, usedVars e1] 
+  usedVars (Expr_CaseTup e xs e1 _) = S.unions [usedVars e, usedVars e1] S.\\ S.fromList xs 
   usedVars (Expr_CaseConst e alts _) = S.union (usedVars e) $ usedVars alts
   usedVars (Expr_FFI{}) = S.empty 
   usedVars (Expr_Ann _ e) = usedVars e 
@@ -253,7 +367,7 @@ instance ExtractExprVar ConVar where
   usedVars (ConVar_Const v) = S.empty
 
 instance ExtractExprVar AltCon where
-  usedVars (AltCon_Alt _ _ xs e _) = S.union (S.fromList xs) $ usedVars e
+  usedVars (AltCon_Alt _ _ xs e _) = usedVars e S.\\ S.fromList xs
 
 instance ExtractExprVar AltConst where
   usedVars (AltConst_Int _ e _) = usedVars e
