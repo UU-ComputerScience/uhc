@@ -85,8 +85,8 @@ SEM AGItf
 traceShow :: Show a => a -> b -> b
 -- traceShow x = T.traceShow (length $ show x)
 -- traceShow x = id
--- traceShow x = seq (length $ show x)
-traceShow = T.traceShow
+traceShow x = seq (length $ show x)
+-- traceShow = T.traceShow
 
 expandTypeDefs :: TyGam -> TyGam -> DataGam -> DataGam
 -- expandTypeDefs ltg tg d = d

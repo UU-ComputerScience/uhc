@@ -214,6 +214,7 @@ data DataGamInfo
 %%[[(8 counting)
       , dgiAnnVars      :: ![HsName]      -- all annatotation variables 
       , dgiTyVars       :: ![HsName]      -- all tyvars
+      -- , dgiExTyVars     :: ![HsName]      -- todo existensials
 %%]]
 %%[[50
       , dgiConstrNmL 		:: ![HsName]			-- all constructor names

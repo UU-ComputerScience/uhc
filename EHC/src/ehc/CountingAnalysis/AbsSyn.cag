@@ -33,6 +33,7 @@ DATA Type
 DATA Scheme
   | Var v : {HsName}
   | Forall as : {Set HsName} ts : {Set HsName} cs : Constraints t : Type
+  | ForallTemp as : {Set HsName} ts : {Set HsName} cs : {Set Var} t : Type
 
 DATA EtaType
   | Eta t : Type a : Annotation

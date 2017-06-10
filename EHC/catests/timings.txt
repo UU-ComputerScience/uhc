@@ -1,0 +1,4 @@
+ConstraintSolver old
+real    389m41.014s
+user    380m38.594s
+sys     8m47.688s
