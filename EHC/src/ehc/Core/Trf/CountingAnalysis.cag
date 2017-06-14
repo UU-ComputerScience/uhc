@@ -136,10 +136,12 @@ specialtrace = id
   --       f (n, dgi) = (n, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
 
 traceRun :: Show a => String -> a -> a
-traceRun m x = traceShow (m ++ ".start") $ seqForce x $ traceShow (m ++ ".end") x 
+-- traceRun m x = traceShow (m ++ ".start") $ seqForce x $ traceShow (m ++ ".end") x 
+traceRun _ = id
 
 seqForce :: Show a => a -> b -> b
-seqForce x = seq (length $ show x)
+-- seqForce x = seq (length $ show x)
+seqForce _ = id
 
 
 type DataEnv = DataGam

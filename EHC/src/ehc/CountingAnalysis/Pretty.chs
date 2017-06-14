@@ -70,6 +70,10 @@ instance PP Scheme where
     ppCurlysCommas (S.toList as ++ S.toList ts) 
     >#< "." >#< text ("cs: " ++ show (length c))
     >#< "=>"  >#< t >-< indent 4 (vlist c)
+  pp (Scheme_ForallTemp as ts c t) = "forall" >#<
+    ppCurlysCommas (S.toList as ++ S.toList ts) 
+    >#< "." >#< text ("cs: " ++ show (S.size c))
+    >#< "=>"  >#< t >-< indent 4 (hlist $ S.toList c)
 
 instance PP Type where
   pp (Type_Var v) = pp v
@@ -150,6 +154,7 @@ instance PPAnnFree RhoScheme where
 instance PPAnnFree Scheme where
   ppAnnFree (Scheme_Var v) = pp v
   ppAnnFree (Scheme_Forall _ ts _ t) = "forall" >#< ts >|< "." >#< ppAnnFree t
+  ppAnnFree (Scheme_ForallTemp _ ts _ t) = "forall" >#< ts >|< "." >#< ppAnnFree t
 
 instance PPAnnFree Type where
   ppAnnFree (Type_Var v) = pp v
