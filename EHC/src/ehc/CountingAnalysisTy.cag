@@ -16,6 +16,10 @@
 %%[(8 counting) hs import(qualified Data.Sequence as Seq, qualified Data.Foldable as Fold)
 %%]
 
+--debug
+%%[(8 counting) hs import(qualified Debug.Trace as T)
+%%]
+
 %%[(8 counting) ag import({CountingAnalysis/AbsSyn})
 optpragmas
 {
@@ -51,9 +55,9 @@ type TySol = Map HsName Type
 type SchemeSol = Map HsName Scheme
 type PartSolution = Map HsName (Set AnnVal)
 data Solution = Solution 
-  { _annSol :: AnnSol
-  , _tySol :: TySol
-  , _schemeSol :: SchemeSol
+  { _annSol :: !AnnSol
+  , _tySol :: !TySol
+  , _schemeSol :: !SchemeSol
   }
   deriving (Eq, Show)
   

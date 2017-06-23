@@ -314,7 +314,7 @@ instance SolveSingle Constraint where
     addNewConstraint $ Constraint_Eq $ ConstraintEq_Type tau' tau2
     return True
   -- solve c = panic $ "help me: " ++ show c 
-  solveSingle c = traceShow "not solved at all" $ return False
+  solveSingle c = return False
 
 getConstraints :: Set Var -> SolveT Constraints
 getConstraints = fmap (map snd) . getConstraintsWithVar
@@ -519,7 +519,7 @@ instance SolveSingle ConstraintEq where
   solveSingle (ConstraintEq_Type (Type_App t1f t1a) (Type_App t2f t2a)) = do
     addNewConstraint $ genEq t1f t2f <> genEq t1a t2a  
     return True
-  solveSingle (ConstraintEq_Type a@(Type_Data{}) b@(Type_App{})) = do
+  solveSingle (ConstraintEq_Type a b@(Type_App{})) = do
     addNewConstraint $ ConstraintEq_Type b a
     return True
   solveSingle c@(ConstraintEq_Type (Type_App t1f t1a) (Type_Data n as ts)) = 
@@ -532,6 +532,9 @@ instance SolveSingle ConstraintEq where
       in do
         addNewConstraint $ genEq t1f (Type_Data n as ts') <> genEq t1a t
         return True
+  solveSingle c@(ConstraintEq_Type t1@(Type_App{}) t2@(Type_Tup _)) = do
+    addNewConstraint $ genEq t1 $ tupToData t2
+    return True
   
   solveSingle (ConstraintEq_Scheme a1@(Scheme_Var x1) a2@(Scheme_Var x2)) = do
     s <- use solution
@@ -590,6 +593,9 @@ instance SolveSingle ConstraintEq where
       return True
       
   solveSingle c = panic $ "Unsatisfiable constraint(solve eq): " ++ show c
+
+tupToData :: Type -> Type
+tupToData (Type_Tup ts) = Type_Data (mkHNm "_Tup") (concatMap (\x -> [getUsage x, getDemand x]) ts) $ map getType ts
 
 class FilterNotEqual a where
   filterNotEqual :: HsName -> a -> Bool
@@ -696,10 +702,13 @@ traceRun :: Show a => String -> a -> a
 -- traceRun m x = traceShow (m ++ ".start") $ seqForce x $ traceShow (m ++ ".end") x 
 traceRun m x = seqForce x x
 
-traceRun2 :: (Show c) => (String, Constraints, Solution) -> c -> c
--- traceRun2 (m,cs,sol) x = traceShow (m ++ ".start" ++ ms) $ seqForce x $ traceShow (m ++ ".end") x 
-  -- where ms = if length cs == 78 then show sol else ""
-traceRun2 _ x = seqForce x x
+traceRun2 :: (Show c) => String -> c -> c
+traceRun2 m x = traceShow (m ++ ".start") $ seqForce2 x $ traceShow (m ++ ".end") x 
+-- traceRun2 _ x = seqForce2 x x
+
+seqForce2 :: Show a => a -> b -> b
+seqForce2 x = seq (length $ show x)
+-- seqForce2 _ = id
 
 seqForce :: Show a => a -> b -> b
 -- seqForce x = seq (length $ show x)
@@ -876,31 +885,31 @@ solveFinalSchemes = traceShow "startFinalSchemes" $ do
   acs <- use allConstraints
   let filtered = M.filter f acs
       keys = traceShow ("still to do cs", M.size filtered, M.size acs) $ M.keys filtered
-  currentWorkList .= fromListQueue keys
+  currentWorkList .= fromListQueue (traceRun2 "sfss-keys" keys)
   solveFix
   s <- use solution 
-  s' <- mapM solveFinalScheme $ s ^. schemeSol
+  s' <- mapM solveFinalScheme $ traceRun2 (show ("sfss-sfs", s)) s ^. schemeSol
   s2 <- use solution
-  solution .= traceRun "sfs-s" (s & schemeSol .~ s')
+  solution .= traceRun (show ("sfss-s", s2)) (s & schemeSol .~ s')
   where f (Constraint_Ann _) = False
         f _ = True
 
 solveFinalScheme :: Scheme -> SolveT Scheme
-solveFinalScheme s@(Scheme_ForallTemp as ts cs t) = do
-  cs' <- getConstraints cs
-  s <- use solution
-  let as' = S.fromList $ S.substSolution (map Annotation_Var $ S.toList as) s
-      ts' = S.substSolution (map Type_Var $ S.toList ts) s
-      t' = S.substSolution t s
-      hsn = ifsConstraints $ Scheme_Forall (S.fromList $ f $ S.toList as') ts cs' t
-      as'' = S.toList $ as' `S.difference` S.map Annotation_Var hsn
-  return $ removeUnusedVars $ Scheme_Forall (S.fromList $ f as'') (S.fromList $ g ts') (removeUselessConstraints cs' hsn) t'
-  where f (Annotation_Var v:xs) = v : f xs
-        f (_:xs) = f xs
-        f [] = []
-        g (Type_Var v:xs) = v : g xs
-        g (_:xs) = g xs
-        g [] = []
+-- solveFinalScheme s@(Scheme_ForallTemp as ts cs t) = traceShow ("start sfs", s) $ do
+--   cs' <- getConstraints $ traceRun2 "sfs-cs" cs
+--   s <- use solution
+--   let as' = traceRun2 "sfs-as'" $ S.fromList $ S.substSolution (map Annotation_Var $ S.toList as) s
+--       ts' = traceRun2 "sfs-ts'" $ S.substSolution (map Type_Var $ S.toList ts) s
+--       t' = traceRun2 "sfs-ts'" $ S.substSolution t s
+--       hsn = traceRun2 "sfs-hsn" $ ifsConstraints $ Scheme_Forall (S.fromList $ f $ S.toList as') ts cs' t
+--       as'' = traceRun2 "sfs-as''" $ S.toList $ as' `S.difference` S.map Annotation_Var hsn
+--   return $ traceShow "end sfs" $ removeUnusedVars $ Scheme_Forall (S.fromList $ f as'') (S.fromList $ g ts') (removeUselessConstraints cs' hsn) t'
+--   where f (Annotation_Var v:xs) = v : f xs
+--         f (_:xs) = f xs
+--         f [] = []
+--         g (Type_Var v:xs) = v : g xs
+--         g (_:xs) = g xs
+--         g [] = []
 solveFinalScheme s = return s -- panic $ "schemevar in final type: " ++ show s -- return s
 
 influenceSets :: Constraints -> Map HsName (Set HsName)

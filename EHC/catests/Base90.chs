@@ -16,13 +16,13 @@ module UHC.Base   -- adapted from the Hugs prelude
     Ord        (..),
     Bounded    (..),
     Num        (..),
-    -- Real       (..),
-    -- Integral   (..),
-    -- Fractional (..),
-    -- Floating   (..),
-    -- RealFrac   (..),
-    -- RealFloat  (..),
-    -- Enum       (..),
+    Real       (..),
+    Integral   (..),
+    Fractional (..),
+    Floating   (..),
+    RealFrac   (..),
+    RealFloat  (..),
+    Enum       (..),
     -- Functor    (..),
     -- Monad      (..),
     -- Show       (..),
@@ -39,12 +39,12 @@ module UHC.Base   -- adapted from the Hugs prelude
     Int, 
     String,
     Integer, 
-    -- Float, 
-    -- Double, 
+    Float, 
+    Double, 
     IO,
     -- ShowS,
     -- ReadS,
-    -- Rational, 
+    Rational, 
 
     IO            (..), 
     -- IOResult      (..),
@@ -310,44 +310,44 @@ class Bounded a where
     minBound, maxBound :: a
     -- Minimal complete definition: All
 
--- boundedSucc, boundedPred :: (Num a, Bounded a, Enum a) => a -> a
--- boundedSucc x
---   | x == maxBound = error "succ: applied to maxBound"
---   | otherwise     = x+1
--- boundedPred x
---   | x == minBound = error "pred: applied to minBound"
---   | otherwise     = x-1
+boundedSucc, boundedPred :: (Num a, Bounded a, Enum a) => a -> a
+boundedSucc x
+  | x == maxBound = error "succ: applied to maxBound"
+  | otherwise     = x+1
+boundedPred x
+  | x == minBound = error "pred: applied to minBound"
+  | otherwise     = x-1
 
--- boundedEnumFrom       :: (Ord a, Bounded a, Enum a) => a -> [a]
--- boundedEnumFromTo     :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
--- boundedEnumFromThenTo :: (Ord a, Num a, Bounded a, Enum a) => a -> a -> a -> [a]
--- boundedEnumFromThen   :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
+boundedEnumFrom       :: (Ord a, Bounded a, Enum a) => a -> [a]
+boundedEnumFromTo     :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
+boundedEnumFromThenTo :: (Ord a, Num a, Bounded a, Enum a) => a -> a -> a -> [a]
+boundedEnumFromThen   :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
 
--- boundedEnumFrom n     = takeWhile1 (/= maxBound) (iterate succ n)
--- boundedEnumFromTo n m = takeWhile (<= m) (boundedEnumFrom n)
--- boundedEnumFromThen n m =
---     enumFromThenTo n m (if n <= m then maxBound else minBound)
--- boundedEnumFromThenTo n n' m
---   | n' >= n   = if n <= m then takeWhile1 (<= m - delta) ns else []
---   | otherwise = if n >= m then takeWhile1 (>= m - delta) ns else []
---  where
---   delta = n'-n
---   ns = iterate (+delta) n
+boundedEnumFrom n     = takeWhile1 (/= maxBound) (iterate succ n)
+boundedEnumFromTo n m = takeWhile (<= m) (boundedEnumFrom n)
+boundedEnumFromThen n m =
+    enumFromThenTo n m (if n <= m then maxBound else minBound)
+boundedEnumFromThenTo n n' m
+  | n' >= n   = if n <= m then takeWhile1 (<= m - delta) ns else []
+  | otherwise = if n >= m then takeWhile1 (>= m - delta) ns else []
+ where
+  delta = n'-n
+  ns = iterate (+delta) n
 
--- -- takeWhile and one more
--- takeWhile1 :: (a -> Bool) -> [a] -> [a]
--- takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
+-- takeWhile and one more
+takeWhile1 :: (a -> Bool) -> [a] -> [a]
+takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
 
--- numericEnumFrom        :: Num a => a -> [a]
--- numericEnumFromThen    :: Num a => a -> a -> [a]
--- numericEnumFromTo      :: (Ord a, Fractional a) => a -> a -> [a]
--- numericEnumFromThenTo  :: (Ord a, Fractional a) => a -> a -> a -> [a]
--- numericEnumFrom n            = iterate' (+1) n
--- numericEnumFromThen n m      = iterate' (+(m-n)) n
--- numericEnumFromTo n m        = takeWhile (<= m+1/2) (numericEnumFrom n)
--- numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
---                                where p | n' >= n   = (<= m + (n'-n)/2)
---                                        | otherwise = (>= m + (n'-n)/2)
+numericEnumFrom        :: Num a => a -> [a]
+numericEnumFromThen    :: Num a => a -> a -> [a]
+numericEnumFromTo      :: (Ord a, Fractional a) => a -> a -> [a]
+numericEnumFromThenTo  :: (Ord a, Fractional a) => a -> a -> a -> [a]
+numericEnumFrom n            = iterate' (+1) n
+numericEnumFromThen n m      = iterate' (+(m-n)) n
+numericEnumFromTo n m        = takeWhile (<= m+1/2) (numericEnumFrom n)
+numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
+                               where p | n' >= n   = (<= m + (n'-n)/2)
+                                       | otherwise = (>= m + (n'-n)/2)
 
 iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
 #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
@@ -372,134 +372,134 @@ class (Eq a) => Num a where
 
     -- Minimal complete definition: All, except negate or (-)
     x - y           = x + negate y
-    -- fromInt         = fromIntegral
+    fromInt         = fromIntegral
     negate x        = 0 - x
 
--- class (Num a, Ord a) => Real a where
---     toRational     :: a -> Rational
+class (Num a, Ord a) => Real a where
+    toRational     :: a -> Rational
 
--- class (Real a, Enum a) => Integral a where
---     quot, rem, div, mod :: a -> a -> a
---     quotRem, divMod     :: a -> a -> (a,a)
---     toInteger           :: a -> Integer
---     toInt               :: a -> Int
+class (Real a, Enum a) => Integral a where
+    quot, rem, div, mod :: a -> a -> a
+    quotRem, divMod     :: a -> a -> (a,a)
+    toInteger           :: a -> Integer
+    toInt               :: a -> Int
 
---     -- Minimal complete definition: quotRem and toInteger
---     n `quot` d           = q where (q,r) = quotRem n d
---     n `rem` d            = r where (q,r) = quotRem n d
---     n `div` d            = q where (q,r) = divMod n d
---     n `mod` d            = r where (q,r) = divMod n d
---     divMod n d           = if signum r == - signum d then (q-1, r+d) else qr
---                            where qr@(q,r) = quotRem n d
---     toInt                = toInt . toInteger
+    -- Minimal complete definition: quotRem and toInteger
+    n `quot` d           = q where (q,r) = quotRem n d
+    n `rem` d            = r where (q,r) = quotRem n d
+    n `div` d            = q where (q,r) = divMod n d
+    n `mod` d            = r where (q,r) = divMod n d
+    divMod n d           = if signum r == - signum d then (q-1, r+d) else qr
+                           where qr@(q,r) = quotRem n d
+    toInt                = toInt . toInteger
 
--- class (Num a) => Fractional a where
---     (/)          :: a -> a -> a
---     recip        :: a -> a
---     fromRational :: Rational -> a
---     fromDouble   :: Double -> a
+class (Num a) => Fractional a where
+    (/)          :: a -> a -> a
+    recip        :: a -> a
+    fromRational :: Rational -> a
+    fromDouble   :: Double -> a
 
---     -- Minimal complete definition: fromRational and ((/) or recip)
---     recip x       = 1 / x
---     fromDouble x  = fromRational (fromDouble x)
---     x / y         = x * recip y
-
-
--- class (Fractional a) => Floating a where
---     pi                  :: a
---     exp, log, sqrt      :: a -> a
---     (**), logBase       :: a -> a -> a
---     sin, cos, tan       :: a -> a
---     asin, acos, atan    :: a -> a
---     sinh, cosh, tanh    :: a -> a
---     asinh, acosh, atanh :: a -> a
-
---     -- Minimal complete definition: pi, exp, log, sin, cos, sinh, cosh,
---     --                              asinh, acosh, atanh
---     pi                   = 4 * atan 1
---     x ** y               = exp (log x * y)
---     logBase x y          = log y / log x
---     sqrt x               = x ** 0.5
---     tan x                = sin x / cos x
---     sinh x               = (exp x - exp (-x)) / 2
---     cosh x               = (exp x + exp (-x)) / 2
---     tanh x               = sinh x / cosh x
---     asinh x              = log (x + sqrt (x*x + 1))
---     acosh x              = log (x + sqrt (x*x - 1))
---     atanh x              = (log (1 + x) - log (1 - x)) / 2
-
--- class (Real a, Fractional a) => RealFrac a where
---     properFraction   :: (Integral b) => a -> (b,a)
---     truncate, round  :: (Integral b) => a -> b
---     ceiling, floor   :: (Integral b) => a -> b
-
---     -- Minimal complete definition: properFraction
---     truncate x        = m where (m,_) = properFraction x
-
---     round x           = let (n,r) = properFraction x
---                             m     = if r < 0 then n - 1 else n + 1
---                         in case signum (abs r - 0.5) of
---                             -1 -> n
---                             0  -> if even n then n else m
---                             1  -> m
-
---     ceiling x         = if r > 0 then n + 1 else n
---                         where (n,r) = properFraction x
-
---     floor x           = if r < 0 then n - 1 else n
---                         where (n,r) = properFraction x
--- {-----------------------------
---     -- Minimal complete definition: properFraction
---     truncate x :: xt  = m where (m::xt,_) = properFraction x
-
---     round x :: xt     = let (n::xt,r) = properFraction x
---                             m     = if r < 0 then n - 1 else n + 1
---                         in case signum (abs r - 0.5) of
---                             -1 -> n
---                             0  -> if even n then n else m
---                             1  -> m
-
---     ceiling x :: xt   = if r > 0 then n + 1 else n
---                         where (n::xt,r) = properFraction x
-
---     floor x :: xt     = if r < 0 then n - 1 else n
---                         where (n::xt,r) = properFraction x
--- -----------------------------}
+    -- Minimal complete definition: fromRational and ((/) or recip)
+    recip x       = 1 / x
+    fromDouble x  = fromRational (fromDouble x)
+    x / y         = x * recip y
 
 
--- class (RealFrac a, Floating a) => RealFloat a where
---     floatRadix       :: a -> Integer
---     floatDigits      :: a -> Int
---     floatRange       :: a -> (Int,Int)
---     decodeFloat      :: a -> (Integer,Int)
---     encodeFloat      :: Integer -> Int -> a
---     exponent         :: a -> Int
---     significand      :: a -> a
---     scaleFloat       :: Int -> a -> a
---     isNaN, isInfinite, isDenormalized, isNegativeZero, isIEEE
---                      :: a -> Bool
---     atan2            :: a -> a -> a
+class (Fractional a) => Floating a where
+    pi                  :: a
+    exp, log, sqrt      :: a -> a
+    (**), logBase       :: a -> a -> a
+    sin, cos, tan       :: a -> a
+    asin, acos, atan    :: a -> a
+    sinh, cosh, tanh    :: a -> a
+    asinh, acosh, atanh :: a -> a
 
---     -- Minimal complete definition: All, except exponent, signficand,
---     --                              scaleFloat, atan2
---     exponent x        = if m==0 then 0 else n + floatDigits x
---                         where (m,n) = decodeFloat x
---     significand x     = encodeFloat m (- floatDigits x)
---                         where (m,_) = decodeFloat x
---     scaleFloat k x    = encodeFloat m (n+k)
---                         where (m,n) = decodeFloat x
---     atan2 y x
---       | x>0           = atan (y/x)
---       | x==0 && y>0   = pi/2
---       | x<0 && y>0    = pi + atan (y/x)
---       | (x<=0 && y<0) ||
---         (x<0 && isNegativeZero y) ||
---         (isNegativeZero x && isNegativeZero y)
---                       = - atan2 (-y) x
---       | y==0 && (x<0 || isNegativeZero x)
---                       = pi    -- must be after the previous test on zero y
---       | x==0 && y==0  = y     -- must be after the other double zero tests
---       | otherwise     = x + y -- x or y is a NaN, return a NaN (via +)
+    -- Minimal complete definition: pi, exp, log, sin, cos, sinh, cosh,
+    --                              asinh, acosh, atanh
+    pi                   = 4 * atan 1
+    x ** y               = exp (log x * y)
+    logBase x y          = log y / log x
+    sqrt x               = x ** 0.5
+    tan x                = sin x / cos x
+    sinh x               = (exp x - exp (-x)) / 2
+    cosh x               = (exp x + exp (-x)) / 2
+    tanh x               = sinh x / cosh x
+    asinh x              = log (x + sqrt (x*x + 1))
+    acosh x              = log (x + sqrt (x*x - 1))
+    atanh x              = (log (1 + x) - log (1 - x)) / 2
+
+class (Real a, Fractional a) => RealFrac a where
+    properFraction   :: (Integral b) => a -> (b,a)
+    truncate, round  :: (Integral b) => a -> b
+    ceiling, floor   :: (Integral b) => a -> b
+
+    -- Minimal complete definition: properFraction
+    truncate x        = m where (m,_) = properFraction x
+
+    round x           = let (n,r) = properFraction x
+                            m     = if r < 0 then n - 1 else n + 1
+                        in case signum (abs r - 0.5) of
+                            -1 -> n
+                            0  -> if even n then n else m
+                            1  -> m
+
+    ceiling x         = if r > 0 then n + 1 else n
+                        where (n,r) = properFraction x
+
+    floor x           = if r < 0 then n - 1 else n
+                        where (n,r) = properFraction x
+{-----------------------------
+    -- Minimal complete definition: properFraction
+    truncate x :: xt  = m where (m::xt,_) = properFraction x
+
+    round x :: xt     = let (n::xt,r) = properFraction x
+                            m     = if r < 0 then n - 1 else n + 1
+                        in case signum (abs r - 0.5) of
+                            -1 -> n
+                            0  -> if even n then n else m
+                            1  -> m
+
+    ceiling x :: xt   = if r > 0 then n + 1 else n
+                        where (n::xt,r) = properFraction x
+
+    floor x :: xt     = if r < 0 then n - 1 else n
+                        where (n::xt,r) = properFraction x
+-----------------------------}
+
+
+class (RealFrac a, Floating a) => RealFloat a where
+    floatRadix       :: a -> Integer
+    floatDigits      :: a -> Int
+    floatRange       :: a -> (Int,Int)
+    decodeFloat      :: a -> (Integer,Int)
+    encodeFloat      :: Integer -> Int -> a
+    exponent         :: a -> Int
+    significand      :: a -> a
+    scaleFloat       :: Int -> a -> a
+    isNaN, isInfinite, isDenormalized, isNegativeZero, isIEEE
+                     :: a -> Bool
+    atan2            :: a -> a -> a
+
+    -- Minimal complete definition: All, except exponent, signficand,
+    --                              scaleFloat, atan2
+    exponent x        = if m==0 then 0 else n + floatDigits x
+                        where (m,n) = decodeFloat x
+    significand x     = encodeFloat m (- floatDigits x)
+                        where (m,_) = decodeFloat x
+    scaleFloat k x    = encodeFloat m (n+k)
+                        where (m,n) = decodeFloat x
+    atan2 y x
+      | x>0           = atan (y/x)
+      | x==0 && y>0   = pi/2
+      | x<0 && y>0    = pi + atan (y/x)
+      | (x<=0 && y<0) ||
+        (x<0 && isNegativeZero y) ||
+        (isNegativeZero x && isNegativeZero y)
+                      = - atan2 (-y) x
+      | y==0 && (x<0 || isNegativeZero x)
+                      = pi    -- must be after the previous test on zero y
+      | x==0 && y==0  = y     -- must be after the other double zero tests
+      | otherwise     = x + y -- x or y is a NaN, return a NaN (via +)
 
 --------------------------------------------------------------
 -- Overloaded numeric functions
@@ -508,38 +508,38 @@ class (Eq a) => Num a where
 subtract       :: Num a => a -> a -> a
 subtract        = flip (-)
 
--- even, odd        :: (Integral a) => a -> Bool
--- even n           =  n `rem` 2 == 0
--- odd              =  not . even
+even, odd        :: (Integral a) => a -> Bool
+even n           =  n `rem` 2 == 0
+odd              =  not . even
 
--- gcd            :: Integral a => a -> a -> a
--- gcd 0 0         = error "Prelude.gcd: gcd 0 0 is undefined"
--- gcd x y         = gcd' (abs x) (abs y)
---                   where gcd' x 0 = x
---                         gcd' x y = gcd' y (x `rem` y)
+gcd            :: Integral a => a -> a -> a
+gcd 0 0         = error "Prelude.gcd: gcd 0 0 is undefined"
+gcd x y         = gcd' (abs x) (abs y)
+                  where gcd' x 0 = x
+                        gcd' x y = gcd' y (x `rem` y)
 
--- lcm            :: (Integral a) => a -> a -> a
--- lcm _ 0         = 0
--- lcm 0 _         = 0
--- lcm x y         = abs ((x `quot` gcd x y) * y)
+lcm            :: (Integral a) => a -> a -> a
+lcm _ 0         = 0
+lcm 0 _         = 0
+lcm x y         = abs ((x `quot` gcd x y) * y)
 
--- (^)            :: (Num a, Integral b) => a -> b -> a
--- x ^ 0           = 1
--- x ^ n  | n > 0  = f x (n-1) x
---                   where f _ 0 y = y
---                         f x n y = g x n where
---                                   g x n | even n    = g (x*x) (n`quot`2)
---                                         | otherwise = f x (n-1) (x*y)
--- _ ^ _           = error "Prelude.^: negative exponent"
+(^)            :: (Num a, Integral b) => a -> b -> a
+x ^ 0           = 1
+x ^ n  | n > 0  = f x (n-1) x
+                  where f _ 0 y = y
+                        f x n y = g x n where
+                                  g x n | even n    = g (x*x) (n`quot`2)
+                                        | otherwise = f x (n-1) (x*y)
+_ ^ _           = error "Prelude.^: negative exponent"
 
--- (^^)           :: (Fractional a, Integral b) => a -> b -> a
--- x ^^ n          = if n >= 0 then x ^ n else recip (x^(-n))
+(^^)           :: (Fractional a, Integral b) => a -> b -> a
+x ^^ n          = if n >= 0 then x ^ n else recip (x^(-n))
 
--- fromIntegral   :: (Integral a, Num b) => a -> b
--- fromIntegral    = fromInteger . toInteger
+fromIntegral   :: (Integral a, Num b) => a -> b
+fromIntegral    = fromInteger . toInteger
 
--- realToFrac     :: (Real a, Fractional b) => a -> b
--- realToFrac      = fromRational . toRational
+realToFrac     :: (Real a, Fractional b) => a -> b
+realToFrac      = fromRational . toRational
 
 absReal :: (Ord a,Num a) => a -> a
 absReal x    | x >= 0    = x
@@ -556,22 +556,22 @@ signumReal x | x == 0    =  0
 -- class Enum
 --------------------------------------------------------------
 
--- class Enum a where
---     succ, pred           :: a -> a
---     toEnum               :: Int -> a
---     fromEnum             :: a -> Int
---     enumFrom             :: a -> [a]              -- [n..]
---     enumFromThen         :: a -> a -> [a]         -- [n,m..]
---     enumFromTo           :: a -> a -> [a]         -- [n..m]
---     enumFromThenTo       :: a -> a -> a -> [a]    -- [n,n'..m]
+class Enum a where
+    succ, pred           :: a -> a
+    toEnum               :: Int -> a
+    fromEnum             :: a -> Int
+    enumFrom             :: a -> [a]              -- [n..]
+    enumFromThen         :: a -> a -> [a]         -- [n,m..]
+    enumFromTo           :: a -> a -> [a]         -- [n..m]
+    enumFromThenTo       :: a -> a -> a -> [a]    -- [n,n'..m]
 
---     -- Minimal complete definition: toEnum, fromEnum
---     succ                  = toEnum . (1+)       . fromEnum
---     pred                  = toEnum . subtract 1 . fromEnum
---     enumFrom x            = map toEnum [ fromEnum x ..]
---     enumFromTo x y        = map toEnum [ fromEnum x .. fromEnum y ]
---     enumFromThen x y      = map toEnum [ fromEnum x, fromEnum y ..]
---     enumFromThenTo x y z  = map toEnum [ fromEnum x, fromEnum y .. fromEnum z ]
+    -- Minimal complete definition: toEnum, fromEnum
+    succ                  = toEnum . (1+)       . fromEnum
+    pred                  = toEnum . subtract 1 . fromEnum
+    enumFrom x            = map toEnum [ fromEnum x ..]
+    enumFromTo x y        = map toEnum [ fromEnum x .. fromEnum y ]
+    enumFromThen x y      = map toEnum [ fromEnum x, fromEnum y ..]
+    enumFromThenTo x y z  = map toEnum [ fromEnum x, fromEnum y .. fromEnum z ]
 
 -- --------------------------------------------------------------
 -- -- class Read, Show
@@ -712,11 +712,11 @@ instance Eq Char  where
 instance Ord Char where 
     compare = primCmpChar
 
--- instance Enum Char where
---     toEnum           = primIntToChar
---     fromEnum         = primCharToInt
---     --enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
---     --enumFromThen     = boundedEnumFromThen
+instance Enum Char where
+    toEnum           = primIntToChar
+    fromEnum         = primCharToInt
+    --enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
+    --enumFromThen     = boundedEnumFromThen
 
 -- instance Read Char where
 --     readsPrec p      = readParen False
@@ -738,9 +738,9 @@ instance Ord Char where
 --                           showl ('"':cs) = showString "\\\"" . showl cs
 --                           showl (c:cs)   = showLitChar c . showl cs
 
--- instance Bounded Char where
---     minBound = '\0'
---     maxBound = '\xff' -- primMaxChar
+instance Bounded Char where
+    minBound = '\0'
+    maxBound = '\xff' -- primMaxChar
 
 isSpace :: Char -> Bool
 isSpace c              =  c == ' '  ||
@@ -761,11 +761,11 @@ isAlpha c    = isUpper c || isLower c
 isAlphaNum :: Char -> Bool
 isAlphaNum c = isAlpha c || isDigit c
 
--- ord :: Char -> Int
--- ord = fromEnum
+ord :: Char -> Int
+ord = fromEnum
 
--- chr :: Int -> Char
--- chr = toEnum
+chr :: Int -> Char
+chr = toEnum
 
 --------------------------------------------------------------
 -- Maybe type
@@ -875,7 +875,7 @@ PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
 INSTANCE_EQ(Int,primEqInt,primNeInt)
 INSTANCE_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
 INSTANCE_BOUNDED(Int,primMinInt,primMaxInt)
--- INSTANCE_REAL(Int)
+INSTANCE_REAL(Int)
 INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
 
 
@@ -885,44 +885,44 @@ foreign import prim primQuotInt      :: Int -> Int -> Int
 foreign import prim primRemInt       :: Int -> Int -> Int
 
 
--- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
--- instance Integral Int where
---     divMod x y   = (primDivInt x y, primModInt x y)
---     quotRem x y  = (primQuotInt x y, primRemInt x y)
---     div       = primDivInt
---     quot      = primQuotInt
---     rem       = primRemInt
---     mod       = primModInt
---     toInteger = primIntToInteger
---     toInt x   = x
+instance Integral Int where
+    divMod x y   = (primDivInt x y, primModInt x y)
+    quotRem x y  = (primQuotInt x y, primRemInt x y)
+    div       = primDivInt
+    quot      = primQuotInt
+    rem       = primRemInt
+    mod       = primModInt
+    toInteger = primIntToInteger
+    toInt x   = x
 
--- #else
+#else
 
--- foreign import prim primDivModInt    :: Int -> Int -> (Int,Int)
--- foreign import prim primQuotRemInt   :: Int -> Int -> (Int,Int)
+foreign import prim primDivModInt    :: Int -> Int -> (Int,Int)
+foreign import prim primQuotRemInt   :: Int -> Int -> (Int,Int)
 
--- instance Integral Int where
---     divMod    = primDivModInt
---     quotRem   = primQuotRemInt
---     div       = primDivInt
---     quot      = primQuotInt
---     rem       = primRemInt
---     mod       = primModInt
---     toInteger = primIntToInteger
---     toInt x   = x
+instance Integral Int where
+    divMod    = primDivModInt
+    quotRem   = primQuotRemInt
+    div       = primDivInt
+    quot      = primQuotInt
+    rem       = primRemInt
+    mod       = primModInt
+    toInteger = primIntToInteger
+    toInt x   = x
 
--- #endif
+#endif
 
--- instance Enum Int where
---     succ           = boundedSucc
---     pred           = boundedPred
---     toEnum         = id
---     fromEnum       = id
---     enumFrom       = boundedEnumFrom
---     enumFromTo     = boundedEnumFromTo
---     enumFromThen   = boundedEnumFromThen
---     enumFromThenTo = boundedEnumFromThenTo
+instance Enum Int where
+    succ           = boundedSucc
+    pred           = boundedPred
+    toEnum         = id
+    fromEnum       = id
+    enumFrom       = boundedEnumFrom
+    enumFromTo     = boundedEnumFromTo
+    enumFromThen   = boundedEnumFromThen
+    enumFromThenTo = boundedEnumFromThenTo
 
 -- instance Read Int where
 --     readsPrec p = readSigned readDec
@@ -1012,48 +1012,48 @@ instance Num Integer where
     fromInteger x = x
     fromInt       = primIntToInteger
 
--- instance Real Integer where
---     toRational x = x % 1
+instance Real Integer where
+    toRational x = x % 1
 
 
--- #if defined( __UHC_TARGET_C__) || defined(__UHC_TARGET_JAZY__)  || defined (__UHC_TARGET_LLVM__)
+#if defined( __UHC_TARGET_C__) || defined(__UHC_TARGET_JAZY__)  || defined (__UHC_TARGET_LLVM__)
 
--- instance Integral Integer where
---     divMod x y  = (primDivInteger x y, primModInteger x y)
---     quotRem x y = (primQuotInteger x y, primRemInteger x y)
---     div         = primDivInteger
---     quot        = primQuotInteger
---     rem         = primRemInteger
---     mod         = primModInteger
---     toInteger x = x
---     toInt       = primIntegerToInt
+instance Integral Integer where
+    divMod x y  = (primDivInteger x y, primModInteger x y)
+    quotRem x y = (primQuotInteger x y, primRemInteger x y)
+    div         = primDivInteger
+    quot        = primQuotInteger
+    rem         = primRemInteger
+    mod         = primModInteger
+    toInteger x = x
+    toInt       = primIntegerToInt
 
--- #else
+#else
 
--- instance Integral Integer where
---     divMod      = primDivModInteger
---     quotRem     = primQuotRemInteger
---     div         = primDivInteger
---     quot        = primQuotInteger
---     rem         = primRemInteger
---     mod         = primModInteger
---     toInteger x = x
---     toInt       = primIntegerToInt
+instance Integral Integer where
+    divMod      = primDivModInteger
+    quotRem     = primQuotRemInteger
+    div         = primDivInteger
+    quot        = primQuotInteger
+    rem         = primRemInteger
+    mod         = primModInteger
+    toInteger x = x
+    toInt       = primIntegerToInt
 
--- #endif
+#endif
 
--- instance Enum Integer where
---     succ x         = x + 1
---     pred x         = x - 1
+instance Enum Integer where
+    succ x         = x + 1
+    pred x         = x - 1
 
---     toEnum         = primIntToInteger
---     fromEnum       = primIntegerToInt
---     enumFrom       = numericEnumFrom
---     enumFromThen   = numericEnumFromThen
---     enumFromTo n m = takeWhile (<= m) (numericEnumFrom n)
---     enumFromThenTo n n2 m = takeWhile p (numericEnumFromThen n n2)
---                                 where p | n2 >= n   = (<= m)
---                                         | otherwise = (>= m)
+    toEnum         = primIntToInteger
+    fromEnum       = primIntegerToInt
+    enumFrom       = numericEnumFrom
+    enumFromThen   = numericEnumFromThen
+    enumFromTo n m = takeWhile (<= m) (numericEnumFrom n)
+    enumFromThenTo n n2 m = takeWhile p (numericEnumFromThen n n2)
+                                where p | n2 >= n   = (<= m)
+                                        | otherwise = (>= m)
 
 -- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 -- {-
@@ -1097,375 +1097,375 @@ instance Num Integer where
 --     readsPrec p = readSigned readDec
 
 
--- --------------------------------------------------------------
--- -- Float and Double type
--- --------------------------------------------------------------
+--------------------------------------------------------------
+-- Float and Double type
+--------------------------------------------------------------
 
--- data Float     -- opaque datatype of 32bit IEEE floating point numbers
---   deriving Generic
+data Float     -- opaque datatype of 32bit IEEE floating point numbers
+  deriving Generic
 
--- data Double    -- opaque datatype of 64bit IEEE floating point numbers
---   deriving Generic
+data Double    -- opaque datatype of 64bit IEEE floating point numbers
+  deriving Generic
 
--- #if defined(__UHC_TARGET_JS__)
--- foreign import prim "primEqInt"          	primEqFloat             :: Float -> Float -> Bool
--- foreign import prim "primCmpInt"         	primCmpFloat            :: Float -> Float -> Ordering
+#if defined(__UHC_TARGET_JS__)
+foreign import prim "primEqInt"          	primEqFloat             :: Float -> Float -> Bool
+foreign import prim "primCmpInt"         	primCmpFloat            :: Float -> Float -> Ordering
 
--- foreign import prim "primEqInt"         	primEqDouble            :: Double -> Double -> Bool
--- foreign import prim "primCmpInt"        	primCmpDouble           :: Double -> Double -> Ordering
+foreign import prim "primEqInt"         	primEqDouble            :: Double -> Double -> Bool
+foreign import prim "primCmpInt"        	primCmpDouble           :: Double -> Double -> Ordering
 
--- foreign import prim "primAddInt"         	primAddFloat            :: Float -> Float -> Float
--- foreign import prim "primSubInt"         	primSubFloat            :: Float -> Float -> Float
--- foreign import prim "primMulInt"         	primMulFloat            :: Float -> Float -> Float
--- foreign import prim "primNegInt"         	primNegFloat            :: Float -> Float
--- foreign import prim "primUnsafeId"       	primIntToFloat          :: Int -> Float
+foreign import prim "primAddInt"         	primAddFloat            :: Float -> Float -> Float
+foreign import prim "primSubInt"         	primSubFloat            :: Float -> Float -> Float
+foreign import prim "primMulInt"         	primMulFloat            :: Float -> Float -> Float
+foreign import prim "primNegInt"         	primNegFloat            :: Float -> Float
+foreign import prim "primUnsafeId"       	primIntToFloat          :: Int -> Float
 
--- foreign import prim "primAddInt"        	primAddDouble           :: Double -> Double -> Double
--- foreign import prim "primSubInt"        	primSubDouble           :: Double -> Double -> Double
--- foreign import prim "primMulInt"        	primMulDouble           :: Double -> Double -> Double
--- foreign import prim "primNegInt"        	primNegDouble           :: Double -> Double
--- foreign import prim "primUnsafeId"      	primIntToDouble         :: Int -> Double
+foreign import prim "primAddInt"        	primAddDouble           :: Double -> Double -> Double
+foreign import prim "primSubInt"        	primSubDouble           :: Double -> Double -> Double
+foreign import prim "primMulInt"        	primMulDouble           :: Double -> Double -> Double
+foreign import prim "primNegInt"        	primNegDouble           :: Double -> Double
+foreign import prim "primUnsafeId"      	primIntToDouble         :: Int -> Double
 
--- foreign import prim "primQuotInt"      		primDivideFloat         :: Float -> Float -> Float
--- foreign import prim "primRecipDouble"       primRecipFloat          :: Float -> Float
--- foreign import prim "primUnsafeId"    		primDoubleToFloat       :: Double -> Float
+foreign import prim "primQuotInt"      		primDivideFloat         :: Float -> Float -> Float
+foreign import prim "primRecipDouble"       primRecipFloat          :: Float -> Float
+foreign import prim "primUnsafeId"    		primDoubleToFloat       :: Double -> Float
 
--- foreign import prim "primUnsafeId"    		primFloatToDouble       :: Float -> Double
--- foreign import prim "primRationalToDouble"  primRationalToFloat     :: Rational -> Float
--- foreign import prim "primRationalToDouble" 	primRationalToDouble    :: Rational -> Double
--- #else
--- foreign import prim primEqFloat             :: Float -> Float -> Bool
--- foreign import prim primCmpFloat            :: Float -> Float -> Ordering
+foreign import prim "primUnsafeId"    		primFloatToDouble       :: Float -> Double
+foreign import prim "primRationalToDouble"  primRationalToFloat     :: Rational -> Float
+foreign import prim "primRationalToDouble" 	primRationalToDouble    :: Rational -> Double
+#else
+foreign import prim primEqFloat             :: Float -> Float -> Bool
+foreign import prim primCmpFloat            :: Float -> Float -> Ordering
 
--- foreign import prim primEqDouble            :: Double -> Double -> Bool
--- foreign import prim primCmpDouble           :: Double -> Double -> Ordering
+foreign import prim primEqDouble            :: Double -> Double -> Bool
+foreign import prim primCmpDouble           :: Double -> Double -> Ordering
 
--- foreign import prim primAddFloat            :: Float -> Float -> Float
--- foreign import prim primSubFloat            :: Float -> Float -> Float
--- foreign import prim primMulFloat            :: Float -> Float -> Float
--- foreign import prim primNegFloat            :: Float -> Float
--- foreign import prim primIntToFloat          :: Int -> Float
+foreign import prim primAddFloat            :: Float -> Float -> Float
+foreign import prim primSubFloat            :: Float -> Float -> Float
+foreign import prim primMulFloat            :: Float -> Float -> Float
+foreign import prim primNegFloat            :: Float -> Float
+foreign import prim primIntToFloat          :: Int -> Float
 
--- foreign import prim primAddDouble           :: Double -> Double -> Double
--- foreign import prim primSubDouble           :: Double -> Double -> Double
--- foreign import prim primMulDouble           :: Double -> Double -> Double
--- foreign import prim primNegDouble           :: Double -> Double
--- foreign import prim primIntToDouble         :: Int -> Double
+foreign import prim primAddDouble           :: Double -> Double -> Double
+foreign import prim primSubDouble           :: Double -> Double -> Double
+foreign import prim primMulDouble           :: Double -> Double -> Double
+foreign import prim primNegDouble           :: Double -> Double
+foreign import prim primIntToDouble         :: Int -> Double
 
--- foreign import prim primDivideFloat         :: Float -> Float -> Float
--- foreign import prim primRecipFloat          :: Float -> Float
--- foreign import prim primDoubleToFloat       :: Double -> Float
+foreign import prim primDivideFloat         :: Float -> Float -> Float
+foreign import prim primRecipFloat          :: Float -> Float
+foreign import prim primDoubleToFloat       :: Double -> Float
 
--- foreign import prim primFloatToDouble       :: Float -> Double
--- foreign import prim primRationalToFloat     :: Rational -> Float
--- foreign import prim primRationalToDouble    :: Rational -> Double
--- #endif
+foreign import prim primFloatToDouble       :: Float -> Double
+foreign import prim primRationalToFloat     :: Rational -> Float
+foreign import prim primRationalToDouble    :: Rational -> Double
+#endif
 
--- #if defined(__UHC_TARGET_JS__)
--- foreign import js "%1.doubleValue()"  		primIntegerToFloat      :: Integer -> Float
--- foreign import js "%1.doubleValue()"  		primIntegerToDouble     :: Integer -> Double
--- #else
--- foreign import prim primIntegerToFloat      :: Integer -> Float
--- foreign import prim primIntegerToDouble     :: Integer -> Double
--- #endif
+#if defined(__UHC_TARGET_JS__)
+foreign import js "%1.doubleValue()"  		primIntegerToFloat      :: Integer -> Float
+foreign import js "%1.doubleValue()"  		primIntegerToDouble     :: Integer -> Double
+#else
+foreign import prim primIntegerToFloat      :: Integer -> Float
+foreign import prim primIntegerToDouble     :: Integer -> Double
+#endif
 
--- instance Eq  Float  where (==) = primEqFloat
--- instance Eq  Double where (==) = primEqDouble
+instance Eq  Float  where (==) = primEqFloat
+instance Eq  Double where (==) = primEqDouble
 
--- instance Ord Float  where compare = primCmpFloat
--- instance Ord Double where compare = primCmpDouble
-
-
--- instance Num Float where
---     (+)           = primAddFloat
---     (-)           = primSubFloat
---     negate        = primNegFloat
---     (*)           = primMulFloat
---     abs           = absReal
---     signum        = signumReal
---     fromInteger   = primIntegerToFloat
---     fromInt       = primIntToFloat
+instance Ord Float  where compare = primCmpFloat
+instance Ord Double where compare = primCmpDouble
 
 
--- instance Num Double where
---     (+)         = primAddDouble
---     (-)         = primSubDouble
---     negate      = primNegDouble
---     (*)         = primMulDouble
---     abs         = absReal
---     signum      = signumReal
---     fromInteger = primIntegerToDouble
---     fromInt     = primIntToDouble
-
--- instance Real Float where
---     toRational = floatToRational
-
--- instance Real Double where
---     toRational = doubleToRational
-
--- -- TODO: Calls to these functions should be optimised when passed as arguments to fromRational
--- floatToRational  :: Float  -> Rational
--- doubleToRational :: Double -> Rational
--- floatToRational  x = fromRat x 
--- doubleToRational x = fromRat x
-
--- fromRat :: RealFloat a => a -> Rational
--- fromRat x = (m%1)*(b%1)^^n
---           where (m,n) = decodeFloat x
---                 b     = floatRadix x
+instance Num Float where
+    (+)           = primAddFloat
+    (-)           = primSubFloat
+    negate        = primNegFloat
+    (*)           = primMulFloat
+    abs           = absReal
+    signum        = signumReal
+    fromInteger   = primIntegerToFloat
+    fromInt       = primIntToFloat
 
 
--- instance Fractional Float where
---     (/)          = primDivideFloat
---     recip        = primRecipFloat
---     fromRational = primRationalToFloat
---     fromDouble   = primDoubleToFloat
+instance Num Double where
+    (+)         = primAddDouble
+    (-)         = primSubDouble
+    negate      = primNegDouble
+    (*)         = primMulDouble
+    abs         = absReal
+    signum      = signumReal
+    fromInteger = primIntegerToDouble
+    fromInt     = primIntToDouble
 
--- foreign import prim primDivideDouble :: Double -> Double -> Double
--- foreign import prim primRecipDouble :: Double -> Double
+instance Real Float where
+    toRational = floatToRational
 
--- instance Fractional Double where
---     (/)          = primDivideDouble
---     recip        = primRecipDouble
---     fromRational = primRationalToDouble
---     fromDouble x = x
+instance Real Double where
+    toRational = doubleToRational
 
--- {-----------------------------
--- -- These primitives are equivalent to (and are defined using) 
--- -- rationalTo{Float,Double}.  The difference is that they test to see
--- -- if their argument is of the form (fromDouble x) - which allows a much
--- -- more efficient implementation.
--- primitive primRationalToFloat  :: Rational -> Float
--- primitive primRationalToDouble :: Rational -> Double
--- -----------------------------}
+-- TODO: Calls to these functions should be optimised when passed as arguments to fromRational
+floatToRational  :: Float  -> Rational
+doubleToRational :: Double -> Rational
+floatToRational  x = fromRat x 
+doubleToRational x = fromRat x
 
--- {-----------------------------
--- -- These functions are used by Hugs - don't change their types.
--- rationalToFloat  :: Rational -> Float
--- rationalToDouble :: Rational -> Double
--- rationalToFloat  = rationalToRealFloat
--- rationalToDouble = rationalToRealFloat
-
--- rationalToRealFloat x = x'
---  where x'    = f e
---        f e   = if e' == e then y else f e'
---                where y      = encodeFloat (round (x * (1%b)^^e)) e
---                      (_,e') = decodeFloat y
---        (_,e) = decodeFloat (fromInteger (numerator x) `asTypeOf` x'
---                              / fromInteger (denominator x))
---        b     = floatRadix x'
--- -----------------------------}
-
--- -- primitive Float functions
-
--- #if defined( __UHC_TARGET_JAZY__ )
--- foreign import prim  primSinFloat   :: Float -> Float
--- foreign import prim  primCosFloat   :: Float -> Float
--- foreign import prim  primTanFloat   :: Float -> Float
--- foreign import prim  primAsinFloat  :: Float -> Float
--- foreign import prim  primAcosFloat  :: Float -> Float
--- foreign import prim  primAtanFloat  :: Float -> Float
--- foreign import prim  primExpFloat   :: Float -> Float
--- foreign import prim  primLogFloat   :: Float -> Float
--- foreign import prim  primSqrtFloat  :: Float -> Float
--- foreign import prim  primAtan2Float :: Float -> Float -> Float
--- #elif defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
--- foreign import prim "primSinDouble"  primSinFloat   :: Float -> Float
--- foreign import prim "primCosDouble"  primCosFloat   :: Float -> Float
--- foreign import prim "primTanDouble"  primTanFloat   :: Float -> Float
--- foreign import prim "primAsinDouble" primAsinFloat  :: Float -> Float
--- foreign import prim "primAcosDouble" primAcosFloat  :: Float -> Float
--- foreign import prim "primAtanDouble" primAtanFloat  :: Float -> Float
--- foreign import prim "primExpDouble"  primExpFloat   :: Float -> Float
--- foreign import prim "primLogDouble"  primLogFloat   :: Float -> Float
--- foreign import prim "primSqrtDouble" primSqrtFloat  :: Float -> Float
--- foreign import prim "primSinhDouble" primSinhFloat  :: Float -> Float
--- foreign import prim "primCoshDouble" primCoshFloat  :: Float -> Float
--- foreign import prim "primTanhDouble" primTanhFloat  :: Float -> Float
--- foreign import prim "primAtan2Double"  primAtan2Float   :: Float -> Float -> Float
--- #else 
--- foreign import ccall "sinf"  primSinFloat   :: Float -> Float
--- foreign import ccall "cosf"  primCosFloat   :: Float -> Float
--- foreign import ccall "tanf"  primTanFloat   :: Float -> Float
--- foreign import ccall "asinf" primAsinFloat  :: Float -> Float
--- foreign import ccall "acosf" primAcosFloat  :: Float -> Float
--- foreign import ccall "atanf" primAtanFloat  :: Float -> Float
--- foreign import ccall "expf"  primExpFloat   :: Float -> Float
--- foreign import ccall "logf"  primLogFloat   :: Float -> Float
--- foreign import ccall "sqrtf" primSqrtFloat  :: Float -> Float
--- -- extra
--- foreign import ccall "sinhf" primSinhFloat  :: Float -> Float
--- foreign import ccall "coshf" primCoshFloat  :: Float -> Float
--- foreign import ccall "tanhf" primTanhFloat  :: Float -> Float
--- foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
--- #endif
-
--- #if defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
--- foreign import prim "primIsNaNDouble         " primIsNaNFloat              :: Float -> Bool
--- foreign import prim "primIsNegativeZeroDouble" primIsNegativeZeroFloat     :: Float -> Bool
--- foreign import prim "primIsDenormalizedDouble" primIsDenormalizedFloat     :: Float -> Bool
--- foreign import prim "primIsInfiniteDouble    " primIsInfiniteFloat         :: Float -> Bool
--- foreign import prim "primDigitsDouble        " primDigitsFloat             :: Int
--- foreign import prim "primMaxExpDouble        " primMaxExpFloat             :: Int
--- foreign import prim "primMinExpDouble        " primMinExpFloat             :: Int
--- foreign import prim "primDecodeDouble        " primDecodeFloat             :: Float -> (Integer, Int)
--- foreign import prim "primEncodeDouble        " primEncodeFloat             :: Integer -> Int -> Float
--- #else
--- foreign import prim primIsNaNFloat              :: Float -> Bool
--- foreign import prim primIsNegativeZeroFloat     :: Float -> Bool
--- foreign import prim primIsDenormalizedFloat     :: Float -> Bool
--- foreign import prim primIsInfiniteFloat         :: Float -> Bool
--- foreign import prim primDigitsFloat             :: Int
--- foreign import prim primMaxExpFloat             :: Int
--- foreign import prim primMinExpFloat             :: Int
--- foreign import prim primDecodeFloat             :: Float -> (Integer, Int)
--- foreign import prim primEncodeFloat             :: Integer -> Int -> Float
--- #endif
-
--- -- primitive Double functions
-
--- #if defined( __UHC_TARGET_JAZY__ ) || defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
--- foreign import prim  primSinDouble   :: Double -> Double
--- foreign import prim  primCosDouble   :: Double -> Double
--- foreign import prim  primTanDouble   :: Double -> Double
--- foreign import prim  primAsinDouble  :: Double -> Double
--- foreign import prim  primAcosDouble  :: Double -> Double
--- foreign import prim  primAtanDouble  :: Double -> Double
--- foreign import prim  primExpDouble   :: Double -> Double
--- foreign import prim  primLogDouble   :: Double -> Double
--- foreign import prim  primSqrtDouble  :: Double -> Double
--- foreign import prim  primAtan2Double :: Double -> Double -> Double
--- #if !defined(__UHC_TARGET_JAZY__)
--- foreign import prim primSinhDouble  :: Double -> Double
--- foreign import prim primCoshDouble  :: Double -> Double
--- foreign import prim primTanhDouble  :: Double -> Double
--- #endif
--- #else
--- foreign import ccall "sin"  primSinDouble   :: Double -> Double
--- foreign import ccall "cos"  primCosDouble   :: Double -> Double
--- foreign import ccall "tan"  primTanDouble   :: Double -> Double
--- foreign import ccall "asin" primAsinDouble  :: Double -> Double
--- foreign import ccall "acos" primAcosDouble  :: Double -> Double
--- foreign import ccall "atan" primAtanDouble  :: Double -> Double
--- foreign import ccall "exp"  primExpDouble   :: Double -> Double
--- foreign import ccall "log"  primLogDouble   :: Double -> Double
--- foreign import ccall "sqrt" primSqrtDouble  :: Double -> Double
--- foreign import ccall "sinh" primSinhDouble  :: Double -> Double
--- foreign import ccall "cosh" primCoshDouble  :: Double -> Double
--- foreign import ccall "tanh" primTanhDouble  :: Double -> Double
--- foreign import ccall "atan2"  primAtan2Double   :: Double -> Double -> Double
--- #endif
-
--- foreign import prim primIsNaNDouble             :: Double -> Bool
--- foreign import prim primIsNegativeZeroDouble    :: Double -> Bool
--- foreign import prim primIsDenormalizedDouble    :: Double -> Bool
--- foreign import prim primIsInfiniteDouble        :: Double -> Bool
--- foreign import prim primDigitsDouble            :: Int
--- foreign import prim primMaxExpDouble            :: Int
--- foreign import prim primMinExpDouble            :: Int
--- foreign import prim primDecodeDouble            :: Double -> (Integer, Int)
--- foreign import prim primEncodeDouble            :: Integer -> Int -> Double
-
--- foreign import prim primIsIEEE  :: Bool
--- foreign import prim primRadixDoubleFloat  :: Int
-
--- #if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
--- foreign import prim primShowFloatToPackedString :: Float -> PackedString
--- #else
--- foreign import prim primShowFloat :: Float -> String
--- -- TODO: replace this by a function Float -> PackedString
--- #endif
-
--- instance Floating Float where
---     exp   = primExpFloat
---     log   = primLogFloat
---     sqrt  = primSqrtFloat
---     sin   = primSinFloat
---     cos   = primCosFloat
---     tan   = primTanFloat
---     asin  = primAsinFloat
---     acos  = primAcosFloat
---     atan  = primAtanFloat
--- #ifndef __UHC_TARGET_JAZY__
---     sinh  = primSinhFloat
--- #endif
-
--- instance Floating Double where
---     exp   = primExpDouble
---     log   = primLogDouble
---     sqrt  = primSqrtDouble
---     sin   = primSinDouble
---     cos   = primCosDouble
---     tan   = primTanDouble
---     asin  = primAsinDouble
---     acos  = primAcosDouble
---     atan  = primAtanDouble
--- #if !defined(__UHC_TARGET_JAZY__)
---     sinh  = primSinhDouble
---     cosh  = primCoshDouble
---     tanh  = primTanhDouble
--- #endif
+fromRat :: RealFloat a => a -> Rational
+fromRat x = (m%1)*(b%1)^^n
+          where (m,n) = decodeFloat x
+                b     = floatRadix x
 
 
--- instance RealFrac Float where
---     properFraction = floatProperFraction
+instance Fractional Float where
+    (/)          = primDivideFloat
+    recip        = primRecipFloat
+    fromRational = primRationalToFloat
+    fromDouble   = primDoubleToFloat
 
--- instance RealFrac Double where
---     properFraction = floatProperFraction
+foreign import prim primDivideDouble :: Double -> Double -> Double
+foreign import prim primRecipDouble :: Double -> Double
 
--- floatProperFraction :: (RealFloat a, Integral b) => a -> (b,a)
--- floatProperFraction x
---    | n >= 0      = (fromInteger m * fromInteger b ^ n, 0)
---    | otherwise   = (fromInteger w, encodeFloat r n)
---                    where (m,n) = decodeFloat x
---                          b     = floatRadix x
---                          (w,r) = quotRem m (b^(-n))
+instance Fractional Double where
+    (/)          = primDivideDouble
+    recip        = primRecipDouble
+    fromRational = primRationalToDouble
+    fromDouble x = x
 
--- instance RealFloat Float where
---     floatRadix  _ = toInteger primRadixDoubleFloat
---     floatDigits _ = primDigitsFloat
---     floatRange  _ = (primMinExpFloat, primMaxExpFloat)
---     encodeFloat   = primEncodeFloat
---     decodeFloat   = primDecodeFloat
---     isNaN         = primIsNaNFloat
---     isInfinite    = primIsInfiniteFloat
---     isDenormalized= primIsDenormalizedFloat
---     isNegativeZero= primIsNegativeZeroFloat
---     isIEEE      _ = primIsIEEE
---     atan2         = primAtan2Float
+{-----------------------------
+-- These primitives are equivalent to (and are defined using) 
+-- rationalTo{Float,Double}.  The difference is that they test to see
+-- if their argument is of the form (fromDouble x) - which allows a much
+-- more efficient implementation.
+primitive primRationalToFloat  :: Rational -> Float
+primitive primRationalToDouble :: Rational -> Double
+-----------------------------}
 
--- instance RealFloat Double where
---     floatRadix  _ = toInteger primRadixDoubleFloat
---     floatDigits _ = primDigitsDouble
---     floatRange  _ = (primMinExpDouble, primMaxExpDouble)
---     encodeFloat   = primEncodeDouble
---     decodeFloat   = primDecodeDouble
---     isNaN         = primIsNaNDouble
---     isInfinite    = primIsInfiniteDouble
---     isDenormalized= primIsDenormalizedDouble
---     isNegativeZero= primIsNegativeZeroDouble
---     isIEEE      _ = primIsIEEE
---     atan2         = primAtan2Double
+{-----------------------------
+-- These functions are used by Hugs - don't change their types.
+rationalToFloat  :: Rational -> Float
+rationalToDouble :: Rational -> Double
+rationalToFloat  = rationalToRealFloat
+rationalToDouble = rationalToRealFloat
 
--- instance Enum Float where
---     succ x                = x+1
---     pred x                = x-1
---     toEnum                = primIntToFloat
---     fromEnum              = fromInteger . truncate   -- may overflow
---     enumFrom              = numericEnumFrom
---     enumFromThen          = numericEnumFromThen
---     enumFromTo            = numericEnumFromTo
---     enumFromThenTo        = numericEnumFromThenTo
+rationalToRealFloat x = x'
+ where x'    = f e
+       f e   = if e' == e then y else f e'
+               where y      = encodeFloat (round (x * (1%b)^^e)) e
+                     (_,e') = decodeFloat y
+       (_,e) = decodeFloat (fromInteger (numerator x) `asTypeOf` x'
+                             / fromInteger (denominator x))
+       b     = floatRadix x'
+-----------------------------}
 
--- instance Enum Double where
---     succ x                = x+1
---     pred x                = x-1
---     toEnum                = primIntToDouble
---     fromEnum              = fromInteger . truncate   -- may overflow
---     enumFrom              = numericEnumFrom
---     enumFromThen          = numericEnumFromThen
---     enumFromTo            = numericEnumFromTo
---     enumFromThenTo        = numericEnumFromThenTo
+-- primitive Float functions
+
+#if defined( __UHC_TARGET_JAZY__ )
+foreign import prim  primSinFloat   :: Float -> Float
+foreign import prim  primCosFloat   :: Float -> Float
+foreign import prim  primTanFloat   :: Float -> Float
+foreign import prim  primAsinFloat  :: Float -> Float
+foreign import prim  primAcosFloat  :: Float -> Float
+foreign import prim  primAtanFloat  :: Float -> Float
+foreign import prim  primExpFloat   :: Float -> Float
+foreign import prim  primLogFloat   :: Float -> Float
+foreign import prim  primSqrtFloat  :: Float -> Float
+foreign import prim  primAtan2Float :: Float -> Float -> Float
+#elif defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
+foreign import prim "primSinDouble"  primSinFloat   :: Float -> Float
+foreign import prim "primCosDouble"  primCosFloat   :: Float -> Float
+foreign import prim "primTanDouble"  primTanFloat   :: Float -> Float
+foreign import prim "primAsinDouble" primAsinFloat  :: Float -> Float
+foreign import prim "primAcosDouble" primAcosFloat  :: Float -> Float
+foreign import prim "primAtanDouble" primAtanFloat  :: Float -> Float
+foreign import prim "primExpDouble"  primExpFloat   :: Float -> Float
+foreign import prim "primLogDouble"  primLogFloat   :: Float -> Float
+foreign import prim "primSqrtDouble" primSqrtFloat  :: Float -> Float
+foreign import prim "primSinhDouble" primSinhFloat  :: Float -> Float
+foreign import prim "primCoshDouble" primCoshFloat  :: Float -> Float
+foreign import prim "primTanhDouble" primTanhFloat  :: Float -> Float
+foreign import prim "primAtan2Double"  primAtan2Float   :: Float -> Float -> Float
+#else 
+foreign import ccall "sinf"  primSinFloat   :: Float -> Float
+foreign import ccall "cosf"  primCosFloat   :: Float -> Float
+foreign import ccall "tanf"  primTanFloat   :: Float -> Float
+foreign import ccall "asinf" primAsinFloat  :: Float -> Float
+foreign import ccall "acosf" primAcosFloat  :: Float -> Float
+foreign import ccall "atanf" primAtanFloat  :: Float -> Float
+foreign import ccall "expf"  primExpFloat   :: Float -> Float
+foreign import ccall "logf"  primLogFloat   :: Float -> Float
+foreign import ccall "sqrtf" primSqrtFloat  :: Float -> Float
+-- extra
+foreign import ccall "sinhf" primSinhFloat  :: Float -> Float
+foreign import ccall "coshf" primCoshFloat  :: Float -> Float
+foreign import ccall "tanhf" primTanhFloat  :: Float -> Float
+foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
+#endif
+
+#if defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
+foreign import prim "primIsNaNDouble         " primIsNaNFloat              :: Float -> Bool
+foreign import prim "primIsNegativeZeroDouble" primIsNegativeZeroFloat     :: Float -> Bool
+foreign import prim "primIsDenormalizedDouble" primIsDenormalizedFloat     :: Float -> Bool
+foreign import prim "primIsInfiniteDouble    " primIsInfiniteFloat         :: Float -> Bool
+foreign import prim "primDigitsDouble        " primDigitsFloat             :: Int
+foreign import prim "primMaxExpDouble        " primMaxExpFloat             :: Int
+foreign import prim "primMinExpDouble        " primMinExpFloat             :: Int
+foreign import prim "primDecodeDouble        " primDecodeFloat             :: Float -> (Integer, Int)
+foreign import prim "primEncodeDouble        " primEncodeFloat             :: Integer -> Int -> Float
+#else
+foreign import prim primIsNaNFloat              :: Float -> Bool
+foreign import prim primIsNegativeZeroFloat     :: Float -> Bool
+foreign import prim primIsDenormalizedFloat     :: Float -> Bool
+foreign import prim primIsInfiniteFloat         :: Float -> Bool
+foreign import prim primDigitsFloat             :: Int
+foreign import prim primMaxExpFloat             :: Int
+foreign import prim primMinExpFloat             :: Int
+foreign import prim primDecodeFloat             :: Float -> (Integer, Int)
+foreign import prim primEncodeFloat             :: Integer -> Int -> Float
+#endif
+
+-- primitive Double functions
+
+#if defined( __UHC_TARGET_JAZY__ ) || defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
+foreign import prim  primSinDouble   :: Double -> Double
+foreign import prim  primCosDouble   :: Double -> Double
+foreign import prim  primTanDouble   :: Double -> Double
+foreign import prim  primAsinDouble  :: Double -> Double
+foreign import prim  primAcosDouble  :: Double -> Double
+foreign import prim  primAtanDouble  :: Double -> Double
+foreign import prim  primExpDouble   :: Double -> Double
+foreign import prim  primLogDouble   :: Double -> Double
+foreign import prim  primSqrtDouble  :: Double -> Double
+foreign import prim  primAtan2Double :: Double -> Double -> Double
+#if !defined(__UHC_TARGET_JAZY__)
+foreign import prim primSinhDouble  :: Double -> Double
+foreign import prim primCoshDouble  :: Double -> Double
+foreign import prim primTanhDouble  :: Double -> Double
+#endif
+#else
+foreign import ccall "sin"  primSinDouble   :: Double -> Double
+foreign import ccall "cos"  primCosDouble   :: Double -> Double
+foreign import ccall "tan"  primTanDouble   :: Double -> Double
+foreign import ccall "asin" primAsinDouble  :: Double -> Double
+foreign import ccall "acos" primAcosDouble  :: Double -> Double
+foreign import ccall "atan" primAtanDouble  :: Double -> Double
+foreign import ccall "exp"  primExpDouble   :: Double -> Double
+foreign import ccall "log"  primLogDouble   :: Double -> Double
+foreign import ccall "sqrt" primSqrtDouble  :: Double -> Double
+foreign import ccall "sinh" primSinhDouble  :: Double -> Double
+foreign import ccall "cosh" primCoshDouble  :: Double -> Double
+foreign import ccall "tanh" primTanhDouble  :: Double -> Double
+foreign import ccall "atan2"  primAtan2Double   :: Double -> Double -> Double
+#endif
+
+foreign import prim primIsNaNDouble             :: Double -> Bool
+foreign import prim primIsNegativeZeroDouble    :: Double -> Bool
+foreign import prim primIsDenormalizedDouble    :: Double -> Bool
+foreign import prim primIsInfiniteDouble        :: Double -> Bool
+foreign import prim primDigitsDouble            :: Int
+foreign import prim primMaxExpDouble            :: Int
+foreign import prim primMinExpDouble            :: Int
+foreign import prim primDecodeDouble            :: Double -> (Integer, Int)
+foreign import prim primEncodeDouble            :: Integer -> Int -> Double
+
+foreign import prim primIsIEEE  :: Bool
+foreign import prim primRadixDoubleFloat  :: Int
+
+#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
+foreign import prim primShowFloatToPackedString :: Float -> PackedString
+#else
+foreign import prim primShowFloat :: Float -> String
+-- TODO: replace this by a function Float -> PackedString
+#endif
+
+instance Floating Float where
+    exp   = primExpFloat
+    log   = primLogFloat
+    sqrt  = primSqrtFloat
+    sin   = primSinFloat
+    cos   = primCosFloat
+    tan   = primTanFloat
+    asin  = primAsinFloat
+    acos  = primAcosFloat
+    atan  = primAtanFloat
+#ifndef __UHC_TARGET_JAZY__
+    sinh  = primSinhFloat
+#endif
+
+instance Floating Double where
+    exp   = primExpDouble
+    log   = primLogDouble
+    sqrt  = primSqrtDouble
+    sin   = primSinDouble
+    cos   = primCosDouble
+    tan   = primTanDouble
+    asin  = primAsinDouble
+    acos  = primAcosDouble
+    atan  = primAtanDouble
+#if !defined(__UHC_TARGET_JAZY__)
+    sinh  = primSinhDouble
+    cosh  = primCoshDouble
+    tanh  = primTanhDouble
+#endif
+
+
+instance RealFrac Float where
+    properFraction = floatProperFraction
+
+instance RealFrac Double where
+    properFraction = floatProperFraction
+
+floatProperFraction :: (RealFloat a, Integral b) => a -> (b,a)
+floatProperFraction x
+   | n >= 0      = (fromInteger m * fromInteger b ^ n, 0)
+   | otherwise   = (fromInteger w, encodeFloat r n)
+                   where (m,n) = decodeFloat x
+                         b     = floatRadix x
+                         (w,r) = quotRem m (b^(-n))
+
+instance RealFloat Float where
+    floatRadix  _ = toInteger primRadixDoubleFloat
+    floatDigits _ = primDigitsFloat
+    floatRange  _ = (primMinExpFloat, primMaxExpFloat)
+    encodeFloat   = primEncodeFloat
+    decodeFloat   = primDecodeFloat
+    isNaN         = primIsNaNFloat
+    isInfinite    = primIsInfiniteFloat
+    isDenormalized= primIsDenormalizedFloat
+    isNegativeZero= primIsNegativeZeroFloat
+    isIEEE      _ = primIsIEEE
+    atan2         = primAtan2Float
+
+instance RealFloat Double where
+    floatRadix  _ = toInteger primRadixDoubleFloat
+    floatDigits _ = primDigitsDouble
+    floatRange  _ = (primMinExpDouble, primMaxExpDouble)
+    encodeFloat   = primEncodeDouble
+    decodeFloat   = primDecodeDouble
+    isNaN         = primIsNaNDouble
+    isInfinite    = primIsInfiniteDouble
+    isDenormalized= primIsDenormalizedDouble
+    isNegativeZero= primIsNegativeZeroDouble
+    isIEEE      _ = primIsIEEE
+    atan2         = primAtan2Double
+
+instance Enum Float where
+    succ x                = x+1
+    pred x                = x-1
+    toEnum                = primIntToFloat
+    fromEnum              = fromInteger . truncate   -- may overflow
+    enumFrom              = numericEnumFrom
+    enumFromThen          = numericEnumFromThen
+    enumFromTo            = numericEnumFromTo
+    enumFromThenTo        = numericEnumFromThenTo
+
+instance Enum Double where
+    succ x                = x+1
+    pred x                = x-1
+    toEnum                = primIntToDouble
+    fromEnum              = fromInteger . truncate   -- may overflow
+    enumFrom              = numericEnumFrom
+    enumFromThen          = numericEnumFromThen
+    enumFromTo            = numericEnumFromTo
+    enumFromThenTo        = numericEnumFromThenTo
 
 -- instance Read Float where
 --     readsPrec p = readSigned readFloat
@@ -1504,86 +1504,86 @@ instance Num Integer where
 -- #endif
 
 
--- --------------------------------------------------------------
--- -- Ratio and Rational type
--- --------------------------------------------------------------
+--------------------------------------------------------------
+-- Ratio and Rational type
+--------------------------------------------------------------
 
--- data Ratio a = !a :% !a deriving (Eq, Generic)
+data Ratio a = !a :% !a deriving (Eq, Generic)
 
--- type Rational              = Ratio Integer
+type Rational              = Ratio Integer
 
--- (%)                       :: Integral a => a -> a -> Ratio a
--- x % y                      = reduce (x * signum y) (abs y)
+(%)                       :: Integral a => a -> a -> Ratio a
+x % y                      = reduce (x * signum y) (abs y)
 
--- reduce                    :: Integral a => a -> a -> Ratio a
--- reduce x y | y == 0        = error "Ratio.%: zero denominator"
---            | otherwise     = (x `quot` d) :% (y `quot` d)
---                              where d = gcd x y
+reduce                    :: Integral a => a -> a -> Ratio a
+reduce x y | y == 0        = error "Ratio.%: zero denominator"
+           | otherwise     = (x `quot` d) :% (y `quot` d)
+                             where d = gcd x y
 
--- numerator, denominator    :: Integral a => Ratio a -> a
--- numerator (x :% y)         = x
--- denominator (x :% y)       = y
+numerator, denominator    :: Integral a => Ratio a -> a
+numerator (x :% y)         = x
+denominator (x :% y)       = y
 
--- instance Integral a => Ord (Ratio a) where
---     compare (x:%y) (x':%y') = compare (x*y') (x'*y)
+instance Integral a => Ord (Ratio a) where
+    compare (x:%y) (x':%y') = compare (x*y') (x'*y)
 
--- instance Integral a => Num (Ratio a) where
---     (x:%y) + (x':%y') = reduce (x*y' + x'*y) (y*y')
---     (x:%y) * (x':%y') = reduce (x*x') (y*y')
---     negate (x :% y)   = negate x :% y
---     abs (x :% y)      = abs x :% y
---     signum (x :% y)   = signum x :% 1
---     fromInteger x     = fromInteger x :% 1
---     -- fromInt           = intToRatio
---     fromInt x         = fromInt x :% 1
+instance Integral a => Num (Ratio a) where
+    (x:%y) + (x':%y') = reduce (x*y' + x'*y) (y*y')
+    (x:%y) * (x':%y') = reduce (x*x') (y*y')
+    negate (x :% y)   = negate x :% y
+    abs (x :% y)      = abs x :% y
+    signum (x :% y)   = signum x :% 1
+    fromInteger x     = fromInteger x :% 1
+    -- fromInt           = intToRatio
+    fromInt x         = fromInt x :% 1
 
--- intToRatio :: Integral a => Int -> Ratio a  -- TODO: optimise fromRational (intToRatio x)
--- intToRatio x = fromInt x :% 1
+intToRatio :: Integral a => Int -> Ratio a  -- TODO: optimise fromRational (intToRatio x)
+intToRatio x = fromInt x :% 1
 
--- instance Integral a => Real (Ratio a) where
---     toRational (x:%y) = toInteger x :% toInteger y
+instance Integral a => Real (Ratio a) where
+    toRational (x:%y) = toInteger x :% toInteger y
 
--- instance Integral a => Fractional (Ratio a) where
---     (x:%y) / (x':%y')   = (x*y') % (y*x')
---     recip (x:%y)        = y % x
---     fromRational (x:%y) = fromInteger x :% fromInteger y
---     fromDouble          = doubleToRatio
+instance Integral a => Fractional (Ratio a) where
+    (x:%y) / (x':%y')   = (x*y') % (y*x')
+    recip (x:%y)        = y % x
+    fromRational (x:%y) = fromInteger x :% fromInteger y
+    fromDouble          = doubleToRatio
 
--- doubleToRatio :: Integral a => Double -> Ratio a   -- TODO: optimies fromRational (doubleToRatio x)
--- doubleToRatio x
---             | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
---             | otherwise = fromRational (round (x * fromInteger denom) % denom)
---                           where (m,n) = decodeFloat x
---                                 denom, pow, radix :: Integer
---                                 radix = floatRadix x
---                                 denom = radix ^ (-n)
---                                 pow   = radix ^ n
+doubleToRatio :: Integral a => Double -> Ratio a   -- TODO: optimies fromRational (doubleToRatio x)
+doubleToRatio x
+            | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
+            | otherwise = fromRational (round (x * fromInteger denom) % denom)
+                          where (m,n) = decodeFloat x
+                                denom, pow, radix :: Integer
+                                radix = floatRadix x
+                                denom = radix ^ (-n)
+                                pow   = radix ^ n
 
--- {-
--- doubleToRatio :: Integral a => Double -> Ratio a   -- TODO: optimies fromRational (doubleToRatio x)
--- doubleToRatio x
---             | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
---             | otherwise = fromRational (round (x * fromInteger denom) % denom)
---                           where (m,n) = decodeFloat x
---                                 n_dec, denom, pow :: Integer
---                                 n_dec = floor (logBase 10 (encodeFloat 1 n :: Double))
---                                 denom = 10 ^ (-n_dec)
---                                 pow   = 10 ^ n_dec
--- -}
+{-
+doubleToRatio :: Integral a => Double -> Ratio a   -- TODO: optimies fromRational (doubleToRatio x)
+doubleToRatio x
+            | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
+            | otherwise = fromRational (round (x * fromInteger denom) % denom)
+                          where (m,n) = decodeFloat x
+                                n_dec, denom, pow :: Integer
+                                n_dec = floor (logBase 10 (encodeFloat 1 n :: Double))
+                                denom = 10 ^ (-n_dec)
+                                pow   = 10 ^ n_dec
+-}
 
--- instance Integral a => RealFrac (Ratio a) where
---     properFraction (x:%y) = (fromIntegral q, r:%y)
---                             where (q,r) = quotRem x y
+instance Integral a => RealFrac (Ratio a) where
+    properFraction (x:%y) = (fromIntegral q, r:%y)
+                            where (q,r) = quotRem x y
 
--- instance Integral a => Enum (Ratio a) where
---     succ x         = x+1
---     pred x         = x-1
---     toEnum         = fromInt
---     fromEnum       = fromInteger . truncate   -- may overflow
---     enumFrom       = numericEnumFrom
---     enumFromTo     = numericEnumFromTo
---     enumFromThen   = numericEnumFromThen
---     enumFromThenTo = numericEnumFromThenTo
+instance Integral a => Enum (Ratio a) where
+    succ x         = x+1
+    pred x         = x-1
+    toEnum         = fromInt
+    fromEnum       = fromInteger . truncate   -- may overflow
+    enumFrom       = numericEnumFrom
+    enumFromTo     = numericEnumFromTo
+    enumFromThen   = numericEnumFromThen
+    enumFromThenTo = numericEnumFromThenTo
 
 -- instance (Read a, Integral a) => Read (Ratio a) where
 --     readsPrec p = readParen (p > 7)

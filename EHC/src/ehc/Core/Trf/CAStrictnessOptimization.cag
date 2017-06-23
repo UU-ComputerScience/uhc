@@ -60,6 +60,7 @@ cmodTrfCaStrictnessOptimization d imps cmod = traceShow "Optimizing skipped" (cm
 %%[(8 counting) hs
 getBindRefBind :: CBind -> ACoreBindRef
 getBindRefBind (CBind_Bind _ cbl) | length cbl == 1 = getBindRefBound $ head cbl
+getBindRefBind c@(CBind_Bind _ []) = panic $ "no cbounds present in getBindRefBind: " ++ show c
 getBindRefBind c = panic $ "multiple cbounds present in getBindRefBind: " ++ show c
 
 getBindRefBound :: CBound -> ACoreBindRef

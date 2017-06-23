@@ -69,8 +69,8 @@ traceShow x = seq (length $ show x)
 traceShowId x = traceShow x x
 
 traceShowTrip :: Show a => (String, a, String) -> b -> b
--- traceShowTrip (n, e, _) = T.traceShow (n, length $ show e, n)
-traceShowTrip (n, e, _) = traceShow (n, length $ show e, n)
+traceShowTrip (n, e, _) = T.traceShow (n, length $ show e, n)
+-- traceShowTrip (n, e, _) = traceShow (n, length $ show e, n)
 -- traceShowId :: Show a => a -> a
 -- -- traceShowId x = T.traceShow (length $ show x) x
 -- traceShowId = T.traceShowId
@@ -119,6 +119,7 @@ cmodTrfAnalysis subeff d imps m = test `seq` res
         finalBindEnv = traceShow "subbind" $ S.substSolution bindingEnv s
         newLamMap = toLamMp finalBindEnv
         finalLamMap = lamMpMergeInto (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType=a}) const newLamMap imps
+        -- s = T.traceShow ("num constraints: ", countConstraints c conMap) $ error "finished generation" 
         s = T.traceShow ("num constraints: ", countConstraints c conMap) $ printTrace c conMap $ solveDef c 
           (emptySolveState {_freshVar = freshVar_Syn_Expr syn, _toHsName = toHsName}) conMap
         toHsName v = mkHNm $ show modName ++ ".CA@" ++ show v
@@ -268,10 +269,12 @@ splitWhile2 f ys@(x:xs@(y:_))
 splitWhile2 f x = (x, []) -- sinleton or empty
 
 fixInstanceScopeSingle :: [(Bindings, CBindCateg)] -> [(Bindings, CBindCateg)]
-fixInstanceScopeSingle ys@(x:xs@(y:_)) 
+fixInstanceScopeSingle ys@(x:xs@(y:zs)) 
+  | hasScopeError x y && hasScopeError y x = traceShow "merged" $ fixInstanceScopeSingle $ merge x y : zs
   | hasScopeError x y = traceShow ("swapped", length fs) $ reverse fs ++ fixInstanceScopeSingle zs
   | otherwise = x:fixInstanceScopeSingle xs
   where (fs,zs) = splitWhile2 hasScopeError ys
+        merge (bs1,_) (bs2,_) = (bs1 ++ bs2, CBindCateg_Rec)
 fixInstanceScopeSingle x = x
 
 hasScopeError :: (Bindings, CBindCateg) -> (Bindings, CBindCateg) -> Bool

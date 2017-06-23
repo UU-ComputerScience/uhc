@@ -16,6 +16,9 @@
 %%[(8 counting) hs import(Debug.Trace)
 %%]
 
+%%[(8 counting) hs import(UHC.Util.Pretty)
+%%]
+
 %%[(8 counting) ag import({Ty/AbsSyn})
 WRAPPER Ty
 %%]
@@ -32,6 +35,7 @@ PRAGMA strictcase
 annotate :: DataGam -> Ty -> CA.Scheme
 annotate d a = CA.Scheme_Forall Set.empty (tyVars_Syn_Ty syn) mempty (annTy_Syn_Ty syn)  
   where syn = wrap_Ty (sem_Ty a) (Inh_Ty d) 
+  -- where syn = traceShow ("annotate", a, pp a) $ wrap_Ty (sem_Ty a) (Inh_Ty d) 
 
 numAnns :: HsName -> DataGam -> Int
 numAnns nm d 
@@ -58,7 +62,7 @@ SEM Ty
     loc.isFunc = fromMaybe False @loc.ismFunc
     loc.annTops = replicate (numAnns @nm @lhs.dataEnv) CA.annTop
     loc.dataTy = CA.Type_Data @nm @loc.annTops []
-    lhs.annTy = if @loc.isFunc then panic "Function Constructor" else if @loc.isRec then panic "Record type" else @loc.dataTy
+    lhs.annTy = if @loc.isFunc then panic "Function Constructor" else if @loc.isRec then panic (show ("Record type", @nm)) else @loc.dataTy
     lhs.tyVars = Set.empty
     loc.isRec := case hsnBaseUnpack @nm of
                     Just ("_Rec", _) -> True
@@ -68,7 +72,8 @@ SEM Ty
     lhs.caIsFunc = case @func.caIsFunc of
                     Just True -> Just False
                     _ -> Nothing
-    lhs.annTy = if (@func.isRec) then @arg.annTy else
+    lhs.annTy = if @func.isRec && @arg.isRec then traceShow "doubleRec" $ CA.Type_Data (mkHNm "()") [] []
+                else if @func.isRec then @arg.annTy else
                   case @func.caIsFunc of
                     Just True -> @arg.annTy
                     Just False -> CA.Type_Func (CA.RhoType_Rho (CA.EtaType_Eta @func.annTy CA.annTop) CA.annTop) $ CA.EtaType_Eta @arg.annTy CA.annTop

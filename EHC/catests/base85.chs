@@ -22,10 +22,10 @@ module UHC.Base   -- adapted from the Hugs prelude
     -- Floating   (..),
     -- RealFrac   (..),
     -- RealFloat  (..),
-    -- Enum       (..),
-    -- Functor    (..),
-    -- Monad      (..),
-    -- Show       (..),
+    Enum       (..),
+    Functor    (..),
+    Monad      (..),
+    Show       (..),
     -- Read       (..),
 
 -- Types
@@ -85,8 +85,8 @@ module UHC.Base   -- adapted from the Hugs prelude
     -- mapM, mapM_, sequence, sequence_, (=<<),
     -- subtract, even, odd, gcd, lcm, (^), (^^), absReal, signumReal,
     -- fromIntegral, realToFrac,
-    -- boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
-    -- shows, showChar, showString, showParen,
+    boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
+    shows, showChar, showString, showParen,
     -- --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
     -- reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
     -- fromRat,
@@ -310,33 +310,33 @@ class Bounded a where
     minBound, maxBound :: a
     -- Minimal complete definition: All
 
--- boundedSucc, boundedPred :: (Num a, Bounded a, Enum a) => a -> a
--- boundedSucc x
---   | x == maxBound = error "succ: applied to maxBound"
---   | otherwise     = x+1
--- boundedPred x
---   | x == minBound = error "pred: applied to minBound"
---   | otherwise     = x-1
+boundedSucc, boundedPred :: (Num a, Bounded a, Enum a) => a -> a
+boundedSucc x
+  | x == maxBound = error "succ: applied to maxBound"
+  | otherwise     = x+1
+boundedPred x
+  | x == minBound = error "pred: applied to minBound"
+  | otherwise     = x-1
 
--- boundedEnumFrom       :: (Ord a, Bounded a, Enum a) => a -> [a]
--- boundedEnumFromTo     :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
--- boundedEnumFromThenTo :: (Ord a, Num a, Bounded a, Enum a) => a -> a -> a -> [a]
--- boundedEnumFromThen   :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
+boundedEnumFrom       :: (Ord a, Bounded a, Enum a) => a -> [a]
+boundedEnumFromTo     :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
+boundedEnumFromThenTo :: (Ord a, Num a, Bounded a, Enum a) => a -> a -> a -> [a]
+boundedEnumFromThen   :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
 
--- boundedEnumFrom n     = takeWhile1 (/= maxBound) (iterate succ n)
--- boundedEnumFromTo n m = takeWhile (<= m) (boundedEnumFrom n)
--- boundedEnumFromThen n m =
---     enumFromThenTo n m (if n <= m then maxBound else minBound)
--- boundedEnumFromThenTo n n' m
---   | n' >= n   = if n <= m then takeWhile1 (<= m - delta) ns else []
---   | otherwise = if n >= m then takeWhile1 (>= m - delta) ns else []
---  where
---   delta = n'-n
---   ns = iterate (+delta) n
+boundedEnumFrom n     = takeWhile1 (/= maxBound) (iterate succ n)
+boundedEnumFromTo n m = takeWhile (<= m) (boundedEnumFrom n)
+boundedEnumFromThen n m =
+    enumFromThenTo n m (if n <= m then maxBound else minBound)
+boundedEnumFromThenTo n n' m
+  | n' >= n   = if n <= m then takeWhile1 (<= m - delta) ns else []
+  | otherwise = if n >= m then takeWhile1 (>= m - delta) ns else []
+ where
+  delta = n'-n
+  ns = iterate (+delta) n
 
--- -- takeWhile and one more
--- takeWhile1 :: (a -> Bool) -> [a] -> [a]
--- takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
+-- takeWhile and one more
+takeWhile1 :: (a -> Bool) -> [a] -> [a]
+takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
 
 -- numericEnumFrom        :: Num a => a -> [a]
 -- numericEnumFromThen    :: Num a => a -> a -> [a]
@@ -556,29 +556,29 @@ signumReal x | x == 0    =  0
 -- class Enum
 --------------------------------------------------------------
 
--- class Enum a where
---     succ, pred           :: a -> a
---     toEnum               :: Int -> a
---     fromEnum             :: a -> Int
---     enumFrom             :: a -> [a]              -- [n..]
---     enumFromThen         :: a -> a -> [a]         -- [n,m..]
---     enumFromTo           :: a -> a -> [a]         -- [n..m]
---     enumFromThenTo       :: a -> a -> a -> [a]    -- [n,n'..m]
+class Enum a where
+    succ, pred           :: a -> a
+    toEnum               :: Int -> a
+    fromEnum             :: a -> Int
+    enumFrom             :: a -> [a]              -- [n..]
+    enumFromThen         :: a -> a -> [a]         -- [n,m..]
+    enumFromTo           :: a -> a -> [a]         -- [n..m]
+    enumFromThenTo       :: a -> a -> a -> [a]    -- [n,n'..m]
 
---     -- Minimal complete definition: toEnum, fromEnum
---     succ                  = toEnum . (1+)       . fromEnum
---     pred                  = toEnum . subtract 1 . fromEnum
---     enumFrom x            = map toEnum [ fromEnum x ..]
---     enumFromTo x y        = map toEnum [ fromEnum x .. fromEnum y ]
---     enumFromThen x y      = map toEnum [ fromEnum x, fromEnum y ..]
---     enumFromThenTo x y z  = map toEnum [ fromEnum x, fromEnum y .. fromEnum z ]
+    -- Minimal complete definition: toEnum, fromEnum
+    succ                  = toEnum . (1+)       . fromEnum
+    pred                  = toEnum . subtract 1 . fromEnum
+    enumFrom x            = map toEnum [ fromEnum x ..]
+    enumFromTo x y        = map toEnum [ fromEnum x .. fromEnum y ]
+    enumFromThen x y      = map toEnum [ fromEnum x, fromEnum y ..]
+    enumFromThenTo x y z  = map toEnum [ fromEnum x, fromEnum y .. fromEnum z ]
 
 -- --------------------------------------------------------------
 -- -- class Read, Show
 -- --------------------------------------------------------------
 
 -- type ReadS a = String -> [(a,String)]
--- type ShowS   = String -> String
+type ShowS   = String -> String
 
 -- class Read a where
 --     readsPrec :: Int -> ReadS a
@@ -598,35 +598,35 @@ signumReal x | x == 0    =  0
 --                                               (x,u)   <- reads t,
 --                                               (xs,v)  <- readl' u]
 
--- class Show a where
---     show      :: a -> String
---     showsPrec :: Int -> a -> ShowS
---     showList  :: [a] -> ShowS
+class Show a where
+    show      :: a -> String
+    showsPrec :: Int -> a -> ShowS
+    showList  :: [a] -> ShowS
 
---     -- Minimal complete definition: show or showsPrec
---     show x          = showsPrec 0 x ""
---     showsPrec _ x s = show x ++ s
---     showList []     = showString "[]"
---     showList (x:xs) = showChar '[' . shows x . showl xs
---                       where showl []     = showChar ']'
---                             showl (x:xs) = showChar ',' . shows x . showl xs
+    -- Minimal complete definition: show or showsPrec
+    show x          = showsPrec 0 x ""
+    showsPrec _ x s = show x ++ s
+    showList []     = showString "[]"
+    showList (x:xs) = showChar '[' . shows x . showl xs
+                      where showl []     = showChar ']'
+                            showl (x:xs) = showChar ',' . shows x . showl xs
 
--- --------------------------------------------------------------
--- -- class Functor, Monad
--- --------------------------------------------------------------
+--------------------------------------------------------------
+-- class Functor, Monad
+--------------------------------------------------------------
 
--- class Functor f where
---     fmap :: (a -> b) -> (f a -> f b)
+class Functor f where
+    fmap :: (a -> b) -> (f a -> f b)
 
--- class Monad m where
---     return :: a -> m a
---     (>>=)  :: m a -> (a -> m b) -> m b
---     (>>)   :: m a -> m b -> m b
---     fail   :: String -> m a
+class Monad m where
+    return :: a -> m a
+    (>>=)  :: m a -> (a -> m b) -> m b
+    (>>)   :: m a -> m b -> m b
+    fail   :: String -> m a
 
---     -- Minimal complete definition: (>>=), return
---     p >> q  = p >>= \ _ -> q
---     fail s  = error s
+    -- Minimal complete definition: (>>=), return
+    p >> q  = p >>= \ _ -> q
+    fail s  = error s
 
 -- sequence       :: Monad m => [m a] -> m [a]
 -- sequence []     = return []
@@ -712,11 +712,11 @@ instance Eq Char  where
 instance Ord Char where 
     compare = primCmpChar
 
--- instance Enum Char where
---     toEnum           = primIntToChar
---     fromEnum         = primCharToInt
---     --enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
---     --enumFromThen     = boundedEnumFromThen
+instance Enum Char where
+    toEnum           = primIntToChar
+    fromEnum         = primCharToInt
+    --enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
+    --enumFromThen     = boundedEnumFromThen
 
 -- instance Read Char where
 --     readsPrec p      = readParen False
@@ -914,15 +914,15 @@ foreign import prim primRemInt       :: Int -> Int -> Int
 
 -- #endif
 
--- instance Enum Int where
---     succ           = boundedSucc
---     pred           = boundedPred
---     toEnum         = id
---     fromEnum       = id
---     enumFrom       = boundedEnumFrom
---     enumFromTo     = boundedEnumFromTo
---     enumFromThen   = boundedEnumFromThen
---     enumFromThenTo = boundedEnumFromThenTo
+instance Enum Int where
+    -- succ           = boundedSucc
+    pred           = boundedPred
+    toEnum         = id
+    fromEnum       = id
+    enumFrom       = boundedEnumFrom
+    enumFromTo     = boundedEnumFromTo
+    enumFromThen   = boundedEnumFromThen
+    enumFromThenTo = boundedEnumFromThenTo
 
 -- instance Read Int where
 --     readsPrec p = readSigned readDec
@@ -1855,8 +1855,8 @@ unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
 -- reads        :: Read a => ReadS a
 -- reads         = readsPrec 0
 
--- shows        :: Show a => a -> ShowS
--- shows         = showsPrec 0
+shows        :: Show a => a -> ShowS
+shows         = showsPrec 0
 
 -- read         :: Read a => String -> a
 -- read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
@@ -1864,14 +1864,14 @@ unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
 --                       []  -> error "Prelude.read: no parse"
 --                       _   -> error "Prelude.read: ambiguous parse"
 
--- showChar     :: Char -> ShowS
--- showChar      = (:)
+showChar     :: Char -> ShowS
+showChar      = (:)
 
--- showString   :: String -> ShowS
--- showString    = (++)
+showString   :: String -> ShowS
+showString    = (++)
 
--- showParen    :: Bool -> ShowS -> ShowS
--- showParen b p = if b then showChar '(' . p . showChar ')' else p
+showParen    :: Bool -> ShowS -> ShowS
+showParen b p = if b then showChar '(' . p . showChar ')' else p
 
 -- showField    :: Show a => String -> a -> ShowS
 -- showField m@(c:_) v

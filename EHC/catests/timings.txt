@@ -1,4 +1,31 @@
-ConstraintSolver old
+ConstraintSolver old ~22000
 real    389m41.014s
 user    380m38.594s
 sys     8m47.688s
+
+gathering 209535
+real    69m10.481s
+user    67m28.063s
+sys     1m11.641s
+
+gathering 56137
+real    6m53.495s
+user    6m43.547s
+sys     0m8.922s
+
+gathering 23980
+real    1m24.998s
+user    1m20.297s
+sys     0m3.906s
+
+solving 23980
+real    2m28.224s
+user    2m16.188s
+sys     0m9.891s
+
+solving 56137
+real    10m49.618s
+user    10m21.891s
+sys     0m24.391s
+
+solving 148019
