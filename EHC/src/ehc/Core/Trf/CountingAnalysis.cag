@@ -60,8 +60,8 @@ PRAGMA strictcase
 
 %%[(8 counting) hs
 traceShow :: Show a => a -> b -> b
--- traceShow x = id
-traceShow x = seq (length $ show x)
+traceShow x = id
+-- traceShow x = seq (length $ show x)
 -- traceShow = T.traceShow
 -- traceShow x = T.traceShow (length $ show x)
 -- traceShow x = T.traceShow (length $ show x, x)
@@ -75,29 +75,38 @@ traceShowTrip (n, e, _) = T.traceShow (n, length $ show e, n)
 -- -- traceShowId x = T.traceShow (length $ show x) x
 -- traceShowId = T.traceShowId
 
+traceShowPair :: Show a => (String, a) -> b -> b
+traceShowPair (n, e) = T.traceShow (n, length $ show e, n)
+
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
--- cmodTrfAnalysis subeff d imps m = 
---   traceShowTrip ("im", im, "im") $
---   traceShowTrip ("e", e, "e") $
---   traceShowTrip ("extra", extra, "extra") $
---   traceShowTrip ("modName", modName, "modName") $
---   traceShowTrip ("ex", ex, "ex") $
---   -- traceShowTrip ("syn", syn, "syn") $
---   traceShowTrip ("c", c, "c") $
---   traceShowTrip ("conMap", conMap, "conMap") $
---   traceShowTrip ("e'", e', "e'") $
---   traceShowTrip ("bindingEnv", bindingEnv, "bindingEnv") $
---   traceShowTrip ("s", s, "s") $
---   traceShowTrip ("finalBindEnv", finalBindEnv, "finalBindEnv") $
---   traceShowTrip ("newLamMap", newLamMap, "newLamMap") $
---   traceShowTrip ("finalLamMap", finalLamMap, "finalLamMap") $
---   traceShowTrip ("bi", bi, "bi") $
---   traceShowTrip ("res", res, "res") $
---   traceShowTrip ("test", test, "test") $ 
---   panic "finished with everything"
+cmodTrfAnalysis subeff d imps m = 
+  T.traceShow (pp e) $
+  traceShowPair ("subeff", subeff) $
+  traceShowPair ("d", d) $
+  traceShowPair ("imps", imps) $
+  traceShowPair ("m", m) $
+  traceShowPair ("im", im) $
+  traceShowPair ("e", e) $
+  traceShowPair ("extra", extra) $
+  traceShowPair ("modName", modName) $
+  traceShowPair ("ex", ex) $
+  -- traceShowPair ("syn", syn) $
+  traceShowPair ("c", c) $
+  traceShowPair ("conMap", conMap) $
+  traceShowPair ("e'", e') $
+  traceShowPair ("bindingEnv", bindingEnv) $
+  traceShowPair ("s", s) $
+  traceShowPair ("finalBindEnv", finalBindEnv) $
+  traceShowPair ("newLamMap", newLamMap) $
+  traceShowPair ("finalLamMap", finalLamMap) $
+  traceShowPair ("bi", bi) $
+  traceShowPair ("test", test) $ 
+  traceShowPair ("res", res) $
+  T.traceShow "finished with everything" $
+  T.traceShow (ppMap bi) res
 -- cmodTrfAnalysis subeff d imps m = T.traceShow (pp e) $ T.traceShow (ppMapAnnFree bi) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow (pp e, e, m) $ traceShow (ppMapAnnFree bi, ex) $ test `seq` res
-cmodTrfAnalysis subeff d imps m = test `seq` res
+-- cmodTrfAnalysis subeff d imps m = test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow m (m,imps)
   where Module_Module e1 extra = toCAModule im m
         e = traceShowId $ scopeTest Nothing S.empty $ (\x -> traceShow (length $ show x) x) $ fixInstanceScopeFull $ (\x -> traceShow (length $ show x) x) $ scopeTest Nothing S.empty e1
@@ -118,7 +127,7 @@ cmodTrfAnalysis subeff d imps m = test `seq` res
         bindingEnv = bindingEnv_Syn_Expr syn
         finalBindEnv = traceShow "subbind" $ S.substSolution bindingEnv s
         newLamMap = toLamMp finalBindEnv
-        finalLamMap = lamMpMergeInto (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType=a}) const newLamMap imps
+        finalLamMap = lamMpMergeInto (\(LamInfo {laminfoCaType=a}) i -> i {laminfoCaType = a}) const newLamMap imps
         -- s = T.traceShow ("num constraints: ", countConstraints c conMap) $ error "finished generation" 
         s = T.traceShow ("num constraints: ", countConstraints c conMap) $ printTrace c conMap $ solveDef c 
           (emptySolveState {_freshVar = freshVar_Syn_Expr syn, _toHsName = toHsName}) conMap
@@ -126,7 +135,7 @@ cmodTrfAnalysis subeff d imps m = test `seq` res
         modName = moduleNm_CModule_Mod m
         bi = envFilterList finalBindEnv ex
         res = if M.size bi == S.size ex 
-          then traceShow "return info" $ (toCModule $ Module_Module (S.substSolution e' s) extra, finalLamMap) 
+          then traceShowId $ (toCModule $ Module_Module (S.substSolution e' s) extra, finalLamMap) 
           else panic $ "not all exported symbols have a type: " ++ show (ppMap finalBindEnv)
         test = if m /= toCModule (Module_Module e1 extra) then panic "toCModule . toCAModule /= id"  else ()
 
@@ -842,8 +851,8 @@ SEM AltCons
 
 SEM Const
   | String
-    lhs.ty = Type_Data (mkHNm "UHC.Base.PackedString") [] []
-    -- lhs.ty = Type_Data (mkHNm "UHC.Base.[]") (map (Annotation_Var . @lhs.toHsName) [@lhs.freshVar .. @lhs.freshVar + 3]) [Type_Data (mkHNm "Char") [] []]
+    lhs.ty = Type_Data (mkHNm "UHC.Base1.PackedString") [] []
+    -- lhs.ty = Type_Data (mkHNm "UHC.Base1.[]") (map (Annotation_Var . @lhs.toHsName) [@lhs.freshVar .. @lhs.freshVar + 3]) [Type_Data (mkHNm "Char") [] []]
     lhs.freshVar = @lhs.freshVar + 4
   | Integer
     lhs.ty = Type_Data (mkHNm "Integer") [] []
