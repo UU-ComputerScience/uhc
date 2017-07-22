@@ -225,7 +225,7 @@ ehclib-variant-dflt: \
 	          $${pkgsexpopt} \
 	          $${hsFiles} \
 	          $(if $(EHC_CFG_USE_UNIX_AND_C),`find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.c'`,) \
-	          +RTS -K100m ; \
+	          +RTS -K30m ; \
 	        err=$$? ; \
 	        if test $${err} -ne 0 ; then exit $${err} ; fi ; \
 	        pkgsexpopt="$${pkgsexpopt} --pkg-expose $${pkgv}" ; \

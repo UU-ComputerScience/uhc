@@ -118,12 +118,7 @@ expandTypeDefs ltg tg d = traceShow ("gamkengt", length $ show $ gamToAssocDupL 
           -- | otherwise = traceShow ("tot:", n, fields) $ CA.Type_Data n as fields
           | otherwise = traceShow (n,as,fields) CA.Type_Data n as fields
           where fields = map expandTypeDefsType ts
-                mt' = n `tyGamLookup` ltg <|> n `tyGamLookup` tg
-                mt = case mt' of
-                      Nothing -> Nothing
-                      Just x -> case tgiAnnTy x of
-                        CA.Type_Error _ -> Nothing
-                        _ -> Just x 
+                mt = n `tyGamLookup` ltg <|> n `tyGamLookup` tg
                 mdt = n `dataGamLookup` d
                 tgi = fromJust mt
                 ty = tgiAnnTy tgi
@@ -132,7 +127,7 @@ expandTypeDefs ltg tg d = traceShow ("gamkengt", length $ show $ gamToAssocDupL 
                 asol = Map.fromList $ zip ans as
                 tsol = Map.fromList $ zip tvs fields
                 ty' = if length ans == length as && length tvs == length fields then S.substSolution ty (CA.Solution asol tsol Map.empty)
-                  else error $ show (mt, mdt, "lengths don't match for " ++ show n ++ ": " ++ show (as, ans) ++ show (fields, tvs) ++ ". Type: " ++ show ty)
+                  else error ("lengths don't match for " ++ show n ++ ": " ++ show (as, ans) ++ show (fields, tvs) ++ ". Type: " ++ show ty)
                 trec = if (length ts /= 1) then error ("_rec is no singleton" ++ show ts)  else head ts
         expandTypeDefsType  (CA.Type_App t1 t2) = traceShow (t1', t2') CA.Type_App t1' t2'
           where t1' = expandTypeDefsType t1
@@ -234,21 +229,20 @@ SEM AGItf
 ATTR AGItf [ dataGam: DataGam | | ]
 
 SEM AGItf
-  | AGItf       expr        .   dataGam             = specialTgiTrace @loc.gathTyGam $ specialtrace $ @expr.gathDataGam `gamUnion` @lhs.dataGam
+  | AGItf       expr        .   dataGam             = specialTgiTrace @loc.gathTyGam $ (specialtrace @expr.gathDataGam) `gamUnion` @lhs.dataGam
 
 {
 specialtrace :: DataGam -> DataGam
-specialtrace = id
--- specialtrace dg = T.traceShow ("DataGam:", dgl) dg
---   where dgl = map f $ gamToAssocL dg
---         f (n, dgi) = (n, dgiTyVars dgi, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
+-- specialtrace = id
+specialtrace dg = traceShow ("DataGam:", dgl) dg
+  where dgl = map f $ gamToAssocL dg
+        f (n, dgi) = (n, dgiTyVars dgi, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
 
 specialTgiTrace :: TyGam -> a -> a
 specialTgiTrace tg = id
--- specialTgiTrace tg = T.traceShow ("TyGam:", tgl)
---   where tgl = map f $ gamToAssocL tg
---         f (n, tgi) = (n, tgiAnnTy tgi) 
-
+-- specialTgiTrace tg = traceShow ("TyGam:", tgl)
+  -- where tgl = map f $ gamToAssocL tg
+  --       f (n, tgi) = (n, tgiAnnTy tgi) 
 deriving instance Show TyExpr
 deriving instance Show PrExpr
 deriving instance Show TyExprAnn
@@ -725,7 +719,7 @@ SEM Decl
   | Data        loc         .   dataAltTy           =   recSum @constrs.dataAltTyL
                             .   dataTgi             :=  mkTGIData (appCon @tyNm) Ty_Any {- ([@dataTy] `appArr` @dataAltTy) -}
 %%[[(8 counting)
-                                                                            [] [] (CA.Type_Error $ show @tyNm ++ " dataTgi")
+                                                                            [] [] (CA.Type_Error "dataTgi")
 %%]]
 %%]
   | Constr      loc         -- .   dataConTy2          =   @dataConTyL `appArr` @lhs.dataTy 

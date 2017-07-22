@@ -334,7 +334,7 @@ mkGenerRVN2 n s = mkGenerRVN' n s "_"
 %%[[1
       mkRV
 %%][99
-      (mkRV hsnModIntlBase1) -- (mkRV hsnModIntlNum)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlNum)
 %%]]
       [ "negate" ]
 %%]
@@ -362,7 +362,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[5
       mkRV
 %%][99
-      (mkRV hsnModIntlBase1) -- (mkRV hsnModIntlEnum)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlEnum)
 %%]]
       [ "enumFromThenTo", "enumFromThen", "enumFromTo", "enumFrom" ]
 %%]
@@ -414,17 +414,20 @@ TBD: Needs cleaning up, correct partitioning in variants
 
 TBD: Needs cleaning up, correct partitioning in variants
 
-%%[8 export(hsnUndefined,hsnPackedString,hsnPackedStringToString,hsnPrelId)
+%%[8 export(hsnUndefined,hsnPackedString,hsnPackedStringToString,hsnPrelId,hsnPrimAddInt)
 [ hsnUndefined
  , hsnPackedString
  , hsnPackedStringToString
  , hsnPrelId
+ , hsnPrimAddInt
  , hsnPrimGtInt
 %%[[91
  , hsnPrimLtInt
 %%]]
 %%[[97
  , hsnPackedStringToInteger
+ , hsnPrimIntegerToInt
+ , hsnPrimIntToInteger
 %%]]
 %%[[97
  , hsnPrimEqChar
@@ -440,36 +443,18 @@ TBD: Needs cleaning up, correct partitioning in variants
       , "PackedString"
       , "packedStringToString"
       , "id"
+      , "primAddInt"
       , "primGtInt"
 %%[[91
       , "primLtInt"
 %%]]
 %%[[97
       , "packedStringToInteger"
+      , "primIntegerToInt"
+      , "primIntToInteger"
 %%]]
 %%[[97
       , "primEqChar"
-%%]]
-      ]
-%%]
-
-%%[8 export(hsnPrimAddInt)
-[ hsnPrimAddInt
-%%[[97
- , hsnPrimIntegerToInt
- , hsnPrimIntToInteger
-%%]]
- ]
-  = map
-%%[[8
-      mkRV
-%%][99
-      (mkRV hsnModIntlBase1) -- (mkRV hsnModIntlBase)
-%%]]
-      [ "primAddInt"
-%%[[97
-      , "primIntegerToInt"
-      , "primIntToInteger"
 %%]]
       ]
 %%]
@@ -480,8 +465,9 @@ TBD: Needs cleaning up, correct partitioning in variants
 
 TBD: Needs cleaning up, correct partitioning in variants
 
-%%[9 export(hsnClassEq)
-[hsnClassEq
+%%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail,hsnClassEq)
+[hsnMonadSeq,hsnMonadBind,hsnMonadFail
+ , hsnClassEq
 %%[[91
  , hsnBoolAnd
  , hsnBoolOr
@@ -496,7 +482,8 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%][99
       (mkRV hsnModIntlBase) -- (mkRV hsnModIntlBase)
 %%]]
-      [ "Eq"
+      [ ">>", ">>=", "fail"
+      , "Eq"
 %%[[91
       , "&&"
       , "||"
@@ -504,19 +491,6 @@ TBD: Needs cleaning up, correct partitioning in variants
       , "++", "concat"
       , "."
 %%]]
-      ]
-%%]
-
-%%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail)
-[hsnMonadSeq,hsnMonadBind,hsnMonadFail
- ]
-  = map
-%%[[9
-      mkRV
-%%][99
-      (mkRV hsnModIntlBase2) -- (mkRV hsnModIntlBase)
-%%]]
-      [ ">>", ">>=", "fail"
       ]
 %%]
 
@@ -592,7 +566,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlBase1) -- (mkRV hsnModIntlNum)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlNum)
 %%]]
       [ "fromInteger" ]
 %%]
@@ -642,7 +616,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlBase2) -- (mkRV hsnModIntlFractional)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlFractional)
 %%]]
       [ "fromRational" ]
 %%]
@@ -653,7 +627,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlBase1) -- (mkRV hsnModIntlRatio)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlRatio)
 %%]]
       [ ":%" ]
 %%]
@@ -742,9 +716,7 @@ hsnModIntlGenericsTuple                 =   hsnPrefixQual hsnUHC (mkHNm         
 -- hsnModIntlRatio                         =   hsnPrefixQual hsnUHC (hsnFromString "Ratio")
 -- hsnModIntlReal                          =   hsnPrefixQual hsnUHC (hsnFromString "Real")
 -- hsnModIntlFractional                    =   hsnPrefixQual hsnUHC (hsnFromString "Fractional")
-hsnModIntlBase                          =   hsnPrefixQual hsnUHC (hsnFromString "Base0")
-hsnModIntlBase1                         =   hsnPrefixQual hsnUHC (hsnFromString "Base1")
-hsnModIntlBase2                         =   hsnPrefixQual hsnUHC (hsnFromString "Base2")
+hsnModIntlBase                          =   hsnPrefixQual hsnUHC (hsnFromString "Base")
 hsnModIntlEnum                          =   hsnPrefixQual hsnUHC (hsnFromString "Enum")
 hsnModIntlIx                            =   hsnPrefixQual hsnUHC (hsnFromString "Ix")
 hsnModIntlNum                           =   hsnPrefixQual hsnUHC (hsnFromString "Num")
