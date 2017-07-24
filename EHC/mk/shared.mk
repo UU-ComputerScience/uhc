@@ -151,7 +151,7 @@ UHCRUN_EXEC_NAME		:= $(UHC_EXEC_NAME)r
 
 GIT_VERSION_EXISTS		:= yes
 GIT_VERSION_CMD			:= cat GITHASH
-GIT_REVISION			:= TiborCountingAnalysis@7b9ca49ed1
+GIT_REVISION			:= TiborCountingAnalysis@6134b405ad
 
 ###########################################################################################
 # Locations in source, build, install, distribution

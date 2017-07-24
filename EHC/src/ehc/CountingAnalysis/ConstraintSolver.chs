@@ -18,8 +18,8 @@ import %%@{%{EH}%%}Base.Target (FFIWay)
 import %%@{%{EH}%%}Foreign (ForeignEnt)
 import %%@{%{EH}%%}Ty (Ty)
 
-import Data.Map (Map)
-import qualified Data.Map as M
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Set (Set)
 import qualified Data.Set as S
 -- import Data.Dequeue (BankersDequeue)
@@ -81,7 +81,7 @@ traceShow2def = flip const
 -- fromListQueue xs = (S.fromList xs, Qq.fromList xs)
 
 -- toListQueue :: Ord a => Queue a -> [a]
--- toListQueue (_,xs) = traceShow ("toListQueu", length xs') xs'
+-- toListQueue (_,xs) = seq ("toListQueu", length xs') xs'
 --   where xs' = toList xs
 
 -- addToQueue :: Ord a => [a] -> Queue a -> Queue a
@@ -90,71 +90,76 @@ traceShow2def = flip const
 -- addToQueueBack :: Ord a => [a] -> Queue a -> Queue a
 -- addToQueueBack xs q = foldl' pushBack q xs
 
--- type Queue a = (Set a, [a])
+type Queue a = (Set a, [a])
 
 -- pushBack :: Ord a => Queue a -> a -> Queue a
 -- pushBack q@(s,xs) x 
 --   | x `S.member` s = q
 --   | otherwise = (S.insert x s, xs ++ [x])
 
--- pushFront :: Ord a => Queue a -> a -> Queue a
--- pushFront q@(s,xs) x
---   | x `S.member` s = q
---   | otherwise = (S.insert x s, x:xs )
-
--- popFront :: Ord a => Queue a -> Maybe (a, Queue a)
--- popFront (_,[]) = Nothing
--- popFront (s, x:xs) = Just (x, (S.delete x s, xs))
-
--- emptyQueue :: Ord a => Queue a
--- emptyQueue = (S.empty, [])
-
--- nullQueue :: Ord a => Queue a -> Bool
--- nullQueue (_, q) = null q
-
--- fromListQueue :: Ord a => [a] -> Queue a
--- fromListQueue xs = (S.fromList xs, xs)
-
--- addToQueue :: Ord a => [a] -> Queue a -> Queue a
--- addToQueue xs (s,q) = (S.union s $ S.fromList xs', xs' ++ q)
---   where xs' = filter (`S.notMember` s) xs
-
--- addToQueueBack :: Ord a => [a] -> Queue a -> Queue a
--- addToQueueBack xs (s,q) = (S.union s $ S.fromList xs', q ++ xs')
---   where xs' = filter (`S.notMember` s) xs
-
--- toListQueue :: Ord a => Queue a -> [a]
--- toListQueue (_,xs) = xs
-
-type Queue a = [a]
-
-pushBack :: Ord a => Queue a -> a -> Queue a
-pushBack xs x = xs ++ [x]
-
 pushFront :: Ord a => Queue a -> a -> Queue a
-pushFront xs x = x:xs
+pushFront q@(s,xs) x
+  | x `S.member` s = q
+  | otherwise = (S.insert x s, x:xs )
 
 popFront :: Ord a => Queue a -> Maybe (a, Queue a)
-popFront [] = Nothing
-popFront (x:xs) = Just (x, xs)
+popFront (_,[]) = Nothing
+popFront (s, x:xs) = Just (x, (S.delete x s, xs))
 
 emptyQueue :: Ord a => Queue a
-emptyQueue = []
+emptyQueue = (S.empty, [])
 
 nullQueue :: Ord a => Queue a -> Bool
-nullQueue = null
+nullQueue (_, q) = null q
 
 fromListQueue :: Ord a => [a] -> Queue a
-fromListQueue = id
+fromListQueue xs = (S.fromList xs, xs)
 
 addToQueue :: Ord a => [a] -> Queue a -> Queue a
-addToQueue xs q = xs ++ q
+addToQueue [] q = q
+addToQueue xs (s,q) = traceShowS ("atq", length xs) (S.union s $ S.fromList xs', xs' ++ q)
+  where xs' = filter (`S.notMember` s) xs
 
 addToQueueBack :: Ord a => [a] -> Queue a -> Queue a
-addToQueueBack xs q = q ++ xs
+-- addToQueueBack xs (s,q) = (S.union s $ S.fromList xs', q ++ xs')
+--   where xs' = filter (`S.notMember` s) xs
+addToQueueBack = addToQueue
 
 toListQueue :: Ord a => Queue a -> [a]
-toListQueue = id
+toListQueue (_,xs) = xs
+
+makeDeepSeqQueue :: Show a => Queue a -> Queue a
+makeDeepSeqQueue q@(s,xs) = seq (length (show s) + length (show xs)) q
+
+-- type Queue a = [a]
+
+-- pushBack :: Ord a => Queue a -> a -> Queue a
+-- pushBack xs x = xs ++ [x]
+
+-- pushFront :: Ord a => Queue a -> a -> Queue a
+-- pushFront xs x = x:xs
+
+-- popFront :: Ord a => Queue a -> Maybe (a, Queue a)
+-- popFront [] = Nothing
+-- popFront (x:xs) = Just (x, xs)
+
+-- emptyQueue :: Ord a => Queue a
+-- emptyQueue = []
+
+-- nullQueue :: Ord a => Queue a -> Bool
+-- nullQueue = null
+
+-- fromListQueue :: Ord a => [a] -> Queue a
+-- fromListQueue = id
+
+-- addToQueue :: Ord a => [a] -> Queue a -> Queue a
+-- addToQueue xs q = xs ++ q
+
+-- addToQueueBack :: Ord a => [a] -> Queue a -> Queue a
+-- addToQueueBack xs q = q ++ xs
+
+-- toListQueue :: Ord a => Queue a -> [a]
+-- toListQueue = id
 
 %%]
 
@@ -229,21 +234,66 @@ instance AddNewConstraint GatherConstraints where
   addNewConstraint = addNewConstraint . toConstraints
 
 instance AddNewConstraint Constraints where
-  addNewConstraint cs = traceShowS ("cs", length cs) $ do
-    fvs <- replicateM (length cs) getFresh
-    let zipped = traceShowS ("zipStart", cs, fvs) $ zip fvs cs
+  addNewConstraint [] = return ()
+  addNewConstraint cs = do
+    fvs <- traceShow ("anc-cs", length cs, f cs) $ replicateM (length cs) getFresh
+    let zipped = traceShowS ("zipStart", cs, fvs) $ zip fvs $ sortConstraints cs
     acs <- use $ traceShowS ("zipp", zipped) allConstraints
-    allConstraints .= traceRun "anc-cs-acs" (M.union (traceShowS zipped $ M.fromList zipped) acs)
+    let nacs = M.union (traceShowS zipped $ M.fromList zipped) acs
+    allConstraints .= traceRun "anc-cs-acs" (makeDeepSeqAcs nacs)
     cwl <- use currentWorkList
-    currentWorkList .= traceRun "anc-cwl-acs" (addToQueue (map fst zipped) cwl)
+    let ncwl = addToQueue (map fst zipped) cwl
+    currentWorkList .= traceRun "anc-cwl-acs" (makeDeepSeqQueue ncwl)
     mapM_ updateWorkListConstraint zipped
 
+f [Constraint_Eq c@(ConstraintEq_Type t1 t2)] = show (ca t1, ca t2, ca2 t1, ca2 t2, ca3 t1, ca3 t2, c)
+f _ = ""
+ca (Type_App t1 t2) = 1 + ca t2
+ca _ = 0
+ca2 (Type_Data _ _ ts) = 1 + sum (map ca2 ts)
+ca2 _ = 0
+ca3 (Type_Data _ _ ts) = 1 + length ts
+ca3 _ = 0
+
+
+splitTypeApp :: Type -> [Type]
+splitTypeApp t = seq (length xs) xs
+  where xs = splitTypeApp' t
+
+splitTypeApp' :: Type -> [Type]
+splitTypeApp' (Type_App t1 t2) = t1 : splitTypeApp t2
+splitTypeApp' _ = []
+
+makeDeepSeq :: Map a b -> Map a b
+makeDeepSeq x = seq (M.size x) x
+
+makeDeepSeq2 :: Show a => a -> a
+makeDeepSeq2 x = seq (length $ show x) x
+
+makeDeepSeqPs :: PartSolution -> PartSolution
+-- makeDeepSeqPs = id
+makeDeepSeqPs ps = seq (M.size ps) ps
+-- makeDeepSeqPs ps = seq (M.size ps + (sum $ map (length . S.toList) $ M.elems ps)) ps
+
+makeDeepSeqAcs :: Map Var Constraint -> Map Var Constraint
+makeDeepSeqAcs x = seq (M.size x) x
+
+makeDeepSeqSol s@(Solution a b c) = seq (M.size a + M.size b + M.size c) s
+makeDeepSeqList xs = seq (length xs) xs
+makeDeepSeqSet s = seq (S.size s) s
+-- makeDeepSeqQueue s = seq (length $ toListQueue s) s
+
 updateWorkListConstraint :: (Var, Constraint) -> SolveT ()
-updateWorkListConstraint (v,c) = do
+updateWorkListConstraint (v,c) | test c = do
   let (as,ts,ss) = E.extractVars c
       hsns = S.toList $ S.unions [as,ts,ss]
   wlcs <- use workListConstraints
-  workListConstraints .= traceRun "uwlc-wlcs" (foldl' (\m1 x -> M.insertWith S.union x (S.singleton v) m1) wlcs hsns)
+  let nwlcs = foldl' (\m1 x -> M.insertWith S.union x (S.singleton v) m1) wlcs hsns
+  workListConstraints .= traceRun "uwlc-wlcs" (makeDeepSeq nwlcs)
+  where test (Constraint_Ann _) = True
+        test (Constraint_Inst{}) = True
+        test _ = False
+updateWorkListConstraint _ = return ()
 
 type SolveT a = StateT SolveState Identity a
 
@@ -267,7 +317,8 @@ instance SolveSingle Constraint where
     c2 <- genTrace2 (name,"Gen: ", sigma) $ solveFixMulti $ conMap M.! c1
     c2' <- getConstraints c2
     cm <- use constraintMap
-    constraintMap .= traceRun "ss-c-cm" (M.insert c1 c2 cm)
+    let ncm = M.insert c1 c2 cm
+    constraintMap .= traceRun "ss-c-cm" (makeDeepSeq ncm)
     checkConstraints c2
     s <- traceShowS ("#######",c2,"$$$$$") $ use solution
     let tau' = S.substSolution tau s 
@@ -287,11 +338,14 @@ instance SolveSingle Constraint where
         -- vbeta = S.union favc2 favtau' S.\\ S.unions [favenv', favnu', favdelta', favnu0', favdelta0']
         vbeta = favtau' S.\\ S.unions [favenv', favnu', favdelta', favnu0', favdelta0']
     s2 <- use solution
-    solution .= traceRun "ss-c-s2" (s2 & annSol %~ flip (foldr M.delete) (traceShowT vbeta vbeta))
+    let ns1 = s2 & annSol %~ flip (foldr M.delete) (traceShowT vbeta vbeta)
+    solution .= traceRun "ss-c-s2" (makeDeepSeqSol ns1)
     s3 <- use solution
-    solution .= traceRun "ss-c-s3" (s3 & tySol %~ flip (foldr M.delete) valpha)
+    let ns2 = s3 & tySol %~ flip (foldr M.delete) valpha
+    solution .= traceRun "ss-c-s3" (makeDeepSeqSol ns2)
     dd <- use dontDefault
-    dontDefault .= traceRun "ss-c-dd" (S.union vbeta dd)
+    let ndd = S.union vbeta dd
+    dontDefault .= traceRun "ss-c-dd" (makeDeepSeqSet ndd)
     addNewConstraint $ Constraint_Eq $ ConstraintEq_Scheme sigma $ Scheme_ForallTemp vbeta valpha c2 tau'
     return True
   solveSingle (Constraint_Inst _ (Scheme_ForallTemp beta1 alpha1 c tau1) tau2) = do
@@ -300,21 +354,23 @@ instance SolveSingle Constraint where
     let sol = traceShowS ("help", sol, pp sol) $ Solution (M.fromList $ zip (S.toList beta1) (map Annotation_Var beta2)) (M.fromList $ zip (S.toList alpha1) (map Type_Var alpha2)) M.empty
         tau' = S.substSolution tau1 sol
     cwl <- use currentWorkList
-    currentWorkList .= traceRun "ss-c-i-cwl" (addToQueue (S.toList c) cwl)
+    let ncwl = addToQueue (S.toList c) cwl
+    currentWorkList .= traceRun "ss-c-i-cwl" (makeDeepSeqQueue ncwl)
     addNewConstraint $ Constraint_Eq $ ConstraintEq_Type tau' tau2
     return True
   solveSingle (Constraint_Inst _ (Scheme_Forall beta1 alpha1 c tau1) tau2) = do
-    alpha2 <- replicateM (S.size alpha1) getFresh'
+    alpha2 <- traceShowS ("inst import", length c) $ replicateM (S.size alpha1) getFresh'
     beta2 <- replicateM (S.size beta1) getFresh'
     let sol = traceShowS ("help", sol, pp sol) $ Solution (M.fromList $ zip (S.toList beta1) (map Annotation_Var beta2)) (M.fromList $ zip (S.toList alpha1) (map Type_Var alpha2)) M.empty
         tau' = S.substSolution tau1 sol
-    addNewConstraint c
+        c' = S.substSolution c sol
+    addNewConstraint c'
     -- cwl <- use currentWorkList
     -- currentWorkList .= traceRun "ss-c-i-cwl" (addToQueue (S.toList c) cwl)
     addNewConstraint $ Constraint_Eq $ ConstraintEq_Type tau' tau2
     return True
   -- solve c = panic $ "help me: " ++ show c 
-  solveSingle c = return False
+  solveSingle c = traceShowS "unsolved" $ return False
 
 getConstraints :: Set Var -> SolveT Constraints
 getConstraints = fmap (map snd) . getConstraintsWithVar
@@ -406,7 +462,8 @@ updatePartSolutionSingle (n, sa) = do
     return ()
   else do
     ps <- use partSolution
-    partSolution .= traceRun "upss-ps" (M.insert n sa ps)
+    let nps = M.insert n sa ps
+    partSolution .= traceRun "upss-ps" (traceShowS ("upss", n, sa) $ makeDeepSeqPs nps)
     updateWorkList n
 
 singles :: PartSolution -> Constraints
@@ -505,7 +562,7 @@ instance SolveSingle ConstraintEq where
   solveSingle (ConstraintEq_Type mu a2@(Type_Var _)) = solveSingle (ConstraintEq_Type a2 mu)
   solveSingle c@(ConstraintEq_Type (Type_Data n1 as1 ts1) (Type_Data n2 as2 ts2)) = 
     if n1 /= n2 then
-      return $ traceShow ("TypeEqError", n1, n2) True
+      return $ traceShowS ("TypeEqError", n1, n2) True
       -- panic $ "Unsatisfiable constraint(solve eqtype): " ++ show c
     else do
       addNewConstraint $ genEq as1 as2 <> genEq ts1 ts2
@@ -516,15 +573,20 @@ instance SolveSingle ConstraintEq where
   solveSingle c@(ConstraintEq_Type (Type_Tup ts1) (Type_Tup ts2)) = do
     addNewConstraint $ genEq ts1 ts2
     return True
-  solveSingle (ConstraintEq_Type (Type_App t1f t1a) (Type_App t2f t2a)) = do
-    addNewConstraint $ genEq t1f t2f <> genEq t1a t2a  
-    return True
+  solveSingle c@(ConstraintEq_Type t1@(Type_App t1f t1a) t2@(Type_App t2f t2a)) = 
+    do
+      -- ignore length errors
+      -- let (x,y) = unzip $ zip (splitTypeApp t1) $ splitTypeApp t2
+      -- addNewConstraint $ genEq x y
+      addNewConstraint $ genEq t1f t2f <> genEq t1a t2a  
+      return True
+      
   solveSingle (ConstraintEq_Type a b@(Type_App{})) = do
     addNewConstraint $ ConstraintEq_Type b a
     return True
   solveSingle c@(ConstraintEq_Type (Type_App t1f t1a) (Type_Data n as ts)) = 
     if ts == [] then do
-      (addNewConstraint $ traceShow ("appError:", c) $ genEq t1f (Type_Data n as ts))
+      (addNewConstraint $ traceShowS ("appError:", c) $ genEq t1f (Type_Data n as ts))
       return True 
     else
       let t = last ts
@@ -592,7 +654,8 @@ instance SolveSingle ConstraintEq where
     else
       return True
       
-  solveSingle c = panic $ "Unsatisfiable constraint(solve eq): " ++ show c
+  solveSingle c = traceShowS ("Unsatisfiable constraint(solve eq): ", c) $ return True
+  -- solveSingle c = panic $ "Unsatisfiable constraint(solve eq): " ++ show c
 
 tupToData :: Type -> Type
 tupToData (Type_Tup ts) = Type_Data (mkHNm "_Tup") (concatMap (\x -> [getUsage x, getDemand x]) ts) $ map getType ts
@@ -615,9 +678,11 @@ instance AddToSol Annotation where
   addToSol n (Annotation_Var x) | n == x = return ()
   addToSol n a = traceShowS ("atsA-start", n, a) $ do
     s <- use solution
-    solution .= (s & annSol %~ M.insert n a)
+    let ns = s & annSol %~ M.insert n a
+    solution .= makeDeepSeqSol ns
     ps2 <- use partSolution
-    partSolution .= M.delete n ps2
+    let nps = M.delete n ps2
+    partSolution .= makeDeepSeqPs nps
     updateWorkList n
     
 
@@ -625,7 +690,8 @@ instance AddToSol Type where
   addToSol n (Type_Var x) | n == x = return ()
   addToSol n t = traceShowS ("atsT-start", n, t) $  do
     sol <- use solution
-    solution .= (sol & tySol %~ M.insert n t)
+    let ns = sol & tySol %~ M.insert n t
+    solution .= makeDeepSeqSol ns
     updateWorkList n
    
 
@@ -633,7 +699,8 @@ instance AddToSol Scheme where
   addToSol n (Scheme_Var x) | n == x = return ()
   addToSol n s = traceShowS ("atsS-start", n, s) $  do
     sol <- use solution
-    solution .= (sol & schemeSol %~ M.insert n s)
+    let ns = sol & schemeSol %~ M.insert n s
+    solution .= makeDeepSeqSol ns
     updateWorkList n
 
 updateWorkList :: HsName -> SolveT ()
@@ -641,30 +708,33 @@ updateWorkList n = do
   wlcs <- use workListConstraints
   let nc = traceRun "uwl-nc" $ S.toList $ fromMaybe S.empty $ M.lookup n wlcs
   cwl <- use currentWorkList
-  currentWorkList .= traceRun "uwl-cwl" (addToQueueBack nc cwl)
+  let ncwl = addToQueueBack nc cwl
+  currentWorkList .= traceRun "uwl-cwl" (makeDeepSeqQueue ncwl)
   cvs <- use changedVars
-  changedVars .= traceRun "uwl-cvs" (S.insert n cvs)
+  let ncvs = S.insert n cvs
+  changedVars .= traceRun "uwl-cvs" (makeDeepSeqSet ncvs)
 
 solveFix :: SolveT ()
 -- solveFix = return ()
 solveFix = traceShowS "solveFix" $ do
-  wcs <- use currentWorkList
-  mc <- traceShowS ("worklistsize", length $ toListQueue wcs) getWorkConstraint
+  mc <- getWorkConstraint
   if traceShowS ("mc",mc) $ mc == Nothing then do
     acs <- use allConstraints
     return $ traceShowS ("acs", acs) ()
   else do
     s <- use solution
     let (v,c) = fromJust mc
-        c' = S.substSolution c s
+        c' = traceShow ("solve: ", v) S.substSolution c s
     updateWorkListConstraint $ traceShowS ("current",v) (v,c)
     solved <- solveSingle (traceShowS "sf-c'" c')
     asc <- use allConstraints
-    if traceShowS "solved" solved then
-      allConstraints .= traceRun "sf-asc-solved" (M.delete v asc)
+    if traceShowS "solved" solved then do
+      let nacs = M.delete v asc
+      allConstraints .= traceRun "sf-asc-solved" (makeDeepSeqAcs nacs)
     else do
       s' <- use solution
-      allConstraints .= traceRun "sf-asc-unsolved" (M.insert v (S.substSolution c' s') asc)
+      let nacs2 = M.insert v (S.substSolution c' s') asc
+      allConstraints .= traceRun "sf-asc-unsolved" (makeDeepSeqAcs nacs2)
       updateWorkListConstraint (v,c)
     solveFix
 
@@ -703,12 +773,12 @@ traceRun :: Show a => String -> a -> a
 traceRun m x = seqForce x x
 
 traceRun2 :: (Show c) => String -> c -> c
-traceRun2 m x = traceShow (m ++ ".start") $ seqForce2 x $ traceShow (m ++ ".end") x 
--- traceRun2 _ x = seqForce2 x x
+-- traceRun2 m x = traceShow (m ++ ".start") $ seqForce2 x $ traceShow (m ++ ".end") x 
+traceRun2 _ x = seqForce2 x x
 
 seqForce2 :: Show a => a -> b -> b
-seqForce2 x = seq (length $ show x)
--- seqForce2 _ = id
+-- seqForce2 x = seq (length $ show x)
+seqForce2 _ = id
 
 seqForce :: Show a => a -> b -> b
 -- seqForce x = seq (length $ show x)
@@ -721,26 +791,26 @@ force s = id
 countConstraints :: Constraints -> Map a Constraints -> Int
 countConstraints c cm = traceRun "countConstraints" $ length c + sum (map length $ M.elems cm) 
 
-runInIsolation :: Set Var -> SolveT (Set Var)
-runInIsolation sv = do
-  cs <- getConstraintsWithVar sv
-  acs <- use allConstraints
-  wlcs <- use workListConstraints
-  cwl <- use currentWorkList
-  allConstraints .= traceRun "rii-acs-cs" (M.fromList cs)
-  workListConstraints .= seqForce acs M.empty
-  currentWorkList .= fromListQueue (map fst cs)
-  mapM_ updateWorkListConstraint cs
-  solveFix
-  acs' <- use allConstraints
-  allConstraints .= traceRun "rii-acs-acs'" (M.union acs acs')
-  currentWorkList .= cwl
-  wlcs' <- use workListConstraints
-  workListConstraints .= traceRun "rii-wlcs" (M.unionWith S.union wlcs wlcs')
-  cvs <- use changedVars
-  changedVars .= S.empty
-  mapM_ updateWorkList $ S.toList cvs
-  return $ M.keysSet acs'
+-- runInIsolation :: Set Var -> SolveT (Set Var)
+-- runInIsolation sv = do
+--   cs <- getConstraintsWithVar sv
+--   acs <- use allConstraints
+--   wlcs <- use workListConstraints
+--   cwl <- use currentWorkList
+--   allConstraints .= traceRun "rii-acs-cs" (M.fromList cs)
+--   workListConstraints .= seqForce acs M.empty
+--   currentWorkList .= fromListQueue (map fst cs)
+--   mapM_ updateWorkListConstraint cs
+--   solveFix
+--   acs' <- use allConstraints
+--   allConstraints .= traceRun "rii-acs-acs'" (M.union acs acs')
+--   currentWorkList .= cwl
+--   wlcs' <- use workListConstraints
+--   workListConstraints .= traceRun "rii-wlcs" (M.unionWith S.union wlcs wlcs')
+--   cvs <- use changedVars
+--   changedVars .= S.empty
+--   mapM_ updateWorkList $ S.toList cvs
+--   return $ M.keysSet acs'
 
 -- solveFixMulti :: Set Var -> SolveT (Set Var)
 -- solveFixMulti c = do
@@ -770,17 +840,17 @@ solveFixMulti :: Set Var -> SolveT (Set Var)
 solveFixMulti c = do
   f <- getFresh
   cwl <- use currentWorkList
-  currentWorkList .= (fromListQueue $ S.toList c)
-  solveFix
+  currentWorkList .= makeDeepSeqQueue (fromListQueue $ S.toList c)
+  traceShow ("sfm", length $ toListQueue cwl, S.size c) solveFix
   f2 <- getFresh
   currentWorkList .= cwl
   return $ S.union c $ S.fromList [f .. f2]
 
-sortConstraints :: Set Var -> SolveT (Set Var, Set Var, Set Var)
-sortConstraints = sortConstraints' . S.toList
-  where sortConstraints' [] = return mempty -- (S.empty,S.empty,S.empty)
-        sortConstraints' (v:vs) = do
-          (ec, gcs, cs) <- sortConstraints' vs
+sortConstraintsSet :: Set Var -> SolveT (Set Var, Set Var, Set Var)
+sortConstraintsSet = sortConstraintsSet' . S.toList
+  where sortConstraintsSet' [] = return mempty -- (S.empty,S.empty,S.empty)
+        sortConstraintsSet' (v:vs) = do
+          (ec, gcs, cs) <- sortConstraintsSet' vs
           acs <- use allConstraints
           case M.lookup v acs of
             Nothing -> return (ec,gcs,cs) 
@@ -789,6 +859,18 @@ sortConstraints = sortConstraints' . S.toList
               Constraint_Ann{} -> return (S.insert v ec, gcs,cs) 
               Constraint_Gen{} -> return (ec, S.insert v gcs,cs) 
               Constraint_Inst{} -> return (ec, gcs,S.insert v cs) 
+
+sortConstraints :: Constraints -> Constraints
+sortConstraints cs = seq (length cs') cs'
+  where cs' = ecs ++ ics ++ gcss
+        (ecs, gcss, ics) = sortConstraints' cs
+        sortConstraints' [] = ([],[],[])
+        sortConstraints' (x:xs) = case x of
+              Constraint_Eq{} -> (x:ec,gcs,cs) 
+              Constraint_Ann{} -> (x:ec, gcs,cs) 
+              Constraint_Gen{} -> (ec, x:gcs,cs) 
+              Constraint_Inst{} -> (ec, gcs, x:cs) 
+          where (ec, gcs, cs) = sortConstraints' xs
 
 defaulting :: [(HsName, Set AnnVal)] -> (HsName, AnnVal)
 defaulting ((n, as):xs) = traceRun "defaulting" $ defaulting' n (maxAnnVal as) xs
@@ -834,7 +916,7 @@ solveDefInit :: Constraints -> Map Var Constraints -> SolveT ()
 solveDefInit cs conMap = do
   addNewConstraint cs
   cm' <- mapM addConMap $ M.toList conMap
-  constraintMap .= M.fromList cm'
+  constraintMap .= makeDeepSeq (M.fromList cm')
   solveDef'
 
 addConMap :: (Var, Constraints) -> SolveT (Var, Set Var)
@@ -842,15 +924,17 @@ addConMap (v,cs) = do
   fvs <- replicateM (length cs) getFresh
   let zipped = zip fvs cs
   acs <- use allConstraints
-  allConstraints .= traceRun "acm-acs" (M.union (M.fromList zipped) acs)
+  let nacs = M.union (M.fromList zipped) acs
+  allConstraints .= traceRun "acm-acs" (makeDeepSeqAcs nacs)
   mapM_ updateWorkListConstraint zipped
   return (v, S.fromList fvs)
 
 solveDef' :: SolveT ()
-solveDef' = traceShow "StartDef" $ do
-  solveFix
+solveDef' = traceShow "StartDef" $ do 
+  s <- use currentWorkList
+  seq (makeDeepSeqQueue s) solveFix
   ps <- use partSolution
-  partSolution .= traceRun "sd-ps-f" (M.filter (\x -> S.size x > 1) ps)
+  partSolution .= traceRun "sd-ps-f" (traceShowS "psHelp" $ makeDeepSeqPs $ M.filter (\x -> S.size x > 1) ps)
   notDefaulting <- use dontDefault
   ps <- use partSolution
   let psiFinal = traceRun "solveDef-psiFinal" $ M.filterWithKey (\x _ -> S.notMember x notDefaulting) ps
@@ -858,58 +942,40 @@ solveDef' = traceShow "StartDef" $ do
     solveFinalSchemes
   else do
     let (beta, w) = traceShow2def "Def: " $ defaulting $ M.toList psiFinal
-    r <- addToSol beta $ Annotation_Val w
-    return $ traceRun "defrec" r
-    traceShow "defRec" solveDef'
-
--- solveDef' :: SolveT ()
--- solveDef' = traceShow "StartDef" $ do
---   sta <- get
---   wl <- use currentWorkList
---   solveFixMulti $ traceRun "solveDef-sfm" $ seqForce sta $ S.fromList $ toListQueue wl
---   ps <- use partSolution
---   partSolution .= traceRun "sd-ps-f" (M.filter (\x -> S.size x > 1) ps)
---   notDefaulting <- use dontDefault
---   ps <- use partSolution
---   let psiFinal = traceRun "solveDef-psiFinal" $ M.filterWithKey (\x _ -> S.notMember x notDefaulting) ps
---   if M.null psiFinal then
---     solveFinalSchemes
---   else do
---     let (beta, w) = traceShow2def "Def: " $ defaulting $ M.toList psiFinal
---     r <- traceShow ("startAddToSol", beta, w) $ addToSol beta $ Annotation_Val w
---     return $ traceRun "defrec" r
---     traceShow "defRec" solveDef'
+    addToSol beta $ Annotation_Val w
+    cwl <- use currentWorkList
+    seq (makeDeepSeqQueue s) $ traceShow ("defrec", length $ toListQueue cwl) solveDef'
     
 solveFinalSchemes :: SolveT ()
 solveFinalSchemes = traceShow "startFinalSchemes" $ do
   acs <- use allConstraints
   let filtered = M.filter f acs
       keys = traceShow ("still to do cs", M.size filtered, M.size acs) $ M.keys filtered
-  currentWorkList .= fromListQueue (traceRun2 "sfss-keys" keys)
+  currentWorkList .= fromListQueue (traceRun "sfss-keys" $ makeDeepSeqList keys)
   solveFix
   s <- use solution 
-  s' <- mapM solveFinalScheme $ traceRun2 (show ("sfss-sfs", s)) s ^. schemeSol
+  s' <- mapM solveFinalScheme $ traceRun (show ("sfss-sfs", s)) s ^. schemeSol
   s2 <- use solution
-  solution .= traceRun (show ("sfss-s", s2)) (s & schemeSol .~ s')
+  solution .= traceRun (show ("sfss-s", s2)) (makeDeepSeqSol $ s & schemeSol .~ s')
   where f (Constraint_Ann _) = False
         f _ = True
 
 solveFinalScheme :: Scheme -> SolveT Scheme
--- solveFinalScheme s@(Scheme_ForallTemp as ts cs t) = traceShow ("start sfs", s) $ do
---   cs' <- getConstraints $ traceRun2 "sfs-cs" cs
---   s <- use solution
---   let as' = traceRun2 "sfs-as'" $ S.fromList $ S.substSolution (map Annotation_Var $ S.toList as) s
---       ts' = traceRun2 "sfs-ts'" $ S.substSolution (map Type_Var $ S.toList ts) s
---       t' = traceRun2 "sfs-ts'" $ S.substSolution t s
---       hsn = traceRun2 "sfs-hsn" $ ifsConstraints $ Scheme_Forall (S.fromList $ f $ S.toList as') ts cs' t
---       as'' = traceRun2 "sfs-as''" $ S.toList $ as' `S.difference` S.map Annotation_Var hsn
---   return $ traceShow "end sfs" $ removeUnusedVars $ Scheme_Forall (S.fromList $ f as'') (S.fromList $ g ts') (removeUselessConstraints cs' hsn) t'
---   where f (Annotation_Var v:xs) = v : f xs
---         f (_:xs) = f xs
---         f [] = []
---         g (Type_Var v:xs) = v : g xs
---         g (_:xs) = g xs
---         g [] = []
+solveFinalScheme s@(Scheme_ForallTemp as ts cs t) = traceShowS ("start sfs", s) $ do
+  cs' <- getConstraints $ traceRun2 "sfs-cs" cs
+  s <- use solution
+  let as' = traceRun "sfs-as'" $ S.fromList $ S.substSolution (map Annotation_Var $ S.toList as) s
+      ts' = traceRun "sfs-ts'" $ S.substSolution (map Type_Var $ S.toList ts) s
+      t' = traceRun "sfs-ts'" $ S.substSolution t s
+      hsn = traceRun "sfs-hsn" $ ifsConstraints $ Scheme_Forall (S.fromList $ f $ S.toList as') ts cs' t
+      as'' = traceRun "sfs-as''" $ S.toList $ as' `S.difference` S.map Annotation_Var hsn
+  return $ traceShowS "end sfs" $ removeUnusedVars $ Scheme_Forall (S.fromList $ f as'') (S.fromList $ g ts') (removeUselessConstraints cs' hsn) t'
+  where f (Annotation_Var v:xs) = v : f xs
+        f (_:xs) = f xs
+        f [] = []
+        g (Type_Var v:xs) = v : g xs
+        g (_:xs) = g xs
+        g [] = []
 solveFinalScheme s = return s -- panic $ "schemevar in final type: " ++ show s -- return s
 
 influenceSets :: Constraints -> Map HsName (Set HsName)

@@ -9,20 +9,20 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 
-module UHC.Base   -- adapted from the Hugs prelude
+module UHC.Base1   -- adapted from the Hugs prelude
 (
 -- Classes
     Eq         (..),
     Ord        (..),
     Bounded    (..),
-    -- Num        (..),
-    -- Real       (..),
-    -- Integral   (..),
+    Num        (..),
+    Real       (..),
+    Integral   (..),
     -- Fractional (..),
     -- Floating   (..),
     -- RealFrac   (..),
     -- RealFloat  (..),
-    -- Enum       (..),
+    Enum       (..),
     -- Functor    (..),
     -- Monad      (..),
     -- Show       (..),
@@ -34,7 +34,7 @@ module UHC.Base   -- adapted from the Hugs prelude
     Maybe      (..),
     Either     (..),
     Ordering   (..),
-    -- Ratio      (..), (%), 
+    Ratio      (..), (%), 
     Char, 
     Int, 
     String,
@@ -44,7 +44,7 @@ module UHC.Base   -- adapted from the Hugs prelude
     IO,
     -- ShowS,
     -- ReadS,
-    -- Rational, 
+    Rational, 
 
     IO            (..), 
     -- IOResult      (..),
@@ -76,7 +76,8 @@ module UHC.Base   -- adapted from the Hugs prelude
     isSpace, isUpper, isLower, isAlpha, isDigit, 
     -- isOctDigit, isHexDigit, 
     isAlphaNum, 
-    -- showLitChar, readLitChar, lexLitChar,
+    -- showLitChar, 
+    -- readLitChar, lexLitChar,
     -- Ratio
     -- numerator, denominator,
     -- Maybe
@@ -86,11 +87,16 @@ module UHC.Base   -- adapted from the Hugs prelude
  
 -- overloaded functions
     -- mapM, mapM_, sequence, sequence_, (=<<),
-    -- subtract, even, odd, gcd, lcm, (^), (^^), absReal, signumReal,
-    -- fromIntegral, realToFrac,
-    -- boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
+    subtract, 
+    -- even, odd, 
+    gcd, 
+    -- lcm, (^), (^^), 
+    absReal, signumReal,
+    fromIntegral, 
+    -- realToFrac,
+    boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
     -- shows, showChar, showString, showParen,
-    -- --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
+    --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
     -- reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
     -- fromRat,
 
@@ -103,8 +109,7 @@ module UHC.Base   -- adapted from the Hugs prelude
     iterate, repeat, 
     -- replicate, 
     cycle,
-    -- take, drop, 
-    -- splitAt, 
+    -- take, drop, splitAt, 
     takeWhile, dropWhile, span, break,
     lines, words, unlines, unwords, reverse, and, or,
     any, all, elem, notElem, lookup,
@@ -123,8 +128,7 @@ module UHC.Base   -- adapted from the Hugs prelude
 
 -- EHC specific functions
     PackedString,
-    packedStringToString, packedStringToInteger, 
-    -- primIntToInteger,
+    packedStringToString, packedStringToInteger, primIntToInteger,
     primGtInt, primEqChar,
     ByteArray,
 
@@ -161,7 +165,7 @@ module UHC.Base   -- adapted from the Hugs prelude
 
 ) where
 
--- import UHC.Generics
+import UHC.Base
 
 #include "IntLikeInstance.h"
 
@@ -183,225 +187,89 @@ infixl 1  >>, >>=
 infixr 1  =<<
 infixr 0  $, $!, `seq`
 
---------------------------------------------------------------
--- Dangerous functions
---------------------------------------------------------------
 
-asTypeOf       :: a -> a -> a
-asTypeOf        = const
+boundedSucc, boundedPred :: (Num a, Bounded a, Enum a) => a -> a
+boundedSucc x
+  | x == maxBound = error "succ: applied to maxBound"
+  | otherwise     = x+1
+boundedPred x
+  | x == minBound = error "pred: applied to minBound"
+  | otherwise     = x-1
 
-seq :: forall a b . a -> b -> b
-x `seq` y = let !x' = x in y
+boundedEnumFrom       :: (Ord a, Bounded a, Enum a) => a -> [a]
+boundedEnumFromTo     :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
+boundedEnumFromThenTo :: (Ord a, Num a, Bounded a, Enum a) => a -> a -> a -> [a]
+boundedEnumFromThen   :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
 
-f $! x                = x `seq` f x
+boundedEnumFrom n     = takeWhile1 (/= maxBound) (iterate succ n)
+boundedEnumFromTo n m = takeWhile (<= m) (boundedEnumFrom n)
+boundedEnumFromThen n m =
+    enumFromThenTo n m (if n <= m then maxBound else minBound)
+boundedEnumFromThenTo n n' m
+  | n' >= n   = if n <= m then takeWhile1 (<= m - delta) ns else []
+  | otherwise = if n >= m then takeWhile1 (>= m - delta) ns else []
+ where
+  delta = n'-n
+  ns = iterate (+delta) n
 
-foreign import prim "primUnsafeId" unsafeCoerce :: forall a b . a -> b
+-- takeWhile and one more
+takeWhile1 :: (a -> Bool) -> [a] -> [a]
+takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
 
-
-----------------------------------------------------------------
--- error, undefined
-----------------------------------------------------------------
-
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
-
-forceString :: String -> String
-forceString s = stringSum s `seq` s
-
-stringSum :: String -> Int
-stringSum [] = 0
-stringSum (x:xs) = primCharToInt x + stringSum xs
-
-foreign import prim primError :: String -> a
-
-error          :: forall a . String -> a
-error s         = primError (forceString s)
-
-#else
-
-error          :: forall a . String -> a
-error s         = throw (ErrorCall s)
-
-#endif
-
-undefined :: forall a . a
-undefined       = error "Prelude.undefined"
-
-----------------------------------------------------------------
--- Throw exception
-----------------------------------------------------------------
-
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
--- defined in UHC.OldException, on top of error because exceptions are not implemented, and show of exc is needed.
-#else
-
-foreign import prim primThrowException :: forall a x . SomeException' x -> a
-
-throw :: SomeException' x -> a
-throw e = primThrowException e
-
-#endif
-
-----------------------------------------------------------------
--- PackedString
-----------------------------------------------------------------
-
-data PackedString
-  deriving Generic
-
--- foreign import prim "primCStringToString"  packedStringToString  :: PackedString -> [Char]
-foreign import prim "primPackedStringNull" packedStringNull :: PackedString -> Bool
-foreign import prim "primPackedStringHead" packedStringHead :: PackedString -> Char
-foreign import prim "primPackedStringTail" packedStringTail :: PackedString -> PackedString
-
-packedStringToString :: PackedString -> [Char]
-packedStringToString p = if packedStringNull p 
-                          then []
-                          else packedStringHead p : packedStringToString (packedStringTail p)
-
-
-----------------------------------------------------------------
--- ByteArray
-----------------------------------------------------------------
-
-data ByteArray
-  deriving Generic
-
-foreign import prim primByteArrayLength   :: ByteArray -> Int
-#if defined(__UHC_TARGET_JS__)
-foreign import prim primByteArrayToPackedString :: ByteArray -> PackedString
-primByteArrayToString = packedStringToString . primByteArrayToPackedString
-#else
-foreign import prim primByteArrayToString :: ByteArray -> String
-#endif
-
-
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
-foreign import prim packedStringToInteger :: PackedString -> Integer
-#elif defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
-foreign import prim "primPackedStringToInteger" packedStringToInteger :: PackedString -> Integer
-#else
-foreign import prim "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
-#endif
-
-
---------------------------------------------------------------
--- class Eq, Ord, Bounded
---------------------------------------------------------------
-
-class Eq a where
-    (==), (/=) :: a -> a -> Bool
-
-    -- Minimal complete definition: (==) or (/=)
-    x == y      = not (x/=y)
-    x /= y      = not (x==y)
-
-class (Eq a) => Ord a where
-    compare                :: a -> a -> Ordering
-    (<), (<=), (>=), (>)   :: a -> a -> Bool
-    max, min               :: a -> a -> a
-
-    -- Minimal complete definition: (<=) or compare
-    -- using compare can be more efficient for complex types
-    compare x y | x==y      = EQ
-                | x<=y      = LT
-                | otherwise = GT
-
-    x <= y                  = compare x y /= GT
-    x <  y                  = compare x y == LT
-    x >= y                  = compare x y /= LT
-    x >  y                  = compare x y == GT
-
-    max x y   | x <= y      = y
-              | otherwise   = x
-    min x y   | x <= y      = x
-              | otherwise   = y
-
-class Bounded a where
-    minBound, maxBound :: a
-    -- Minimal complete definition: All
-
--- boundedSucc, boundedPred :: (Num a, Bounded a, Enum a) => a -> a
--- boundedSucc x
---   | x == maxBound = error "succ: applied to maxBound"
---   | otherwise     = x+1
--- boundedPred x
---   | x == minBound = error "pred: applied to minBound"
---   | otherwise     = x-1
-
--- boundedEnumFrom       :: (Ord a, Bounded a, Enum a) => a -> [a]
--- boundedEnumFromTo     :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
--- boundedEnumFromThenTo :: (Ord a, Num a, Bounded a, Enum a) => a -> a -> a -> [a]
--- boundedEnumFromThen   :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
-
--- boundedEnumFrom n     = takeWhile1 (/= maxBound) (iterate succ n)
--- boundedEnumFromTo n m = takeWhile (<= m) (boundedEnumFrom n)
--- boundedEnumFromThen n m =
---     enumFromThenTo n m (if n <= m then maxBound else minBound)
--- boundedEnumFromThenTo n n' m
---   | n' >= n   = if n <= m then takeWhile1 (<= m - delta) ns else []
---   | otherwise = if n >= m then takeWhile1 (>= m - delta) ns else []
---  where
---   delta = n'-n
---   ns = iterate (+delta) n
-
--- -- takeWhile and one more
--- takeWhile1 :: (a -> Bool) -> [a] -> [a]
--- takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
-
--- numericEnumFrom        :: Num a => a -> [a]
--- numericEnumFromThen    :: Num a => a -> a -> [a]
+numericEnumFrom        :: Num a => a -> [a]
+numericEnumFromThen    :: Num a => a -> a -> [a]
 -- numericEnumFromTo      :: (Ord a, Fractional a) => a -> a -> [a]
 -- numericEnumFromThenTo  :: (Ord a, Fractional a) => a -> a -> a -> [a]
--- numericEnumFrom n            = iterate' (+1) n
--- numericEnumFromThen n m      = iterate' (+(m-n)) n
+numericEnumFrom n            = iterate' (+1) n
+numericEnumFromThen n m      = iterate' (+(m-n)) n
 -- numericEnumFromTo n m        = takeWhile (<= m+1/2) (numericEnumFrom n)
 -- numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
 --                                where p | n' >= n   = (<= m + (n'-n)/2)
 --                                        | otherwise = (>= m + (n'-n)/2)
 
--- iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
--- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
--- iterate' f x = x : (iterate' f $! f x)
--- #else
--- iterate' f x = x : (let !fx = f x in iterate' f fx)
--- #endif
+iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+iterate' f x = x : (iterate' f $! f x)
+#else
+iterate' f x = x : (let !fx = f x in iterate' f fx)
+#endif
 
---------------------------------------------------------------
--- Numeric classes: Num, Real, Integral, 
---                  Fractional, Floating, 
---                  RealFrac, RealFloat
---------------------------------------------------------------
+-- --------------------------------------------------------------
+-- -- Numeric classes: Num, Real, Integral, 
+-- --                  Fractional, Floating, 
+-- --                  RealFrac, RealFloat
+-- --------------------------------------------------------------
 
--- class (Eq a, Show a) => Num a where
--- class (Eq a) => Num a where
---     (+), (-), (*)  :: a -> a -> a
---     negate         :: a -> a
---     abs, signum    :: a -> a
---     fromInteger    :: Integer -> a
---     fromInt        :: Int -> a
+-- -- class (Eq a, Show a) => Num a where
+class (Eq a) => Num a where
+    (+), (-), (*)  :: a -> a -> a
+    negate         :: a -> a
+    abs, signum    :: a -> a
+    fromInteger    :: Integer -> a
+    fromInt        :: Int -> a
 
---     -- Minimal complete definition: All, except negate or (-)
---     x - y           = x + negate y
+    -- Minimal complete definition: All, except negate or (-)
+    x - y           = x + negate y
     -- fromInt         = fromIntegral
-    -- negate x        = 0 - x
+    negate x        = 0 - x
 
--- class (Num a, Ord a) => Real a where
---     toRational     :: a -> Rational
+class (Num a, Ord a) => Real a where
+    toRational     :: a -> Rational
 
--- class (Real a, Enum a) => Integral a where
---     quot, rem, div, mod :: a -> a -> a
---     quotRem, divMod     :: a -> a -> (a,a)
---     toInteger           :: a -> Integer
---     toInt               :: a -> Int
+class (Real a, Enum a) => Integral a where
+    quot, rem, div, mod :: a -> a -> a
+    quotRem, divMod     :: a -> a -> (a,a)
+    toInteger           :: a -> Integer
+    toInt               :: a -> Int
 
---     -- Minimal complete definition: quotRem and toInteger
---     n `quot` d           = q where (q,r) = quotRem n d
---     n `rem` d            = r where (q,r) = quotRem n d
---     n `div` d            = q where (q,r) = divMod n d
---     n `mod` d            = r where (q,r) = divMod n d
---     divMod n d           = if signum r == - signum d then (q-1, r+d) else qr
---                            where qr@(q,r) = quotRem n d
---     toInt                = toInt . toInteger
+    -- Minimal complete definition: quotRem and toInteger
+    n `quot` d           = q where (q,r) = quotRem n d
+    n `rem` d            = r where (q,r) = quotRem n d
+    n `div` d            = q where (q,r) = divMod n d
+    n `mod` d            = r where (q,r) = divMod n d
+    divMod n d           = if signum r == - signum d then (q-1, r+d) else qr
+                           where qr@(q,r) = quotRem n d
+    toInt                = toInt . toInteger
 
 -- class (Num a) => Fractional a where
 --     (/)          :: a -> a -> a
@@ -511,22 +379,22 @@ class Bounded a where
 --       | x==0 && y==0  = y     -- must be after the other double zero tests
 --       | otherwise     = x + y -- x or y is a NaN, return a NaN (via +)
 
---------------------------------------------------------------
--- Overloaded numeric functions
---------------------------------------------------------------
+-- --------------------------------------------------------------
+-- -- Overloaded numeric functions
+-- --------------------------------------------------------------
 
--- subtract       :: Num a => a -> a -> a
--- subtract        = flip (-)
+subtract       :: Num a => a -> a -> a
+subtract        = flip (-)
 
 -- even, odd        :: (Integral a) => a -> Bool
 -- even n           =  n `rem` 2 == 0
 -- odd              =  not . even
 
--- gcd            :: Integral a => a -> a -> a
--- gcd 0 0         = error "Prelude.gcd: gcd 0 0 is undefined"
--- gcd x y         = gcd' (abs x) (abs y)
---                   where gcd' x 0 = x
---                         gcd' x y = gcd' y (x `rem` y)
+gcd            :: Integral a => a -> a -> a
+gcd 0 0         = error "Prelude.gcd: gcd 0 0 is undefined"
+gcd x y         = gcd' (abs x) (abs y)
+                  where gcd' x 0 = x
+                        gcd' x y = gcd' y (x `rem` y)
 
 -- lcm            :: (Integral a) => a -> a -> a
 -- lcm _ 0         = 0
@@ -545,43 +413,43 @@ class Bounded a where
 -- (^^)           :: (Fractional a, Integral b) => a -> b -> a
 -- x ^^ n          = if n >= 0 then x ^ n else recip (x^(-n))
 
--- fromIntegral   :: (Integral a, Num b) => a -> b
--- fromIntegral    = fromInteger . toInteger
+fromIntegral   :: (Integral a, Num b) => a -> b
+fromIntegral    = fromInteger . toInteger
 
 -- realToFrac     :: (Real a, Fractional b) => a -> b
 -- realToFrac      = fromRational . toRational
 
--- absReal :: (Ord a,Num a) => a -> a
--- absReal x    | x >= 0    = x
---              | otherwise = -x
+absReal :: (Ord a,Num a) => a -> a
+absReal x    | x >= 0    = x
+             | otherwise = -x
 
--- signumReal :: (Ord a,Num a) => a -> a
--- signumReal x | x == 0    =  0
---              | x > 0     =  1
---              | otherwise = -1
+signumReal :: (Ord a,Num a) => a -> a
+signumReal x | x == 0    =  0
+             | x > 0     =  1
+             | otherwise = -1
 
 
 
---------------------------------------------------------------
--- class Enum
---------------------------------------------------------------
+-- --------------------------------------------------------------
+-- -- class Enum
+-- --------------------------------------------------------------
 
--- class Enum a where
---     succ, pred           :: a -> a
---     toEnum               :: Int -> a
---     fromEnum             :: a -> Int
---     enumFrom             :: a -> [a]              -- [n..]
---     enumFromThen         :: a -> a -> [a]         -- [n,m..]
---     enumFromTo           :: a -> a -> [a]         -- [n..m]
---     enumFromThenTo       :: a -> a -> a -> [a]    -- [n,n'..m]
+class Enum a where
+    succ, pred           :: a -> a
+    toEnum               :: Int -> a
+    fromEnum             :: a -> Int
+    enumFrom             :: a -> [a]              -- [n..]
+    enumFromThen         :: a -> a -> [a]         -- [n,m..]
+    enumFromTo           :: a -> a -> [a]         -- [n..m]
+    enumFromThenTo       :: a -> a -> a -> [a]    -- [n,n'..m]
 
---     -- Minimal complete definition: toEnum, fromEnum
---     succ                  = toEnum . (1+)       . fromEnum
---     pred                  = toEnum . subtract 1 . fromEnum
---     enumFrom x            = map toEnum [ fromEnum x ..]
---     enumFromTo x y        = map toEnum [ fromEnum x .. fromEnum y ]
---     enumFromThen x y      = map toEnum [ fromEnum x, fromEnum y ..]
---     enumFromThenTo x y z  = map toEnum [ fromEnum x, fromEnum y .. fromEnum z ]
+    -- Minimal complete definition: toEnum, fromEnum
+    succ                  = toEnum . (1+)       . fromEnum
+    pred                  = toEnum . subtract 1 . fromEnum
+    enumFrom x            = map toEnum [ fromEnum x ..]
+    enumFromTo x y        = map toEnum [ fromEnum x .. fromEnum y ]
+    enumFromThen x y      = map toEnum [ fromEnum x, fromEnum y ..]
+    enumFromThenTo x y z  = map toEnum [ fromEnum x, fromEnum y .. fromEnum z ]
 
 -- --------------------------------------------------------------
 -- -- class Read, Show
@@ -661,66 +529,15 @@ class Bounded a where
 -- (=<<)            :: Monad m => (a -> m b) -> m a -> m b
 -- f =<< x           = x >>= f
 
+-- #if defined(__UHC_TARGET_JAZY__) || defined(__UHC_TARGET_CR__)
 
+-- foreign import prim   primCharToInt   :: Char -> Int
+-- foreign import prim   primIntToChar   :: Int -> Char
+-- #else
+-- foreign import prim "primUnsafeId"  primCharToInt   :: Char -> Int
+-- foreign import prim "primUnsafeId"  primIntToChar   :: Int -> Char
+-- #endif
 
---------------------------------------------------------------
--- Unit type
---------------------------------------------------------------
-
--- data () = () deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
-
---------------------------------------------------------------
--- Boolean type
---------------------------------------------------------------
-
-data Bool    = False | True
-            --    -- deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
-            --    deriving (Eq, Ord, Enum, Show, Read, Generic)
-            deriving (Eq, Ord, Generic)
-
-(&&), (||)  :: Bool -> Bool -> Bool
-False && x   = False
-True  && x   = x
-False || x   = x
-True  || x   = True
-
-not         :: Bool -> Bool
-not True     = False
-not False    = True
-
-otherwise   :: Bool
-otherwise    = True
-
-instance Bounded Bool where
-    minBound = False
-    maxBound = True
-
---------------------------------------------------------------
--- Char type
---------------------------------------------------------------
-
--- type Char builtin
-type String = [Char]    -- strings are lists of characters
-
-#if defined(__UHC_TARGET_JAZY__) || defined(__UHC_TARGET_CR__)
-foreign import prim   primEqChar    :: Char -> Char -> Bool
-foreign import prim   primCmpChar   :: Char -> Char -> Ordering
-foreign import prim   primCharToInt   :: Char -> Int
-foreign import prim   primIntToChar   :: Int -> Char
-#else
-foreign import prim "primEqInt"   primEqChar    :: Char -> Char -> Bool
-foreign import prim "primCmpInt"  primCmpChar   :: Char -> Char -> Ordering
-foreign import prim "primUnsafeId"  primCharToInt   :: Char -> Int
-foreign import prim "primUnsafeId"  primIntToChar   :: Int -> Char
-#endif
-foreign import prim "primCharIsUpper"   isUpper    :: Char -> Bool
-foreign import prim "primCharIsLower"   isLower    :: Char -> Bool
-
-instance Eq Char  where 
-    (==)    = primEqChar
-
-instance Ord Char where 
-    compare = primCmpChar
 
 -- instance Enum Char where
 --     toEnum           = primIntToChar
@@ -752,46 +569,16 @@ instance Ord Char where
 --     minBound = '\0'
 --     maxBound = '\xff' -- primMaxChar
 
-isSpace :: Char -> Bool
-isSpace c              =  c == ' '  ||
-                          c == '\t' ||
-                          c == '\n' ||
-                          c == '\r' ||
-                          c == '\f' ||
-                          c == '\v' ||
-                          c == '\xa0'
-
-isDigit :: Char -> Bool
-isDigit c              =  c >= '0'   &&  c <= '9'
-
-
-isAlpha :: Char -> Bool
-isAlpha c    = isUpper c || isLower c
-
-isAlphaNum :: Char -> Bool
-isAlphaNum c = isAlpha c || isDigit c
-
 -- ord :: Char -> Int
 -- ord = fromEnum
 
 -- chr :: Int -> Char
 -- chr = toEnum
 
---------------------------------------------------------------
--- Maybe type
---------------------------------------------------------------
+-- --------------------------------------------------------------
+-- -- Maybe type
+-- --------------------------------------------------------------
 
-data Maybe a = Nothing | Just a
-            --    deriving (Eq, Ord, Show, Read, Generic)  -- TODO: Read
-            deriving (Eq, Ord, Generic)
-            
-
-{-
--- done via generic deriving
-instance Functor Maybe where
-    fmap f Nothing  = Nothing
-    fmap f (Just x) = Just (f x)
--}
 
 -- instance Monad Maybe where
 --     Just x  >>= k = k x
@@ -799,60 +586,10 @@ instance Functor Maybe where
 --     return        = Just
 --     fail s        = Nothing
 
-maybe             :: b -> (a -> b) -> Maybe a -> b
-maybe n f Nothing  = n
-maybe n f (Just x) = f x
+-- --------------------------------------------------------------
+-- -- Lists
+-- --------------------------------------------------------------
 
---------------------------------------------------------------
--- Either type
---------------------------------------------------------------
-
-data Either a b = Left a | Right b
-                --   deriving (Eq, Ord, Show, Generic) -- TODO: Read
-            deriving (Eq, Ord, Generic)
-                
-
-either              :: (a -> c) -> (b -> c) -> Either a b -> c
-either l r (Left x)  = l x
-either l r (Right y) = r y
-
---------------------------------------------------------------
--- Ordering type
---------------------------------------------------------------
-
-data Ordering = LT | EQ | GT
-                -- deriving (Eq, Ord, Enum, Show, Generic) -- TODO: Ix, Read, Bounded
-            deriving (Eq, Ord, Generic)
-                
-
---------------------------------------------------------------
--- Lists
---------------------------------------------------------------
-
-data [] a = ''[]'' | a : [a]
-            deriving Generic
-
-{-
-instance Eq a => Eq [a] where
-    []     == []     =  True
-    (x:xs) == (y:ys) =  x==y && xs==ys
-    _      == _      =  False
-    []     /= []     =  False
-    (x:xs) /= (y:ys) =  x/=y || xs/=ys
-    _      /= _      =  True
--}
-
-instance Ord a => Ord [a] where
-    compare []     (_:_)  = LT
-    compare []     []     = EQ
-    compare (_:_)  []     = GT
-    compare (x:xs) (y:ys) = primCompAux x y (compare xs ys)
-
-{-
--- done via generic deriving
-instance Functor [] where
-    fmap = map
--}
 
 -- instance Monad [ ] where
 --     (x:xs) >>= f = f x ++ (xs >>= f)
@@ -866,73 +603,64 @@ instance Functor [] where
 -- instance Show a => Show [a]  where
 --     showsPrec p = showList
 
-primCompAux      :: Ord a => a -> a -> Ordering -> Ordering
-primCompAux x y o = case compare x y of EQ -> o; LT -> LT; GT -> GT
+
+-- --------------------------------------------------------------
+-- -- Int type
+-- --------------------------------------------------------------
+-- -- type Int builtin
+
+PRIMS_CONVERSION_INTEGER(Int,primIntegerToInt,primIntToInteger)
 
 
---------------------------------------------------------------
--- Int type
---------------------------------------------------------------
--- type Int builtin
-
-PRIMS_BOUNDED(Int,primMinInt,primMaxInt)
--- PRIMS_CONVERSION_INTEGER(Int,primIntegerToInt,primIntToInteger)
-
-PRIMS_EQ(Int,primEqInt,primNeInt)
-PRIMS_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
--- PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
-
-INSTANCE_EQ(Int,primEqInt,primNeInt)
-INSTANCE_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
-INSTANCE_BOUNDED(Int,primMinInt,primMaxInt)
--- INSTANCE_REAL(Int)
--- INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
+PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
 
 
--- foreign import prim primDivInt       :: Int -> Int -> Int
--- foreign import prim primModInt       :: Int -> Int -> Int
--- foreign import prim primQuotInt      :: Int -> Int -> Int
--- foreign import prim primRemInt       :: Int -> Int -> Int
+INSTANCE_REAL(Int)
+INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
 
+foreign import prim primDivInt       :: Int -> Int -> Int
+foreign import prim primModInt       :: Int -> Int -> Int
+foreign import prim primQuotInt      :: Int -> Int -> Int
+foreign import prim primRemInt       :: Int -> Int -> Int
 
--- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
+#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 
--- instance Integral Int where
---     divMod x y   = (primDivInt x y, primModInt x y)
---     quotRem x y  = (primQuotInt x y, primRemInt x y)
---     div       = primDivInt
---     quot      = primQuotInt
---     rem       = primRemInt
---     mod       = primModInt
---     toInteger = primIntToInteger
---     toInt x   = x
+instance Integral Int where
+    divMod x y   = (primDivInt x y, primModInt x y)
+    quotRem x y  = (primQuotInt x y, primRemInt x y)
+    div       = primDivInt
+    quot      = primQuotInt
+    rem       = primRemInt
+    mod       = primModInt
+    toInteger = primIntToInteger
+    toInt x   = x
 
--- #else
+#else
 
--- foreign import prim primDivModInt    :: Int -> Int -> (Int,Int)
--- foreign import prim primQuotRemInt   :: Int -> Int -> (Int,Int)
+foreign import prim primDivModInt    :: Int -> Int -> (Int,Int)
+foreign import prim primQuotRemInt   :: Int -> Int -> (Int,Int)
 
--- instance Integral Int where
---     divMod    = primDivModInt
---     quotRem   = primQuotRemInt
---     div       = primDivInt
---     quot      = primQuotInt
---     rem       = primRemInt
---     mod       = primModInt
---     toInteger = primIntToInteger
---     toInt x   = x
+instance Integral Int where
+    divMod    = primDivModInt
+    quotRem   = primQuotRemInt
+    div       = primDivInt
+    quot      = primQuotInt
+    rem       = primRemInt
+    mod       = primModInt
+    toInteger = primIntToInteger
+    toInt x   = x
 
--- #endif
+#endif
 
--- instance Enum Int where
---     succ           = boundedSucc
---     pred           = boundedPred
---     toEnum         = id
---     fromEnum       = id
---     enumFrom       = boundedEnumFrom
---     enumFromTo     = boundedEnumFromTo
---     enumFromThen   = boundedEnumFromThen
---     enumFromThenTo = boundedEnumFromThenTo
+instance Enum Int where
+    succ           = boundedSucc
+    pred           = boundedPred
+    toEnum         = id
+    fromEnum       = id
+    enumFrom       = boundedEnumFrom
+    enumFromTo     = boundedEnumFromTo
+    enumFromThen   = boundedEnumFromThen
+    enumFromThenTo = boundedEnumFromThenTo
 
 -- instance Read Int where
 --     readsPrec p = readSigned readDec
@@ -958,112 +686,97 @@ INSTANCE_BOUNDED(Int,primMinInt,primMaxInt)
 
 -- #endif
 
+foreign import prim primDivInteger  :: Integer -> Integer -> Integer
+foreign import prim primModInteger  :: Integer -> Integer -> Integer
+
+#if defined(__UHC_TARGET_JS__)
+-- Integers are represented by `jsbn' BigInteger library
+{-
+foreign import prim "primEqInt"   primEqInteger      :: Integer -> Integer -> Bool
+foreign import prim "primCmpInt"  primCmpInteger     :: Integer -> Integer -> Ordering
+foreign import prim "primAddInt"  primAddInteger     :: Integer -> Integer -> Integer
+foreign import prim "primSubInt"  primSubInteger     :: Integer -> Integer -> Integer
+foreign import prim "primMulInt"  primMulInteger     :: Integer -> Integer -> Integer
+foreign import prim "primNegInt"  primNegInteger     :: Integer -> Integer
+foreign import prim "primQuotInt" primQuotInteger    :: Integer -> Integer -> Integer
+foreign import prim "primRemInt"  primRemInteger     :: Integer -> Integer -> Integer
+foreign import prim "primDivInt"  primDivInteger     :: Integer -> Integer -> Integer
+foreign import prim "primModInt"  primModInteger     :: Integer -> Integer -> Integer
+foreign import prim "primQuotRemInt" primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
+foreign import prim "primDivModInt"  primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
+-}
+foreign import js "%1.add(%*)"				primAddInteger 				:: Integer -> Integer -> Integer
+foreign import js "%1.subtract(%*)" 		primSubInteger 				:: Integer -> Integer -> Integer
+foreign import js "%1.multiply(%*)" 		primMulInteger 				:: Integer -> Integer -> Integer
+foreign import js "%1.negate(%*)" 			primNegInteger 				:: Integer -> Integer
+foreign import js "%1.divide(%*)" 			primQuotInteger 			:: Integer -> Integer -> Integer
+foreign import js "%1.remainder(%*)" 		primRemInteger 				:: Integer -> Integer -> Integer
+#else
+foreign import prim primAddInteger  :: Integer -> Integer -> Integer
+foreign import prim primSubInteger  :: Integer -> Integer -> Integer
+foreign import prim primMulInteger  :: Integer -> Integer -> Integer
+foreign import prim primNegInteger  :: Integer -> Integer
+foreign import prim primQuotInteger :: Integer -> Integer -> Integer
+foreign import prim primRemInteger  :: Integer -> Integer -> Integer
+#endif
+
+#if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
+foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
+foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
+#endif
+
+instance Num Integer where
+    (+)           = primAddInteger
+    (-)           = primSubInteger
+    negate        = primNegInteger
+    (*)           = primMulInteger
+    abs           = absReal
+    signum        = signumReal
+    fromInteger x = x
+    fromInt       = primIntToInteger
+
+instance Real Integer where
+    toRational x = x % 1
 
 
---------------------------------------------------------------
--- Integer type
---------------------------------------------------------------
+#if defined( __UHC_TARGET_C__) || defined(__UHC_TARGET_JAZY__)  || defined (__UHC_TARGET_LLVM__)
 
-foreign import prim primEqInteger   :: Integer -> Integer -> Bool
-foreign import prim primCmpInteger  :: Integer -> Integer -> Ordering
+instance Integral Integer where
+    divMod x y  = (primDivInteger x y, primModInteger x y)
+    quotRem x y = (primQuotInteger x y, primRemInteger x y)
+    div         = primDivInteger
+    quot        = primQuotInteger
+    rem         = primRemInteger
+    mod         = primModInteger
+    toInteger x = x
+    toInt       = primIntegerToInt
 
--- foreign import prim primDivInteger  :: Integer -> Integer -> Integer
--- foreign import prim primModInteger  :: Integer -> Integer -> Integer
+#else
 
--- #if defined(__UHC_TARGET_JS__)
--- -- Integers are represented by `jsbn' BigInteger library
--- {-
--- foreign import prim "primEqInt"   primEqInteger      :: Integer -> Integer -> Bool
--- foreign import prim "primCmpInt"  primCmpInteger     :: Integer -> Integer -> Ordering
--- foreign import prim "primAddInt"  primAddInteger     :: Integer -> Integer -> Integer
--- foreign import prim "primSubInt"  primSubInteger     :: Integer -> Integer -> Integer
--- foreign import prim "primMulInt"  primMulInteger     :: Integer -> Integer -> Integer
--- foreign import prim "primNegInt"  primNegInteger     :: Integer -> Integer
--- foreign import prim "primQuotInt" primQuotInteger    :: Integer -> Integer -> Integer
--- foreign import prim "primRemInt"  primRemInteger     :: Integer -> Integer -> Integer
--- foreign import prim "primDivInt"  primDivInteger     :: Integer -> Integer -> Integer
--- foreign import prim "primModInt"  primModInteger     :: Integer -> Integer -> Integer
--- foreign import prim "primQuotRemInt" primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
--- foreign import prim "primDivModInt"  primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
--- -}
--- foreign import js "%1.add(%*)"				primAddInteger 				:: Integer -> Integer -> Integer
--- foreign import js "%1.subtract(%*)" 		primSubInteger 				:: Integer -> Integer -> Integer
--- foreign import js "%1.multiply(%*)" 		primMulInteger 				:: Integer -> Integer -> Integer
--- foreign import js "%1.negate(%*)" 			primNegInteger 				:: Integer -> Integer
--- foreign import js "%1.divide(%*)" 			primQuotInteger 			:: Integer -> Integer -> Integer
--- foreign import js "%1.remainder(%*)" 		primRemInteger 				:: Integer -> Integer -> Integer
--- #else
--- foreign import prim primAddInteger  :: Integer -> Integer -> Integer
--- foreign import prim primSubInteger  :: Integer -> Integer -> Integer
--- foreign import prim primMulInteger  :: Integer -> Integer -> Integer
--- foreign import prim primNegInteger  :: Integer -> Integer
--- foreign import prim primQuotInteger :: Integer -> Integer -> Integer
--- foreign import prim primRemInteger  :: Integer -> Integer -> Integer
--- #endif
+instance Integral Integer where
+    divMod      = primDivModInteger
+    quotRem     = primQuotRemInteger
+    div         = primDivInteger
+    quot        = primQuotInteger
+    rem         = primRemInteger
+    mod         = primModInteger
+    toInteger x = x
+    toInt       = primIntegerToInt
 
--- #if defined( __UHC_TARGET_BC__ ) || defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__)
--- foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
--- foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
--- #endif
+#endif
 
-instance Eq  Integer where 
-    (==)    = primEqInteger
-    
-instance Ord Integer where
-    compare = primCmpInteger
+instance Enum Integer where
+    succ x         = x + 1
+    pred x         = x - 1
 
--- instance Num Integer where
---     (+)           = primAddInteger
---     (-)           = primSubInteger
---     negate        = primNegInteger
---     (*)           = primMulInteger
---     abs           = absReal
---     signum        = signumReal
---     fromInteger x = x
---     fromInt       = primIntToInteger
-
--- instance Real Integer where
---     toRational x = x % 1
-
-
--- #if defined( __UHC_TARGET_C__) || defined(__UHC_TARGET_JAZY__)  || defined (__UHC_TARGET_LLVM__)
-
--- instance Integral Integer where
---     divMod x y  = (primDivInteger x y, primModInteger x y)
---     quotRem x y = (primQuotInteger x y, primRemInteger x y)
---     div         = primDivInteger
---     quot        = primQuotInteger
---     rem         = primRemInteger
---     mod         = primModInteger
---     toInteger x = x
---     toInt       = primIntegerToInt
-
--- #else
-
--- instance Integral Integer where
---     divMod      = primDivModInteger
---     quotRem     = primQuotRemInteger
---     div         = primDivInteger
---     quot        = primQuotInteger
---     rem         = primRemInteger
---     mod         = primModInteger
---     toInteger x = x
---     toInt       = primIntegerToInt
-
--- #endif
-
--- instance Enum Integer where
---     succ x         = x + 1
---     pred x         = x - 1
-
---     toEnum         = primIntToInteger
---     fromEnum       = primIntegerToInt
---     enumFrom       = numericEnumFrom
---     enumFromThen   = numericEnumFromThen
---     enumFromTo n m = takeWhile (<= m) (numericEnumFrom n)
---     enumFromThenTo n n2 m = takeWhile p (numericEnumFromThen n n2)
---                                 where p | n2 >= n   = (<= m)
---                                         | otherwise = (>= m)
+    toEnum         = primIntToInteger
+    fromEnum       = primIntegerToInt
+    enumFrom       = numericEnumFrom
+    enumFromThen   = numericEnumFromThen
+    enumFromTo n m = takeWhile (<= m) (numericEnumFrom n)
+    enumFromThenTo n n2 m = takeWhile p (numericEnumFromThen n n2)
+                                where p | n2 >= n   = (<= m)
+                                        | otherwise = (>= m)
 
 -- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
 -- {-
@@ -1518,17 +1231,17 @@ instance Ord Integer where
 -- -- Ratio and Rational type
 -- --------------------------------------------------------------
 
--- data Ratio a = !a :% !a deriving (Eq, Generic)
+data Ratio a = !a :% !a deriving (Eq, Generic)
 
--- type Rational              = Ratio Integer
+type Rational              = Ratio Integer
 
--- (%)                       :: Integral a => a -> a -> Ratio a
--- x % y                      = reduce (x * signum y) (abs y)
+(%)                       :: Integral a => a -> a -> Ratio a
+x % y                      = reduce (x * signum y) (abs y)
 
--- reduce                    :: Integral a => a -> a -> Ratio a
--- reduce x y | y == 0        = error "Ratio.%: zero denominator"
---            | otherwise     = (x `quot` d) :% (y `quot` d)
---                              where d = gcd x y
+reduce                    :: Integral a => a -> a -> Ratio a
+reduce x y | y == 0        = error "Ratio.%: zero denominator"
+           | otherwise     = (x `quot` d) :% (y `quot` d)
+                             where d = gcd x y
 
 -- numerator, denominator    :: Integral a => Ratio a -> a
 -- numerator (x :% y)         = x
@@ -1607,79 +1320,9 @@ instance Ord Integer where
 
 
 
-
---------------------------------------------------------------
--- Some standard functions
---------------------------------------------------------------
-
---fst            :: (a,b) -> a
-fst            :: forall b . (a,b) -> a
-fst (x,_)       = x
-
---snd            :: (a,b) -> b
-snd            :: forall a . (a,b) -> b
-snd (_,y)       = y
-
-curry          :: ((a,b) -> c) -> (a -> b -> c)
-curry f x y     = f (x,y)
-
-uncurry        :: (a -> b -> c) -> ((a,b) -> c)
-uncurry f p     = f (fst p) (snd p)
-
-id             :: a -> a
-id    x         = x
-
-const          :: a -> b -> a
-const k _       = k
-
-(.)            :: (b -> c) -> (a -> b) -> (a -> c)
-(f . g) x       = f (g x)
-
-flip           :: (a -> b -> c) -> b -> a -> c
-flip f x y      = f y x
-
-($)            :: (a -> b) -> a -> b
-f $ x           = f x
-
-until          :: (a -> Bool) -> (a -> a) -> a -> a
-until p f x     = if p x then x else until p f (f x)
-
-
---------------------------------------------------------------
--- Standard list functions
---------------------------------------------------------------
-
-
-head             :: [a] -> a
-head (x:_)        = x
-
-last             :: [a] -> a
-last [x]          = x
-last (_:xs)       = last xs
-
-tail             :: [a] -> [a]
-tail (_:xs)       = xs
-
-init             :: [a] -> [a]
-init [x]          = []
-init (x:xs)       = x : init xs
-
-null             :: [a] -> Bool
-null []           = True
-null (_:_)        = False
-
-(++)             :: [a] -> [a] -> [a]
-[]     ++ ys      = ys
-(x:xs) ++ ys      = x : (xs ++ ys)
-
-map              :: (a -> b) -> [a] -> [b]
-map f xs          = [ f x | x <- xs ]
-
-filter           :: (a -> Bool) -> [a] -> [a]
-filter p xs       = [ x | x <- xs, p x ]
-
-concat           :: [[a]] -> [a]
-concat            = foldr (++) []
+-- -- ------------------------------------------------------------
+-- -- Standard list functions
+-- -- ------------------------------------------------------------
 
 -- length           :: [a] -> Int
 -- length            = foldl' (\n _ -> n + (1::Int)) (0::Int)
@@ -1690,10 +1333,6 @@ concat            = foldr (++) []
 -- (x:_)  !! 0       = x
 -- (_:xs) !! n       = xs !! (n-1)
 
-foldl            :: (a -> b -> a) -> a -> [b] -> a
-foldl f z []      = z
-foldl f z (x:xs)  = foldl f (f z x) xs
-
 -- foldl'           :: (a -> b -> a) -> a -> [b] -> a
 -- foldl' f a []     = a
 -- #if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
@@ -1702,49 +1341,8 @@ foldl f z (x:xs)  = foldl f (f z x) xs
 -- foldl' f a (x:xs) = let !fax = f a x in foldl' f fax xs
 -- #endif
 
-foldl1           :: (a -> a -> a) -> [a] -> a
-foldl1 f (x:xs)   = foldl f x xs
-
-scanl            :: (a -> b -> a) -> a -> [b] -> [a]
-scanl f q xs      = q : (case xs of
-                         []   -> []
-                         x:xs -> scanl f (f q x) xs)
-
-scanl1           :: (a -> a -> a) -> [a] -> [a]
-scanl1 _ []       = []
-scanl1 f (x:xs)   = scanl f x xs
-
-foldr            :: (a -> b -> b) -> b -> [a] -> b
-foldr f z []      = z
-foldr f z (x:xs)  = f x (foldr f z xs)
-
-foldr1           :: (a -> a -> a) -> [a] -> a
-foldr1 f [x]      = x
-foldr1 f (x:xs)   = f x (foldr1 f xs)
-
-scanr            :: (a -> b -> b) -> b -> [a] -> [b]
-scanr f q0 []     = [q0]
-scanr f q0 (x:xs) = f x q : qs
-                    where qs@(q:_) = scanr f q0 xs
-
-scanr1           :: (a -> a -> a) -> [a] -> [a]
-scanr1 f []       = []
-scanr1 f [x]      = [x]
-scanr1 f (x:xs)   = f x q : qs
-                    where qs@(q:_) = scanr1 f xs
-
-iterate          :: (a -> a) -> a -> [a]
-iterate f x       = x : iterate f (f x)
-
-repeat           :: a -> [a]
-repeat x          = xs where xs = x:xs
-
 -- replicate        :: Int -> a -> [a]
 -- replicate n x     = take n (repeat x)
-
-cycle            :: [a] -> [a]
-cycle []          = error "Prelude.cycle: empty list"
-cycle xs          = xs' where xs'=xs++xs'
 
 -- take                :: Int -> [a] -> [a]
 -- take n _  | n <= 0  = []
@@ -1761,102 +1359,10 @@ cycle xs          = xs' where xs'=xs++xs'
 -- splitAt _ []          = ([],[])
 -- splitAt n (x:xs)      = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
 
-takeWhile           :: (a -> Bool) -> [a] -> [a]
-takeWhile p []       = []
-takeWhile p (x:xs)
-         | p x       = x : takeWhile p xs
-         | otherwise = []
-
-dropWhile           :: (a -> Bool) -> [a] -> [a]
-dropWhile p []       = []
-dropWhile p xs@(x:xs')
-         | p x       = dropWhile p xs'
-         | otherwise = xs
-
-span, break         :: (a -> Bool) -> [a] -> ([a],[a])
-span p []            = ([],[])
-span p xs@(x:xs')
-         | p x       = (x:ys, zs)
-         | otherwise = ([],xs)
-                       where (ys,zs) = span p xs'
-break p              = span (not . p)
-
-lines     :: String -> [String]
-lines ""   = []
-lines s    = let (l,s') = break ('\n'==) s
-             in l : case s' of []      -> []
-                               (_:s'') -> lines s''
-
-words     :: String -> [String]
-words s    = case dropWhile isSpace s of
-                  "" -> []
-                  s' -> w : words s''
-                        where (w,s'') = break isSpace s'
-
-unlines   :: [String] -> String
-unlines []      = []
-unlines (l:ls)  = l ++ '\n' : unlines ls
-
-unwords   :: [String] -> String
-unwords []      =  ""
-unwords [w]     = w
-unwords (w:ws)  = w ++ ' ' : unwords ws
-
-reverse   :: [a] -> [a]
-reverse    = foldl (flip (:)) []
-
-and, or   :: [Bool] -> Bool
-and        = foldr (&&) True
-or         = foldr (||) False
-
-any, all  :: (a -> Bool) -> [a] -> Bool
-any p      = or  . map p
-all p      = and . map p
-
-elem, notElem    :: Eq a => a -> [a] -> Bool
-elem              = any . (==)
-notElem           = all . (/=)
-
-lookup           :: Eq a => a -> [(a,b)] -> Maybe b
-lookup k []       = Nothing
-lookup k ((x,y):xys)
-      | k==x      = Just y
-      | otherwise = lookup k xys
 
 -- sum, product     :: Num a => [a] -> a
 -- sum               = foldl' (+) 0
 -- product           = foldl' (*) 1
-
-maximum, minimum :: Ord a => [a] -> a
-maximum           = foldl1 max
-minimum           = foldl1 min
-
-concatMap        :: (a -> [b]) -> [a] -> [b]
--- concatMap f       = concat . map f    -- this definition cannot be used, because map is defined as a list comprehension, which is desugared using concatMap
-concatMap _ []      = []
-concatMap f (x:xs)  = f x ++ concatMap f xs
-
-zip              :: [a] -> [b] -> [(a,b)]
-zip               = zipWith  (\a b -> (a,b))
-
-zip3             :: [a] -> [b] -> [c] -> [(a,b,c)]
-zip3              = zipWith3 (\a b c -> (a,b,c))
-
-zipWith                  :: (a->b->c) -> [a]->[b]->[c]
-zipWith z (a:as) (b:bs)   = z a b : zipWith z as bs
-zipWith _ _      _        = []
-
-zipWith3                 :: (a->b->c->d) -> [a]->[b]->[c]->[d]
-zipWith3 z (a:as) (b:bs) (c:cs)
-                          = z a b c : zipWith3 z as bs cs
-zipWith3 _ _ _ _          = []
-
-unzip                    :: [(a,b)] -> ([a],[b])
-unzip                     = foldr (\(a,b) ~(as,bs) -> (a:as, b:bs)) ([], [])
-
-unzip3                   :: [(a,b,c)] -> ([a],[b],[c])
-unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
-                                  ([],[],[])
 
 -- --------------------------------------------------------------
 -- -- PreludeText
@@ -2095,100 +1601,6 @@ unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
 
 
 
-
-----------------------------------------------------------------
--- Exception datatype and operations, must match the list in the RTS
-----------------------------------------------------------------
-
-data ExitCode = ExitSuccess | ExitFailure Int
-                -- deriving (Eq, Ord, Show, Generic)  -- TODO: Read
-            deriving (Eq, Ord, Generic)
-                
-
-data SomeException' x                          -- alphabetical order of constructors required, assumed Int encoding in comment
-  = ArithException      ArithException      -- 0
-  | ArrayException      ArrayException      -- 1
-  | AssertionFailed     String              -- 2
-  | AsyncException      AsyncException      -- 3
-  | BlockedOnDeadMVar                       -- 4
-  | Deadlock                                -- 5
-  -- | DynException        Dynamic
-  | ErrorCall           String              -- 6
-  | ExitException       ExitCode            -- 7 
-  | IOException         x                   -- 8 -- IO exceptions (from 'ioError')
-  | NoMethodError       String              -- 9
-  | NonTermination                          -- 10
-  | PatternMatchFail    String              -- 11
-  | RecConError         String              -- 12
-  | RecSelError         String              -- 13
-  | RecUpdError         String              -- 14
-  deriving (Generic)
-
-data ArithException
-  = Overflow
-  | Underflow
-  | LossOfPrecision
-  | DivideByZero
-  | Denormal
-  deriving (Eq, Ord, Generic)
-
-data ArrayException
-  = IndexOutOfBounds    String
-  | UndefinedElement    String
-  deriving (Eq, Ord, Generic)
-
-data AsyncException
-  = HeapOverflow							-- 0
-  | StackOverflow		String				-- 1
-  | ThreadKilled							-- 2
-  deriving (Eq, Ord, Generic)
-
-
-----------------------------------------------------------------
--- Monadic I/O implementation
-----------------------------------------------------------------
-
-newtype State s = State s
-data RealWorld = RealWorld			-- known to compiler
-  deriving Generic
-type IOWorld = State RealWorld
-
--- newtype IO a = IO (IOWorld -> IOResult a)
-newtype IO a = IO {unIO :: (IOWorld -> (IOWorld, a))}
--- newtype IO a = IO (IOWorld -> a)
-
--- newtype IOResult a = IOResult a
-
--- Only 1 real world exist, never make a RealWorld elsewhere. Currently it is just there for the type system only.
--- This should be in the RTS... as a primitive?
-realWorld :: RealWorld
-realWorld = RealWorld
-ioWorld :: IOWorld
-ioWorld = State realWorld
-
-{-
-ioFromPrim :: (IOWorld -> a) -> IO a
-ioFromPrim f
-  = IO (\w -> let !x = f w 
-              in (w, x)
-       )
-
-primbindIO :: IO a -> (a -> IO b) -> IO b
-primbindIO (IO io) f
-  = IO (\w -> case io w of
-                (w', x) -> let !x' = x
-                           in case f x' of
-                               IO fx -> fx w'
-       )
--}
-
--- This IO variant behaves just like a ST: s -> (s,a), threading a state
-ioFromPrim :: (IOWorld -> a) -> IO a
-ioFromPrim f
-  = IO (\w -> let !x = f w
-              in (w, x)
-       )
-
 -- primbindIO :: IO a -> (a -> IO b) -> IO b
 -- primbindIO (IO io) f
 --   = IO (\w -> case io w of
@@ -2200,27 +1612,6 @@ ioFromPrim f
 -- primretIO x
 --   = IO (\w -> (w, x))
 
-{-
--- This IO variant only gets an additional state param which triggers the computation, but returns only a result (no tupling with state)
-ioFromPrim :: (IOWorld -> a) -> IO a
-ioFromPrim f
-  = IO (\w -> let x = f w
-              in  let !x2 = x   -- as a side effect, this will update x
-                  in x               -- do not use x2 here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
-       )
-
-primbindIO :: IO a -> (a -> IO b) -> IO b
-primbindIO (IO io) f
-  = IO (\w -> case io w of
-                x -> let !x' = x    -- as a side effect, this will update x
-                     in case f x of      -- do not use x' here, because the code generated by letstrict violates the Grin-invariant if the result is used directly
-                         IO fx -> fx w
-       )
-
-primretIO :: a -> IO a
-primretIO x
-  = IO (\w -> x)
--}
 
 -- instance Functor IO where
 --     fmap f x = x >>= (return . f)
@@ -2229,18 +1620,6 @@ primretIO x
 --     (>>=)  = primbindIO
 --     return = primretIO
 --     -- fail s = ioError (userError s)
-
-
-
-
-----------------------------------------------------------------
--- exit is also an IO primitive
-----------------------------------------------------------------
-
-foreign import prim primExitWith      :: forall a . Int -> a
-
-exitWithIntCode     :: Int -> IO a
-exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 
 
 %%]
@@ -2263,349 +1642,9 @@ exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 %%]
 
 %%[99
-
-----------------------------------------------------------------
--- Generics
-----------------------------------------------------------------
-
--- These definitions may only change simultaneously with the compiler.
--- They must be in the first module containing datatypes, because for every datatype these defs are used.
--- However (1): fields may be added with a default, but those will not be known to the compiler.
--- However (2): arguments types of fields are not used, change is therefore also allowed.
-
 --------------------------------------------------------------------------------
--- Placeholder/dummy class only used for signalling deriving of Generics
+-- Generic definition for deriving Functor
 --------------------------------------------------------------------------------
-
-class Generic a
-
---------------------------------------------------------------------------------
--- Representation types
---------------------------------------------------------------------------------
-
--- | Void: used for datatypes without constructors
-#ifdef __UHC__
-V1 :: * -> *
-#endif
-data V1 p
-
--- | Unit: used for constructors without arguments
-#ifdef __UHC__
-U1 :: * -> *
-#endif
-data U1 p = U1
-
--- | Used for marking occurrences of the parameter
-#ifdef __UHC__
-Par1 :: * -> *
-#endif
-newtype Par1 p = Par1 { unPar1 :: p }
-
-
--- | Recursive calls of kind * -> *
-#ifdef __UHC__
-Rec1 :: (* -> *) -> * -> *
-#endif
-newtype Rec1 f p = Rec1 { unRec1 :: f p }
-
--- | Constants, additional parameters and recursion of kind *
-#ifdef __UHC__
-K1 :: * -> * -> * -> *
-#endif
-newtype K1 i c p = K1 { unK1 :: c }
-
--- | Meta-information (constructor names, etc.)
-#ifdef __UHC__
-M1 :: * -> * -> (* -> *) -> * -> *
-#endif
-newtype M1 i c f p = M1 { unM1 :: f p }
-
-{-
-unMeta :: M1 t x f a -> x
-unMeta = error "unMeta"
--}
-
--- | Sums: encode choice between constructors
-infixr 5 :+:
-#ifdef __UHC__
-(:+:) :: (* -> *) -> (* -> *) -> * -> *
-#endif
-data (:+:) f g p = L1 { unL1 :: f p } | R1 { unR1 :: g p }
-
--- | Products: encode multiple arguments to constructors
-infixr 6 :*:
-#ifdef __UHC__
-(:*:) :: (* -> *) -> (* -> *) -> * -> *
-#endif
-data (:*:) f g p = f p :*: g p
-
--- | Composition of functors
-infixr 7 :.:
-#ifdef __UHC__
-(:.:) :: (* -> *) -> (* -> *) -> * -> *
-#endif
-newtype (:.:) f g p = Comp1 (f (g p))
-
--- | Tag for K1: recursion (of kind *)
-data R
--- | Tag for K1: parameters (other than the last)
-data P
-
--- | Type synonym for encoding recursion (of kind *)
-type Rec0  = K1 R
--- | Type synonym for encoding parameters (other than the last)
-type Par0  = K1 P
-
--- | Tag for M1: datatype
-data D
--- | Tag for M1: constructor
-data C
--- | Tag for M1: record selector
-data S
-
--- | Type synonym for encoding meta-information for datatypes
-type D1 = M1 D
-
--- | Type synonym for encoding meta-information for constructors
-type C1 = M1 C
-
--- | Type synonym for encoding meta-information for record selectors
-type S1 = M1 S
-
--- | Class for datatypes that represent datatypes
-class Datatype d where
-  -- | The name of the datatype, fully qualified
-#ifdef __UHC__
-  datatypeName :: t d f a -> String
-  moduleName   :: t d f a -> String
-#else
-  datatypeName :: t d (f :: * -> *) a -> String
-  moduleName   :: t d (f :: * -> *) a -> String
-#endif
-
-{-
--- 20100610, AD: This is what the def should be, but run into some trouble wrt polarity, cause yet unknown
-class Datatype d where
-  -- | The name of the datatype, fully qualified
-  datatypeName :: d -> String
-  moduleName   :: d -> String
-
-instance Datatype d => Datatype (M1 t d f a) where
-  datatypeName = datatypeName . unMeta
-  moduleName   = moduleName   . unMeta
--}
-
--- | Class for datatypes that represent records
-class Selector s where
-  -- | The name of the selector
-  selName :: t s f a -> String
-
-{-
--- 20100610, AD: This is what the def should be, but run into some trouble wrt polarity, cause yet unknown
-class Selector s where
-  -- | The name of the selector
-  selName :: s -> String
-
-instance Selector s => Selector (M1 t s f a) where
-  selName = selName . unMeta
--}
-
--- | Empty selector, for fields without a label
-
-data NoSelector
-
-instance Selector NoSelector where
-  selName _ = ""
-
--- | Class for datatypes that represent data constructors
-class Constructor c where
-  -- | The name of the constructor
-#ifdef __UHC__
-  conName :: t c f a -> String
-#else
-  conName :: t c (f :: * -> *) a -> String
-#endif
-
-  -- | The fixity of the constructor
-#ifdef __UHC__
-  conFixity :: t c f a -> Fixity
-#else
-  conFixity :: t c (f :: * -> *) a -> Fixity
-#endif  
-  conFixity = const Prefix
-
-  -- | Marks if this constructor is a record
-#ifdef __UHC__
-  conIsRecord :: t c f a -> Bool
-#else
-  conIsRecord :: t c (f :: * -> *) a -> Bool
-#endif
-  conIsRecord = const False
-
-  -- | Marks if this constructor is a tuple, returning arity >=0 if so, <0 if not
-#ifdef __UHC__
-  conIsTuple :: t c f a -> Arity
-#else
-  conIsTuple :: t c (f :: * -> *) a -> Arity
-#endif
-  conIsTuple = const NoArity
-  {-
-  -}
-
-{-
--- 20100610, AD: This is what the def should be, but run into some trouble wrt polarity, cause yet unknown
-class Constructor c where
-  -- | The name of the constructor
-  conName :: c -> String
-
-  -- | The fixity of the constructor
-  conFixity :: c -> Fixity
-  conFixity = const Prefix
-
-  -- | Marks if this constructor is a record
-  conIsRecord :: c -> Bool
-  conIsRecord = const False
-
-instance Constructor c => Constructor (M1 t c f a) where
-  conName     = conName     . unMeta
-  conFixity   = conFixity   . unMeta
-  conIsRecord = conIsRecord . unMeta
--}
-
--- | Datatype to represent the arity of a tuple.
-data Arity = NoArity | Arity Int
---   deriving (Eq, Show, Ord, Read)
-    deriving (Eq, Ord)
-  
-
--- | Datatype to represent the fixity of a constructor. An infix
--- | declaration directly corresponds to an application of 'Infix'.
-data Fixity = Prefix | Infix Associativity Int
---   deriving (Eq, Show, Ord, Read)
-    deriving (Eq, Ord)
-  
-
--- | Datatype to represent the associativy of a constructor
-data Associativity =  LeftAssociative 
-                   |  RightAssociative
-                   |  NotAssociative
---   deriving (Eq, Show, Ord, Read)
-    deriving (Eq, Ord)
-
-
--- | Representable types of kind *
-class Representable0 a rep where
-  -- | Convert from the datatype to its representation
-  from0  :: a -> rep x
-  -- | Convert from the representation to the datatype
-  to0    :: rep x -> a
-
--- | Representable types of kind * -> *
-class Representable1 f rep where
-  -- | Convert from the datatype to its representation
-  from1  :: f a -> rep a
-  -- | Convert from the representation to the datatype
-  to1    :: rep a -> f a
-%%]
-
-%%[99
-----------------------------------------------------------------
--- Stacktrace
-----------------------------------------------------------------
-
--- Stacktraces are implicitly referred to from any other module, so must be in the first.
-
--- For now a stacktrace (i.e. explicit call stack) is simply a list
-type ExplicitStackTrace = [String]
-
--- and the implicit (i.e. runtime stack) stack trace a list of (kind of stack frame, function name)
-type ImplicitStackTrace = [(Int,String)]
-
-pushExplicitStackTrace :: String -> ExplicitStackTrace -> ExplicitStackTrace
-pushExplicitStackTrace = (:)
-
-%%]
-
-%%[99
---------------------------------------------------------------------------------
--- Generic definition for deriving Bounded
---------------------------------------------------------------------------------
-
-class Bounded' f where
-  minBound' :: f x
-  maxBound' :: f x
-
-instance Bounded' U1 where
-  minBound' = U1
-  maxBound' = U1
-
-instance (Bounded' fT) => Bounded' (M1 iT cT fT) where
-  minBound' = M1 minBound'
-  maxBound' = M1 maxBound'
-
-instance (Bounded' fT, Bounded' gT) => Bounded' (fT :*: gT) where
-  minBound' = minBound' :*: minBound'
-  maxBound' = maxBound' :*: maxBound'
-
-instance (Bounded fT) => Bounded' (K1 iT fT) where
-  minBound' = K1 minBound
-  maxBound' = K1 maxBound
-
-instance (Bounded' fT, Bounded' gT) => Bounded' (fT :+: gT) where
-  minBound' = L1 minBound'
-  maxBound' = R1 maxBound'
-
-{-# DERIVABLE Bounded minBound minBoundDefault #-}
-minBoundDefault  ::  (Representable0 aT repT, Bounded' repT)
-                       =>  repT xT -> aT
-minBoundDefault rep = to0 (minBound' `asTypeOf` rep)
-
-{-# DERIVABLE Bounded maxBound maxBoundDefault #-}
-maxBoundDefault  ::  (Representable0 aT repT, Bounded' repT)
-                       =>  repT xT -> aT
-maxBoundDefault rep = to0 (maxBound' `asTypeOf` rep)
-
-%%]
-
-%%[99
---------------------------------------------------------------------------------
--- Generic Eq
---------------------------------------------------------------------------------
-
-class Eq' f where
-  geq' :: f a -> f a -> Bool
-
-instance Eq' U1 where
-  geq' _ _ = True
-
-instance (Eq c) => Eq' (K1 i c) where
-  geq' (K1 a) (K1 b) = a == b
-
--- No instances for P or Rec because geq is only applicable to types of kind *
-
-instance (Eq' a) => Eq' (M1 i c a) where
-  geq' (M1 a) (M1 b) = geq' a b
-
-instance (Eq' a, Eq' b) => Eq' (a :+: b) where
-  geq' (L1 a) (L1 b) = geq' a b
-  geq' (R1 a) (R1 b) = geq' a b
-  geq' _      _      = False
-
-instance (Eq' a, Eq' b) => Eq' (a :*: b) where
-  geq' (a1 :*: b1) (a2 :*: b2) = geq' a1 a2 && geq' b1 b2
-
-{-# DERIVABLE Eq (==) geqdefault #-}
--- deriving instance (Eq a) => Eq (Maybe a)
-deriving instance (Eq a) => Eq [a]
-
-geqdefault :: (Representable0 a rep0, Eq' rep0) => rep0 x -> a -> a -> Bool
-geqdefault (rep :: r) x y = geq' (from0 x :: r) (from0 y :: r)
-%%]
-
--- %%[99
--- --------------------------------------------------------------------------------
--- -- Generic definition for deriving Functor
--- --------------------------------------------------------------------------------
 
 -- class Functor' f where
 --   fmap' :: (a -> b) -> f a -> f b
@@ -2644,5 +1683,5 @@ geqdefault (rep :: r) x y = geq' (from0 x :: r) (from0 y :: r)
 
 -- deriving instance Functor Maybe
 -- deriving instance Functor []
--- %%]
+%%]
 

@@ -1,4 +1,4 @@
-%%[(8 counting) hs module {%{EH}CountingAnalysis.Substitution} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map (Map),qualified Data.Map as Map, qualified Data.Map as Data.Map)
+%%[(8 counting) hs module {%{EH}CountingAnalysis.Substitution} import(Data.Maybe,Data.Set (Set),qualified Data.Set as Set,Data.Map.Strict (Map),qualified Data.Map.Strict as Map, qualified Data.Map.Strict as Data.Map)
 %%]
 
 %%[(8 counting) hs import({%{EH}Base.HsName (HsName)}, {%{EH}Gam.DataGam}, {%{EH}Core}, {%{EH}CodeGen.Tag (CTag)})
@@ -127,19 +127,22 @@ SEM Annotation Type Scheme
   | Var
     lhs.subst = maybe @loc.subst @loc.newSubst $ Map.lookup @v @loc.subMap
     loc.newSet = Set.insert @v @lhs.substVars
-    loc.newSubst = \x -> if @v `Set.member` @lhs.substVars then seq ("recursive sub", @v, @lhs.substVars) x else
+    loc.newSubst = \x -> if @v `Set.member` @lhs.substVars then traceShow ("recursive sub", @v, @lhs.substVars, @loc.subMap Map.! @v) $ @loc.fromVar @v else
                       substM @loc.newSet x @lhs.substAnnMap @lhs.substTyMap @lhs.substSchemeMap
 
 SEM Annotation
   | Var
     loc.subMap = @lhs.substAnnMap
+    loc.fromVar = Annotation_Var
 
 SEM Type
   | Var
     loc.subMap = @lhs.substTyMap
+    loc.fromVar = Type_Var
 
 SEM Scheme
   | Var
     loc.subMap = @lhs.substSchemeMap
+    loc.fromVar = Scheme_Var
 
 %%]
