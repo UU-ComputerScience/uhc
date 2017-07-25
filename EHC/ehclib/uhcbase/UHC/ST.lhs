@@ -24,7 +24,7 @@
 -- #hide
 module UHC.ST where
 
-import UHC.Base
+import UHC.Base0
 
 -- default ()
 \end{code}

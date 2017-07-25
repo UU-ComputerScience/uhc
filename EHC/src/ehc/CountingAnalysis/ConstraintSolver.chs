@@ -724,7 +724,7 @@ solveFix = traceShowS "solveFix" $ do
   else do
     s <- use solution
     let (v,c) = fromJust mc
-        c' = traceShow ("solve: ", v) S.substSolution c s
+        c' = seq (show ("solve: ", v)) S.substSolution c s
     updateWorkListConstraint $ traceShowS ("current",v) (v,c)
     solved <- solveSingle (traceShowS "sf-c'" c')
     asc <- use allConstraints

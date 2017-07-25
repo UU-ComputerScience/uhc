@@ -9,7 +9,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 
-module UHC.Base2   -- adapted from the Hugs prelude
+module UHC.Base3   -- adapted from the Hugs prelude
 (
 -- Classes
     Eq         (..),
@@ -26,7 +26,7 @@ module UHC.Base2   -- adapted from the Hugs prelude
     Functor    (..),
     Monad      (..),
     Show       (..),
-    -- Read       (..),
+    Read       (..),
 
 -- Types
     ''[]''     (..),
@@ -74,9 +74,10 @@ module UHC.Base2   -- adapted from the Hugs prelude
     (&&), (||), not, otherwise,
     -- Char
     isSpace, isUpper, isLower, isAlpha, isDigit, 
-    -- isOctDigit, isHexDigit, 
+    isOctDigit, isHexDigit, 
     isAlphaNum, showLitChar, 
-    -- readLitChar, lexLitChar,
+    -- readLitChar, 
+    lexLitChar,
     -- Ratio
     numerator, denominator,
     -- Maybe
@@ -93,8 +94,9 @@ module UHC.Base2   -- adapted from the Hugs prelude
     -- realToFrac,
     boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
     shows, showChar, showString, showParen,
-    --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
-    -- reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
+    reads, read, lex, readParen, 
+    -- readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, 
+    lexDigits, 
     -- fromRat,
 
 --  standard functions
@@ -157,7 +159,7 @@ module UHC.Base2   -- adapted from the Hugs prelude
 
 ) where
 
-import UHC.Base1
+import UHC.Base2
 
 #include "IntLikeInstance.h"
 
@@ -315,24 +317,6 @@ infixr 0  $, $!, `seq`
 -- Overloaded numeric functions
 --------------------------------------------------------------
 
-even, odd        :: (Integral a) => a -> Bool
-even n           =  n `rem` 2 == 0
-odd              =  not . even
-
-lcm            :: (Integral a) => a -> a -> a
-lcm _ 0         = 0
-lcm 0 _         = 0
-lcm x y         = abs ((x `quot` gcd x y) * y)
-
-(^)            :: (Num a, Integral b) => a -> b -> a
-x ^ 0           = 1
-x ^ n  | n > 0  = f x (n-1) x
-                  where f _ 0 y = y
-                        f x n y = g x n where
-                                  g x n | even n    = g (x*x) (n`quot`2)
-                                        | otherwise = f x (n-1) (x*y)
-_ ^ _           = error "Prelude.^: negative exponent"
-
 -- (^^)           :: (Fractional a, Integral b) => a -> b -> a
 -- x ^^ n          = if n >= 0 then x ^ n else recip (x^(-n))
 
@@ -343,95 +327,25 @@ _ ^ _           = error "Prelude.^: negative exponent"
 -- -- class Read, Show
 -- --------------------------------------------------------------
 
-type ReadS a = String -> [(a,String)]
-type ShowS   = String -> String
 
--- class Read a where
---     readsPrec :: Int -> ReadS a
---     readList  :: ReadS [a]
+class Read a where
+    readsPrec :: Int -> ReadS a
+    readList  :: ReadS [a]
 
---     -- Minimal complete definition: readsPrec
---     readList  :: ReadS [a]
---                = readParen False (\r -> [pr | ("[",s) <- lex r,
---                                               pr      <- readl s ])
---                  where readl :: ReadS [a]
---                        readl  s = [([],t)   | ("]",t) <- lex s] ++
---                                   [(x:xs,u) | (x,t)   <- reads s,
---                                               (xs,u)  <- readl' t]
---                        readl' :: ReadS [a]
---                        readl' s = [([],t)   | ("]",t) <- lex s] ++
---                                   [(x:xs,v) | (",",t) <- lex s,
---                                               (x,u)   <- reads t,
---                                               (xs,v)  <- readl' u]
+    -- Minimal complete definition: readsPrec
+    readList  :: ReadS [a]
+               = readParen False (\r -> [pr | ("[",s) <- lex r,
+                                              pr      <- readl s ])
+                 where readl :: ReadS [a]
+                       readl  s = [([],t)   | ("]",t) <- lex s] ++
+                                  [(x:xs,u) | (x,t)   <- reads s,
+                                              (xs,u)  <- readl' t]
+                       readl' :: ReadS [a]
+                       readl' s = [([],t)   | ("]",t) <- lex s] ++
+                                  [(x:xs,v) | (",",t) <- lex s,
+                                              (x,u)   <- reads t,
+                                              (xs,v)  <- readl' u]
 
-class Show a where
-    show      :: a -> String
-    showsPrec :: Int -> a -> ShowS
-    showList  :: [a] -> ShowS
-
-    -- Minimal complete definition: show or showsPrec
-    show x          = showsPrec 0 x ""
-    showsPrec _ x s = show x ++ s
-    showList []     = showString "[]"
-    showList (x:xs) = showChar '[' . shows x . showl xs
-                      where showl []     = showChar ']'
-                            showl (x:xs) = showChar ',' . shows x . showl xs
-
---------------------------------------------------------------
--- class Functor, Monad
---------------------------------------------------------------
-
-class Functor f where
-    fmap :: (a -> b) -> (f a -> f b)
-
-class Monad m where
-    return :: a -> m a
-    (>>=)  :: m a -> (a -> m b) -> m b
-    (>>)   :: m a -> m b -> m b
-    fail   :: String -> m a
-
-    -- Minimal complete definition: (>>=), return
-    p >> q  = p >>= \ _ -> q
-    fail s  = error s
-
-sequence       :: Monad m => [m a] -> m [a]
-sequence []     = return []
-sequence (c:cs) = do x  <- c
-                     xs <- sequence cs
-                     return (x:xs)
-
--- overloaded Functor and Monad function
-
--- sequence_        :: forall a . Monad m => [m a] -> m ()
-sequence_        :: Monad m => [m a] -> m ()
-sequence_         = foldr (>>) (return ())
-
---mapM             :: Monad m => (a -> m b) -> [a] -> m [b]
-mapM             :: forall a b . Monad m => (a -> m b) -> [a] -> m [b]
-mapM f            = sequence . map f
-
---mapM_            :: Monad m => (a -> m b) -> [a] -> m ()
-mapM_            :: forall a b . Monad m => (a -> m b) -> [a] -> m ()
-mapM_ f           = sequence_ . map f
-
-(=<<)            :: Monad m => (a -> m b) -> m a -> m b
-f =<< x           = x >>= f
-
-#if defined(__UHC_TARGET_JAZY__) || defined(__UHC_TARGET_CR__)
-
-foreign import prim   primCharToInt   :: Char -> Int
-foreign import prim   primIntToChar   :: Int -> Char
-#else
-foreign import prim "primUnsafeId"  primCharToInt   :: Char -> Int
-foreign import prim "primUnsafeId"  primIntToChar   :: Int -> Char
-#endif
-
-
-instance Enum Char where
-    toEnum           = primIntToChar
-    fromEnum         = primCharToInt
---     --enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
---     --enumFromThen     = boundedEnumFromThen
 
 -- instance Read Char where
 --     readsPrec p      = readParen False
@@ -444,52 +358,17 @@ instance Enum Char where
 --                      readl s            = [(c:cs,u) | (c ,t) <- readLitChar s,
 --                                                       (cs,u) <- readl t ]
 
-instance Show Char where
-    showsPrec p '\'' = showString "'\\''"
-    showsPrec p c    = showChar '\'' . showLitChar c . showChar '\''
-
-    showList cs   = showChar '"' . showl cs
-                    where showl ""       = showChar '"'
-                          showl ('"':cs) = showString "\\\"" . showl cs
-                          showl (c:cs)   = showLitChar c . showl cs
-
-instance Bounded Char where
-    minBound = '\0'
-    maxBound = '\xff' -- primMaxChar
-
-ord :: Char -> Int
-ord = fromEnum
-
-chr :: Int -> Char
-chr = toEnum
 
 -- --------------------------------------------------------------
 -- -- Maybe type
 -- --------------------------------------------------------------
 
-
-instance Monad Maybe where
-    Just x  >>= k = k x
-    Nothing >>= k = Nothing
-    return        = Just
-    fail s        = Nothing
-
 -- --------------------------------------------------------------
 -- -- Lists
 -- --------------------------------------------------------------
 
-
-instance Monad [ ] where
-    (x:xs) >>= f = f x ++ (xs >>= f)
-    []     >>= f = []
-    return x     = [x]
-    fail s       = []
-
 -- instance Read a => Read [a]  where
 --     readsPrec p = readList
-
-instance Show a => Show [a]  where
-    showsPrec p = showList
 
 
 -- --------------------------------------------------------------
@@ -501,64 +380,6 @@ instance Show a => Show [a]  where
 --     readsPrec p = readSigned readDec
 
 
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
-{-
- This implementation fails for showInt minBound because in 2's complement arithmetic
- -minBound == maxBound+1 == minBound
--}
-showInt :: Int -> String
-showInt x | x<0  = '-' : showInt(-x)
-          | x==0 = "0"
-          | otherwise = (map primIntToChar . map (+48) . reverse . map (`rem`10) . takeWhile (/=0) . iterate (`div`10)) x
-
-instance Show Int where
-    show   = showInt
-    
-#else
-
-instance Show Int where
-    show   = show . toInteger
-
-#endif
-
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
-{-
- This implementation fails for showInt minBound because in 2's complement arithmetic
- -minBound == maxBound+1 == minBound
--}
-
-showInteger :: Integer -> String
-showInteger x | x<0  = '-' : showInteger(-x)
-          | x==0 = "0"
-          | otherwise = (map primIntToChar . map (+48) . reverse . map primIntegerToInt . map (`rem`10) . takeWhile (/=0) . iterate (`div`10)) x
-
-instance Show Integer where
-    show   = showInteger
-    
-#elif defined( __UHC_TARGET_JS__ )
-
-foreign import js "%1.toString()" 			primIntegerToPackedString 	:: Integer -> PackedString
-
-instance Show Integer where
-    show   = packedStringToString . primIntegerToPackedString
-
-#elif defined( __UHC_TARGET_JAZY__ )
-
-foreign import prim primShowIntegerToPackedString :: Integer -> PackedString
-
-instance Show Integer where
-    show   = packedStringToString . primShowIntegerToPackedString
-
-#else
-
-foreign import prim primShowInteger :: Integer -> String
-
-instance Show Integer where
-    show   = primShowInteger
-
-#endif
-
-
 -- instance Read Integer where
 --     readsPrec p = readSigned readDec
 
@@ -566,102 +387,6 @@ instance Show Integer where
 -- --------------------------------------------------------------
 -- -- Float and Double type
 -- --------------------------------------------------------------
-
-data Float     -- opaque datatype of 32bit IEEE floating point numbers
-  deriving Generic
-
-data Double    -- opaque datatype of 64bit IEEE floating point numbers
-  deriving Generic
-
-#if defined(__UHC_TARGET_JS__)
-foreign import prim "primEqInt"          	primEqFloat             :: Float -> Float -> Bool
-foreign import prim "primCmpInt"         	primCmpFloat            :: Float -> Float -> Ordering
-
-foreign import prim "primEqInt"         	primEqDouble            :: Double -> Double -> Bool
-foreign import prim "primCmpInt"        	primCmpDouble           :: Double -> Double -> Ordering
-
-foreign import prim "primAddInt"         	primAddFloat            :: Float -> Float -> Float
-foreign import prim "primSubInt"         	primSubFloat            :: Float -> Float -> Float
-foreign import prim "primMulInt"         	primMulFloat            :: Float -> Float -> Float
-foreign import prim "primNegInt"         	primNegFloat            :: Float -> Float
-foreign import prim "primUnsafeId"       	primIntToFloat          :: Int -> Float
-
-foreign import prim "primAddInt"        	primAddDouble           :: Double -> Double -> Double
-foreign import prim "primSubInt"        	primSubDouble           :: Double -> Double -> Double
-foreign import prim "primMulInt"        	primMulDouble           :: Double -> Double -> Double
-foreign import prim "primNegInt"        	primNegDouble           :: Double -> Double
-foreign import prim "primUnsafeId"      	primIntToDouble         :: Int -> Double
-
-foreign import prim "primQuotInt"      		primDivideFloat         :: Float -> Float -> Float
-foreign import prim "primRecipDouble"       primRecipFloat          :: Float -> Float
-foreign import prim "primUnsafeId"    		primDoubleToFloat       :: Double -> Float
-
-foreign import prim "primUnsafeId"    		primFloatToDouble       :: Float -> Double
-foreign import prim "primRationalToDouble"  primRationalToFloat     :: Rational -> Float
-foreign import prim "primRationalToDouble" 	primRationalToDouble    :: Rational -> Double
-#else
-foreign import prim primEqFloat             :: Float -> Float -> Bool
-foreign import prim primCmpFloat            :: Float -> Float -> Ordering
-
-foreign import prim primEqDouble            :: Double -> Double -> Bool
-foreign import prim primCmpDouble           :: Double -> Double -> Ordering
-
-foreign import prim primAddFloat            :: Float -> Float -> Float
-foreign import prim primSubFloat            :: Float -> Float -> Float
-foreign import prim primMulFloat            :: Float -> Float -> Float
-foreign import prim primNegFloat            :: Float -> Float
-foreign import prim primIntToFloat          :: Int -> Float
-
-foreign import prim primAddDouble           :: Double -> Double -> Double
-foreign import prim primSubDouble           :: Double -> Double -> Double
-foreign import prim primMulDouble           :: Double -> Double -> Double
-foreign import prim primNegDouble           :: Double -> Double
-foreign import prim primIntToDouble         :: Int -> Double
-
-foreign import prim primDivideFloat         :: Float -> Float -> Float
-foreign import prim primRecipFloat          :: Float -> Float
-foreign import prim primDoubleToFloat       :: Double -> Float
-
-foreign import prim primFloatToDouble       :: Float -> Double
-foreign import prim primRationalToFloat     :: Rational -> Float
-foreign import prim primRationalToDouble    :: Rational -> Double
-#endif
-
-#if defined(__UHC_TARGET_JS__)
-foreign import js "%1.doubleValue()"  		primIntegerToFloat      :: Integer -> Float
-foreign import js "%1.doubleValue()"  		primIntegerToDouble     :: Integer -> Double
-#else
-foreign import prim primIntegerToFloat      :: Integer -> Float
-foreign import prim primIntegerToDouble     :: Integer -> Double
-#endif
-
-instance Eq  Float  where (==) = primEqFloat
-instance Eq  Double where (==) = primEqDouble
-
-instance Ord Float  where compare = primCmpFloat
-instance Ord Double where compare = primCmpDouble
-
-
-instance Num Float where
-    (+)           = primAddFloat
-    (-)           = primSubFloat
-    negate        = primNegFloat
-    (*)           = primMulFloat
-    abs           = absReal
-    signum        = signumReal
-    fromInteger   = primIntegerToFloat
-    fromInt       = primIntToFloat
-
-
-instance Num Double where
-    (+)         = primAddDouble
-    (-)         = primSubDouble
-    negate      = primNegDouble
-    (*)         = primMulDouble
-    abs         = absReal
-    signum      = signumReal
-    fromInteger = primIntegerToDouble
-    fromInt     = primIntToDouble
 
 -- instance Real Float where
 --     toRational = floatToRational
@@ -835,13 +560,6 @@ rationalToRealFloat x = x'
 -- foreign import prim primIsIEEE  :: Bool
 -- foreign import prim primRadixDoubleFloat  :: Int
 
-#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
-foreign import prim primShowFloatToPackedString :: Float -> PackedString
-#else
-foreign import prim primShowFloat :: Float -> String
--- TODO: replace this by a function Float -> PackedString
-#endif
-
 -- instance Floating Float where
 --     exp   = primExpFloat
 --     log   = primLogFloat
@@ -936,71 +654,16 @@ foreign import prim primShowFloat :: Float -> String
 -- instance Read Float where
 --     readsPrec p = readSigned readFloat
 
-{-----------------------------
--- Note that showFloat in Numeric isn't used here
-instance Show Float where
-    showsPrec   = primShowsFloat
------------------------------}
-instance Show Float where
-#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
-    show   = packedStringToString . primShowFloatToPackedString
-#else
-    show   = primShowFloat
-#endif
-
-#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
-foreign import prim primShowDoubleToPackedString :: Double -> PackedString
-#else
-foreign import prim primShowDouble :: Double -> String
-#endif
 
 -- instance Read Double where
 --     readsPrec p = readSigned readFloat
-
-{-----------------------------
--- Note that showFloat in Numeric isn't used here
-instance Show Double where
-    showsPrec   = primShowsDouble
------------------------------}
-instance Show Double where
-#if defined( __UHC_TARGET_JAZY__ ) || defined( __UHC_TARGET_JS__ )
-    show   = packedStringToString . primShowDoubleToPackedString
-#else
-    show   = primShowDouble
-#endif
-
 
 --------------------------------------------------------------
 -- Ratio and Rational type
 --------------------------------------------------------------
 
-reduce                    :: Integral a => a -> a -> Ratio a
-reduce x y | y == 0        = error "Ratio.%: zero denominator"
-           | otherwise     = (x `quot` d) :% (y `quot` d)
-                             where d = gcd x y
-
-numerator, denominator    :: Integral a => Ratio a -> a
-numerator (x :% y)         = x
-denominator (x :% y)       = y
-
-instance Integral a => Ord (Ratio a) where
-    compare (x:%y) (x':%y') = compare (x*y') (x'*y)
-
-instance Integral a => Num (Ratio a) where
-    (x:%y) + (x':%y') = reduce (x*y' + x'*y) (y*y')
-    (x:%y) * (x':%y') = reduce (x*x') (y*y')
-    negate (x :% y)   = negate x :% y
-    abs (x :% y)      = abs x :% y
-    signum (x :% y)   = signum x :% 1
-    fromInteger x     = fromInteger x :% 1
-    -- fromInt           = intToRatio
-    fromInt x         = fromInt x :% 1
-
 -- intToRatio :: Integral a => Int -> Ratio a  -- TODO: optimise fromRational (intToRatio x)
 -- intToRatio x = fromInt x :% 1
-
-instance Integral a => Real (Ratio a) where
-    toRational (x:%y) = toInteger x :% toInteger y
 
 -- instance Integral a => Fractional (Ratio a) where
 --     (x:%y) / (x':%y')   = (x*y') % (y*x')
@@ -1056,79 +719,19 @@ doubleToRatio x
 
 
 
--- ------------------------------------------------------------
--- Standard list functions
--- ------------------------------------------------------------
-
-length           :: [a] -> Int
-length            = foldl' (\n _ -> n + (1::Int)) (0::Int)
-
-(!!)             :: [a] -> Int -> a
-xs     !! n | n<0 = error "Prelude.!!: negative index"
-[]     !! _       = error "Prelude.!!: index too large"
-(x:_)  !! 0       = x
-(_:xs) !! n       = xs !! (n-1)
-
-foldl'           :: (a -> b -> a) -> a -> [b] -> a
-foldl' f a []     = a
-#if defined (__UHC_TARGET_C__) || defined (__UHC_TARGET_LLVM__)
-foldl' f a (x:xs) = (foldl' f $! f a x) xs
-#else
-foldl' f a (x:xs) = let !fax = f a x in foldl' f fax xs
-#endif
-
-replicate        :: Int -> a -> [a]
-replicate n x     = take n (repeat x)
-
-take                :: Int -> [a] -> [a]
-take n _  | n <= 0  = []
-take _ []           = []
-take n (x:xs)       = x : take (n-1) xs
-
-drop                :: Int -> [a] -> [a]
-drop n xs | n <= 0  = xs
-drop _ []           = []
-drop n (_:xs)       = drop (n-1) xs
-
-splitAt               :: Int -> [a] -> ([a], [a])
-splitAt n xs | n <= 0 = ([],xs)
-splitAt _ []          = ([],[])
-splitAt n (x:xs)      = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
-
-
-sum, product     :: Num a => [a] -> a
-sum               = foldl' (+) 0
-product           = foldl' (*) 1
 
 --------------------------------------------------------------
 -- PreludeText
 --------------------------------------------------------------
 
--- reads        :: Read a => ReadS a
--- reads         = readsPrec 0
+reads        :: Read a => ReadS a
+reads         = readsPrec 0
 
-shows        :: Show a => a -> ShowS
-shows         = showsPrec 0
-
--- read         :: Read a => String -> a
--- read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
---                       [x] -> x
---                       []  -> error "Prelude.read: no parse"
---                       _   -> error "Prelude.read: ambiguous parse"
-
-showChar     :: Char -> ShowS
-showChar      = (:)
-
-showString   :: String -> ShowS
-showString    = (++)
-
-showParen    :: Bool -> ShowS -> ShowS
-showParen b p = if b then showChar '(' . p . showChar ')' else p
-
-showField    :: Show a => String -> a -> ShowS
-showField m@(c:_) v
-  | isAlpha c || c == '_' = showString m . showString " = " . shows v
-  | otherwise = showChar '(' . showString m . showString ") = " . shows v
+read         :: Read a => String -> a
+read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
+                      [x] -> x
+                      []  -> error "Prelude.read: no parse"
+                      _   -> error "Prelude.read: ambiguous parse"
 
 -- readParen    :: Bool -> ReadS a -> ReadS a
 -- readParen b g = if b then mandatory else optional
@@ -1136,6 +739,13 @@ showField m@(c:_) v
 --                       mandatory r = [(x,u) | ("(",s) <- lex r,
 --                                              (x,t)   <- optional s,
 --                                              (")",u) <- lex t    ]
+
+readParen    :: Bool -> ReadS a -> ReadS a
+readParen b g = if b then mandatory else optional
+                where optional r  = g r ++ mandatory r
+                      mandatory r = [(x,u) | ("(",s) <- lex r,
+                                             (x,t)   <- g s,
+                                             (")",u) <- lex t    ]
 
 -- readField    :: Read a => String -> ReadS a
 -- readField m s0 = [ r | (t,  s1) <- readFieldName m s0,
@@ -1149,86 +759,78 @@ showField m@(c:_) v
 --                            (f,s2)   <- lex s1, f == m,
 --                            (")",s3) <- lex s2 ]
 
--- lex                    :: ReadS String
--- lex ""                  = [("","")]
--- lex (c:s) | isSpace c   = lex (dropWhile isSpace s)
--- lex ('\'':s)            = [('\'':ch++"'", t) | (ch,'\'':t)  <- lexLitChar s,
---                                                -- head ch /= '\'' || not (null (tail ch))
---                                                ch /= "'"                
---                           ]
--- lex ('"':s)             = [('"':str, t)      | (str,t) <- lexString s]
---                           where
---                           lexString ('"':s) = [("\"",s)]
---                           lexString s = [(ch++str, u)
---                                                 | (ch,t)  <- lexStrItem s,
---                                                   (str,u) <- lexString t  ]
+lex                    :: ReadS String
+lex ""                  = [("","")]
+lex (c:s) | isSpace c   = lex (dropWhile isSpace s)
+lex ('\'':s)            = [('\'':ch++"'", t) | (ch,'\'':t)  <- lexLitChar s,
+                                               -- head ch /= '\'' || not (null (tail ch))
+                                               ch /= "'"                
+                          ]
+lex ('"':s)             = [('"':str, t)      | (str,t) <- lexString s]
+                          where
+                          lexString ('"':s) = [("\"",s)]
+                          lexString s = [(ch++str, u)
+                                                | (ch,t)  <- lexStrItem s,
+                                                  (str,u) <- lexString t  ]
 
---                           lexStrItem ('\\':'&':s) = [("\\&",s)]
---                           lexStrItem ('\\':c:s) | isSpace c
---                               = [("",t) | '\\':t <- [dropWhile isSpace s]]
---                           lexStrItem s            = lexLitChar s
+                          lexStrItem ('\\':'&':s) = [("\\&",s)]
+                          lexStrItem ('\\':c:s) | isSpace c
+                              = [("",t) | '\\':t <- [dropWhile isSpace s]]
+                          lexStrItem s            = lexLitChar s
 
--- lex (c:s) | isSym c     = [(c:sym,t)         | (sym,t) <- [span isSym s]]
---           | isAlpha c   = [(c:nam,t)         | (nam,t) <- [span isIdChar s]]
---              -- '_' can be the start of a single char or a name/id.
---           | c == '_'    = case span isIdChar s of 
---                             ([],_) -> [([c],s)]
---                             (nm,t) -> [((c:nm),t)]
---           | isSingle c  = [([c],s)]
---           | isDigit c   = [(c:ds++fe,t)      | (ds,s)  <- [span isDigit s],
---                                                (fe,t)  <- lexFracExp s     ]
---           | otherwise   = []    -- bad character
---                 where
---                 isSingle c  =  c `elem` ",;()[]{}_`"
---                 isSym c     =  c `elem` "!@#$%&*+./<=>?\\^|:-~"
---                 isIdChar c  =  isAlphaNum c || c `elem` "_'"
+lex (c:s) | isSym c     = [(c:sym,t)         | (sym,t) <- [span isSym s]]
+          | isAlpha c   = [(c:nam,t)         | (nam,t) <- [span isIdChar s]]
+             -- '_' can be the start of a single char or a name/id.
+          | c == '_'    = case span isIdChar s of 
+                            ([],_) -> [([c],s)]
+                            (nm,t) -> [((c:nm),t)]
+          | isSingle c  = [([c],s)]
+          | isDigit c   = [(c:ds++fe,t)      | (ds,s)  <- [span isDigit s],
+                                               (fe,t)  <- lexFracExp s     ]
+          | otherwise   = []    -- bad character
+                where
+                isSingle c  =  c `elem` ",;()[]{}_`"
+                isSym c     =  c `elem` "!@#$%&*+./<=>?\\^|:-~"
+                isIdChar c  =  isAlphaNum c || c `elem` "_'"
 
---                 lexFracExp ('.':c:cs) | isDigit c 
---                             = [('.':ds++e,u) | (ds,t) <- lexDigits (c:cs),
---                                                (e,u)  <- lexExp t    ]
---                 lexFracExp s       = lexExp s
+                lexFracExp ('.':c:cs) | isDigit c 
+                            = [('.':ds++e,u) | (ds,t) <- lexDigits (c:cs),
+                                               (e,u)  <- lexExp t    ]
+                lexFracExp s       = lexExp s
 
---                 lexExp (e:s) | e `elem` "eE"
---                          = [(e:c:ds,u) | (c:t)  <- [s], c `elem` "+-",
---                                                    (ds,u) <- lexDigits t] ++
---                            [(e:ds,t)   | (ds,t) <- lexDigits s]
---                 lexExp s = [("",s)]
+                lexExp (e:s) | e `elem` "eE"
+                         = [(e:c:ds,u) | (c:t)  <- [s], c `elem` "+-",
+                                                   (ds,u) <- lexDigits t] ++
+                           [(e:ds,t)   | (ds,t) <- lexDigits s]
+                lexExp s = [("",s)]
 
--- lexDigits               :: ReadS String
--- lexDigits               =  nonnull isDigit
+lexDigits               :: ReadS String
+lexDigits               =  nonnull isDigit
 
--- nonnull                 :: (Char -> Bool) -> ReadS String
--- nonnull p s             =  [(cs,t) | (cs@(_:_),t) <- [span p s]]
+nonnull                 :: (Char -> Bool) -> ReadS String
+nonnull p s             =  [(cs,t) | (cs@(_:_),t) <- [span p s]]
 
--- lexLitChar          :: ReadS String
--- lexLitChar ""       =  []
--- lexLitChar (c:s)
---  | c /= '\\'        =  [([c],s)]
---  | otherwise        =  map (prefix '\\') (lexEsc s)
---  where
---    lexEsc (c:s)     | c `elem` "abfnrtv\\\"'" = [([c],s)]
---    lexEsc ('^':c:s) | c >= '@' && c <= '_'    = [(['^',c],s)]
---     -- Numeric escapes
---    lexEsc ('o':s)  = [prefix 'o' (span isOctDigit s)]
---    lexEsc ('x':s)  = [prefix 'x' (span isHexDigit s)]
---    lexEsc s@(c:_) 
---      | isDigit c   = [span isDigit s]  
---      | isUpper c   = case [(mne,s') | (c, mne) <- table,
---                         ([],s') <- [lexmatch mne s]] of
---                        (pr:_) -> [pr]
---                        []     -> []
---    lexEsc _        = []
+lexLitChar          :: ReadS String
+lexLitChar ""       =  []
+lexLitChar (c:s)
+ | c /= '\\'        =  [([c],s)]
+ | otherwise        =  map (prefix '\\') (lexEsc s)
+ where
+   lexEsc (c:s)     | c `elem` "abfnrtv\\\"'" = [([c],s)]
+   lexEsc ('^':c:s) | c >= '@' && c <= '_'    = [(['^',c],s)]
+    -- Numeric escapes
+   lexEsc ('o':s)  = [prefix 'o' (span isOctDigit s)]
+   lexEsc ('x':s)  = [prefix 'x' (span isHexDigit s)]
+   lexEsc s@(c:_) 
+     | isDigit c   = [span isDigit s]  
+     | isUpper c   = case [(mne,s') | (c, mne) <- table,
+                        ([],s') <- [lexmatch mne s]] of
+                       (pr:_) -> [pr]
+                       []     -> []
+   lexEsc _        = []
 
---    table = ('\DEL',"DEL") : asciiTab
---    prefix c (t,s) = (c:t, s)
-
--- isOctDigit c  =  c >= '0' && c <= '7'
--- isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
---                            || c >= 'a' && c <= 'f'
-
--- lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
--- lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
--- lexmatch xs     ys               =  (xs,ys)
+   table = ('\DEL',"DEL") : asciiTab
+   prefix c (t,s) = (c:t, s)
 
 asciiTab = zip ['\NUL'..' ']
            (["NUL", "SOH", "STX", "ETX"]++[ "EOT", "ENQ", "ACK", "BEL"]++
@@ -1236,6 +838,14 @@ asciiTab = zip ['\NUL'..' ']
            [ "DLE", "DC1", "DC2", "DC3"]++[ "DC4", "NAK", "SYN", "ETB"]++
            [ "CAN", "EM",  "SUB", "ESC"]++[ "FS",  "GS",  "RS",  "US"]++
            [ "SP"])
+
+isOctDigit c  =  c >= '0' && c <= '7'
+isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
+                           || c >= 'a' && c <= 'f'
+
+lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
+lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
+lexmatch xs     ys               =  (xs,ys)
 
 -- readLitChar            :: ReadS Char
 -- readLitChar ('\\':s)    = readEsc s
@@ -1265,28 +875,6 @@ asciiTab = zip ['\NUL'..' ']
 --        readEsc _        = []
 -- readLitChar (c:s)       = [(c,s)]
 
-showLitChar               :: Char -> ShowS
-showLitChar c | c > '\DEL' = showChar '\\' .
-                             protectEsc isDigit (shows (fromEnum c))
-showLitChar '\DEL'         = showString "\\DEL"
-showLitChar '\\'           = showString "\\\\"
-showLitChar c | c >= ' '   = showChar c
-showLitChar '\a'           = showString "\\a"
-showLitChar '\b'           = showString "\\b"
-showLitChar '\f'           = showString "\\f"
-showLitChar '\n'           = showString "\\n"
-showLitChar '\r'           = showString "\\r"
-showLitChar '\t'           = showString "\\t"
-showLitChar '\v'           = showString "\\v"
-showLitChar '\SO'          = protectEsc ('H'==) (showString "\\SO")
-showLitChar c              = showString ('\\' : snd (asciiTab!!fromEnum c))
-
--- the composition with cont makes CoreToGrin break the GrinModeInvariant so we forget about protecting escapes for the moment.
--- 20161127 AD: re-introduced '. cont' invocation to allow support for unicode
-protectEsc p f             = f . cont
- where cont s@(c:_) | p c  = "\\&" ++ s
-       cont s              = s
-
 -- Unsigned readers for various bases
 -- readDec, readOct, readHex :: Integral a => ReadS a
 -- readDec = readInt 10 isDigit    (\ d -> fromEnum d - fromEnum_0)
@@ -1295,8 +883,7 @@ protectEsc p f             = f . cont
 --             where hex d = fromEnum d - (if isDigit d then fromEnum_0
 --                                        else fromEnum (if isUpper d then 'A' else 'a') - 10)
 
-fromEnum_0 :: Int
-fromEnum_0 = fromEnum '0'
+
 
 -- readInt reads a string of digits using an arbitrary base.  
 -- Leading minus signs must be handled elsewhere.
@@ -1335,29 +922,6 @@ fromEnum_0 = fromEnum '0'
 --                        readExp' ('+':s) = readDec s
 --                        readExp' s       = readDec s
 
-
-
-primbindIO :: IO a -> (a -> IO b) -> IO b
-primbindIO (IO io) f
-  = IO (\w -> case io w of
-                (!w', x) -> case f x of
-                               IO fx -> fx w'
-       )
-
-primretIO :: a -> IO a
-primretIO x
-  = IO (\w -> (w, x))
-
-
-instance Functor IO where
-    fmap f x = x >>= (return . f)
-
-instance Monad IO where
-    (>>=)  = primbindIO
-    return = primretIO
-    -- fail s = ioError (userError s)
-
-
 %%]
 
 %%[99
@@ -1366,55 +930,9 @@ instance Monad IO where
 -- Defaulting
 ----------------------------------------------------------------
 
--- default Enum Integer
 -- default Fractional Double
 -- default RealFrac Double
 -- default Floating Double
 -- default RealFloat Double
 
 %%]
-
-%%[99
---------------------------------------------------------------------------------
--- Generic definition for deriving Functor
---------------------------------------------------------------------------------
-
-class Functor' f where
-  fmap' :: (a -> b) -> f a -> f b
-
-instance Functor' U1 where
-  fmap' f U1 = U1
-
-instance Functor' Par1 where
-  fmap' f (Par1 a) = Par1 (f a)
-
-instance Functor' (K1 i c) where
-  fmap' f (K1 a) = K1 a
-
-instance (Functor f) => Functor' (Rec1 f) where
-  fmap' f (Rec1 a) = Rec1 (fmap f a)
-
-instance (Functor' f) => Functor' (M1 i c f) where
-  fmap' f (M1 a) = M1 (fmap' f a)
-
-instance (Functor' f, Functor' g) => Functor' (f :+: g) where
-  fmap' f (L1 a) = L1 (fmap' f a)
-  fmap' f (R1 a) = R1 (fmap' f a)
-
-instance (Functor' f, Functor' g) => Functor' (f :*: g) where
-  fmap' f (a :*: b) = fmap' f a :*: fmap' f b
-
-instance (Functor f, Functor' g) => Functor' (f :.: g) where
-  fmap' f (Comp1 x) = Comp1 (fmap (fmap' f) x)
-
-
-fmapDefault :: (Representable1 f rep, Functor' rep)
-            => rep a -> (a -> b) -> f a -> f b
-fmapDefault ra f x = to1 (fmap' f (from1 x `asTypeOf` ra))
-
-{-# DERIVABLE Functor fmap fmapDefault #-}
-
-deriving instance Functor Maybe
-deriving instance Functor []
-%%]
-
