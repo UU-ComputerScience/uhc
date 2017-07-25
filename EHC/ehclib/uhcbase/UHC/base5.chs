@@ -88,7 +88,9 @@ module UHC.Base5   -- adapted from the Hugs prelude
     boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
     shows, showChar, showString, showParen,
     --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
-    reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
+    reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, 
+    -- readFloat, 
+    lexDigits, 
     fromRat,
 
 --  standard functions
@@ -220,6 +222,15 @@ instance Read Integer where
 -- Float and Double type
 --------------------------------------------------------------
 
+#if defined(__UHC_TARGET_JS__)
+foreign import prim "primUnsafeId"       	primIntToFloat          :: Int -> Float
+foreign import prim "primUnsafeId"      	primIntToDouble         :: Int -> Double
+#else
+foreign import prim primIntToFloat          :: Int -> Float
+foreign import prim primIntToDouble         :: Int -> Double
+#endif
+
+
 instance Enum Float where
     succ x                = x+1
     pred x                = x-1
@@ -240,12 +251,12 @@ instance Enum Double where
     enumFromTo            = numericEnumFromTo
     enumFromThenTo        = numericEnumFromThenTo
 
-instance Read Float where
-    readsPrec p = readSigned readFloat
+-- instance Read Float where
+--     readsPrec p = readSigned readFloat
 
 
-instance Read Double where
-    readsPrec p = readSigned readFloat
+-- instance Read Double where
+--     readsPrec p = readSigned readFloat
 
 --------------------------------------------------------------
 -- Ratio and Rational type
@@ -285,17 +296,31 @@ instance (Show a,Integral a) => Show (Ratio a) where
 -- PreludeText
 --------------------------------------------------------------
 
-readField    :: Read a => String -> ReadS a
-readField m s0 = [ r | (t,  s1) <- readFieldName m s0,
-                       ("=",s2) <- lex s1,
-                       r        <- reads s2 ]
+-- readField    :: Read a => String -> ReadS a
+-- readField m s0 = [ r | (t,  s1) <- readFieldName m s0,
+--                        ("=",s2) <- lex s1,
+--                        r        <- reads s2 ]
 
-readFieldName :: String -> ReadS String
-readFieldName m@(c:_) s0
-  | isAlpha c || c == '_' = [ (f,s1) | (f,s1) <- lex s0, f == m ]
-  | otherwise = [ (f,s3) | ("(",s1) <- lex s0,
-                           (f,s2)   <- lex s1, f == m,
-                           (")",s3) <- lex s2 ]
+-- readFieldName :: String -> ReadS String
+-- readFieldName m@(c:_) s0
+--   | isAlpha c || c == '_' = [ (f,s1) | (f,s1) <- lex s0, f == m ]
+--   | otherwise = [ (f,s3) | ("(",s1) <- lex s0,
+--                            (f,s2)   <- lex s1, f == m,
+--                            (")",s3) <- lex s2 ]
+
+nonnull                 :: (Char -> Bool) -> ReadS String
+nonnull p s             =  [(cs,t) | (cs@(_:_),t) <- [span p s]]
+
+asciiTab = zip ['\NUL'..' ']
+           (["NUL", "SOH", "STX", "ETX"]++[ "EOT", "ENQ", "ACK", "BEL"]++
+           [ "BS",  "HT",  "LF",  "VT" ]++[  "FF",  "CR",  "SO",  "SI"]++
+           [ "DLE", "DC1", "DC2", "DC3"]++[ "DC4", "NAK", "SYN", "ETB"]++
+           [ "CAN", "EM",  "SUB", "ESC"]++[ "FS",  "GS",  "RS",  "US"]++
+           [ "SP"])
+
+lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
+lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
+lexmatch xs     ys               =  (xs,ys)
 
 readLitChar            :: ReadS Char
 readLitChar ('\\':s)    = readEsc s
@@ -325,7 +350,7 @@ readLitChar ('\\':s)    = readEsc s
        readEsc _        = []
 readLitChar (c:s)       = [(c,s)]
 
--- Unsigned readers for various bases
+-- -- Unsigned readers for various bases
 readDec, readOct, readHex :: Integral a => ReadS a
 readDec = readInt 10 isDigit    (\ d -> fromEnum d - fromEnum_0)
 readOct = readInt  8 isOctDigit (\ d -> fromEnum d - fromEnum_0)
@@ -333,7 +358,8 @@ readHex = readInt 16 isHexDigit hex
             where hex d = fromEnum d - (if isDigit d then fromEnum_0
                                        else fromEnum (if isUpper d then 'A' else 'a') - 10)
 
-
+fromEnum_0 :: Int
+fromEnum_0 = fromEnum '0'
 
 -- readInt reads a string of digits using an arbitrary base.  
 -- Leading minus signs must be handled elsewhere.
@@ -353,23 +379,23 @@ readSigned readPos = readParen False read'
 
 -- This floating point reader uses a less restrictive syntax for floating
 -- point than the Haskell lexer.  The `.' is optional.
-readFloat     :: RealFrac a => ReadS a
-readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
-                                                       (k,t)   <- readExp s] ++
-                 [ (0/0, t) | ("NaN",t)      <- lex r] ++
-                 [ (1/0, t) | ("Infinity",t) <- lex r]
-                 where readFix r = [(read (ds++ds'), length ds', t)
-                                        | (ds, d) <- lexDigits r
-                                        , (ds',t) <- lexFrac d   ]
+-- readFloat     :: RealFrac a => ReadS a
+-- readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
+--                                                        (k,t)   <- readExp s] ++
+--                  [ (0/0, t) | ("NaN",t)      <- lex r] ++
+--                  [ (1/0, t) | ("Infinity",t) <- lex r]
+--                  where readFix r = [(read (ds++ds'), length ds', t)
+--                                         | (ds, d) <- lexDigits r
+--                                         , (ds',t) <- lexFrac d   ]
 
-                       lexFrac ('.':s) = lexDigits s
-                       lexFrac s       = [("",s)]
+--                        lexFrac ('.':s) = lexDigits s
+--                        lexFrac s       = [("",s)]
 
-                       readExp (e:s) | e `elem` "eE" = readExp' s
-                       readExp s                     = [(0::Int,s)]
+--                        readExp (e:s) | e `elem` "eE" = readExp' s
+--                        readExp s                     = [(0::Int,s)]
 
-                       readExp' ('-':s) = [(-k,t) | (k,t) <- readDec s]
-                       readExp' ('+':s) = readDec s
-                       readExp' s       = readDec s
+--                        readExp' ('-':s) = [(-k,t) | (k,t) <- readDec s]
+--                        readExp' ('+':s) = readDec s
+--                        readExp' s       = readDec s
 
 %%]

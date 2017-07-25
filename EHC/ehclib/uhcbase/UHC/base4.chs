@@ -74,9 +74,10 @@ module UHC.Base4   -- adapted from the Hugs prelude
     (&&), (||), not, otherwise,
     -- Char
     isSpace, isUpper, isLower, isAlpha, isDigit, 
-    -- isOctDigit, isHexDigit, 
+    isOctDigit, isHexDigit, 
     isAlphaNum, showLitChar, 
-    -- readLitChar, lexLitChar,
+    -- readLitChar, 
+    lexLitChar,
     -- Ratio
     numerator, denominator,
     -- Maybe
