@@ -191,7 +191,7 @@ import GHC.Show
 #endif
 
 #ifdef __UHC__
-import UHC.Base
+import UHC.Base0
 import UHC.IOBase
 import UHC.Handle
 import UHC.IO

@@ -13,7 +13,7 @@ module UHC.MutVar
   )
   where
 
-import UHC.Base
+import UHC.Base0
 
 %%]
 

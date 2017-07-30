@@ -138,7 +138,7 @@ import Hugs.Prelude             ( Handle, IOError, ioError )
 import System.IO.Unsafe         ( unsafePerformIO )
 #elif __UHC__
 import UHC.IOBase
-import UHC.Base
+import UHC.Base0
 #else
 import System.IO                ( Handle )
 import System.IO.Error          ( IOError, ioError )

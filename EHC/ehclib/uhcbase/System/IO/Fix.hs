@@ -21,7 +21,7 @@ module System.IO.Fix (
 
   ) where
 
-import UHC.Base
+import UHC.Base0
 import Data.IORef
 import System.IO.Unsafe
 

@@ -21,7 +21,7 @@ module Debug.Trace (
         traceShow
   ) where
 
-import UHC.Base
+import UHC.Base0
 #ifndef __UHC_TARGET_CR__
 import UHC.OldIO
 #endif

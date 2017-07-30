@@ -5,7 +5,7 @@
 module UHC.Enum
 where
 
-import UHC.Base
+import UHC.Base0
 
 instance Enum () where
     toEnum 0           = ()

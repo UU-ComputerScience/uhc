@@ -97,7 +97,7 @@ module UHC.Handle (
 #endif
  ) where
 
-import UHC.Base
+import UHC.Base0
 #ifndef __UHC_TARGET_CR__
 import UHC.MVar
 import UHC.ByteArray

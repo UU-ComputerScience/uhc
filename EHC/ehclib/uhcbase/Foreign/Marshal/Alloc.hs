@@ -58,7 +58,7 @@ import Foreign.ForeignPtr       ( FinalizerPtr )
 import UHC.IOBase
 import UHC.OldException         ( bracket )
 import UHC.Real
-import UHC.Base
+import UHC.Base0
 import UHC.Ptr
 #else
 import Control.Exception.Base   ( bracket )

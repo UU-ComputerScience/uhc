@@ -70,7 +70,7 @@ module UHC.IOBase
   )
   where
 
-import UHC.Base
+import UHC.Base0
 import UHC.ST
 import UHC.STRef
 import UHC.Types

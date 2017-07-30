@@ -69,18 +69,18 @@ traceShow x = id
 traceShowId x = traceShow x x
 
 traceShowTrip :: Show a => (String, a, String) -> b -> b
-traceShowTrip (n, e, _) = T.traceShow (n, length $ show e, n)
+traceShowTrip (n, e, _) = seq (show (n, length $ show e, n))
 -- traceShowTrip (n, e, _) = traceShow (n, length $ show e, n)
 -- traceShowId :: Show a => a -> a
 -- -- traceShowId x = T.traceShow (length $ show x) x
 -- traceShowId = T.traceShowId
 
 traceShowPair :: Show a => (String, a) -> b -> b
-traceShowPair (n, e) = T.traceShow (n, length $ show e, n)
+traceShowPair (n, e) = seq $ show (n, length $ show e, n)
 
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
 cmodTrfAnalysis subeff d imps m = 
-  T.traceShow (pp e) $
+  seq (show (pp e)) $
   traceShowPair ("subeff", subeff) $
   traceShowPair ("d", d) $
   traceShowPair ("imps", imps) $
@@ -102,7 +102,7 @@ cmodTrfAnalysis subeff d imps m =
   traceShowPair ("bi", bi) $
   traceShowPair ("test", test) $ 
   traceShowPair ("res", res) $
-  T.traceShow "finished with everything" $
+  seq "finished with everything" $
   T.traceShow (ppMap bi) res
 -- cmodTrfAnalysis subeff d imps m = T.traceShow (pp e) $ T.traceShow (ppMapAnnFree bi) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow (pp e, e, m) $ traceShow (ppMapAnnFree bi, ex) $ test `seq` res

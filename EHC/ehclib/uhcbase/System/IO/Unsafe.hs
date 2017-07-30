@@ -35,7 +35,7 @@ import NHC.Internal (unsafePerformIO)
 
 #ifdef __UHC__
 import UHC.IOBase (unsafePerformIO)
-import UHC.Base (IO, return)
+import UHC.Base0 (IO, return)
 #endif
 
 #if !__GLASGOW_HASKELL__ && !__HUGS__

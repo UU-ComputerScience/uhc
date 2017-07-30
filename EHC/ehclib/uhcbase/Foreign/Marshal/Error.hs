@@ -46,7 +46,7 @@ import GHC.IOBase
 
 #ifdef __UHC__
 import UHC.IOBase
-import UHC.Base
+import UHC.Base0
 #endif
 
 -- exported functions

@@ -31,7 +31,7 @@ module UHC.StablePtr
    ) where
 
 import UHC.Ptr
-import UHC.Base
+import UHC.Base0
 -- import UHC.IOBase
 
 -----------------------------------------------------------------------------

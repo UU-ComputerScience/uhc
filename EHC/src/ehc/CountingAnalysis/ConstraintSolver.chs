@@ -236,7 +236,7 @@ instance AddNewConstraint GatherConstraints where
 instance AddNewConstraint Constraints where
   addNewConstraint [] = return ()
   addNewConstraint cs = do
-    fvs <- traceShow ("anc-cs", length cs, f cs) $ replicateM (length cs) getFresh
+    fvs <- seq (show ("anc-cs", length cs, f cs)) $ replicateM (length cs) getFresh
     let zipped = traceShowS ("zipStart", cs, fvs) $ zip fvs $ sortConstraints cs
     acs <- use $ traceShowS ("zipp", zipped) allConstraints
     let nacs = M.union (traceShowS zipped $ M.fromList zipped) acs
@@ -565,14 +565,18 @@ instance SolveSingle ConstraintEq where
       return $ traceShowS ("TypeEqError", n1, n2) True
       -- panic $ "Unsatisfiable constraint(solve eqtype): " ++ show c
     else do
-      addNewConstraint $ genEq as1 as2 <> genEq ts1 ts2
+      addNewConstraint $ (if length ts1 /= length ts2 then traceShow ("eqTypeData") else id) $ genEq as1 as2 <> genEq ts1 ts2
       return True
   solveSingle c@(ConstraintEq_Type (Type_Func r1 e1) (Type_Func r2 e2)) = do
     addNewConstraint $ genEq r1 r2 <> genEq e1 e2
     return True
   solveSingle c@(ConstraintEq_Type (Type_Tup ts1) (Type_Tup ts2)) = do
-    addNewConstraint $ genEq ts1 ts2
-    return True
+    if (length ts1 == 0 || length ts2 == 0) then
+      -- ignore lengths zeros
+      return True
+    else do
+      addNewConstraint $ (if length ts1 /= length ts2 then traceShow ("eqTypeTup") else id) $ genEq ts1 ts2
+      return True
   solveSingle c@(ConstraintEq_Type t1@(Type_App t1f t1a) t2@(Type_App t2f t2a)) = 
     do
       -- ignore length errors
@@ -841,7 +845,7 @@ solveFixMulti c = do
   f <- getFresh
   cwl <- use currentWorkList
   currentWorkList .= makeDeepSeqQueue (fromListQueue $ S.toList c)
-  traceShow ("sfm", length $ toListQueue cwl, S.size c) solveFix
+  seq (show ("sfm", length $ toListQueue cwl, S.size c)) solveFix
   f2 <- getFresh
   currentWorkList .= cwl
   return $ S.union c $ S.fromList [f .. f2]
@@ -930,7 +934,7 @@ addConMap (v,cs) = do
   return (v, S.fromList fvs)
 
 solveDef' :: SolveT ()
-solveDef' = traceShow "StartDef" $ do 
+solveDef' = traceShowS "StartDef" $ do 
   s <- use currentWorkList
   seq (makeDeepSeqQueue s) solveFix
   ps <- use partSolution
@@ -944,10 +948,10 @@ solveDef' = traceShow "StartDef" $ do
     let (beta, w) = traceShow2def "Def: " $ defaulting $ M.toList psiFinal
     addToSol beta $ Annotation_Val w
     cwl <- use currentWorkList
-    seq (makeDeepSeqQueue s) $ traceShow ("defrec", length $ toListQueue cwl) solveDef'
+    seq (makeDeepSeqQueue s) $ seq (show ("defrec", length $ toListQueue cwl)) solveDef'
     
 solveFinalSchemes :: SolveT ()
-solveFinalSchemes = traceShow "startFinalSchemes" $ do
+solveFinalSchemes = traceShowS "startFinalSchemes" $ do
   acs <- use allConstraints
   let filtered = M.filter f acs
       keys = traceShow ("still to do cs", M.size filtered, M.size acs) $ M.keys filtered
@@ -982,7 +986,7 @@ influenceSets :: Constraints -> Map HsName (Set HsName)
 influenceSets [] = M.empty
 influenceSets (Constraint_Ann c:xs) = M.unionWith S.union (M.fromList $ map (,as) $ S.toList as) $ influenceSets xs
   where as = E.extractAnnVars c
-influenceSets (c:xs) = traceShow ("influanceHelp", c) $ influenceSets xs
+influenceSets (c:xs) = traceShow ("influenceHelp", c) $ influenceSets xs
 -- influenceSets (Constraint_Eq c:xs) = panic $ show ("influence help eq", c)
 -- influenceSets (c@Constraint_Inst{}:xs) = panic $ show ("influence help inst", c)  
 -- influenceSets (c@Constraint_Gen{}:xs) = panic $ show ("influence help gen", c)

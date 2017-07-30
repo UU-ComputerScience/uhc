@@ -10,7 +10,7 @@ module UHC.Word
   )
   where
 
-import UHC.Base
+import UHC.Base0
 import UHC.Bits
 import UHC.Types
 import UHC.Prims

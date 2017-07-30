@@ -25,7 +25,7 @@ module UHC.BoxArray
   )
   where
 
-import UHC.Base
+import UHC.Base0
 
 %%]
 

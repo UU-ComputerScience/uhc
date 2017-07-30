@@ -102,7 +102,7 @@ import Hugs.Ptr         ( castPtr )
 #ifdef __UHC__
 import UHC.Ptr
 import UHC.Types
-import UHC.Base
+import UHC.Base0
 import UHC.Float
 import UHC.Enum
 import UHC.Real

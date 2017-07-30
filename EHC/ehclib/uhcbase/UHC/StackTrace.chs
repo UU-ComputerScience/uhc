@@ -13,7 +13,7 @@ module UHC.StackTrace
   )
   where
 
-import UHC.Base
+import UHC.Base0
 
 %%]
 

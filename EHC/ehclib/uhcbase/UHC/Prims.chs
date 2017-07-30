@@ -19,7 +19,7 @@ module UHC.Prims
   -- export all
   where
 
-import UHC.Base
+import UHC.Base0
 import UHC.Types
 
 -- #ifndef __UHC_TARGET_CR__

@@ -57,7 +57,7 @@ import NHC.IOExtras
 import UHC.MutVar
 import UHC.STRef
 import UHC.IOBase
-import UHC.Base
+import UHC.Base0
 #endif
 
 

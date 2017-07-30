@@ -113,7 +113,7 @@ import Hugs.Ptr
 #ifdef __UHC__
 import UHC.Ptr
 import UHC.IOBase
-import UHC.Base
+import UHC.Base0
 #if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )
 import UHC.Read
 import UHC.Real

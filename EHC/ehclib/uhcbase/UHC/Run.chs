@@ -10,7 +10,7 @@ module UHC.Run
   )
   where
 
-import UHC.Base
+import UHC.Base0
 import UHC.IOBase
 import UHC.OldException
 #ifndef __UHC_TARGET_JS__

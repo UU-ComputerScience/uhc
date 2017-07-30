@@ -39,7 +39,7 @@ import Data.Typeable
 #endif
 
 #ifdef __UHC__
-import UHC.Base
+import UHC.Base0
 import UHC.Show
 import UHC.Read
 #endif

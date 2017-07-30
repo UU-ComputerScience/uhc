@@ -44,7 +44,7 @@ module UHC.IO (
 #endif
  ) where
 
-import UHC.Base
+import UHC.Base0
 import UHC.IOBase
 
 #ifdef __UHC_TARGET_CR__

@@ -42,7 +42,7 @@ module UHC.Generics
   )
   where
 
-import UHC.Base
+import UHC.Base0
 import UHC.Generics.Tuple
 
 --------------------------------------------------------------------------------

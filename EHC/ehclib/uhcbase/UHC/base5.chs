@@ -156,6 +156,26 @@ import UHC.Base4
 
 #include "IntLikeInstance.h"
 
+-------------------------
+-- missing derivings
+-------------------------
+
+deriving instance Enum Bool
+deriving instance Show Bool
+deriving instance Read Bool
+deriving instance Show a => Show (Maybe a)
+deriving instance Read a => Read (Maybe a)
+deriving instance (Show a, Show b) => Show (Either a b)
+deriving instance Show Ordering
+deriving instance Enum Ordering
+deriving instance Show ExitCode
+deriving instance Show Arity
+deriving instance Read Arity
+deriving instance Show Fixity
+deriving instance Read Fixity
+deriving instance Show Associativity
+deriving instance Read Associativity
+
 
 numericEnumFrom        :: Num a => a -> [a]
 numericEnumFromThen    :: Num a => a -> a -> [a]

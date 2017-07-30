@@ -19,7 +19,7 @@ module UHC.Conc
   )
   where
 
-import UHC.Base
+import UHC.Base0
 import UHC.OldException
 import System.Posix.Types
 

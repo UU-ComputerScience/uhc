@@ -43,7 +43,7 @@ module UHC.Ptr
   )
   where
 
-import UHC.Base
+import UHC.Base0
 import UHC.Types
 
 #if ! ( defined(__UHC_TARGET_JS__) || defined(__UHC_TARGET_CR__) )

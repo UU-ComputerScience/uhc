@@ -30,7 +30,7 @@ module UHC.Weak
   )
   where
 
-import UHC.Base
+import UHC.Base0
 import UHC.IOBase
 import UHC.Ptr
 import UHC.WeakPtr

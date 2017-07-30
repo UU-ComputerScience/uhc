@@ -19,7 +19,7 @@
 
 module UHC.Array where
 
-import UHC.Base
+import UHC.Base0
 import UHC.Show
 import UHC.ST
 import UHC.Ix
