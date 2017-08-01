@@ -58,7 +58,7 @@ module Foreign.C.Types
           -- 'Prelude.Show', 'Prelude.Enum', 'Typeable', 'Storable',
           -- 'Prelude.Real', 'Prelude.Fractional', 'Prelude.Floating',
           -- 'Prelude.RealFrac' and 'Prelude.RealFloat'.
-        , CFloat,  CDouble, CLDouble
+        -- , CFloat,  CDouble, CLDouble
 #else
           -- Exported non-abstractly in nhc98 to fix an interface file problem.
           CChar(..),    CSChar(..),  CUChar(..)
@@ -176,25 +176,25 @@ INTEGRAL_TYPE(CLLong,tyConCLLong,"CLLong",HTYPE_LONG_LONG)
 INTEGRAL_TYPE(CULLong,tyConCULLong,"CULLong",HTYPE_UNSIGNED_LONG_LONG)
 
 
--- | Haskell type representing the C @float@ type.
-#ifdef __UHC__
-FLOATING_EHC_TYPE(CFloat,tyConCFloat,"CFloat",HTYPE_FLOAT)
-#else
-FLOATING_TYPE(CFloat,tyConCFloat,"CFloat",HTYPE_FLOAT)
-#endif
--- | Haskell type representing the C @double@ type.
-#ifdef __UHC__
-FLOATING_EHC_TYPE(CDouble,tyConCDouble,"CDouble",HTYPE_DOUBLE)
-#else
-FLOATING_TYPE(CDouble,tyConCDouble,"CDouble",HTYPE_DOUBLE)
-#endif
--- HACK: Currently no long double in the FFI, so we simply re-use double
--- | Haskell type representing the C @long double@ type.
-#ifdef __UHC__
-FLOATING_EHC_TYPE(CLDouble,tyConCLDouble,"CLDouble",HTYPE_DOUBLE)
-#else
-FLOATING_TYPE(CLDouble,tyConCLDouble,"CLDouble",HTYPE_DOUBLE)
-#endif
+-- -- | Haskell type representing the C @float@ type.
+-- #ifdef __UHC__
+-- FLOATING_EHC_TYPE(CFloat,tyConCFloat,"CFloat",HTYPE_FLOAT)
+-- #else
+-- FLOATING_TYPE(CFloat,tyConCFloat,"CFloat",HTYPE_FLOAT)
+-- #endif
+-- -- | Haskell type representing the C @double@ type.
+-- #ifdef __UHC__
+-- FLOATING_EHC_TYPE(CDouble,tyConCDouble,"CDouble",HTYPE_DOUBLE)
+-- #else
+-- FLOATING_TYPE(CDouble,tyConCDouble,"CDouble",HTYPE_DOUBLE)
+-- #endif
+-- -- HACK: Currently no long double in the FFI, so we simply re-use double
+-- -- | Haskell type representing the C @long double@ type.
+-- #ifdef __UHC__
+-- FLOATING_EHC_TYPE(CLDouble,tyConCLDouble,"CLDouble",HTYPE_DOUBLE)
+-- #else
+-- FLOATING_TYPE(CLDouble,tyConCLDouble,"CLDouble",HTYPE_DOUBLE)
+-- #endif
 
 -- | Haskell type representing the C @ptrdiff_t@ type.
 INTEGRAL_TYPE(CPtrdiff,tyConCPtrdiff,"CPtrdiff",HTYPE_PTRDIFF_T)

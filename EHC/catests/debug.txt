@@ -6,9 +6,6 @@ make EHC_VARIANT=`       echo install/99/lib/pkg/base-3.0.0.0/99/bc/plain/ | sed
         EHC_VARIANT_TARGET=`echo install/99/lib/pkg/base-3.0.0.0/99/bc/plain/ | sed -n -e 's+install/\([0-9]*\)/lib/pkg/\([a-zA-Z0-9_.-]*\)/\([0-9]*\)/\([a-zA-Z0-9_]*\)/plain/.*+\4+p'` \
         ehclib-variant-dflt
 make[2]: Entering directory '/mnt/d/thesis/uhcCA/EHC'
-pkgsexpopt="" ; pkgs="" ; /mnt/d/thesis/uhcCA/EHC/install/99/bin/ehc ; for pkg in uhcbase base array filepath old-locale old-time unix directory random ; do pkgv=`/bin/sh build/99/ehclib/mapPkg2Versioned.sh ${pkg}` ; mkdir -p install/99/lib/pkg/${pkgv}/99/bc/plain/ ; hsFiles="`find build/99/ehclib/${pkg} -name '*.*hs'`" ; expModules="`echo ${hsFiles} | sed -e s+build/99/ehclib/${pkg}/++g -e 's+\.[^.]*hs++g' -e 's+/+.+g'`" ; bldDepends="${pkgs}" ; /mnt/d/thesis/uhcCA/EHC/install/99/bin/ehc -O2  --compile-only --pkg-hide-all --target=bc --odir=install/99/lib/pkg/ --pkg-build=${pkgv} --pkg-build-exposed="${expModules}" --pkg-build-depends="${bldDepends}" --import-path=install/99/lib/pkg/${pkgv}/99/bc/plain/include ${pkgsexpopt} ${hsFiles} `find build/99/ehclib/${pkg} -name '*.c'` +RTS -K100m ; err=$? ; if test ${err} -ne 0 ; then exit ${err} ; fi ; pkgsexpopt="${pkgsexpopt} --pkg-expose ${pkgv}" ; pkgs="${pkgs} ${pkgv}" ; done 
-ehclib/files2.mk:203: recipe for target 'ehclib-variant-dflt' failed
-make[2]: *** [ehclib-variant-dflt] Interrupt
 ehclib/files2.mk:282: recipe for target 'install/99/lib/pkg/base-3.0.0.0/99/bc/plain/CompileAll' failed
 make[1]: *** [install/99/lib/pkg/base-3.0.0.0/99/bc/plain/CompileAll] Interrupt
 ehclib/files2.mk:275: recipe for target '99/ehclib' failed

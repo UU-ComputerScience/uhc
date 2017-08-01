@@ -34,6 +34,7 @@ module Text.Show (
 import GHC.Show
 #endif
 
+
 -- | Show a list (using square brackets and commas), given a function
 -- for showing elements.
 showListWith :: (a -> ShowS) -> [a] -> ShowS
