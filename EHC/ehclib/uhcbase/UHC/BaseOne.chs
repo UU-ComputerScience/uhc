@@ -9,7 +9,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 
-module UHC.Base1   -- adapted from the Hugs prelude
+module UHC.BaseOne   -- adapted from the Hugs prelude
 (
 -- Classes
     Eq         (..),

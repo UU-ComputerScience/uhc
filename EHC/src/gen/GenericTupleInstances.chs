@@ -134,7 +134,7 @@ header maxArity
     . showString "{-# LANGUAGE TypeOperators         #-}" . newline 
     . newline
     . showString "module UHC.Generics.Tuple(" . exports . showString ") where" . newline
-    . showString "import UHC.Base" . newline
+    . showString "import UHC.Base0" . newline
   where exports = concatS $ intersperse comma $ catMaybes [ mbRepName a m | m <- [0] ++ [2..maxArity], a <- genArities ]
 
 main :: IO ()

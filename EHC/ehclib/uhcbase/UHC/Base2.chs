@@ -157,7 +157,7 @@ module UHC.Base2   -- adapted from the Hugs prelude
 
 ) where
 
-import UHC.Base1
+import UHC.BaseOne
 
 #include "IntLikeInstance.h"
 
