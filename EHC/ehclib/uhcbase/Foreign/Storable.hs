@@ -72,7 +72,7 @@ import UHC.Int
 import UHC.Word
 import UHC.Ptr
 import UHC.IOBase
-import UHC.Base0
+import UHC.Base
 #endif
 
 {- |

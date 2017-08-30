@@ -5,7 +5,7 @@
 module UHC.Bounded
 where
 
-import UHC.Base0
+import UHC.Base
 import UHC.Generics
 
 instance Bounded () where

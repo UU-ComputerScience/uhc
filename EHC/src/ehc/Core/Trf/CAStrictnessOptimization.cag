@@ -58,8 +58,9 @@ cmodTrfCaStrictnessOptimization d imps cmod = seq (show ("Optimizing skipped", d
 %%]
 
 %%[(8 counting) hs
-getBindRefBind :: CBind -> ACoreBindRef
-getBindRefBind (CBind_Bind _ cbl) | length cbl == 1 = getBindRefBound $ head cbl
+getBindRefBind :: CBind -> Maybe ACoreBindRef
+getBindRefBind (CBind_Bind _ cbl) | length cbl == 1 = Just $ getBindRefBound $ head cbl
+-- getBindRefBind c@(CBind_Bind _ []) = Nothing -- should only happen for tuples
 getBindRefBind c@(CBind_Bind _ []) = panic $ "no cbounds present in getBindRefBind: " ++ show c
 getBindRefBind c = panic $ "multiple cbounds present in getBindRefBind: " ++ show c
 
@@ -93,7 +94,9 @@ combineNamesInPat xs cpat = case cpat of
   CPat_Con _ _ cpfl -> zipWith f xs cpfl
   _ -> panic "Incorrect CPat in combineNamesInPat"
   where f (hsNm,s) cpatFld = case cpatFld of
-          CPatFld_Fld _ _ b _ -> (hsNm, s, getBindRefBind b)
+          CPatFld_Fld _ _ b _ -> case getBindRefBind b of
+            Just x -> (hsNm, s, x)
+            Nothing -> (hsNm, s, ACoreBindRef hsNm Nothing) -- this is not correct, no idea what it should be
 
 getDemandsTup :: Type -> [Annotation]
 getDemandsTup (Type_Tup ts) = map getDemand ts
@@ -237,7 +240,7 @@ SEM Expr
     lhs.trf = Expr_CaseTup @e.trf @xs @loc.trs @extra
     e.freshvar = @lhs.freshvar + length @loc.makeStrictVars
     e.whnf = S.union @lhs.whnf $ S.fromList $ map fst @loc.makeStrictVars
-    loc.makeStrictVars = filter @loc.testStrict $ map (\(a,_,b) -> (a,b)) $ combineNamesInPat (zip @xs $ repeat False) @loc.cpat
+    loc.makeStrictVars = [] -- TODO ignored for tuples. -- filter @loc.testStrict $ map (\(a,_,b) -> (a,b)) $ combineNamesInPat (zip @xs $ repeat False) @loc.cpat
     loc.testStrict = \(x,_) -> x `S.notMember` @lhs.whnf && @loc.testStrictInLamMp x
     loc.testStrictInLamMp = \x -> case lookupTy x @lhs.lamMp of
                                     RhoScheme_Rho _ (Annotation_Val v) 
@@ -253,7 +256,7 @@ SEM AltCon
     e.freshvar = @lhs.freshvar + length @loc.makeStrictVars
     e.whnf = S.union (S.fromList @loc.strictFlds) $ S.union @lhs.whnf $ S.fromList $ map fst @loc.makeStrictVars
     loc.strictFlds = map fst $ filter snd $ zip @xs @loc.flds
-    loc.makeStrictVars = map (\(a,_,b) -> (a,b)) $ filter @loc.testStrict $ combineNamesInPat (zip @xs @loc.flds) @extra
+    loc.makeStrictVars = [] -- TODO ignored for tuples. -- map (\(a,_,b) -> (a,b)) $ filter @loc.testStrict $ combineNamesInPat (zip @xs @loc.flds) @extra
     loc.testStrict = \(x, b, _) -> not b && x `S.notMember` @lhs.whnf && @loc.testStrictInLamMp x
     loc.testStrictInLamMp = \x -> case lookupTy x @lhs.lamMp of
                                     RhoScheme_Rho _ (Annotation_Val v) 

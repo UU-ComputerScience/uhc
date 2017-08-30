@@ -83,7 +83,7 @@ import Control.Monad (zipWithM_)
 
 #ifdef __UHC__
 import UHC.IOBase
-import UHC.Base0
+import UHC.Base
 #endif
 
 -- allocation

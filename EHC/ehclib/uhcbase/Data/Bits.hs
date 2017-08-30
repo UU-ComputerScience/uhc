@@ -63,7 +63,7 @@ import Hugs.Bits
 
 import UHC.Bits
 import UHC.Real
-import UHC.Base0
+import UHC.Base
 #endif
 
 infixl 8 `shift`, `rotate`, `shiftL`, `shiftR`, `rotateL`, `rotateR`

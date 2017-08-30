@@ -290,14 +290,28 @@ string this = do s <- look; scan this s
   scan (x:xs) (y:ys) | x == y = do get; scan xs ys
   scan _      _               = do pfail
 
+-- munch :: (Char -> Bool) -> ReadP String
+-- -- ^ Parses the first zero or more characters satisfying the predicate.
+-- munch p =
+--   do s <- look
+--      scan s
+--  where
+--   scan (c:cs) | p c = do get; s <- scan cs; return (c:s)
+--   scan _            = do return ""
+
 munch :: (Char -> Bool) -> ReadP String
 -- ^ Parses the first zero or more characters satisfying the predicate.
 munch p =
   do s <- look
-     scan s
- where
-  scan (c:cs) | p c = do get; s <- scan cs; return (c:s)
-  scan _            = do return ""
+     scanMunch p s
+
+scanMunch p (c:cs) = do
+  if p c then do
+    get
+    s <- scanMunch p cs
+    return (c:s)
+  else
+    return ""
 
 munch1 :: (Char -> Bool) -> ReadP String
 -- ^ Parses the first one or more characters satisfying the predicate.

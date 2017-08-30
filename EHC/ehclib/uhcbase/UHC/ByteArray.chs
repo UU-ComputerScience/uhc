@@ -51,7 +51,7 @@ module UHC.ByteArray
   )
   where
 
-import UHC.Base0
+import UHC.Base
 import UHC.Ptr
 #if !defined( __UHC_TARGET_JS__ )
 import UHC.StablePtr

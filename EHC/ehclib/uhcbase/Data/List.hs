@@ -225,7 +225,7 @@ import GHC.Base
 
 #ifdef __UHC__
 import UHC.Real
-import UHC.Base0
+import UHC.Base
 #endif
 infix 5 \\ -- comment to fool cpp
 

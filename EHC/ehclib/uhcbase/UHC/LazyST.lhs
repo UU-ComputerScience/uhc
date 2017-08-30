@@ -23,7 +23,7 @@
 -- #hide
 module UHC.LazyST where
 
-import UHC.Base0
+import UHC.Base
 import UHC.ST(STRep(..), STret(..))
 import qualified UHC.ST as ST
 

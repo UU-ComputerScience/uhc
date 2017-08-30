@@ -7,7 +7,7 @@ module UHC.GC
   )
   where
 
-import UHC.Base0
+import UHC.Base
 %%]
 
 %%[99

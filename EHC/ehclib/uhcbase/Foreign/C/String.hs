@@ -114,7 +114,7 @@ import Data.Char ( chr, ord )
 import Data.List
 import UHC.Real
 import UHC.IOBase
-import UHC.Base0
+import UHC.Base
 #endif
 -----------------------------------------------------------------------------
 -- Strings

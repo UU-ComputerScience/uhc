@@ -34,7 +34,7 @@ import GHC.Base
 #endif
 
 #ifdef __UHC__
--- import UHC.Base0
+-- import UHC.Base
 #endif
 
 import Data.List (lines, words, unlines, unwords)

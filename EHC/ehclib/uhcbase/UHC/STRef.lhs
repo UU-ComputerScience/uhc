@@ -23,7 +23,7 @@
 -- #hide
 module UHC.STRef where
 
-import UHC.Base0
+import UHC.Base
 import UHC.ST
 import UHC.MutVar
 

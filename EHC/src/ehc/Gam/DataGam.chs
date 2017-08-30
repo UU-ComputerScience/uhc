@@ -214,7 +214,7 @@ data DataGamInfo
 %%[[(8 counting)
       , dgiAnnVars      :: ![HsName]      -- all annatotation variables 
       , dgiTyVars       :: ![HsName]      -- all tyvars
-      -- , dgiExTyVars     :: ![HsName]      -- todo existensials
+      , dgiExTyVars     :: ![HsName]      -- existensials that only need to be made fresh
 %%]]
 %%[[50
       , dgiConstrNmL 		:: ![HsName]			-- all constructor names
@@ -280,7 +280,7 @@ mkDGI
      -> Maybe Int
 %%]]
 %%[[(8 counting)
-     -> [HsName] -> [HsName]
+     -> [HsName] -> [HsName] -> [HsName]
 %%]]
      -> DataGamInfo
 %%]]
@@ -289,14 +289,14 @@ mkDGI tyNm dty ki cNmL m nt
       mbGener
 %%]]
 %%[[(8 counting)
-      anns tyvars
+      anns tyvars exTyVars
 %%]]
   = DataGamInfo
       tyNm
       dty
       ki
 %%[[(8 counting)
-      anns tyvars
+      anns tyvars exTyVars
 %%]]
 %%[[50
       cNmL
@@ -332,7 +332,7 @@ mkDGIPlain tyNm dty dki cNmL m
           Nothing
 %%]]
 %%[[(8 counting)
-          [] []
+          [] [] []
 %%]]
 
 %%]

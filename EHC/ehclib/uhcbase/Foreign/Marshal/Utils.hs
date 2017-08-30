@@ -65,7 +65,7 @@ import GHC.Base
 
 #ifdef __UHC__
 import UHC.IOBase
-import UHC.Base0
+import UHC.Base
 #endif
 
 

@@ -130,7 +130,7 @@ import Control.Monad
 #endif
 
 #ifdef __UHC__
-import UHC.Base0
+import UHC.Base
 import UHC.Enum
 import UHC.Real
 import UHC.Read

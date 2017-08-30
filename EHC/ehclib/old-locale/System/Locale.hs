@@ -39,8 +39,10 @@ data TimeLocale = TimeLocale {
 	-- |AM\/PM symbols
         amPm   :: (String, String),
 	-- |formatting strings
-        dateTimeFmt, dateFmt,
-        timeFmt, time12Fmt :: String     
+        dateTimeFmt :: String,
+        dateFmt :: String,
+        timeFmt :: String, 
+        time12Fmt :: String     
         } deriving (Eq, Ord, Show)
 
 defaultTimeLocale :: TimeLocale 

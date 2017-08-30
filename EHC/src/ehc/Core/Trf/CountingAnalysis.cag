@@ -80,7 +80,9 @@ traceShowPair (n, e) = seq $ show (n, length $ show e, n)
 
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
 cmodTrfAnalysis subeff d imps m = 
-  seq (show (pp e)) $
+  -- seq (length $ show (pp e)) $
+  T.traceShow (pp e) $
+  T.traceShow e $
   traceShowPair ("subeff", subeff) $
   traceShowPair ("d", d) $
   traceShowPair ("imps", imps) $
@@ -197,6 +199,9 @@ annVars = dgiAnnVars
 tyVars :: DataGamInfo -> HsNames
 tyVars = dgiTyVars
 
+exTyVars :: DataGamInfo -> HsNames
+exTyVars = dgiExTyVars
+
 constrs :: DataGamInfo -> Map HsName Fields
 constrs = Map.map dtiFldAnnTyL . dgiConstrTagMp
 
@@ -278,8 +283,8 @@ splitWhile2 f ys@(x:xs@(y:_))
 splitWhile2 f x = (x, []) -- sinleton or empty
 
 fixInstanceScopeSingle :: [(Bindings, CBindCateg)] -> [(Bindings, CBindCateg)]
-fixInstanceScopeSingle ys@(x:xs@(y:zs)) 
-  | hasScopeError x y && hasScopeError y x = traceShow "merged" $ fixInstanceScopeSingle $ merge x y : zs
+fixInstanceScopeSingle ys@(x:xs@(y:zss)) 
+  | hasScopeError x y && hasScopeError y x = traceShow "merged" $ fixInstanceScopeSingle $ merge x y : zss
   | hasScopeError x y = traceShow ("swapped", length fs) $ reverse fs ++ fixInstanceScopeSingle zs
   | otherwise = x:fixInstanceScopeSingle xs
   where (fs,zs) = splitWhile2 hasScopeError ys
@@ -418,6 +423,7 @@ cmodTrfAnalysisCountingUnique = cmodTrfAnalysis False
 %%[(8 counting) ag
 ATTR * [ toHsName: {Var -> HsName} importEnv: {Imports} exports: {Exports} dataEnv: {DataEnv} subeffecting: {Annotation -> Annotation -> GatherConstraints} | freshVar: {Var} | annCopy: SELF ]
 ATTR * [ | | bindingEnv USE {M.union} {M.empty}: {BindingEnv} constraintsMap USE {seqUnion} {M.empty}: {Map Var Constraints}]
+ATTR * [ | | copy: SELF]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -668,15 +674,17 @@ SEM Expr
     loc.data = fromMaybe (error "con") $ @tyNm `dataGamLookup` @lhs.dataEnv
     loc.ul = annVars @loc.data
     loc.ak = tyVars @loc.data
+    loc.exTy = exTyVars @loc.data
+    loc.exTySol = M.fromList $ zip @loc.exTy $ map (Type_Var . @lhs.toHsName) [@flds.freshVar + length @loc.ul + length @loc.ak + 1  .. @flds.freshVar + length @loc.ul + length @loc.ak + length @loc.exTy]
     loc.rhoj = fromFields $ constrs @loc.data M.! @conNm
     loc.phil = map (Annotation_Var . @lhs.toHsName) [@flds.freshVar .. @flds.freshVar + length @loc.ul - 1]
     loc.tauk = map (Type_Var . @lhs.toHsName) [@flds.freshVar + length @loc.ul  .. @flds.freshVar + length @loc.ul + length @loc.ak - 1]
-    loc.sol = Solution (M.fromList $ zip @loc.ul @loc.phil) (M.fromList $ zip @loc.ak @loc.tauk) M.empty
+    loc.sol = Solution (M.fromList $ zip @loc.ul @loc.phil) (M.union (M.fromList $ zip @loc.ak @loc.tauk) @loc.exTySol) M.empty
     loc.rhoj' = S.substSolution @loc.rhoj @loc.sol
     loc.c2 = genEq @loc.rhoj' @loc.rho'
     loc.nu = Annotation_Var $ @lhs.toHsName $ @flds.freshVar + length @loc.ul + length @loc.ak
     loc.etaTy = EtaType_Eta (Type_Data @tyNm @loc.phil @loc.tauk) @loc.nu
-    lhs.freshVar = @flds.freshVar + length @loc.ul + length @loc.ak + 1
+    lhs.freshVar = @flds.freshVar + length @loc.ul + length @loc.ak + length @loc.exTy + 1
     lhs.env = @loc.env
     lhs.etaTy = @loc.etaTy
     lhs.constraints = @loc.c1 <> @loc.c2
@@ -692,10 +700,12 @@ SEM Expr
     loc.data = fromMaybe (error "CaseCon") $ @alts.tyNm `dataGamLookup` @lhs.dataEnv
     loc.ul = annVars @loc.data
     loc.ak = tyVars @loc.data
+    loc.exTy = exTyVars @loc.data
+    loc.exTySol = M.fromList $ zip @loc.exTy $ map (Type_Var . @lhs.toHsName) [@loc.fv  .. @loc.fv + length @loc.exTy - 1]
     loc.rhoijtau = map (fromFields . snd) $ M.toList $ constrs @loc.data
     loc.phil = map (Annotation_Var . @lhs.toHsName) [@alts.freshVar .. @alts.freshVar + length @loc.ul - 1]
     loc.tauk = map (Type_Var . @lhs.toHsName) [@alts.freshVar + length @loc.ul  .. @alts.freshVar + length @loc.ul + length @loc.ak - 1]
-    loc.sol = Solution (M.fromList $ zip @loc.ul @loc.phil) (M.fromList $ zip @loc.ak @loc.tauk) M.empty
+    loc.sol = Solution (M.fromList $ zip @loc.ul @loc.phil) (M.union (M.fromList $ zip @loc.ak @loc.tauk) @loc.exTySol) M.empty
     loc.rhoijtau' = S.substSolution @loc.rhoijtau @loc.sol
     loc.rhoijsigma = map (map $ fromGRho . fmap (Scheme_Forall mempty mempty mempty) . toGRho) @loc.rhoijtau'
     loc.env0 = @e.env
@@ -710,7 +720,7 @@ SEM Expr
     loc.c2' = genEq @loc.rhoijsigma @loc.rhoij'
     loc.((env, c3'), fv) = computePlus (@alts.freshVar + length @loc.ul + length @loc.ak, @lhs.toHsName) @loc.env0 @loc.env'
     loc.etaTy = @loc.eta1
-    lhs.freshVar = @loc.fv
+    lhs.freshVar = @loc.fv + length @loc.exTy
     lhs.env = @loc.env
     lhs.etaTy = @loc.etaTy
     lhs.constraints = @loc.c1 <> @loc.c1' <> @loc.c2 <> @loc.c2' <> @loc.c3'

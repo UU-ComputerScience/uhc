@@ -174,8 +174,10 @@ Note that to change some, but not all permissions, a construct on the following 
 
 data Permissions
  = Permissions {
-    readable,   writable, 
-    executable, searchable :: Bool 
+    readable :: Bool,
+    writable :: Bool, 
+    executable :: Bool, 
+    searchable :: Bool 
    } deriving (Eq, Ord, Read, Show)
 
 {- |The 'getPermissions' operation returns the

@@ -26,7 +26,7 @@ module UHC.MVar
   )
   where
 
-import UHC.Base0
+import UHC.Base
 import UHC.OldException
 import UHC.MutVar
 import UHC.IOBase

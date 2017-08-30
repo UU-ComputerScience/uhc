@@ -273,15 +273,15 @@ ATTR TyExpr PrExpr [ | | caType: {CA.Type}]
 ATTR TyExpr TyExprAnn [ | | caIsStrict USE {(||)} {False}: {Bool}]
 ATTR DataFields [ | | caFields USE {(++)} {[]}: {[CA.Field]}]
 ATTR DataField [ | | caFields: {[CA.Field]}]
-ATTR TyVars [ | | caTyVars USE {(++)} {[]}: {[HsName]} ]
--- ATTR TyExpr [ | | caClassTyVars: {[HsName]} ]
-ATTR TyVar TyExpr [ | | caTyVars: {[HsName]} ]
+ATTR TyVars [ | | caTyVars USE {(++)} {[]}: {[HsName]} caExTyVars USE {(++)} {[]}: {[HsName]} ]
+ATTR TyExpr [ | | caClassExTyVars: {[HsName]} ]
+ATTR TyVar TyExpr [ | | caTyVars: {[HsName]} caExTyVars: {[HsName]} ]
 ATTR RowTyExpr [ | | caTypes: {[CA.Type]} caLength: {Int}]
 ATTR TyExpr PrExpr PrExprs TyExprs RowTyExpr [ caLevel: {Int} | | ]
 ATTR PrExpr [ | | caDictNm: {HsName} ]
 ATTR Expr Decl Decls [ | | caGathTyGam USE {Map.union} {Map.empty}: {Map.Map HsName ([HsName], [HsName], CA.Type)}]
 ATTR Decl Decls [ | | caClassTySigs USE {++} {[]}: {[(HsName, CA.Field)]} ]
--- ATTR Decl Decls [ | | caClassTySigs USE {++} {[]}: {[(HsName, CA.Field)]} caClassTyVars USE {++} {[]}: {[HsName]}]
+ATTR Decl Decls [ | | caClassExTyVars USE {++} {[]}: {[HsName]}]
 ATTR TyExprs [ | | caTypes: {[CA.Type]}]
 ATTR TyExpr PrExpr TyExprs PrExprs [ | | caPrExprs USE {(++)} {[]}: {[(HsName, CA.Field)]}]
 
@@ -300,6 +300,7 @@ SEM TyExpr
 SEM TyVar
   | Var
     lhs.caTyVars = [@nm]
+    lhs.caExTyVars = [@nm]
 
 SEM AGItf
   | AGItf
@@ -332,13 +333,13 @@ SEM Decl
                             (CA.Annotation_Var $ mkHNm @lhs.caFreshVar, CA.Annotation_Var $ mkHNm $ @lhs.caFreshVar + 1, @lhs.caFreshVar + 2) 
                           else (CA.annTop, CA.annTop, @lhs.caFreshVar)
     tyExpr.caFreshVar = @loc.fv
-    -- lhs.caClassTyVars = @tyExpr.caClassTyVars
+    lhs.caClassExTyVars = @tyExpr.caClassExTyVars
   | Class
     lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @decls.caFreshVar - 1]
     lhs.caLocalDataNamesGath = Set.singleton @dataDictNm
     lhs.caLocalDataGamGath = Map.singleton @dataDictNm (length @lhs.caLocalAnnVars)
     lhs.caClassTySigs = []
-    -- lhs.caClassTyVars = []
+    lhs.caClassExTyVars = []
     loc.caClassTyVars = extractVarNames $ snd $ last @tyPrExpr.caPrExprs
     loc.camap = Map.fromList $ map (first show) $ init @tyPrExpr.caPrExprs ++ @decls.caClassTySigs
     loc.caClassTySigsWithPred = traceShow ("prExpr:", @tyPrExpr.copy, @tyPrExpr.caPrExprs) $ Map.elems @loc.camap
@@ -406,18 +407,20 @@ SEM PrExpr
 SEM TyExpr
   | Lam
     lhs.caTyVars = @tyVar : @tyExpr.caTyVars
+    lhs.caExTyVars = @tyVar : @tyExpr.caExTyVars
   | * - Lam Ann
     lhs.caTyVars = []
+    lhs.caExTyVars = []
 
--- SEM TyExpr
---   | Lam
---     lhs.caClassTyVars = @tyVar : @tyExpr.caClassTyVars
---   | Var
---     lhs.caClassTyVars = [@nm]
---   | App
---     lhs.caClassTyVars = @func.caClassTyVars ++ @arg.caClassTyVars 
---   | * - Lam Ann Var App AppTop Parens
---     lhs.caClassTyVars = []
+SEM TyExpr
+  | Lam
+    lhs.caClassExTyVars = @tyVar : @tyExpr.caClassExTyVars
+  | Var
+    lhs.caClassExTyVars = [@nm]
+  | App
+    lhs.caClassExTyVars = @func.caClassExTyVars ++ @arg.caClassExTyVars 
+  | * - Lam Ann Var App AppTop Parens
+    lhs.caClassExTyVars = []
 
 SEM TyExpr
   | *
@@ -572,6 +575,7 @@ SEM Decl
 %%[[(8 counting)
                                                               @lhs.caLocalAnnVars
                                                               @tyVars.caTyVars
+                                                              @tyVars.caExTyVars
 %%]]
                 lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 

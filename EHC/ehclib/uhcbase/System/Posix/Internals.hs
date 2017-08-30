@@ -54,7 +54,7 @@ import Hugs.IO (IOMode(..))
 #elif __UHC__
 import UHC.IOBase
 import UHC.Real
-import UHC.Base0
+import UHC.Base
 #else
 import System.IO
 #endif

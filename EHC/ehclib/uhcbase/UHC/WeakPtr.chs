@@ -18,7 +18,7 @@ module UHC.WeakPtr
   )
   where
 
-import UHC.Base0
+import UHC.Base
 import UHC.Ptr
 
 %%]

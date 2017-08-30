@@ -15,7 +15,7 @@ module UHC.Show
   )
   where
 
-import UHC.Base0
+import UHC.Base
 import UHC.Char
 import UHC.Float
 

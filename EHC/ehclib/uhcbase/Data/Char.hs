@@ -88,7 +88,7 @@ foreign import ccall unsafe "WCsubst.h u_gencat" wgencat :: CInt -> CInt
 
 #ifdef __UHC__
 import UHC.Char
-import UHC.Base0
+import UHC.Base
 import UHC.Show
 import UHC.Enum
 #endif

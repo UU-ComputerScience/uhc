@@ -18,7 +18,7 @@ module UHC.Types
   -- export all
   where
 
-import UHC.Base0
+import UHC.Base
 
 #include "HsBaseConfig.h"
 #include "CTypes.h"

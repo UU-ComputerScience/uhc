@@ -5,7 +5,7 @@ module UHC.Bits
   -- export everything
   where
 
-import UHC.Base0
+import UHC.Base
 
 #include "IntLikeInstance.h"
 

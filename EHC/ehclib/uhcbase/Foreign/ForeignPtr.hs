@@ -90,7 +90,7 @@ import GHC.ForeignPtr
 
 #ifdef __UHC__
 import UHC.ForeignPtr
-import UHC.Base0
+import UHC.Base
 import UHC.IOBase
 #endif
 

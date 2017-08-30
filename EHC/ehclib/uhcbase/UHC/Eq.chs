@@ -5,7 +5,7 @@
 module UHC.Eq
 where
 
-import UHC.Base0
+import UHC.Base
 import UHC.Generics
 
 

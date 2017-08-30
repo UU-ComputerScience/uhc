@@ -575,7 +575,8 @@ instance SolveSingle ConstraintEq where
       -- ignore lengths zeros
       return True
     else do
-      addNewConstraint $ (if length ts1 /= length ts2 then traceShow ("eqTypeTup") else id) $ genEq ts1 ts2
+      -- ignore length errors
+      addNewConstraint $ (if length ts1 /= length ts2 then traceShow ("eqTypeTup") else id) $ uncurry genEq $ unzip $ zip ts1 ts2
       return True
   solveSingle c@(ConstraintEq_Type t1@(Type_App t1f t1a) t2@(Type_App t2f t2a)) = 
     do

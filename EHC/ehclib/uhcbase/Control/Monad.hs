@@ -81,7 +81,7 @@ import GHC.Base
 #endif
 
 #ifdef __UHC__
-import UHC.Base0
+import UHC.Base
 #endif
 
 #ifdef __GLASGOW_HASKELL__

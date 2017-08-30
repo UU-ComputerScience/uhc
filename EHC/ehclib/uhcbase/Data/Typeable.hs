@@ -95,7 +95,7 @@ import Data.List( foldl, intersperse )
 import Unsafe.Coerce
 
 #ifdef __UHC__
-import UHC.Base0
+import UHC.Base
 import UHC.IOBase (Handle)
 import UHC.Generics
 #endif

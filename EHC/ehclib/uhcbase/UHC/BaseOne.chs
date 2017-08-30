@@ -23,7 +23,7 @@ module UHC.BaseOne   -- adapted from the Hugs prelude
     -- RealFrac   (..),
     -- RealFloat  (..),
     Enum       (..),
-    -- Functor    (..),
+    Functor    (..),
     -- Monad      (..),
     -- Show       (..),
     -- Read       (..),
@@ -165,7 +165,7 @@ module UHC.BaseOne   -- adapted from the Hugs prelude
 
 ) where
 
-import UHC.Base
+import UHC.BaseZero
 
 #include "IntLikeInstance.h"
 

@@ -10,7 +10,7 @@ module UHC.Int
   )
   where
 
-import UHC.Base0
+import UHC.Base
 import UHC.Types
 import UHC.Prims
 import UHC.Bits
