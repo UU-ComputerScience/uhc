@@ -238,7 +238,7 @@ instance AddNewConstraint Constraints where
   addNewConstraint cs = do
     fvs <- seq (show ("anc-cs", length cs, f cs)) $ replicateM (length cs) getFresh
     let zipped = traceShowS ("zipStart", cs, fvs) $ zip fvs $ sortConstraints cs
-    acs <- use $ traceShowS ("zipp", zipped) allConstraints
+    acs <- use $ traceShowS ("zipp:", vlist zipped, "endzipp;") allConstraints
     let nacs = M.union (traceShowS zipped $ M.fromList zipped) acs
     allConstraints .= traceRun "anc-cs-acs" (makeDeepSeqAcs nacs)
     cwl <- use currentWorkList
@@ -337,7 +337,7 @@ instance SolveSingle Constraint where
         valpha = S.union ftvc2 ftvtau' S.\\ ftvenv'
         -- vbeta = S.union favc2 favtau' S.\\ S.unions [favenv', favnu', favdelta', favnu0', favdelta0']
         vbeta = favtau' S.\\ S.unions [favenv', favnu', favdelta', favnu0', favdelta0']
-    s2 <- use solution
+    s2 <- use $ traceShowS ("genSolve:", name, pp s, "endsol:", vbeta, valpha, sigma) solution
     let ns1 = s2 & annSol %~ flip (foldr M.delete) (traceShowT vbeta vbeta)
     solution .= traceRun "ss-c-s2" (makeDeepSeqSol ns1)
     s3 <- use solution
@@ -729,7 +729,7 @@ solveFix = traceShowS "solveFix" $ do
   else do
     s <- use solution
     let (v,c) = fromJust mc
-        c' = seq (show ("solve: ", v)) S.substSolution c s
+        c' = traceShowS ("solve: ", v, pp s, "endsolve;") S.substSolution c s
     updateWorkListConstraint $ traceShowS ("current",v) (v,c)
     solved <- solveSingle (traceShowS "sf-c'" c')
     asc <- use allConstraints
@@ -845,14 +845,18 @@ solveFixMulti :: Set Var -> SolveT (Set Var)
 solveFixMulti c = do
   f <- getFresh
   cwl <- use currentWorkList
-  currentWorkList .= makeDeepSeqQueue (fromListQueue $ S.toList c)
+  cs' <- sortConstraintsSet c
+  -- cs' <- return $ S.toList c
+  currentWorkList .= makeDeepSeqQueue (fromListQueue cs')
   seq (show ("sfm", length $ toListQueue cwl, S.size c)) solveFix
   f2 <- getFresh
   currentWorkList .= cwl
   return $ S.union c $ S.fromList [f .. f2]
 
-sortConstraintsSet :: Set Var -> SolveT (Set Var, Set Var, Set Var)
-sortConstraintsSet = sortConstraintsSet' . S.toList
+sortConstraintsSet :: Set Var -> SolveT [Var]
+sortConstraintsSet svs = do
+  (ec1,gcs1,cs1) <- sortConstraintsSet' $ S.toList svs
+  return $ S.toList ec1 ++ S.toList gcs1 ++ S.toList cs1
   where sortConstraintsSet' [] = return mempty -- (S.empty,S.empty,S.empty)
         sortConstraintsSet' (v:vs) = do
           (ec, gcs, cs) <- sortConstraintsSet' vs
@@ -931,7 +935,7 @@ addConMap (v,cs) = do
   acs <- use allConstraints
   let nacs = M.union (M.fromList zipped) acs
   allConstraints .= traceRun "acm-acs" (makeDeepSeqAcs nacs)
-  mapM_ updateWorkListConstraint zipped
+  mapM_ updateWorkListConstraint $ traceShowS ("css:", vlist zipped, "endcss;") zipped
   return (v, S.fromList fvs)
 
 solveDef' :: SolveT ()

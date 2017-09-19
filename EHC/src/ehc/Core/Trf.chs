@@ -246,7 +246,8 @@ trfCore opts optimScope dataGam modNm trfcore
 
 %%[[(8 counting)
                ; t_counting_analysis
-               ; t_caStrictness_optimization
+               ; uca <- freshInfUID
+               ; t_caStrictness_optimization uca
 %%]]
 
 %%[[(8 codegenanalysis)
@@ -304,9 +305,9 @@ trfCore opts optimScope dataGam modNm trfcore
         t_counting_analysis 
                         = liftTrfModWithStateExtra osm "counting-analysis" lamMpPropagate
                                                                $ \s -> cmodTrfAnalysisCounting dataGam (trfcoreInhLamMp $ trfstExtra s)
-        t_caStrictness_optimization
+        t_caStrictness_optimization u
                         = liftTrfModWithStateExtra osm "caStrictness_optimization" lamMpPropagate
-                                                               $ \s -> cmodTrfCaStrictnessOptimization dataGam (trfcoreInhLamMp $ trfstExtra s)
+                                                               $ \s -> cmodTrfCaStrictnessOptimization dataGam (trfcoreInhLamMp $ trfstExtra s) modNm u
 %%]]
 
 %%[[(8 codegenanalysis)

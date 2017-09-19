@@ -132,7 +132,7 @@ type InsSeq = Seq.FastSeq Instr
 %%[(8 codegen grin) hs export(StringConst'(..),StringConst)
 data StringConst' a
   = StringConst a
-  deriving(Eq,Ord)
+  deriving(Eq,Ord, Show)
 
 type StringConst = StringConst' String
 %%]

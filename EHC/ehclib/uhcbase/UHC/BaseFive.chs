@@ -176,14 +176,6 @@ deriving instance Read Fixity
 deriving instance Show Associativity
 deriving instance Read Associativity
 
--- instance Functor [] where
---     fmap = map
-
--- instance Functor Maybe where
---     fmap _ Nothing = Nothing
---     fmap f (Just x) = Just $ f x
-
-
 numericEnumFrom        :: Num a => a -> [a]
 numericEnumFromThen    :: Num a => a -> a -> [a]
 numericEnumFromTo      :: (Ord a, Fractional a) => a -> a -> [a]

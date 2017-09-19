@@ -1231,7 +1231,9 @@ instance Enum Integer where
 -- -- Ratio and Rational type
 -- --------------------------------------------------------------
 
-data Ratio a = !a :% !a deriving (Eq, Generic)
+data Ratio a = !a :% !a 
+    deriving (Eq, Generic)
+    -- deriving (Eq)
 
 type Rational              = Ratio Integer
 

@@ -476,6 +476,7 @@ data EntryInfo' str
       -- , eiNmStrConst	:: !Const
       , eiMbNmStr		:: !(Maybe str)
       }
+      deriving Show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

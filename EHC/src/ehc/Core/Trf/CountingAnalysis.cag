@@ -81,6 +81,7 @@ traceShowPair (n, e) = seq $ show (n, length $ show e, n)
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
 cmodTrfAnalysis subeff d imps m = 
   -- seq (length $ show (pp e)) $
+  -- T.traceShow (pp (c, conMap)) $
   T.traceShow (pp e) $
   T.traceShow e $
   traceShowPair ("subeff", subeff) $
@@ -105,7 +106,9 @@ cmodTrfAnalysis subeff d imps m =
   traceShowPair ("test", test) $ 
   traceShowPair ("res", res) $
   seq "finished with everything" $
-  T.traceShow (ppMap bi) res
+  T.traceShow (ppMap finalBindEnv) 
+  res
+  -- T.traceShow (ppMap bi) res
 -- cmodTrfAnalysis subeff d imps m = T.traceShow (pp e) $ T.traceShow (ppMapAnnFree bi) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow (pp e, e, m) $ traceShow (ppMapAnnFree bi, ex) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = test `seq` res

@@ -108,7 +108,10 @@ instance PP Constraint where
   pp (Constraint_Ann c) = pp c
   pp (Constraint_Eq c) = pp c
   pp (Constraint_Inst n s t) = n >|< ": inst(" >|< s >|< ") ==" >#< t
-  pp (Constraint_Gen n t u d n0 d0 c e s) = error "Cannot print Gen constraint without ConstraintMap"
+  pp (Constraint_Gen n t u d n0 d0 c e s) = n >|< ": gen" 
+    >|< ppParensCommas [t >#< "^" >#< ppParensCommas [u, d], pp $ "cs: " ++ show c, pp $ "e: " ++ show (M.size e)]
+    >#< "==" >#< s >#< "^" >#< ppParensCommas [n0, d0]
+    >-< indent 4 (ppMap e)
 
 instance {-# OVERLAPPING #-} PP (Constraints, Map Var Constraints) where
   pp (cs, cm) = vlist $ map (,cm) cs
@@ -195,4 +198,36 @@ instance PPAnnFree ConstraintEq where
 instance PPAnnFree Solution where
   ppAnnFree (Solution _ ts ss) = "typeSol:" >-< indent 2 (ppMapAnnFree ts)
     >-< "schemeSol:" >-< indent 2 (ppMapAnnFree ss)
+
+instance PPAnnFree Module where
+  ppAnnFree (Module_Module mod _) = ppAnnFree mod
+
+instance PPAnnFree Expr where
+  ppAnnFree (Expr_VarLocal v _) = pp v
+  ppAnnFree (Expr_VarImport v _) = pp v
+  ppAnnFree (Expr_Const c) = pp c
+  ppAnnFree (Expr_Abs bind body _) = "\\" >|< bind >#< "->" >-< indent 2 (ppAnnFree body)
+  ppAnnFree (Expr_AppLocal func arg _) = ppAnnFree func >#< arg
+  ppAnnFree (Expr_AppImport func arg _) = ppAnnFree func >#< arg
+  ppAnnFree (Expr_AppConst func arg _) = ppAnnFree func >#< arg
+  ppAnnFree (Expr_Let binds body _) = "let" >-< indent 2 (vlist $ map ppAnnFree binds) >-< "in" >#< ppAnnFree body
+  ppAnnFree (Expr_LetBang x e1 e2 _) = "let!" >#< x >#< "=" >#< ppAnnFree e1 >-< "in" >#< ppAnnFree e2
+  ppAnnFree (Expr_Con _ conNm flds _) = conNm >#< ppSpaces flds 
+  ppAnnFree (Expr_Tup flds _) = ppParensCommas flds
+  ppAnnFree (Expr_CaseCon e alts _) = "case" >#< ppAnnFree e >#< "of" >-< indent 2 (vlist $ map ppAnnFree alts)
+  ppAnnFree (Expr_CaseTup e xs e1 _) = "case" >#< ppAnnFree e >#< "of" >-< indent 2 (ppParensCommas xs >#< "->" >#< ppAnnFree e1)
+  ppAnnFree (Expr_CaseConst e alts _) = "case" >#< ppAnnFree e >#< "of" >-< indent 2 (vlist $ map ppAnnFree alts)
+  ppAnnFree Expr_FFI{} = text "FFI"
+  ppAnnFree (Expr_Ann _ e) = ppAnnFree e
+  ppAnnFree (Expr_AnnCore _ e) = ppAnnFree e
+
+instance PPAnnFree Binding where
+  ppAnnFree (Binding_Bind n e _) = n >#< "=" >#< ppAnnFree e
+
+instance PPAnnFree AltCon where
+  ppAnnFree (AltCon_Alt _ c xs e _) = c >#< ppSpaces xs >#< "->" >#< ppAnnFree e
+
+instance PPAnnFree AltConst where
+  ppAnnFree (AltConst_Int c e _) = c >#< "->" >#< ppAnnFree e
+  ppAnnFree (AltConst_Char c e _) = c >#< "->" >#< ppAnnFree e
 %%]
