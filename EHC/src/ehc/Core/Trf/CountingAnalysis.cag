@@ -82,8 +82,8 @@ cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
 cmodTrfAnalysis subeff d imps m = 
   -- seq (length $ show (pp e)) $
   -- T.traceShow (pp (c, conMap)) $
-  T.traceShow (pp e) $
-  T.traceShow e $
+  -- T.traceShow (pp e) $
+  -- T.traceShow e $
   traceShowPair ("subeff", subeff) $
   traceShowPair ("d", d) $
   traceShowPair ("imps", imps) $

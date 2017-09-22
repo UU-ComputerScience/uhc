@@ -44,20 +44,24 @@ cmodTrfCaStrictnessOptimization :: DataGam -> LamMp -> HsName -> UID -> CModule 
 -- cmodTrfCaStrictnessOptimization d imps cmod = seq (show ("Optimizing skipped", d)) (cmod, imps)
 cmodTrfCaStrictnessOptimization d imps modNm uniq cmod = 
   traceShow "start optimizing" $ 
+  -- traceShow ("core: ", cmod) $ 
+  traceShow (ppAnnFree ebase) $
   traceShow ("Transformation applied: ", count_Syn_Module syn) $
   traceShow (ppAnnFree e) $
   (toCModule e, imps)
 -- cmodTrfCaStrictnessOptimization d imps cmod = panic "Optimize"
-  where syn = wrap_Module (sem_Module $ toCAModule (toImports imps) cmod) Inh_Module
+  where syn = wrap_Module (sem_Module ebase) Inh_Module
                   { dataEnv_Inh_Module = d
                   , lamMp_Inh_Module = imps
                   , whnf_Inh_Module = S.empty
                   , toHsName_Inh_Module = toHsName
                   , gUniq_Inh_Module = uniq
                   , count_Inh_Module = 0
+                  , topLevel_Inh_Module = True
                   }
         toHsName = hsnQualUniqify modNm . uidHNm
         e = trf_Syn_Module syn
+        ebase = toCAModule (toImports imps) cmod
 %%]
 
 %%[(8 counting) hs
@@ -129,9 +133,27 @@ mkNewUIDs x u = (last us, init us)
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 counting) hs
+type LevBindL = [(CBindCateg,CBindL)]
+
+mkTrf :: Bool -> CExpr -> [(HsName, HsName)] -> CExpr
+mkTrf b be nl = mkLetTrf (mkTrf' b nl) be
+
+mkTrf' :: Bool -> [(HsName, HsName)] -> LevBindL
+mkTrf' cond xs
+  =  if cond
+     then map (\(n, e) -> (CBindCateg_Strict,[acoreBind1 n $ acoreVar e])) xs
+     else []
+%%]
+
+%%[(8 counting) hs
+mkLetTrf :: LevBindL -> CExpr -> CExpr
+mkLetTrf l ce = foldr (\(c,b) e -> acoreLet c b e) ce l
+%%]
+
 %%[(8 counting) ag
 
-ATTR * [ dataEnv : {DataGam} lamMp : {LamMp} toHsName: {UID -> HsName} whnf : {Set HsName} | gUniq : UID | trf: SELF ]
+ATTR * [ dataEnv : {DataGam} lamMp : {LamMp} toHsName: {UID -> HsName} whnf : {Set HsName} topLevel: Bool | gUniq : UID | trf: SELF ]
 ATTR Expr [ ownTy: EtaType | | ty: EtaType var: {Maybe HsName} ]
 ATTR ConVar [ demand: {Annotation} cBound : {CBound} strictField : {Bool} | | makeStrict : {Maybe Expr}]
 ATTR ConVars [ demands: {[Annotation]} cBoundL : {CBoundL} strictFieldL : {[Bool]} | | makeStrictVars : {[Expr]}]
@@ -162,7 +184,7 @@ SEM ConVar
     loc.doMakeStrict = case @lhs.demand of
                           Annotation_Val v -> v `S.isSubsetOf` S.fromList [AnnPrim_One, AnnPrim_Infinity] && not @lhs.strictField
                           _ -> False
-    lhs.count = if @loc.doMakeStrict then @lhs.count + 1 else @lhs.count
+    lhs.count = if @loc.doMakeStrict then traceShow "opt-convar" $ @lhs.count + 1 else @lhs.count
   | Const
     lhs.makeStrict = Nothing
 
@@ -201,24 +223,25 @@ SEM Expr
     lhs.isWhnf = False
 
 SEM Expr
-  | AppLocal AppImport
-    loc.trf = if @loc.doTrf then traceShow "opt-app" $ Expr_LetBang @loc.x (Expr_VarLocal @arg $ getBindRefBound @extra) @loc.copy Nothing else @loc.copy
-    func.count = if @loc.doTrf then @lhs.count + 1 else @lhs.count
-    loc.doTrf = @x `S.notMember` @lhs.whnf && @loc.isStrictArg
+  | AppLocal
+    loc.trf = if @loc.doTrf then Expr_LetBang @loc.x (Expr_VarLocal @arg $ getBindRefBound @extra) @loc.copy Nothing else @loc.copy
+    func.count = if @loc.doTrf then traceShow "opt-app" $ @lhs.count + 1 else @lhs.count
+    loc.doTrf = @arg `S.notMember` @lhs.whnf && @loc.isStrictArg
     loc.isStrictArg = case @func.ty of
                           EtaType_Eta (Type_Func (RhoType_Rho _ (Annotation_Val v)) _) _ 
                             -> v `S.isSubsetOf` S.fromList [AnnPrim_One, AnnPrim_Infinity]
                           _ -> False
     (func.gUniq, loc.lUniq) = mkNewUID @lhs.gUniq
-    func.whnf = if @loc.doTrf then S.insert @loc.x @lhs.whnf else @lhs.whnf
+    func.whnf = if @loc.doTrf then S.insert @arg @lhs.whnf else @lhs.whnf
     loc.x = @lhs.toHsName @loc.lUniq
     loc.copy = @loc.con @func.trf @arg @extra
   | AppLocal
     loc.con = Expr_AppLocal
-  | AppImport
-    loc.con = Expr_AppImport
+  -- | AppImport
+  --   loc.con = Expr_AppImport
   | Let
-    binds.count = if @loc.doTrf then @lhs.count + 1 else @lhs.count
+    binds.topLevel = False
+    binds.count = if @loc.doTrf then traceShow "opt-let" $ @lhs.count + 1 else @lhs.count
     loc.(x, e1, ex) = case @binds.trf of
                         [Binding_Bind n e x] -> (n, e, x)
                         _ -> panic "No single binding for let bang Transformation"
@@ -227,9 +250,10 @@ SEM Expr
                           RhoScheme_Rho _ (Annotation_Val v) 
                             -> v `S.isSubsetOf` S.fromList [AnnPrim_One, AnnPrim_Infinity]
                           _ -> False
-    e.whnf = if @loc.doTrf then S.insert @loc.x @lhs.whnf else @lhs.whnf
-    loc.trf = if @loc.doTrf then traceShow "opt-let" $ Expr_LetBang @loc.x @loc.e1 @e.trf @loc.ex else Expr_Let @binds.trf @e.trf @extra
+    e.whnf = if @loc.doTrf then traceShow (@loc.x, @lhs.whnf) $ S.insert @loc.x @lhs.whnf else @lhs.whnf
+    loc.trf = if @loc.doTrf then Expr_LetBang @loc.x @loc.e1 @e.trf @loc.ex else Expr_Let @binds.trf @e.trf @extra
   | LetBang
+    e1.topLevel = False
     e2.whnf = S.union (S.fromList $ catMaybes [Just @x, @e1.var]) @lhs.whnf
   | Con Tup
     lhs.trf = foldr (\(v,e1) e2 -> Expr_LetBang (@lhs.toHsName v) e1 e2 Nothing) @loc.copy $ zip @loc.lUniqs @flds.makeStrictVars
@@ -252,9 +276,9 @@ SEM Expr
     flds.strictFieldL = replicate (length @flds.trf) False
     flds.demands = getDemandsTup $ getType @lhs.ownTy
   | CaseTup
-    e.count = @lhs.count + length @loc.makeStrictVars
+    e.count = (if length @loc.makeStrictVars > 0 then traceShow "opt-CaseTup" else id) $ @lhs.count + length @loc.makeStrictVars
     loc.trs = foldr (\(v,e1) e2 -> Expr_LetBang (@lhs.toHsName v) e1 e2 Nothing) @e1.trf $ zip @loc.lUniqs $ map (uncurry Expr_VarLocal)  @loc.makeStrictVars
-    -- lhs.trf = Expr_CaseTup @e.trf @xs @loc.trs @extra
+    lhs.trf = Expr_CaseTup @e.trf @xs @loc.trs @extra
     (e.gUniq, loc.lUniqs) = mkNewUIDs (length @loc.makeStrictVars) @lhs.gUniq
     e.whnf = S.union @lhs.whnf $ S.fromList $ map fst @loc.makeStrictVars
     loc.makeStrictVars = filter @loc.testStrict $ map (\(a,_,b) -> (a,b)) $ combineNamesInPat (zip @xs $ repeat False) @loc.cpat
@@ -266,10 +290,10 @@ SEM Expr
     loc.(cpat,cexpr) = @extra
 SEM AltCon
   | Alt
-    e.count = @lhs.count + length @loc.makeStrictVars
+    e.count = (if length @loc.makeStrictVars > 0 then traceShow "opt-AltCon" else id) $  @lhs.count + length @loc.makeStrictVars
     loc.flds = map getIsStrictField $ (constrs $ fromMaybe (error "con") $ @tyNm `dataGamLookup` @lhs.dataEnv) M.! @conNm
     loc.trs = foldr (\(v,e1) e2 -> Expr_LetBang (@lhs.toHsName v) e1 e2 Nothing) @e.trf $ zip @loc.lUniqs $ map (uncurry Expr_VarLocal) @loc.makeStrictVars
-    -- lhs.trf = AltCon_Alt @tyNm @conNm @xs @loc.trs @extra
+    lhs.trf = AltCon_Alt @tyNm @conNm @xs @loc.trs @extra
     (e.gUniq, loc.lUniqs) = mkNewUIDs (length @loc.makeStrictVars) @lhs.gUniq
     e.whnf = S.union (S.fromList @loc.strictFlds) $ S.union @lhs.whnf $ S.fromList $ map fst @loc.makeStrictVars
     loc.strictFlds = map fst $ filter snd $ zip @xs @loc.flds
