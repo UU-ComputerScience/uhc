@@ -12,7 +12,7 @@
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Ty},UHC.Util.CHR,{%{EH}CHR.CtxtRedOnly.Key},{%{EH}Substitutable})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import(UHC.Util.TreeTrie, qualified UHC.Util.TreeTrie2 as TT2)
+%%[(9 hmtyinfer || hmtyast) import(UHC.Util.TreeTrie, qualified CHR.Data.TreeTrie as TT2)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) import(UHC.Util.Pretty as PP, UHC.Util.Utils)

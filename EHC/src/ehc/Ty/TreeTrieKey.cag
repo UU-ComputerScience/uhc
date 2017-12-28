@@ -21,7 +21,7 @@ In this way search via a TreeTrie proceeds breadth first top to bottom.
 %%[(9 hmtyinfer || hmtyast) hs import(UHC.Util.CHR.Key)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(UHC.Util.TreeTrie, qualified UHC.Util.TreeTrie2 as TT2, UHC.Util.Utils)
+%%[(9 hmtyinfer || hmtyast) hs import(UHC.Util.TreeTrie, qualified CHR.Data.TreeTrie as TT2, UHC.Util.Utils)
 %%]
 
 %%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG})

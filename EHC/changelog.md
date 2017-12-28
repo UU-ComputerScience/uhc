@@ -1,8 +1,13 @@
 # Changelog
 
+## 1.1.9.6 - 20171228
+
+- [compatibility] ghc 8.2, uhc-util 0.1.7 (and removals from lib, factoring out to chr-* pkgs)
+- [compatibility] with uhc-util with the introduction of TreeTrie2 (to be replacement for TreeTrie, part of CHR solving)
+
 ## 1.1.9.5 - 20161223
 
-- [edit this] and this, adding new entries as needed (version nr etc is prefixed when using version bumping Makefile targets)
+- [unicode] unicode read/write.
 
 ## 1.1.9.4 - 20160521
 

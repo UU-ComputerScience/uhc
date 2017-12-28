@@ -477,7 +477,7 @@ AC_PATH_PROG(hsc2hsCmd,hsc2hs)
 AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
 ### now we know we have ghc, check for some libraries using ghc-pkg
-ghcLibsRequired="fgl vector uulib network binary hashable uhc-util base mtl transformers directory containers array process filepath utf8-string bytestring"
+ghcLibsRequired="fgl vector uulib network binary hashable chr-data uhc-util base mtl transformers directory containers array process filepath utf8-string bytestring"
 #if test x$enableClr = "xyes"
 #then
 #  ghcLibsRequired="${ghcLibsRequired} primitive"
@@ -499,8 +499,11 @@ then
         pkgVersionNoDot=`echo ${pkgVersion} | sed -E -e 's/\.//'g`
         ### here do special treatment of packages, now we have name&version of packages available
         case ${pkgBase} in
+          chr-data)
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} chr-data>=0.1.0.0"
+            ;;
           uhc-util)
-            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.6.8&&<0.1.7"
+            ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uhc-util>=0.1.7.0&&<0.1.8"
             ;;
           uulib)
             ghcLibsRequiredWithVersion="${ghcLibsRequiredWithVersion} uulib>=0.9.19"
