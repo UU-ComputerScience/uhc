@@ -1,31 +1,91 @@
-ConstraintSolver old ~22000
-real    389m41.014s
-user    380m38.594s
-sys     8m47.688s
+BinTreeNoInternals*
+Optimized
 
-gathering 209535
-real    69m10.481s
-user    67m28.063s
-sys     1m11.641s
+real	0m1.129s
+user	0m1.047s
+sys	0m0.078s
 
-gathering 56137
-real    6m53.495s
-user    6m43.547s
-sys     0m8.922s
+real	0m1.130s
+user	0m1.016s
+sys	0m0.109s
 
-gathering 23980
-real    1m24.998s
-user    1m20.297s
-sys     0m3.906s
+real	0m1.142s
+user	0m1.047s
+sys	0m0.094s
 
-solving 23980
-real    2m28.224s
-user    2m16.188s
-sys     0m9.891s
+real	0m1.198s
+user	0m1.063s
+sys	0m0.109s
 
-solving 56137
-real    10m49.618s
-user    10m21.891s
-sys     0m24.391s
+real	0m1.133s
+user	0m1.016s
+sys	0m0.125s
 
-solving 148019
+real	0m1.146s
+user	0m1.000s
+sys	0m0.141s
+
+real	0m1.147s
+user	0m1.000s
+sys	0m0.125s
+
+real	0m1.132s
+user	0m1.047s
+sys	0m0.078s
+
+real	0m1.129s
+user	0m1.109s
+sys	0m0.016s
+
+real	0m1.126s
+user	0m1.031s
+sys	0m0.094s
+
+real	0m1.135s
+user	0m1.031s
+sys	0m0.109s
+Master
+
+real	0m1.458s
+user	0m1.359s
+sys	0m0.094s
+
+real	0m1.381s
+user	0m1.313s
+sys	0m0.063s
+
+real	0m1.378s
+user	0m1.281s
+sys	0m0.094s
+
+real	0m1.388s
+user	0m1.281s
+sys	0m0.094s
+
+real	0m1.381s
+user	0m1.313s
+sys	0m0.063s
+
+real	0m1.391s
+user	0m1.297s
+sys	0m0.094s
+
+real	0m1.422s
+user	0m1.250s
+sys	0m0.172s
+
+real	0m1.401s
+user	0m1.250s
+sys	0m0.156s
+
+real	0m1.410s
+user	0m1.313s
+sys	0m0.094s
+
+real	0m1.415s
+user	0m1.281s
+sys	0m0.141s
+
+real	0m1.400s
+user	0m1.328s
+sys	0m0.063s

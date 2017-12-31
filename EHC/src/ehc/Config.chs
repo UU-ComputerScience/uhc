@@ -159,17 +159,17 @@ shellCmdOverride opts = shellCmdOverride' (ehcOptPgmExecMp opts)
 
 %%[8 export(shellCmdGcc)
 shellCmdGcc :: String
-shellCmdGcc = "/usr/bin/gcc"
+shellCmdGcc = "/usr/bin/clang"
 %%]
 
 %%[(8 llvm) export(shellCmdLLVMC)
 shellCmdLLVMC :: EHCOpts -> String -> [String]
-shellCmdLLVMC opts variant = [mkInstallBindirPrefix opts variant ++ "llvmc", "", "", "", "/usr/bin/gcc"]
+shellCmdLLVMC opts variant = [mkInstallBindirPrefix opts variant ++ "llvmc", "", "", "", "/usr/bin/clang"]
 %%]
 
 %%[8888 export(shellCmdLLVM)
 shellCmdLLVM :: String
-shellCmdLLVM = "" ++ "/mnt/d/thesis/uhcCA/EHC/bin/llvm-compilerdriver"
+shellCmdLLVM = "" ++ "/mnt/c/dschijf/thesis/uhcCA/EHC/bin/llvm-compilerdriver"
 %%]
 
 %%[(8 java || jazy) export(shellCmdJar)

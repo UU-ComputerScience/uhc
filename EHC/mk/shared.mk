@@ -132,7 +132,7 @@ endif
 # whether GMP library should be build and linked in when compiling
 ifeq (ltm,gmp)
 EHC_CFG_USE_GMP							:= $(filter $(EHC_VARIANT),$(EHC_GMP_VARIANTS))
-EHC_CFG_GMP_LIB_ARCHIVE					:= /mnt/d/thesis/uhcCA/EHC/extlibs/gmp/gmp-4.2.1.tar.gz
+EHC_CFG_GMP_LIB_ARCHIVE					:= /mnt/c/dschijf/thesis/uhcCA/EHC/extlibs/gmp/gmp-4.2.1.tar.gz
 endif
 
 ###########################################################################################
@@ -151,7 +151,7 @@ UHCRUN_EXEC_NAME		:= $(UHC_EXEC_NAME)r
 
 GIT_VERSION_EXISTS		:= yes
 GIT_VERSION_CMD			:= cat GITHASH
-GIT_REVISION			:= TiborCountingAnalysis@3cc987f186
+GIT_REVISION			:= TiborCountingAnalysis@64ea39924c
 
 ###########################################################################################
 # Locations in source, build, install, distribution
@@ -250,7 +250,7 @@ CABAL						:= /home/tibor/.cabal/bin/cabal
 HSC2HS						:= /usr/local/bin/hsc2hs
 HADDOCK						:= /home/tibor/.cabal/bin/haddock
 HADDOCK_VERSION     		:= Haddock version 2.17.4, (c) Simon Marlow 2006
-GCC							:= /usr/bin/gcc
+GCC							:= /usr/bin/clang
 AR							:= /usr/bin/ar
 RANLIB						:= /usr/bin/ranlib
 OPEN_FOR_EDIT				:= bbedit

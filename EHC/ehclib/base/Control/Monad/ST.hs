@@ -21,14 +21,14 @@ module Control.Monad.ST
         -- * The 'ST' Monad
         ST,             -- abstract, instance of Functor, Monad, Typeable.
         runST,          -- :: (forall s. ST s a) -> a
-        fixST,          -- :: (a -> ST s a) -> ST s a
+        -- fixST,          -- :: (a -> ST s a) -> ST s a
 
         -- * Converting 'ST' to 'IO'
         RealWorld,              -- abstract
         stToIO,                 -- :: ST RealWorld a -> IO a
 
         -- * Unsafe operations
-        unsafeInterleaveST,     -- :: ST s a -> ST s a
+        -- unsafeInterleaveST,     -- :: ST s a -> ST s a
         unsafeIOToST,           -- :: IO a -> ST s a
         unsafeSTToIO            -- :: ST s a -> IO a
       ) where
@@ -42,8 +42,8 @@ import Data.Typeable
 import Hugs.ST
 import qualified Hugs.LazyST as LazyST
 
-INSTANCE_TYPEABLE2(ST,sTTc,"ST")
-INSTANCE_TYPEABLE0(RealWorld,realWorldTc,"RealWorld")
+-- INSTANCE_TYPEABLE2(ST,sTTc,"ST")
+-- INSTANCE_TYPEABLE0(RealWorld,realWorldTc,"RealWorld")
 
 fixST :: (a -> ST s a) -> ST s a
 fixST f = LazyST.lazyToStrictST (LazyST.fixST (LazyST.strictToLazyST . f))
@@ -64,6 +64,6 @@ import GHC.Base         ( RealWorld )
 import GHC.IO           ( stToIO, unsafeIOToST, unsafeSTToIO )
 #endif
 
-instance MonadFix (ST s) where
-        mfix = fixST
+-- instance MonadFix (ST s) where
+--         mfix = fixST
 

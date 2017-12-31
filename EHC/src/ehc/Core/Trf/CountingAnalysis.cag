@@ -46,6 +46,9 @@ Debugging
 %%[(8 counting) hs import(qualified Debug.Trace as T)
 %%]
 
+%%[(8 counting) hs import({%{EH}Core.Trf.CARemoveAnn})
+%%]
+
 %%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSynExpr})
 WRAPPER Expr
 %%]
@@ -79,11 +82,13 @@ traceShowPair :: Show a => (String, a) -> b -> b
 traceShowPair (n, e) = seq $ show (n, length $ show e, n)
 
 cmodTrfAnalysis :: Bool -> DataGam -> LamMp -> CModule -> (CModule, LamMp)
-cmodTrfAnalysis subeff d imps m = 
+cmodTrfAnalysis subeff d imps m =
   -- seq (length $ show (pp e)) $
   -- T.traceShow (pp (c, conMap)) $
+  -- T.traceShow (c, conMap) $
   -- T.traceShow (pp e) $
   -- T.traceShow e $
+  -- T.traceShow ("im", ppMap im) $  
   traceShowPair ("subeff", subeff) $
   traceShowPair ("d", d) $
   traceShowPair ("imps", imps) $
@@ -105,9 +110,15 @@ cmodTrfAnalysis subeff d imps m =
   traceShowPair ("bi", bi) $
   traceShowPair ("test", test) $ 
   traceShowPair ("res", res) $
-  seq "finished with everything" $
-  T.traceShow (ppMap finalBindEnv) 
+  -- panic "finished with everything"
+  -- seq "finished with everything" $
+  T.traceShow ("Tys", ppMapLatex finalBindEnv) 
+  -- T.traceShow ("TysAnnFree", ppMapAnnFree finalBindEnv) 
+  -- T.traceShow ("exTys", ppMap bi) 
+  -- T.traceShow ("sol", pp s)
+  -- T.traceShow ("ansa", fst (cmodTrfCaRemoveAnn imps (fst res)) == m) $
   res
+  -- (m,imps)
   -- T.traceShow (ppMap bi) res
 -- cmodTrfAnalysis subeff d imps m = T.traceShow (pp e) $ T.traceShow (ppMapAnnFree bi) $ test `seq` res
 -- cmodTrfAnalysis subeff d imps m = traceShow (pp e, e, m) $ traceShow (ppMapAnnFree bi, ex) $ test `seq` res
@@ -184,7 +195,7 @@ toLamMp :: BindingEnv -> LamMp
 toLamMp = M.map $ \x -> emptyLamInfo {laminfoCaType = x}
 
 toImports :: LamMp -> Imports
-toImports x = M.map getType $ M.filter (/= (RhoScheme_Rho (EtaScheme_Eta 
+toImports x = M.union importsOverwrites $ M.map getType $ M.filter (/= (RhoScheme_Rho (EtaScheme_Eta 
               (Scheme_Forall S.empty S.empty [] (Type_Error "Empty lamInfo")) $ Annotation_Val S.empty)
                  $ Annotation_Val S.empty)) $ M.map laminfoCaType x
 
@@ -217,6 +228,114 @@ fromField (Field_Strict t) = t
 
 seqUnion :: (Ord a, Show a, Show b) => Map a b -> Map a b -> Map a b
 seqUnion m1 m2 = traceShow (m1,m2) $ M.union m1 m2
+
+importsOverwrites :: Imports
+importsOverwrites = M.fromList $ map (first mkHNm) $
+  [("System.IO.print", printType)
+  ,("UHC.Run.ehcRunMain", mainWrapperType)
+  ,("UHC.BaseOne.+", plusType)
+  ]
+
+plusType :: Scheme
+plusType = 
+  Scheme_Forall 
+    { as_Scheme_Forall = S.fromList [mkHNm "11510",mkHNm "11503",mkHNm "11500",mkHNm "11505",mkHNm "11504",mkHNm "11509",mkHNm "11508",mkHNm "11472",mkHNm "11475",mkHNm "11473",mkHNm "11476",mkHNm "11474",mkHNm "11477",mkHNm "11468",mkHNm "11469",mkHNm "11464",mkHNm "11465",mkHNm "11466",mkHNm "11467",mkHNm "11460",mkHNm "11461",mkHNm "11480",mkHNm "11481",mkHNm "11484",mkHNm "11485",mkHNm "11482",mkHNm "11483",mkHNm "11488",mkHNm "11489",mkHNm "11444",mkHNm "11445",mkHNm "11446",mkHNm "11447",mkHNm "11442",mkHNm "11443",mkHNm "11448",mkHNm "11449",mkHNm "11456",mkHNm "11455",mkHNm "11457",mkHNm "11452",mkHNm "11451",mkHNm "11454",mkHNm "11453",mkHNm "11450",mkHNm "11459",mkHNm "11458",mkHNm "11418",mkHNm "11411",mkHNm "11415",mkHNm "11417",mkHNm "11414",mkHNm "11420",mkHNm "11421",mkHNm "11423",mkHNm "11424",mkHNm "11426",mkHNm "11427",mkHNm "11429",mkHNm "11493",mkHNm "11495",mkHNm "11490",mkHNm "11499",mkHNm "11494",mkHNm "11498",mkHNm "11403",mkHNm "11435",mkHNm "11436",mkHNm "11437",mkHNm "11432",mkHNm "11430",mkHNm "11433",mkHNm "11439",mkHNm "11438"]
+    , ts_Scheme_Forall = S.fromList [mkHNm "11511"]
+    , cs_Scheme_Forall = []
+    , t_Scheme_Forall = Type_Func 
+      { t1_Type_Func = RhoType_Rho 
+        { e_RhoType_Rho = EtaType_Eta 
+          { t_EtaType_Eta = Type_Data 
+            { n_Type_Data = mkHNm "UHC.BaseOne._'Num"
+            , as_Type_Data = [Annotation_Var {v_Annotation_Var = mkHNm "11437"},Annotation_Var {v_Annotation_Var = mkHNm "11438"},Annotation_Var {v_Annotation_Var = mkHNm "11439"},Annotation_Var {v_Annotation_Var = mkHNm "11435"},Annotation_Var {v_Annotation_Var = mkHNm "11436"},Annotation_Var {v_Annotation_Var = mkHNm "11442"},Annotation_Var {v_Annotation_Var = mkHNm "11443"},Annotation_Var {v_Annotation_Var = mkHNm "11444"},Annotation_Var {v_Annotation_Var = mkHNm "11445"},Annotation_Var {v_Annotation_Var = mkHNm "11446"},Annotation_Var {v_Annotation_Var = mkHNm "11447"},Annotation_Var {v_Annotation_Var = mkHNm "11448"},Annotation_Var {v_Annotation_Var = mkHNm "11449"},Annotation_Var {v_Annotation_Var = mkHNm "11450"},Annotation_Var {v_Annotation_Var = mkHNm "11451"},Annotation_Var {v_Annotation_Var = mkHNm "11452"},Annotation_Var {v_Annotation_Var = mkHNm "11453"},Annotation_Var {v_Annotation_Var = mkHNm "11454"},Annotation_Var {v_Annotation_Var = mkHNm "11455"},Annotation_Var {v_Annotation_Var = mkHNm "11456"},Annotation_Var {v_Annotation_Var = mkHNm "11457"},Annotation_Var {v_Annotation_Var = mkHNm "11458"},Annotation_Var {v_Annotation_Var = mkHNm "11459"},Annotation_Var {v_Annotation_Var = mkHNm "11460"},Annotation_Var {v_Annotation_Var = mkHNm "11461"},Annotation_Var {v_Annotation_Var = mkHNm "11417"},Annotation_Var {v_Annotation_Var = mkHNm "11418"},Annotation_Var {v_Annotation_Var = mkHNm "11464"},Annotation_Var {v_Annotation_Var = mkHNm "11465"},Annotation_Var {v_Annotation_Var = mkHNm "11466"},Annotation_Var {v_Annotation_Var = mkHNm "11467"},Annotation_Var {v_Annotation_Var = mkHNm "11468"},Annotation_Var {v_Annotation_Var = mkHNm "11469"},Annotation_Var {v_Annotation_Var = mkHNm "11414"},Annotation_Var {v_Annotation_Var = mkHNm "11415"},Annotation_Var {v_Annotation_Var = mkHNm "11472"},Annotation_Var {v_Annotation_Var = mkHNm "11473"},Annotation_Var {v_Annotation_Var = mkHNm "11474"},Annotation_Var {v_Annotation_Var = mkHNm "11475"},Annotation_Var {v_Annotation_Var = mkHNm "11476"},Annotation_Var {v_Annotation_Var = mkHNm "11477"},Annotation_Var {v_Annotation_Var = mkHNm "11411"},Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]},Annotation_Var {v_Annotation_Var = mkHNm "11480"},Annotation_Var {v_Annotation_Var = mkHNm "11481"},Annotation_Var {v_Annotation_Var = mkHNm "11482"},Annotation_Var {v_Annotation_Var = mkHNm "11483"},Annotation_Var {v_Annotation_Var = mkHNm "11484"},Annotation_Var {v_Annotation_Var = mkHNm "11485"},Annotation_Var {v_Annotation_Var = mkHNm "11429"},Annotation_Var {v_Annotation_Var = mkHNm "11430"},Annotation_Var {v_Annotation_Var = mkHNm "11488"},Annotation_Var {v_Annotation_Var = mkHNm "11489"},Annotation_Var {v_Annotation_Var = mkHNm "11490"},Annotation_Var {v_Annotation_Var = mkHNm "11423"},Annotation_Var {v_Annotation_Var = mkHNm "11424"},Annotation_Var {v_Annotation_Var = mkHNm "11493"},Annotation_Var {v_Annotation_Var = mkHNm "11494"},Annotation_Var {v_Annotation_Var = mkHNm "11495"},Annotation_Var {v_Annotation_Var = mkHNm "11420"},Annotation_Var {v_Annotation_Var = mkHNm "11421"},Annotation_Var {v_Annotation_Var = mkHNm "11498"},Annotation_Var {v_Annotation_Var = mkHNm "11499"},Annotation_Var {v_Annotation_Var = mkHNm "11500"},Annotation_Var {v_Annotation_Var = mkHNm "11426"},Annotation_Var {v_Annotation_Var = mkHNm "11427"},Annotation_Var {v_Annotation_Var = mkHNm "11503"},Annotation_Var {v_Annotation_Var = mkHNm "11504"},Annotation_Var {v_Annotation_Var = mkHNm "11505"},Annotation_Var {v_Annotation_Var = mkHNm "11432"},Annotation_Var {v_Annotation_Var = mkHNm "11433"},Annotation_Var {v_Annotation_Var = mkHNm "11508"},Annotation_Var {v_Annotation_Var = mkHNm "11509"},Annotation_Var {v_Annotation_Var = mkHNm "11510"}]
+            , ts_Type_Data = [Type_Var {v_Type_Var = mkHNm "11511"}]
+            }
+          , a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "11403"}
+          }
+        , a_RhoType_Rho = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+        }
+      , t2_Type_Func = EtaType_Eta {t_EtaType_Eta = Type_Func {t1_Type_Func = RhoType_Rho {e_RhoType_Rho = EtaType_Eta {t_EtaType_Eta = Type_Var {v_Type_Var = mkHNm "11511"}, a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "11480"}}, a_RhoType_Rho = Annotation_Var {v_Annotation_Var = mkHNm "11481"}}, t2_Type_Func = EtaType_Eta {t_EtaType_Eta = Type_Func {t1_Type_Func = RhoType_Rho {e_RhoType_Rho = EtaType_Eta {t_EtaType_Eta = Type_Var {v_Type_Var = mkHNm "11511"}, a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "11483"}}, a_RhoType_Rho = Annotation_Var {v_Annotation_Var = mkHNm "11484"}}, t2_Type_Func = EtaType_Eta {t_EtaType_Eta = Type_Var {v_Type_Var = mkHNm "11511"}, a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "11485"}}}, a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "11482"}}}, a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "11411"}}}}
+
+printType :: Scheme
+printType = 
+  Scheme_Forall 
+    { as_Scheme_Forall = S.fromList $ map mkHNm ["16340","16341","16342","16343","16344","16328","16329","16324","16325","16320","16321","16326","16327","16322","16323","16330","16339","16338","16336","16335","16337","16332","16331","16334","16333","16311","16312","16310","16313","16308","16316","16309","16319","16314","16317","16304","16305","16306","16307","16300","970","1005","967","990","16299"]
+    , ts_Scheme_Forall = S.fromList $ map mkHNm ["973","16250","16251"]
+    , cs_Scheme_Forall = [Constraint_Ann {c_Constraint_Ann = ConstraintAnn_Union {a1_ConstraintAnn_Union = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_Zero]}, a2_ConstraintAnn_Union = Annotation_Var {v_Annotation_Var = mkHNm "1005"}, a_ConstraintAnn_Union = Annotation_Var {v_Annotation_Var = mkHNm "1005"}}},Constraint_Ann {c_Constraint_Ann = ConstraintAnn_Union {a1_ConstraintAnn_Union = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}, a2_ConstraintAnn_Union = Annotation_Var {v_Annotation_Var = mkHNm "967"}, a_ConstraintAnn_Union = Annotation_Var {v_Annotation_Var = mkHNm "967"}}}]
+    , t_Scheme_Forall = Type_Func 
+      { t1_Type_Func = RhoType_Rho 
+        { e_RhoType_Rho = EtaType_Eta 
+          { t_EtaType_Eta = Type_Data 
+            { n_Type_Data = mkHNm "UHC.BaseTwo._'Show"
+            , as_Type_Data = 
+              [ Annotation_Var {v_Annotation_Var = mkHNm "16305"}, Annotation_Var {v_Annotation_Var = mkHNm "16306"}, Annotation_Var {v_Annotation_Var = mkHNm "967"}, Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}, Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_Zero]}, Annotation_Var {v_Annotation_Var = mkHNm "970"}, Annotation_Var {v_Annotation_Var = mkHNm "1005"}, Annotation_Var {v_Annotation_Var = mkHNm "16299"}, Annotation_Var {v_Annotation_Var = mkHNm "16300"}, Annotation_Var {v_Annotation_Var = mkHNm "16309"}, Annotation_Var {v_Annotation_Var = mkHNm "16308"}, Annotation_Var {v_Annotation_Var = mkHNm "16316"}, Annotation_Var {v_Annotation_Var = mkHNm "16304"}, Annotation_Var {v_Annotation_Var = mkHNm "16313"}, Annotation_Var {v_Annotation_Var = mkHNm "16312"}, Annotation_Var {v_Annotation_Var = mkHNm "16307"},Annotation_Var {v_Annotation_Var = mkHNm "16314"},Annotation_Var {v_Annotation_Var = mkHNm "16311"},Annotation_Var {v_Annotation_Var = mkHNm "16310"},Annotation_Var {v_Annotation_Var = mkHNm "16324"},Annotation_Var {v_Annotation_Var = mkHNm "16325"},Annotation_Var {v_Annotation_Var = mkHNm "16328"},Annotation_Var {v_Annotation_Var = mkHNm "16329"},Annotation_Var {v_Annotation_Var = mkHNm "16322"},Annotation_Var {v_Annotation_Var = mkHNm "16323"},Annotation_Var {v_Annotation_Var = mkHNm "16326"},Annotation_Var {v_Annotation_Var = mkHNm "16327"},Annotation_Var {v_Annotation_Var = mkHNm "16320"},Annotation_Var {v_Annotation_Var = mkHNm "16321"},Annotation_Var {v_Annotation_Var = mkHNm "16340"},Annotation_Var {v_Annotation_Var = mkHNm "16319"},Annotation_Var {v_Annotation_Var = mkHNm "16317"},Annotation_Var {v_Annotation_Var = mkHNm "16344"},Annotation_Var {v_Annotation_Var = mkHNm "16343"},Annotation_Var {v_Annotation_Var = mkHNm "16342"},Annotation_Var {v_Annotation_Var = mkHNm "16341"},Annotation_Var {v_Annotation_Var = mkHNm "16339"},Annotation_Var {v_Annotation_Var = mkHNm "16338"},Annotation_Var {v_Annotation_Var = mkHNm "16337"},Annotation_Var {v_Annotation_Var = mkHNm "16333"},Annotation_Var {v_Annotation_Var = mkHNm "16334"},Annotation_Var {v_Annotation_Var = mkHNm "16335"},Annotation_Var {v_Annotation_Var = mkHNm "16336"},Annotation_Var {v_Annotation_Var = mkHNm "16330"},Annotation_Var {v_Annotation_Var = mkHNm "16331"},Annotation_Var {v_Annotation_Var = mkHNm "16332"}]
+            , ts_Type_Data = [Type_Var {v_Type_Var = mkHNm "973"}]
+            }
+          , a_EtaType_Eta = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+          }
+        , a_RhoType_Rho = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+        }
+      , t2_Type_Func = EtaType_Eta 
+        { t_EtaType_Eta = Type_Func 
+          { t1_Type_Func = RhoType_Rho 
+            { e_RhoType_Rho = EtaType_Eta 
+              { t_EtaType_Eta = Type_Var {v_Type_Var = mkHNm "973"}
+              , a_EtaType_Eta = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+              }
+            , a_RhoType_Rho = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+            }
+          , t2_Type_Func = EtaType_Eta 
+            { t_EtaType_Eta = Type_App 
+              { t1_Type_App = Type_Var {v_Type_Var = hsnIO}
+              , t2_Type_App = Type_Var {v_Type_Var = mkHNm "16251"}
+              }
+            , a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "990"}
+            }
+          }
+        , a_EtaType_Eta = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+        }
+      }
+    }
+
+mainWrapperType :: Scheme
+mainWrapperType = 
+  Scheme_Forall 
+    { as_Scheme_Forall = S.fromList [mkHNm "a1",mkHNm "a2",mkHNm "a3"]
+    , ts_Scheme_Forall = S.fromList [mkHNm "t2",mkHNm "t3"]
+    , cs_Scheme_Forall = []
+    , t_Scheme_Forall = Type_Func 
+      { t1_Type_Func = RhoType_Rho 
+        { e_RhoType_Rho = EtaType_Eta 
+          { t_EtaType_Eta = Type_App 
+            { t1_Type_App = Type_Var {v_Type_Var = hsnIO}
+            , t2_Type_App = Type_Var {v_Type_Var = mkHNm "t1"}
+            }
+          , a_EtaType_Eta = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+          }
+        , a_RhoType_Rho = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+        }
+      , t2_Type_Func = EtaType_Eta 
+        { t_EtaType_Eta = Type_Func 
+          { t1_Type_Func = RhoType_Rho 
+            { e_RhoType_Rho = EtaType_Eta 
+              { t_EtaType_Eta = Type_Var {v_Type_Var = mkHNm "t3"}
+              , a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "a3"}
+              }
+            , a_RhoType_Rho = Annotation_Var {v_Annotation_Var = mkHNm "a2"}
+            }
+          , t2_Type_Func = EtaType_Eta 
+            { t_EtaType_Eta = Type_App 
+              { t1_Type_App = Type_Var {v_Type_Var = hsnIO}
+              , t2_Type_App = Type_Var {v_Type_Var = mkHNm "t1"}
+              }
+            , a_EtaType_Eta = Annotation_Val {v_Annotation_Val = S.fromList [AnnPrim_One]}
+            }
+          }
+        , a_EtaType_Eta = Annotation_Var {v_Annotation_Var = mkHNm "a1"}
+        }
+      }
+    }
+
 
 -- temp
 class ScopeTest a where
@@ -545,7 +664,7 @@ SEM Expr
     loc.nu1 = getUsage @loc.etas'
     loc.etaTy = @loc.eta3
     lhs.freshVar = @loc.fv2
-    lhs.env = @loc.env
+    lhs.env = traceShow ("appTest", @func.annCopy, @loc.env) $  @loc.env
     lhs.etaTy = @loc.etaTy
     lhs.constraints = mconcat [@loc.c1, @loc.c1', @loc.c2, @loc.c2', 
                         genEq @loc.tau1 $ Type_Func (RhoType_Rho @loc.eta2 @loc.delta2) @loc.eta3, 
@@ -629,7 +748,7 @@ SEM Expr
     lhs.etaTy = @loc.etaTy
     lhs.constraints = @loc.c6 <> @loc.c0 <> @loc.c0' <> @loc.c2 <> @loc.c2' <> @loc.c2i <> mconcat @loc.c7i
     loc.annCopy = Expr_Ann @loc.etaTy $ Expr_Let @binds.annCopy @e.annCopy @extra
-    +bindingEnv = M.union (M.fromList $ zip @binds.bindingNames @loc.rho0i)
+    +bindingEnv = M.union (M.fromList $ zip @binds.bindingNames $ zipWith3 (\s u d -> RhoScheme_Rho (EtaScheme_Eta s u) d) @loc.sigmai @loc.nu0i @loc.delta0i)
     +constraintsMap = M.insert @loc.fv12 $ toConstraints @loc.cGen
   | LetBang
     loc.env0 = M.delete @x @e2.env

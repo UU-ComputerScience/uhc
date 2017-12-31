@@ -39,7 +39,7 @@ module Data.Traversable (
         mapAccumL,
         mapAccumR,
         fmapDefault,
-        foldMapDefault,
+        -- foldMapDefault,
         ) where
 
 import Prelude hiding (mapM, sequence, foldr)
@@ -47,6 +47,7 @@ import qualified Prelude (mapM, foldr)
 import Control.Applicative
 import Data.Foldable (Foldable())
 import Data.Monoid (Monoid)
+import Control.Monad (ap) -- needed for copy code
 
 #if defined(__GLASGOW_HASKELL__)
 import GHC.Arr
@@ -109,6 +110,12 @@ class (Functor t, Foldable t) => Traversable t where
         sequence = mapM id
 
 -- instances for Prelude types
+
+-- ********************* copy from applicative
+instance Monad m => Applicative (WrappedMonad m) where
+        pure = WrapMonad . return
+        WrapMonad f <*> WrapMonad v = WrapMonad (f `ap` v)
+-- ********************* copy from applicative
 
 instance Traversable Maybe where
         traverse _ Nothing = pure Nothing
@@ -183,8 +190,8 @@ fmapDefault f = getId . traverse (Id . f)
 
 -- | This function may be used as a value for `Data.Foldable.foldMap`
 -- in a `Foldable` instance.
-foldMapDefault :: (Traversable t, Monoid m) => (a -> m) -> t a -> m
-foldMapDefault f = getConst . traverse (Const . f)
+-- foldMapDefault :: (Traversable t, Monoid m) => (a -> m) -> t a -> m
+-- foldMapDefault f = getConst . traverse (Const . f)
 
 -- local instances
 

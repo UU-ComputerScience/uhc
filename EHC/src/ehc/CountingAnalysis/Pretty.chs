@@ -19,6 +19,9 @@
 -- %%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
 -- %%]
 
+%%[(8 counting) hs import({%{EH}Base.HsName (hsnQualified)})
+%%]
+
 -- Pretty printing
 %%[(8 counting) hs
 instance PP Module where
@@ -230,4 +233,260 @@ instance PPAnnFree AltCon where
 instance PPAnnFree AltConst where
   ppAnnFree (AltConst_Int c e _) = c >#< "->" >#< ppAnnFree e
   ppAnnFree (AltConst_Char c e _) = c >#< "->" >#< ppAnnFree e
+
+class PPLatex a where
+  ppLatex :: a -> PP_Doc
+
+instance PPLatex Module where
+  ppLatex (Module_Module mod _) = ppLatex mod
+
+instance PPLatex Expr where
+  ppLatex (Expr_VarLocal v _) = ppLatex v
+  ppLatex (Expr_VarImport v _) = ppLatex v
+  ppLatex (Expr_Const c) = ppLatex c
+  ppLatex (Expr_Abs bind body _) = ppParens $ "\\" >|< ppLatex bind >#< "->" >-< indent 2 (ppLatex body)
+  ppLatex (Expr_AppLocal func arg _) =  ppParens $ ppLatex func >#< ppLatex arg
+  ppLatex (Expr_AppImport func arg _) = ppParens $ ppLatex func >#< ppLatex arg
+  ppLatex (Expr_AppConst func arg _) = ppParens $ ppLatex func >#< ppLatex arg
+  ppLatex (Expr_Let binds body _) = "let" >-< indent 2 (vlist $ map ppLatex binds) >-< "in" >-< indent 2 (ppLatex body)
+  ppLatex (Expr_LetBang x e1 e2 _) = "let!" >-< indent 2 (ppLatex x) >#< "=" >#< ppLatex e1 >-< "in" >-< indent 2 (ppLatex e2)
+  ppLatex (Expr_Con _ conNm [] _) = pp conNm
+  ppLatex (Expr_Con _ conNm flds _) = ppParens $ conNm >#< ppSpaces (map ppLatex flds) 
+  ppLatex (Expr_Tup flds _) = ppParensCommas (map ppLatex flds)
+  ppLatex (Expr_CaseCon e alts _) = ppParens $ "case" >#< ppLatex e >#< "of" >-< indent 2 (vlist $ map ppLatex alts)
+  ppLatex (Expr_CaseTup e xs e1 _) = ppParens $ "case" >#< ppLatex e >#< "of" >-< indent 2 (ppParensCommas (map ppLatex xs) >#< "->" >#< ppLatex e1)
+  ppLatex (Expr_CaseConst e alts _) = ppParens $ "case" >#< ppLatex e >#< "of" >-< indent 2 (vlist (map ppLatex alts))
+  ppLatex Expr_FFI{} = text "FFI"
+  ppLatex (Expr_Ann t e@(Expr_Let{})) = ppLatex e
+  ppLatex (Expr_Ann t e@(Expr_LetBang{})) = ppLatex e
+  ppLatex (Expr_Ann t e) = ppLatex e >#< "::" >#< ppLatex t
+  ppLatex (Expr_AnnCore _ e) = ppLatex e
+
+instance PPLatex ConVar where
+  ppLatex (ConVar_VarLocal v) = ppLatex v
+  ppLatex (ConVar_VarImport v) = ppLatex v
+  ppLatex (ConVar_Const c) = ppLatex c
+
+instance PPLatex Binding where
+  ppLatex (Binding_Bind n e _) = ppLatex n >#< "=" >#< ppLatex e
+
+instance PPLatex Const where
+  ppLatex (Const_Int c) = pp c
+  ppLatex (Const_Char c) = pp $ show c
+  ppLatex (Const_String c) = pp $ show c
+  ppLatex (Const_Integer c) = pp c
+
+instance PPLatex AltCon where
+  ppLatex (AltCon_Alt _ c [] e _) = ppLatex c >#< "->" >#< ppLatex e
+  ppLatex (AltCon_Alt _ c xs e _) = ppLatex c >#< ppSpaces (map ppLatex xs) >#< "->" >#< ppLatex e
+
+instance PPLatex AltConst where
+  ppLatex (AltConst_Int c e _) = c >#< "->" >#< ppLatex e
+  ppLatex (AltConst_Char c e _) = c >#< "->" >#< ppLatex e
+  
+instance PPLatex Scheme where
+  ppLatex (Scheme_Var v) = ppLatex v
+  ppLatex (Scheme_Forall as ts c t) = "forall" >#<
+    ppCurlysCommas (map ppLatex $ S.toList as ++ S.toList ts) 
+    >#< "." >#< text ("cs: " ++ show (length c))
+    >#< "=>"  >#< ppLatex t >-< indent 4 (vlist $ map ppLatex c)
+  ppLatex (Scheme_ForallTemp as ts c t) = "forall" >#<
+    ppCurlysCommas (map ppLatex $ S.toList as ++ S.toList ts) 
+    >#< "." >#< text ("cs: " ++ show (S.size c))
+    >#< "=>"  >#< ppLatex t >-< indent 4 (ppCommas $ S.toList c)
+
+instance PPLatex Type where
+  ppLatex (Type_Var v) = ppLatex v
+  ppLatex (Type_Data n [] []) = ppLatex n
+  ppLatex (Type_Data n [] ts) = ppParens $ ppLatex n >#< ppParens (ppSpaces $ map ppLatex ts)
+  ppLatex (Type_Data n as []) = ppParens $ ppLatex n >#< ppParens (ppSpaces $ map ppLatex as)
+  ppLatex (Type_Data n as ts) = ppParens $ ppLatex n >#< ppParens (ppSpaces $ map ppLatex as) >#< ppParens (ppSpaces $ map ppLatex ts)
+  ppLatex (Type_App t1 t2) = ppParens $ ppLatex t1 >#< ppLatex t2
+  ppLatex (Type_Func t1 t2) = ppParens (ppLatex t1 >#< "->" >#< ppLatex t2)
+  ppLatex (Type_Tup ts) = ppParensCommas $ map ppLatex ts
+  ppLatex (Type_Error e) = "Type Error:" >#< e
+
+instance PPLatex RhoType where
+  ppLatex (RhoType_Rho (EtaType_Eta t u) d) = "{_u " >|< ppLatex t >#< ppParensCommas (map ppLatex [u,d]) >|< "}"
+
+instance PPLatex EtaType where
+  ppLatex (EtaType_Eta t u) = "{_u " >|< ppLatex t >#< ppLatex u >|< "}"
+
+instance PPLatex RhoScheme where
+  ppLatex (RhoScheme_Rho (EtaScheme_Eta s u) d) = "{_u " >|< ppParens (ppLatex s) >#< ppParensCommas (map ppLatex [u,d]) >|< "}"
+
+instance PPLatex EtaScheme where
+  ppLatex (EtaScheme_Eta s u) = "{_u " >|< ppParens (ppLatex s) >#< ppLatex u >|< "}"
+
+instance PPLatex Annotation where
+  ppLatex (Annotation_Var v) = ppLatex v
+  ppLatex (Annotation_Val v) = case S.toList v of
+    [AnnPrim_Zero] -> text "lzero"
+    [AnnPrim_One] -> text "lone"
+    [AnnPrim_Infinity] -> text "lomega"
+    [AnnPrim_Zero, AnnPrim_One, AnnPrim_Infinity] -> text "top"
+    xs -> "{set" >#< (ppCurlysCommas $ map ppLatex xs) >|< "}"
+  
+instance PPLatex AnnPrim where
+  ppLatex AnnPrim_Zero = text "0"
+  ppLatex AnnPrim_One = text "1"
+  ppLatex AnnPrim_Infinity = text "infty"
+
+instance PPLatex Constraint where
+  ppLatex (Constraint_Ann c) = ppLatex c
+  ppLatex (Constraint_Eq c) = ppLatex c
+  ppLatex (Constraint_Inst n s t) = ppLatex n >|< ": inst(" >|< ppLatex s >|< ") ==" >#< ppLatex t
+  ppLatex (Constraint_Gen n t u d n0 d0 c e s) = n >|< ": gen" 
+    >|< ppParensCommas [ppLatex t >#< "^" >#< ppParensCommas [ppLatex u, ppLatex d], pp $ "cs: " ++ show c, pp $ "e: " ++ show (M.size e)]
+    >#< "==" >#< ppLatex s >#< "^" >#< ppParensCommas [ppLatex n0, ppLatex d0]
+    >-< indent 4 (ppMapLatex e)
+
+instance {-# OVERLAPPING #-} PPLatex (Constraints, Map Var Constraints) where
+  ppLatex (cs, cm) = vlist $ map ppLatex $ map (,cm) cs
+
+instance {-# OVERLAPPING #-} PPLatex (Constraint, Map Var Constraints) where
+  ppLatex (Constraint_Gen n t u d n0 d0 c e s, cm) = ppLatex n >|< ": gen" 
+    >|< ppParensCommas [ppLatex t >#< "^" >#< ppParensCommas [ppLatex u, ppLatex d], pp $ "cs: " ++ show (length cs), pp $ "e: " ++ show (M.size e)]
+    >#< "==" >#< ppLatex s >#< "^" >#< ppParensCommas [ppLatex n0, ppLatex d0]
+    >-< indent 4 (ppLatex (cs, cm)) >-< indent 4 (ppMapLatex e)
+    where cs = cm M.! c
+  ppLatex (c, _) = ppLatex c
+
+instance PPLatex ConstraintAnn where
+  ppLatex (ConstraintAnn_Plus a1 a2 a) = ppLatex a1 >#< "(+)" >#< ppLatex a2 >#< "==" >#< ppLatex a
+  ppLatex (ConstraintAnn_Union a1 a2 a) = ppLatex a1 >#< "U" >#< ppLatex a2 >#< "==" >#< ppLatex a
+  ppLatex (ConstraintAnn_Times a1 a2 a) = ppLatex a1 >#< "." >#< ppLatex a2 >#< "==" >#< ppLatex a
+  ppLatex (ConstraintAnn_Cond a1 a2 a) = ppLatex a1 >#< ">" >#< ppLatex a2 >#< "==" >#< ppLatex a
+
+instance PPLatex ConstraintEq where
+  ppLatex (ConstraintEq_Ann a1 a2) = ppLatex a1 >#< "==" >#< ppLatex a2
+  ppLatex (ConstraintEq_Type t1 t2) = ppLatex t1 >#< "==" >#< ppLatex t2
+  ppLatex (ConstraintEq_Scheme s1 s2) = ppLatex s1 >#< "==" >#< ppLatex s2
+
+ppMapLatex :: (PPLatex k, PPLatex v) => Map k v -> PP_Doc
+ppMapLatex = vlist . map f . M.toList
+  where f (k,v) = ppLatex k >#< "->" >-< indent 2 (ppLatex v)
+
+instance PPLatex Solution where
+  ppLatex (Solution as ts ss) = "annSol:" >-< indent 2 (ppMapLatex as)
+    >-< "typeSol:" >-< indent 2 (ppMapLatex ts)
+    >-< "schemeSol:" >-< indent 2 (ppMapLatex ss)
+
+-- instance (PPLatex a, PPLatex b) => PPLatex (a,b) where
+--   ppLatex (a,b) = pp (ppLatex a, ppLatex b)
+
+-- instance (PPLatex a, PPLatex b, PPLatex c) => PPLatex (a,b,c) where
+--   ppLatex (a,b,c) = pp (ppLatex a, ppLatex b, ppLatex c)
+
+-- instance (PPLatex a, PPLatex b, PPLatex c, PPLatex d) => PPLatex (a,b,c,d) where
+--   ppLatex (a,b,c,d) = pp (ppLatex a, ppLatex b, ppLatex c, ppLatex d)
+
+instance PPLatex (HsName, Type) where
+  ppLatex (n, t) = ppLatex n >#< "->" >-< indent 2 (ppLatex t)
+
+instance PPLatex (HsName, [HsName], [HsName], Map HsName Fields) where
+  ppLatex (n, as, ts, flds) = ppSpaces (map ppLatex $ n:as++ts) >-< indent 2 (vlist $ map ppLatex $ M.toList flds)
+
+instance PPLatex Field where
+  ppLatex (Field_Strict t) = "!" >|< ppLatex t
+  ppLatex (Field_Lazy t) = ppLatex t
+
+instance PPLatex Fields where
+  ppLatex flds = ppSpaces $ map ppLatex flds
+
+instance PPLatex (HsName, Fields) where
+  ppLatex (n, flds) = n >#< ppLatex flds
+
+instance PPLatex HsName where
+  ppLatex = pp . hsnQualified
+
+class PPLatexAnnFree a where
+  ppLatexAnnFree :: a -> PP_Doc
+
+ppMapLatexAnnFree :: (PPLatex k, PPLatexAnnFree v) => Map k v -> PP_Doc
+ppMapLatexAnnFree = vlist . map f . M.toList
+  where f (k,v) = ppLatex k >#< "->" >-< indent 2 (ppLatexAnnFree v)
+
+instance PPLatexAnnFree RhoScheme where
+  ppLatexAnnFree (RhoScheme_Rho (EtaScheme_Eta s _) _) = ppLatexAnnFree s
+  
+instance PPLatexAnnFree Scheme where
+  ppLatexAnnFree (Scheme_Var v) = ppLatex v
+  ppLatexAnnFree (Scheme_Forall _ ts _ t) | S.null ts = ppLatexAnnFree t
+  ppLatexAnnFree (Scheme_Forall _ ts _ t) = "forall" >#< map ppLatex (S.toList ts) >|< "." >#< ppLatexAnnFree t
+  ppLatexAnnFree (Scheme_ForallTemp _ ts _ t) | S.null ts = ppLatexAnnFree t
+  ppLatexAnnFree (Scheme_ForallTemp _ ts _ t) = "forall" >#< map ppLatex (S.toList ts) >|< "." >#< ppLatexAnnFree t
+
+instance PPLatexAnnFree Type where
+  ppLatexAnnFree (Type_Var v) = ppLatex v
+  ppLatexAnnFree (Type_Data n _ ts) = ppLatex n >#< ppSpaces (map ppLatexAnnFree ts)
+  ppLatexAnnFree (Type_App t1 t2) = ppLatexAnnFree t1 >#< ppLatexAnnFree t2
+  ppLatexAnnFree (Type_Func t1 t2) = ppParens (ppLatexAnnFree t1 >#< "->" >#< ppLatexAnnFree t2)
+  ppLatexAnnFree (Type_Tup ts) = ppParensCommas (map ppLatexAnnFree ts)
+  ppLatexAnnFree (Type_Error e) = "Type Error:" >#< e
+
+instance PPLatexAnnFree RhoType where
+  ppLatexAnnFree (RhoType_Rho (EtaType_Eta t _) _) = ppLatexAnnFree t
+
+instance PPLatexAnnFree EtaType where
+  ppLatexAnnFree (EtaType_Eta t _) = ppLatexAnnFree t
+
+instance PPLatexAnnFree Constraint where
+  ppLatexAnnFree (Constraint_Ann c) = empty
+  ppLatexAnnFree (Constraint_Eq c) = ppLatexAnnFree c
+  ppLatexAnnFree (Constraint_Inst n s t) = ppLatex n >|< ": inst(" >|< ppLatexAnnFree s >|< ") ==" >#< ppLatexAnnFree t
+  ppLatexAnnFree (Constraint_Gen n t u d n0 d0 c e s) = error "Cannot printLatexAnnFree Gen constraint without conMap"
+
+instance {-# OVERLAPPING #-} PPLatexAnnFree (Constraints, Map Var Constraints) where
+  ppLatexAnnFree (cs, cm) = vlist $ map (ppLatexAnnFree . (,cm)) cs
+
+instance {-# OVERLAPPING #-} PPLatexAnnFree (Constraint, Map Var Constraints) where
+  ppLatexAnnFree (Constraint_Gen n t u d n0 d0 c e s, cm) = ppLatex n >|< ": gen" 
+    >|< ppParensCommas [ppLatexAnnFree t , text $ "cs: " ++ show (length cs), text $ "e: " ++ show (M.size e)]
+    >#< "==" >#< ppLatex s
+    >-< indent 4 (ppLatexAnnFree (cs, cm)) >-< indent 4 (ppMapLatexAnnFree e)
+    where cs = cm M.! c
+  ppLatexAnnFree (c, cm) = ppLatexAnnFree c 
+
+instance PPLatexAnnFree ConstraintEq where
+  ppLatexAnnFree (ConstraintEq_Ann a1 a2) = empty
+  ppLatexAnnFree (ConstraintEq_Type t1 t2) = ppLatexAnnFree t1 >#< "==" >#< ppLatexAnnFree t2
+  ppLatexAnnFree (ConstraintEq_Scheme s1 s2) = ppLatexAnnFree s1 >#< "==" >#< ppLatexAnnFree s2
+
+instance PPLatexAnnFree Solution where
+  ppLatexAnnFree (Solution _ ts ss) = "typeSol:" >-< indent 2 (ppMapLatexAnnFree ts)
+    >-< "schemeSol:" >-< indent 2 (ppMapLatexAnnFree ss)
+
+instance PPLatexAnnFree Module where
+  ppLatexAnnFree (Module_Module mod _) = ppLatexAnnFree mod
+
+instance PPLatexAnnFree Expr where
+  ppLatexAnnFree (Expr_VarLocal v _) = ppLatex v
+  ppLatexAnnFree (Expr_VarImport v _) = ppLatex v
+  ppLatexAnnFree (Expr_Const c) = ppLatex c
+  ppLatexAnnFree (Expr_Abs bind body _) = "\\" >|< ppLatex bind >#< "->" >-< indent 2 (ppLatexAnnFree body)
+  ppLatexAnnFree (Expr_AppLocal func arg _) = ppLatexAnnFree func >#< ppLatex arg
+  ppLatexAnnFree (Expr_AppImport func arg _) = ppLatexAnnFree func >#< ppLatex arg
+  ppLatexAnnFree (Expr_AppConst func arg _) = ppLatexAnnFree func >#< ppLatex arg
+  ppLatexAnnFree (Expr_Let binds body _) = "let" >-< indent 2 (vlist $ map ppLatexAnnFree binds) >-< "in" >#< ppLatexAnnFree body
+  ppLatexAnnFree (Expr_LetBang x e1 e2 _) = "let!" >#< ppLatex x >#< "=" >#< ppLatexAnnFree e1 >-< "in" >#< ppLatexAnnFree e2
+  ppLatexAnnFree (Expr_Con _ conNm flds _) = ppLatex conNm >#< ppSpaces flds 
+  ppLatexAnnFree (Expr_Tup flds _) = ppParensCommas flds
+  ppLatexAnnFree (Expr_CaseCon e alts _) = "case" >#< ppLatexAnnFree e >#< "of" >-< indent 2 (vlist $ map ppLatexAnnFree alts)
+  ppLatexAnnFree (Expr_CaseTup e xs e1 _) = "case" >#< ppLatexAnnFree e >#< "of" >-< indent 2 (ppParensCommas (map ppLatex xs) >#< "->" >#< ppLatexAnnFree e1)
+  ppLatexAnnFree (Expr_CaseConst e alts _) = "case" >#< ppLatexAnnFree e >#< "of" >-< indent 2 (vlist $ map ppLatexAnnFree alts)
+  ppLatexAnnFree Expr_FFI{} = text "FFI"
+  ppLatexAnnFree (Expr_Ann _ e) = ppLatexAnnFree e
+  ppLatexAnnFree (Expr_AnnCore _ e) = ppLatexAnnFree e
+
+instance PPLatexAnnFree Binding where
+  ppLatexAnnFree (Binding_Bind n e _) = ppLatex n >#< "=" >#< ppLatexAnnFree e
+
+instance PPLatexAnnFree AltCon where
+  ppLatexAnnFree (AltCon_Alt _ c xs e _) = ppLatex c >#< ppSpaces (map ppLatex xs) >#< "->" >#< ppLatexAnnFree e
+
+instance PPLatexAnnFree AltConst where
+  ppLatexAnnFree (AltConst_Int c e _) = c >#< "->" >#< ppLatexAnnFree e
+  ppLatexAnnFree (AltConst_Char c e _) = c >#< "->" >#< ppLatexAnnFree e
+
 %%]

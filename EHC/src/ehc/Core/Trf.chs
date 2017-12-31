@@ -44,7 +44,7 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
-%%[(8 counting) import({%{EH}Core.Trf.CountingAnalysis},{%{EH}Core.Trf.CAStrictnessOptimization})
+%%[(8 counting) import({%{EH}Core.Trf.CountingAnalysis},{%{EH}Core.Trf.CAStrictnessOptimization},{%{EH}Core.Trf.CARemoveAnn})
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
 %%]
@@ -248,6 +248,7 @@ trfCore opts optimScope dataGam modNm trfcore
                ; t_counting_analysis
                ; uca <- freshInfUID
                ; t_caStrictness_optimization uca
+               ; t_caRemoveAnn
 %%]]
 
 %%[[(8 codegenanalysis)
@@ -308,6 +309,9 @@ trfCore opts optimScope dataGam modNm trfcore
         t_caStrictness_optimization u
                         = liftTrfModWithStateExtra osm "caStrictness_optimization" lamMpPropagate
                                                                $ \s -> cmodTrfCaStrictnessOptimization dataGam (trfcoreInhLamMp $ trfstExtra s) modNm u
+        t_caRemoveAnn
+                        = liftTrfModWithStateExtra osm "caRemoveAnn" lamMpPropagate
+                                                               $ \s -> cmodTrfCaRemoveAnn (trfcoreInhLamMp $ trfstExtra s)
 %%]]
 
 %%[[(8 codegenanalysis)

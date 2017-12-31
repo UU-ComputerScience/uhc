@@ -110,7 +110,7 @@ expandTypeDefs ltg tg d = traceShow ("gamkengt", length $ show $ gamToAssocDupL 
           where t' = expandTypeDefsRhoType t
 
         expandTypeDefsType :: CA.Type -> CA.Type
-        expandTypeDefsType  (CA.Type_Data n as ts)
+        expandTypeDefsType t@(CA.Type_Data n as ts)
           -- | n == mkHNm "_Rec" = traceShow ("trec:", n) trec
           | n == mkHNm "_Rec" = traceShow trec trec
           -- | isJust mt && isNothing mdt && n /= mkHNm "Char" && n /= mkHNm "Int" = traceShow ("ttype:", n) ty'
@@ -129,9 +129,13 @@ expandTypeDefs ltg tg d = traceShow ("gamkengt", length $ show $ gamToAssocDupL 
                 ty = tgiAnnTy tgi
                 ans = tgiAnnVars tgi
                 tvs = tgiTyVars tgi
-                asol = Map.fromList $ zip ans as
-                tsol = Map.fromList $ zip tvs fields
-                ty' = if length ans == length as && length tvs == length fields then S.substSolution ty (CA.Solution asol tsol Map.empty)
+                idAnn (x, CA.Annotation_Var y) = x /= y
+                idAnn _ = True
+                idTy (x, CA.Type_Var y) = x /= y
+                idTy _ = True
+                asol = Map.fromList $ filter idAnn $ zip ans as
+                tsol = Map.fromList $ filter idTy $ zip tvs fields
+                ty' = if length ans == length as && length tvs == length fields then S.substB False ty asol tsol Map.empty
                   else error $ show (mt, mdt, "lengths don't match for " ++ show n ++ ": " ++ show (as, ans) ++ show (fields, tvs) ++ ". Type: " ++ show ty)
                 trec = if (length ts /= 1) then error ("_rec is no singleton" ++ show ts)  else head ts
         expandTypeDefsType  (CA.Type_App t1 t2) = traceShow (t1', t2') CA.Type_App t1' t2'
@@ -234,20 +238,20 @@ SEM AGItf
 ATTR AGItf [ dataGam: DataGam | | ]
 
 SEM AGItf
-  | AGItf       expr        .   dataGam             = specialTgiTrace @loc.gathTyGam $ specialtrace $ @expr.gathDataGam `gamUnion` @lhs.dataGam
+  | AGItf       expr        .   dataGam             = specialTgiTrace @loc.gathTyGam $ specialtrace @expr.gathDataGam `gamUnion` @lhs.dataGam
 
 {
 specialtrace :: DataGam -> DataGam
-specialtrace = id
--- specialtrace dg = T.traceShow ("DataGam:", dgl) dg
---   where dgl = map f $ gamToAssocL dg
---         f (n, dgi) = (n, dgiTyVars dgi, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
+-- specialtrace = id
+specialtrace dg = T.traceShow ("DataGam: ", vlist $ map ppLatex dgl) dg
+  where dgl = map f $ gamToAssocL dg
+        f (n, dgi) = (n, dgiTyVars dgi, dgiAnnVars dgi, Map.map (\x -> dtiFldAnnTyL x) $ dgiConstrTagMp dgi) 
 
 specialTgiTrace :: TyGam -> a -> a
-specialTgiTrace tg = id
--- specialTgiTrace tg = T.traceShow ("TyGam:", tgl)
---   where tgl = map f $ gamToAssocL tg
---         f (n, tgi) = (n, tgiAnnTy tgi) 
+-- specialTgiTrace tg = id
+specialTgiTrace tg = T.traceShow ("TyGam: ", vlist $ map ppLatex tgl)
+  where tgl = map f $ gamToAssocL tg
+        f (n, tgi) = (n, tgiAnnTy tgi) 
 
 deriving instance Show TyExpr
 deriving instance Show PrExpr
@@ -326,7 +330,7 @@ SEM Decl
     tyExpr.caLevel = 1
   | Type
     lhs.caLocalAnnVarsGath = map mkHNm [@lhs.caFreshVar .. @tyExpr.caFreshVar - 1]
-    lhs.caGathTyGam = Map.singleton @tyNm (@lhs.caLocalAnnVars, Set.toList $ Set.fromList @tyExpr.caTyVars, @tyExpr.caType)
+    lhs.caGathTyGam = Map.singleton @tyNm (@lhs.caLocalAnnVars, nub @tyExpr.caTyVars, @tyExpr.caType)
   | TySig
     lhs.caClassTySigs = [(@nm, CA.Field_Lazy $ CA.RhoType_Rho (CA.EtaType_Eta @tyExpr.caType @loc.nu) @loc.delta)]
     loc.(nu,delta,fv) = if 0 < @lhs.caIota then 

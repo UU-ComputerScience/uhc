@@ -148,7 +148,7 @@ instance Eta (GEta a) where
 
 instance Eta (GRho a) where
   getType (GRho e _) = getType e
-  getUsage (GRho _ u) = u
+  getUsage (GRho e _) = getUsage e
   fromGEta = undefined
 
 instance Rho (GRho a) where

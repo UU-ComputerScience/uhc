@@ -1,0 +1,48 @@
+BinTreeInternals:
+  opt: avg: 8.480 min: 8.252 max: 8.792
+  mas: avg: 15.921 min: 15.046 max: 16.967
+  dif: avg: 46.7% min: 45.2% max: 48.2%
+BinTreeNoInternals:
+  opt: avg: 1.464 min: 1.447 max: 1.488
+  mas: avg: 1.673 min: 1.647 max: 1.705
+  dif: avg: 12.5% min: 12.1% max: 12.7%
+BinTreeNoInternalsViaList:
+  opt: avg: 5.905 min: 5.746 max: 6.113
+  mas: avg: 6.341 min: 6.116 max: 6.604
+  dif: avg: 6.9% min: 6.0% max: 7.4%
+BinTreeNoInternalsViaList2:
+  opt: avg: 2.631 min: 2.601 max: 2.658
+  mas: avg: 2.617 min: 2.575 max: 2.666
+  dif: avg: -0.6% min: -1.0% max: 0.3%
+BinTreeInlinedMap:
+  opt: avg: 14.532 min: 13.763 max: 15.296
+  mas: avg: 21.435 min: 19.923 max: 23.203
+  dif: avg: 32.2% min: 30.9% max: 34.1%
+BinTreeInlinedMap2:
+  opt: avg: 14.073 min: 13.226 max: 15.383
+  mas: avg: 20.806 min: 19.802 max: 22.354
+  dif: avg: 32.4% min: 33.2% max: 31.2%
+BinTreeHigherOrderMap:
+  opt: avg: 6.725 min: 6.572 max: 6.924
+  mas: avg: 7.843 min: 7.619 max: 8.158
+  dif: avg: 14.3% min: 13.7% max: 15.1%
+Fact:
+  opt: avg: 8.686 min: 8.645 max: 8.763
+  mas: avg: 9.215 min: 9.030 max: 9.524
+  dif: avg: 5.7% min: 4.3% max: 8.0%
+Fibt:
+  opt: avg: 2.059 min: 1.742 max: 2.295
+  mas: avg: 2.149 min: 1.980 max: 2.325
+  dif: avg: 4.2% min: 12.0% max: 1.3%
+Fibt2:
+  opt: avg: 1.031 min: 1.001 max: 1.092
+  mas: avg: 1.572 min: 1.374 max: 1.689
+  dif: avg: 34.4% min: 27.1% max: 35.3%
+BinTreeInlinedMapNoValues:
+  opt: avg: 3.260 min: 3.155 max: 3.330
+  mas: avg: 3.740 min: 3.642 max: 3.900
+  dif: avg: 12.8% min: 13.4% max: 14.6%
+ListInlinedMap:
+  opt: avg: 0.019 min: 0.010 max: 0.021
+  mas: avg: 0.020 min: 0.010 max: 0.022
+  dif: avg: 1.5% min: 0.0% max: 4.5%

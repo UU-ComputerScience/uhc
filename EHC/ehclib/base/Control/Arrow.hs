@@ -271,6 +271,6 @@ class Arrow a => ArrowLoop a where
 instance ArrowLoop (->) where
         loop f b = let (c,d) = f (b,d) in c
 
-instance MonadFix m => ArrowLoop (Kleisli m) where
+instance (Monad m, MonadFix m) => ArrowLoop (Kleisli m) where
         loop (Kleisli f) = Kleisli (liftM fst . mfix . f')
                 where   f' x y = f (x, snd y)

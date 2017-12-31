@@ -23,7 +23,10 @@
 %%[(8 counting) ag import({CountingAnalysis/AbsSynExpr})
 %%]
 
-%%[(8 counting) hs
+%%[(8 counting) hs export(module {%{EH}CountingAnalysisExpr})
+%%]
+
+%%[(8 counting) hs export (HsName)
 type HsNames = [HsName]
 %%]
 

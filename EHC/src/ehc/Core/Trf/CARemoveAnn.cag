@@ -1,0 +1,71 @@
+%%[(8 counting) hs module {%{EH}Core.Trf.CARemoveAnn} import(Data.Maybe,Data.Set (Set),qualified Data.Set as S,Data.Map.Strict (Map),qualified Data.Map.Strict as M, qualified Data.Map.Strict as Data.Map)
+%%]
+
+%%[(8 counting) hs import({%{EH}LamInfo},{%{EH}Base.Common},{%{EH}Base.HsName.Builtin},{%{EH}Gam.DataGam},{%{EH}Core},{%{EH}Ty})
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysis})
+%%]
+
+%%[(8 counting) hs import({%{EH}CountingAnalysis.ToCAModule}, {%{EH}CountingAnalysis.ToCModule})
+%%]
+
+%%[(8 counting) hs import(qualified {%{EH}CountingAnalysis.Substitution} as S)
+%%]
+
+%%[(8 counting) hs import(UHC.Util.Utils, {%{EH}CountingAnalysis.Pretty}, UHC.Util.Pretty)
+%%]
+
+%%[(8 counting) hs import(Data.List(foldl'))
+%%]
+
+%%[(8 counting) hs import({%{EH}Base.Target (FFIWay)}, {%{EH}Foreign (ForeignEnt)}, {%{EH}Ty (Ty)})
+%%]
+
+Debugging
+%%[(8 counting) hs import(Debug.Trace)
+%%]
+
+%%[(8 counting).WRAPPER ag import({CountingAnalysis/AbsSynExpr})
+WRAPPER Module
+%%]
+
+
+%%[(99 counting)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) hs export(cmodTrfCaRemoveAnn)
+cmodTrfCaRemoveAnn :: LamMp -> CModule -> (CModule, LamMp)
+cmodTrfCaRemoveAnn imps cmod = 
+  -- traceShow ("rem", toCModule e == cmod)
+  -- (cmod, imps)
+  (toCModule e, imps)
+  where syn = wrap_Module (sem_Module ebase) Inh_Module
+        e = trf_Syn_Module syn
+        ebase = toCAModule (toImports imps) cmod
+
+
+toImports :: LamMp -> Imports
+toImports x = M.map getType $ M.filter (/= (RhoScheme_Rho (EtaScheme_Eta 
+              (Scheme_Forall S.empty S.empty [] (Type_Error "Empty lamInfo")) $ Annotation_Val S.empty)
+                 $ Annotation_Val S.empty)) $ M.map laminfoCaType x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 counting) ag
+
+ATTR * [ | | trf: SELF ]
+
+SEM Expr
+  | Ann
+    lhs.trf = @e.trf
+
+%%]

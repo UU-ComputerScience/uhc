@@ -79,31 +79,31 @@ instance Monad (ST s) where
         case (k r) of { ST k2 ->
         (k2 new_s') }})
 
-data STret s a = STret (State s) a
+-- data STret s a = STret (State s) a
 
--- liftST is useful when we want a lifted result from an ST computation.  See
--- fixST below.
-liftST :: ST s a -> State s -> STret s a
-liftST (ST m) = \s -> case m s of ( s', r ) -> let !s'' = s' in STret s'' r
+-- -- liftST is useful when we want a lifted result from an ST computation.  See
+-- -- fixST below.
+-- liftST :: ST s a -> State s -> STret s a
+-- liftST (ST m) = \s -> case m s of ( s', r ) -> let !s'' = s' in STret s'' r
 
-{-# NOINLINE unsafeInterleaveST #-}
-unsafeInterleaveST :: ST s a -> ST s a
-unsafeInterleaveST (ST m) = ST ( \ s ->
-    let
-        r = case m s of ( _, res ) -> res
-    in
-    ( s, r )
-  )
+-- {-# NOINLINE unsafeInterleaveST #-}
+-- unsafeInterleaveST :: ST s a -> ST s a
+-- unsafeInterleaveST (ST m) = ST ( \ s ->
+--     let
+--         r = case m s of ( _, res ) -> res
+--     in
+--     ( s, r )
+--   )
 
--- | Allow the result of a state transformer computation to be used (lazily)
--- inside the computation.
--- Note that if @f@ is strict, @'fixST' f = _|_@.
-fixST :: (a -> ST s a) -> ST s a
-fixST k = ST $ \ s ->
-    let ans       = liftST (k r) s
-        STret _ r = ans
-    in
-    case ans of STret s' x -> ( s', x )
+-- -- | Allow the result of a state transformer computation to be used (lazily)
+-- -- inside the computation.
+-- -- Note that if @f@ is strict, @'fixST' f = _|_@.
+-- fixST :: (a -> ST s a) -> ST s a
+-- fixST k = ST $ \ s ->
+--     let ans       = liftST (k r) s
+--         STret _ r = ans
+--     in
+--     case ans of STret s' x -> ( s', x )
 
 instance  Show (ST s a)  where
     showsPrec _ _  = showString "<<ST action>>"

@@ -145,7 +145,7 @@ main = do let r :: [String] -> Int
                         . concatS (map showChar (replicate 80 '-'))
                         . showString "\n\n"
           a <- getArgs
-          let maxArity = r a
+          let maxArity = 0 -- r a
           (putStr . ($ "")) $ concatS $
             intersperse com (header maxArity : [ gen m | m <- [0] ++ [2..maxArity]])
 %%]

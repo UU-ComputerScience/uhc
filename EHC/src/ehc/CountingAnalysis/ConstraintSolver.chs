@@ -46,6 +46,11 @@ genTrace2 = flip const
 traceShow2def = flip const
 -- traceShow2def x y = traceShow (x,y) y
 
+
+debugTrace :: Show a => a -> b -> b
+debugTrace = flip const
+-- debugTrace = traceShow
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -238,7 +243,7 @@ instance AddNewConstraint Constraints where
   addNewConstraint cs = do
     fvs <- seq (show ("anc-cs", length cs, f cs)) $ replicateM (length cs) getFresh
     let zipped = traceShowS ("zipStart", cs, fvs) $ zip fvs $ sortConstraints cs
-    acs <- use $ traceShowS ("zipp:", vlist zipped, "endzipp;") allConstraints
+    acs <- use $ debugTrace ("zipp:", vlist zipped, "endzipp;") allConstraints
     let nacs = M.union (traceShowS zipped $ M.fromList zipped) acs
     allConstraints .= traceRun "anc-cs-acs" (makeDeepSeqAcs nacs)
     cwl <- use currentWorkList
@@ -348,18 +353,18 @@ instance SolveSingle Constraint where
     dontDefault .= traceRun "ss-c-dd" (makeDeepSeqSet ndd)
     addNewConstraint $ Constraint_Eq $ ConstraintEq_Scheme sigma $ Scheme_ForallTemp vbeta valpha c2 tau'
     return True
-  solveSingle (Constraint_Inst _ (Scheme_ForallTemp beta1 alpha1 c tau1) tau2) = do
-    alpha2 <- replicateM (S.size alpha1) getFresh'
+  solveSingle cs@(Constraint_Inst _ (Scheme_ForallTemp beta1 alpha1 c tau1) tau2) = do
+    alpha2 <- traceShowS ("solve instTemp", cs) $ replicateM (S.size alpha1) getFresh'
     beta2 <- replicateM (S.size beta1) getFresh'
+    c' <- getConstraints c
     let sol = traceShowS ("help", sol, pp sol) $ Solution (M.fromList $ zip (S.toList beta1) (map Annotation_Var beta2)) (M.fromList $ zip (S.toList alpha1) (map Type_Var alpha2)) M.empty
         tau' = S.substSolution tau1 sol
-    cwl <- use currentWorkList
-    let ncwl = addToQueue (S.toList c) cwl
-    currentWorkList .= traceRun "ss-c-i-cwl" (makeDeepSeqQueue ncwl)
+        c'' = S.substSolution c' sol
+    addNewConstraint c''
     addNewConstraint $ Constraint_Eq $ ConstraintEq_Type tau' tau2
     return True
-  solveSingle (Constraint_Inst _ (Scheme_Forall beta1 alpha1 c tau1) tau2) = do
-    alpha2 <- traceShowS ("inst import", length c) $ replicateM (S.size alpha1) getFresh'
+  solveSingle cs@(Constraint_Inst _ (Scheme_Forall beta1 alpha1 c tau1) tau2) = do
+    alpha2 <- traceShowS ("solve instImport", cs) $ replicateM (S.size alpha1) getFresh'
     beta2 <- replicateM (S.size beta1) getFresh'
     let sol = traceShowS ("help", sol, pp sol) $ Solution (M.fromList $ zip (S.toList beta1) (map Annotation_Var beta2)) (M.fromList $ zip (S.toList alpha1) (map Type_Var alpha2)) M.empty
         tau' = S.substSolution tau1 sol
@@ -427,16 +432,16 @@ solveAnnConstraint diamond c phi3 phi1 phi2 = do
 testForTop :: ConstraintAnn -> Annotation -> Annotation -> SolveT ()
 testForTop c phi1 phi2
   | phi1 == annTop = do
-    fresh <- fv
+    fresh <- traceShow "error warning: top Found testforTop" fv
     addNewConstraint $ replace (fresh, phi2)
   | phi2 == annTop = do
-    fresh <- fv
+    fresh <- traceShow "error warning: top Found testforTop" fv
     addNewConstraint $ replace (phi1, fresh)
   | otherwise = do
     ps' <- use partSolution
     sol'<- use solution
     -- error unolvable ignored
-    return ()
+    traceShow ("error: no top found testforTop", c) $ return ()
     -- panic $ "Unsatisfiable Constraint - solveAnn: " ++ show c ++ ", partSol: " ++ show ps' ++ "sol: " ++ show sol'
   where fv = do
               v <- getFresh'
@@ -526,12 +531,14 @@ instance SolveSingle ConstraintEq where
     if mu1 /= mu2 then 
       if mu1 == annTop || mu2 == annTop then
         -- forget information
+        traceShow ("error eqann top not equal", pp c)
         return True
       else do
         s <- use solution
         ps <- use partSolution
         -- panic $ "Unsatisfiable constraint (solve eqann): " ++ show c ++ ", sol and part: " ++ show (s, ps)
-        return True
+        traceShow ("error eqann no top not equal", mu1, mu2)
+          return True
     else
       return True
       
@@ -562,13 +569,14 @@ instance SolveSingle ConstraintEq where
   solveSingle (ConstraintEq_Type mu a2@(Type_Var _)) = solveSingle (ConstraintEq_Type a2 mu)
   solveSingle c@(ConstraintEq_Type (Type_Data n1 as1 ts1) (Type_Data n2 as2 ts2)) = 
     if n1 /= n2 then
-      return $ traceShowS ("TypeEqError", n1, n2) True
+      return $ traceShow ("TypeDataNameEqError", n1, n2) True
       -- panic $ "Unsatisfiable constraint(solve eqtype): " ++ show c
     else do
-      addNewConstraint $ (if length ts1 /= length ts2 then traceShow ("eqTypeData") else id) $ genEq as1 as2 <> genEq ts1 ts2
+      addNewConstraint $ (if length ts1 /= length ts2 then traceShow ("eqTypeData lengths mismatch") else id) $ genEq as1 as2 <> genEq ts1 ts2
       return True
   solveSingle c@(ConstraintEq_Type (Type_Func r1 e1) (Type_Func r2 e2)) = do
-    addNewConstraint $ genEq r1 r2 <> genEq e1 e2
+    let cs = genEq r1 r2 <> genEq e1 e2
+    addNewConstraint $ traceShowS ("solveEqFunc", c, genEq r1 r2, genEq e1 e2) cs
     return True
   solveSingle c@(ConstraintEq_Type (Type_Tup ts1) (Type_Tup ts2)) = do
     if (length ts1 == 0 || length ts2 == 0) then
@@ -576,6 +584,8 @@ instance SolveSingle ConstraintEq where
       return True
     else do
       -- ignore length errors
+      when (length ts1 /= length ts2) $ 
+        traceShow ("error (egtypetyp): lengths mismatch") $ return ()
       addNewConstraint $ (if length ts1 /= length ts2 then traceShow ("eqTypeTup") else id) $ uncurry genEq $ unzip $ zip ts1 ts2
       return True
   solveSingle c@(ConstraintEq_Type t1@(Type_App t1f t1a) t2@(Type_App t2f t2a)) = 
@@ -591,7 +601,8 @@ instance SolveSingle ConstraintEq where
     return True
   solveSingle c@(ConstraintEq_Type (Type_App t1f t1a) (Type_Data n as ts)) = 
     if ts == [] then do
-      (addNewConstraint $ traceShowS ("appError:", c) $ genEq t1f (Type_Data n as ts))
+      traceShow ("error (egtypeappdata): lengths mismatch") $
+        (addNewConstraint $ traceShowS ("appError:", c) $ genEq t1f (Type_Data n as ts))
       return True 
     else
       let t = last ts
@@ -634,13 +645,15 @@ instance SolveSingle ConstraintEq where
         Scheme_ForallTemp _ _ cs ts = S.substSolution mu1 $ Solution asol tsol M.empty
         mu1' = Scheme_ForallTemp as2 ts2 cs ts
     if S.size cs /= S.size cs2 then
+      traceShow ("error (egschemeT): lengths mismatch (cs)") $
       return True
     else if length as1 /= length as2 || length ts1 /= length ts2 then
+      traceShow ("error (egschemeT): lengths mismatch (as || ts)") $
       return True
       -- ignore failings assume correct
       -- panic $ "Unsatisfiable constraint (solve eqscheme). Quantfied variables cannot be matched: " ++ show (pp c)
     else if mu1' /= mu2 then
-      panic $ "Unsatisfiable constraint (solve eqscheme): " ++ show (mu1, mu1', mu2)
+      panic $ "Unsatisfiable constraint (solve eqschemeT): " ++ show (mu1, mu1', mu2)
     else
       return True
   solveSingle c@(ConstraintEq_Scheme mu1@(Scheme_Forall as1 ts1 _ _) mu2@(Scheme_Forall as2 ts2 cs2 _)) = do
@@ -649,8 +662,10 @@ instance SolveSingle ConstraintEq where
         Scheme_Forall _ _ cs ts = S.substSolution mu1 $ Solution asol tsol M.empty
         mu1' = Scheme_Forall as2 ts2 cs ts
     if length cs /= length cs2 then
+      traceShow ("error (egscheme): lengths mismatch (cs)") $
       return True
     else if length as1 /= length as2 || length ts1 /= length ts2 then
+      traceShow ("error (egscheme): lengths mismatch (as || ts)") $
       return True
       -- ignore failings assume correct
       -- panic $ "Unsatisfiable constraint (solve eqscheme). Quantfied variables cannot be matched: " ++ show (pp c)
@@ -659,7 +674,7 @@ instance SolveSingle ConstraintEq where
     else
       return True
       
-  solveSingle c = traceShowS ("Unsatisfiable constraint(solve eq): ", c) $ return True
+  solveSingle c = traceShow ("Unsatisfiable constraint(solve eq): ", pp c) $ return True
   -- solveSingle c = panic $ "Unsatisfiable constraint(solve eq): " ++ show c
 
 tupToData :: Type -> Type
@@ -681,32 +696,45 @@ class AddToSol a where
 
 instance AddToSol Annotation where
   addToSol n (Annotation_Var x) | n == x = return ()
-  addToSol n a = traceShowS ("atsA-start", n, a) $ do
+  addToSol n a = debugTrace ("atsA-start", n, a) $ do
     s <- use solution
     let ns = s & annSol %~ M.insert n a
     solution .= makeDeepSeqSol ns
     ps2 <- use partSolution
     let nps = M.delete n ps2
     partSolution .= makeDeepSeqPs nps
+    mv a
     updateWorkList n
-    
+    where mv (Annotation_Var x) = mergeWorkListConstraints n x
+          mv _ = return ()    
 
 instance AddToSol Type where
   addToSol n (Type_Var x) | n == x = return ()
-  addToSol n t = traceShowS ("atsT-start", n, t) $  do
+  addToSol n t = debugTrace ("atsT-start", n, t) $  do
     sol <- use solution
     let ns = sol & tySol %~ M.insert n t
     solution .= makeDeepSeqSol ns
+    mv t
     updateWorkList n
-   
+    where mv (Type_Var x) = mergeWorkListConstraints n x   
+          mv _ = return ()
 
 instance AddToSol Scheme where
   addToSol n (Scheme_Var x) | n == x = return ()
-  addToSol n s = traceShowS ("atsS-start", n, s) $  do
+  addToSol n s = debugTrace ("atsS-start", n, pp s) $  do
     sol <- use solution
     let ns = sol & schemeSol %~ M.insert n s
     solution .= makeDeepSeqSol ns
+    mv s
     updateWorkList n
+    where mv (Scheme_Var x) = mergeWorkListConstraints n x
+          mv _ = return ()
+
+mergeWorkListConstraints :: HsName -> HsName -> SolveT ()
+mergeWorkListConstraints n x = do
+  wlcs <- use workListConstraints
+  let nc = fromMaybe S.empty $ M.lookup n wlcs
+  workListConstraints .= M.insertWith S.union x nc wlcs
 
 updateWorkList :: HsName -> SolveT ()
 updateWorkList n = do
@@ -729,7 +757,7 @@ solveFix = traceShowS "solveFix" $ do
   else do
     s <- use solution
     let (v,c) = fromJust mc
-        c' = traceShowS ("solve: ", v, pp s, "endsolve;") S.substSolution c s
+        c' = debugTrace ("solve: ", v, pp s, "endsolve;") S.substSolution c s
     updateWorkListConstraint $ traceShowS ("current",v) (v,c)
     solved <- solveSingle (traceShowS "sf-c'" c')
     asc <- use allConstraints
@@ -749,7 +777,13 @@ getWorkConstraint = do
   acs <- use allConstraints
   let (q, m) = getWorkConstraint' wl acs
   currentWorkList .= q
-  return m
+  sol <- use solution
+  cm <- use constraintMap
+  case m of 
+    Just (v, c) -> 
+      let c'= S.substSolution (c) sol
+      in debugTrace ("solveCVar", v, c') $ return m
+    Nothing -> return m
 
 getWorkConstraint' wl acs = 
   if traceShowS "gwc-nullWl" $ nullQueue wl then
@@ -935,7 +969,7 @@ addConMap (v,cs) = do
   acs <- use allConstraints
   let nacs = M.union (M.fromList zipped) acs
   allConstraints .= traceRun "acm-acs" (makeDeepSeqAcs nacs)
-  mapM_ updateWorkListConstraint $ traceShowS ("css:", vlist zipped, "endcss;") zipped
+  mapM_ updateWorkListConstraint $ debugTrace ("css:", vlist zipped, "endcss;") zipped
   return (v, S.fromList fvs)
 
 solveDef' :: SolveT ()
@@ -948,6 +982,7 @@ solveDef' = traceShowS "StartDef" $ do
   ps <- use partSolution
   let psiFinal = traceRun "solveDef-psiFinal" $ M.filterWithKey (\x _ -> S.notMember x notDefaulting) ps
   if M.null psiFinal then
+  -- if True then
     solveFinalSchemes
   else do
     let (beta, w) = traceShow2def "Def: " $ defaulting $ M.toList psiFinal
@@ -959,7 +994,7 @@ solveFinalSchemes :: SolveT ()
 solveFinalSchemes = traceShowS "startFinalSchemes" $ do
   acs <- use allConstraints
   let filtered = M.filter f acs
-      keys = traceShow ("still to do cs", M.size filtered, M.size acs) $ M.keys filtered
+      keys = traceShow ("still to do cs", M.size filtered, M.size acs) $ M.keys acs
   currentWorkList .= fromListQueue (traceRun "sfss-keys" $ makeDeepSeqList keys)
   solveFix
   s <- use solution 

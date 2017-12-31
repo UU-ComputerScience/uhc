@@ -86,6 +86,8 @@
 %%]
 %%[(8 counting) hs import(Control.Arrow (first))
 %%]
+%%[(8 counting) hs import({%{EH}CountingAnalysis.Pretty})
+%%]
 
 %%[(90 codegen) hs import({%{EH}CodeGen.BuiltinPrims},{%{EH}Foreign})
 %%]

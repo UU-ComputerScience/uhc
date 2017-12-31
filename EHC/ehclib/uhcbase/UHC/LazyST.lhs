@@ -24,13 +24,15 @@
 module UHC.LazyST where
 
 import UHC.Base
-import UHC.ST(STRep(..), STret(..))
+import UHC.ST(STRep(..){- , STret(..) -})
 import qualified UHC.ST as ST
 
 \end{code}
 
+
 \begin{code}
 newtype ST s a = ST (STRep s a)
+
 
 instance Functor (ST s) where
     fmap f (ST m) = ST $ \ s ->
@@ -50,20 +52,20 @@ instance Monad (ST s) where
         case (k r) of { ST k2 ->
         (k2 new_s) }})
 
--- liftST is useful when we want a lifted result from an ST computation.  See
--- fixST below.
-liftST :: ST s a -> State s -> STret s a
-liftST (ST m) = \s -> case m s of ( s', r ) -> STret s' r
+-- -- liftST is useful when we want a lifted result from an ST computation.  See
+-- -- fixST below.
+-- liftST :: ST s a -> State s -> STret s a
+-- liftST (ST m) = \s -> case m s of ( s', r ) -> STret s' r
 
--- | Allow the result of a state transformer computation to be used (lazily)
--- inside the computation.
--- Note that if @f@ is strict, @'fixST' f = _|_@.
-fixST :: (a -> ST s a) -> ST s a
-fixST k = ST $ \ s ->
-    let ans       = liftST (k r) s
-        STret _ r = ans
-    in
-    case ans of STret s' x -> ( s', x )
+-- -- | Allow the result of a state transformer computation to be used (lazily)
+-- -- inside the computation.
+-- -- Note that if @f@ is strict, @'fixST' f = _|_@.
+-- fixST :: (a -> ST s a) -> ST s a
+-- fixST k = ST $ \ s ->
+--     let ans       = liftST (k r) s
+--         STret _ r = ans
+--     in
+--     case ans of STret s' x -> ( s', x )
 
 instance  Show (ST s a)  where
     showsPrec _ _  = showString "<<ST action>>"
@@ -85,12 +87,12 @@ Convert a strict 'ST' computation into a lazy one.  The strict state
 thread passed to 'strictToLazyST' is not performed until the result of
 the lazy state thread it returns is demanded.
 -}
-strictToLazyST :: ST.ST s a -> ST s a
-strictToLazyST m = ST $ \s ->
-  let pr = ST.liftST m s
-      ~(ST.STret _  r) = pr
-      ~(ST.STret s' _) = pr
-  in (s', r)
+-- strictToLazyST :: ST.ST s a -> ST s a
+-- strictToLazyST m = ST $ \s ->
+--   let pr = ST.liftST m s
+--       ~(STret _  r) = pr
+--       ~(STret s' _) = pr
+--   in (s', r)
 {-
         let 
            pr = case s of { S# s# -> ST.liftST m s# }
@@ -109,8 +111,8 @@ lazyToStrictST (ST m) = ST.ST $ \s ->
         (s', a) -> let !s'' = s'
                    in ( s'', a )
 
-unsafeInterleaveST :: ST s a -> ST s a
-unsafeInterleaveST = strictToLazyST . ST.unsafeInterleaveST . lazyToStrictST
+-- unsafeInterleaveST :: ST s a -> ST s a
+-- unsafeInterleaveST = strictToLazyST . ST.unsafeInterleaveST . lazyToStrictST
 {-
 -}
 \end{code}

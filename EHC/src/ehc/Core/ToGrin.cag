@@ -361,14 +361,14 @@ SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL)    =   if @isGlobal
                                                 then  (emptyGrExpr
                                                       ,case @categ of
-                                                         CBindCateg_Rec -> traceShow "help1" $ [GrBind_Rec @binds.grBindL] ++ @body.grBindL
-                                                         _              -> traceShow "help3" $              @binds.grBindL  ++ @body.grBindL
+                                                         CBindCateg_Rec -> [GrBind_Rec @binds.grBindL] ++ @body.grBindL
+                                                         _              ->              @binds.grBindL  ++ @body.grBindL
                                                       )
                                                 else  (case @categ of
-                                                         CBindCateg_Rec -> traceShow "Help2" $  mkHoles @binds.grBindL
+                                                         CBindCateg_Rec ->  mkHoles @binds.grBindL
                                                                             $ mkVarBindWithUpdates @binds.grBindL
                                                                             $ @body.grExpr
-                                                         _              -> traceShow "help4" $  mkVarBinds @binds.grBindL @body.grExpr
+                                                         _              ->  mkVarBinds @binds.grBindL @body.grExpr
                                                       ,[]
                                                       )
   | Case        loc         .   grExpr      =   let  w1 = @alts.grWrapCase

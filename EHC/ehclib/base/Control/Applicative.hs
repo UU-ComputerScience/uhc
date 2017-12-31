@@ -91,75 +91,75 @@ class Applicative f => Alternative f where
         -- | An associative binary operation
         (<|>) :: f a -> f a -> f a
 
--- instances for Prelude types
+-- -- instances for Prelude types
 
-instance Applicative Maybe where
-        pure = return
-        (<*>) = ap
+-- instance Applicative Maybe where
+--         pure = return
+--         (<*>) = ap
 
-instance Alternative Maybe where
-        empty = Nothing
-        Nothing <|> p = p
-        Just x <|> _ = Just x
+-- instance Alternative Maybe where
+--         empty = Nothing
+--         Nothing <|> p = p
+--         Just x <|> _ = Just x
 
-instance Applicative [] where
-        pure = return
-        (<*>) = ap
+-- instance Applicative [] where
+--         pure = return
+--         (<*>) = ap
 
-instance Alternative [] where
-        empty = []
-        (<|>) = (++)
+-- instance Alternative [] where
+--         empty = []
+--         (<|>) = (++)
 
-instance Applicative IO where
-        pure = return
-        (<*>) = ap
+-- instance Applicative IO where
+--         pure = return
+--         (<*>) = ap
 
-instance Applicative ((->) a) where
-        pure = const
-        (<*>) f g x = f x (g x)
+-- instance Applicative ((->) a) where
+--         pure = const
+--         (<*>) f g x = f x (g x)
 
-#ifndef __UHC__
-instance Monoid a => Applicative ((,) a) where
-        pure x = (mempty, x)
-        (u, f) <*> (v, x) = (u `mappend` v, f x)
-#endif
+-- #ifndef __UHC__
+-- instance Monoid a => Applicative ((,) a) where
+--         pure x = (mempty, x)
+--         (u, f) <*> (v, x) = (u `mappend` v, f x)
+-- #endif
 
--- new instances
+-- -- new instances
 
 newtype Const a b = Const { getConst :: a }
 
 instance Functor (Const m) where
         fmap _ (Const v) = Const v
 
-instance Monoid m => Applicative (Const m) where
-        pure _ = Const mempty
-        Const f <*> Const v = Const (f `mappend` v)
+-- instance Monoid m => Applicative (Const m) where
+--         pure _ = Const mempty
+--         Const f <*> Const v = Const (f `mappend` v)
 
 newtype WrappedMonad m a = WrapMonad { unwrapMonad :: m a }
 
 instance Monad m => Functor (WrappedMonad m) where
         fmap f (WrapMonad v) = WrapMonad (liftM f v)
 
-instance Monad m => Applicative (WrappedMonad m) where
-        pure = WrapMonad . return
-        WrapMonad f <*> WrapMonad v = WrapMonad (f `ap` v)
+-- instance Monad m => Applicative (WrappedMonad m) where
+--         pure = WrapMonad . return
+--         WrapMonad f <*> WrapMonad v = WrapMonad (f `ap` v)
 
-instance MonadPlus m => Alternative (WrappedMonad m) where
-        empty = WrapMonad mzero
-        WrapMonad u <|> WrapMonad v = WrapMonad (u `mplus` v)
+-- instance MonadPlus m => Alternative (WrappedMonad m) where
+--         empty = WrapMonad mzero
+--         WrapMonad u <|> WrapMonad v = WrapMonad (u `mplus` v)
 
 newtype WrappedArrow a b c = WrapArrow { unwrapArrow :: a b c }
 
-instance Arrow a => Functor (WrappedArrow a b) where
-        fmap f (WrapArrow a) = WrapArrow (a >>> arr f)
+-- instance Arrow a => Functor (WrappedArrow a b) where
+--         fmap f (WrapArrow a) = WrapArrow (a >>> arr f)
 
-instance Arrow a => Applicative (WrappedArrow a b) where
-        pure x = WrapArrow (arr (const x))
-        WrapArrow f <*> WrapArrow v = WrapArrow (f &&& v >>> arr (uncurry id))
+-- instance Arrow a => Applicative (WrappedArrow a b) where
+--         pure x = WrapArrow (arr (const x))
+--         WrapArrow f <*> WrapArrow v = WrapArrow (f &&& v >>> arr (uncurry id))
 
-instance (ArrowZero a, ArrowPlus a) => Alternative (WrappedArrow a b) where
-        empty = WrapArrow zeroArrow
-        WrapArrow u <|> WrapArrow v = WrapArrow (u <+> v)
+-- instance (ArrowZero a, ArrowPlus a) => Alternative (WrappedArrow a b) where
+--         empty = WrapArrow zeroArrow
+--         WrapArrow u <|> WrapArrow v = WrapArrow (u <+> v)
 
 -- | Lists, but with an 'Applicative' functor based on zipping, so that
 --
@@ -167,12 +167,12 @@ instance (ArrowZero a, ArrowPlus a) => Alternative (WrappedArrow a b) where
 --
 newtype ZipList a = ZipList { getZipList :: [a] }
 
-instance Functor ZipList where
-        fmap f (ZipList xs) = ZipList (map f xs)
+-- instance Functor ZipList where
+--         fmap f (ZipList xs) = ZipList (map f xs)
 
-instance Applicative ZipList where
-        pure x = ZipList (repeat x)
-        ZipList fs <*> ZipList xs = ZipList (zipWith id fs xs)
+-- instance Applicative ZipList where
+--         pure x = ZipList (repeat x)
+--         ZipList fs <*> ZipList xs = ZipList (zipWith id fs xs)
 
 -- extra functions
 

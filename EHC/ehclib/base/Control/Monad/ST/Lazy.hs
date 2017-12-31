@@ -20,18 +20,19 @@ module Control.Monad.ST.Lazy (
         -- * The 'ST' monad
         ST,
         runST,
-        fixST,
+        -- fixST,
 
         -- * Converting between strict and lazy 'ST'
-        strictToLazyST, lazyToStrictST,
+        -- strictToLazyST, 
+        lazyToStrictST,
 
         -- * Converting 'ST' To 'IO'
         RealWorld,
         stToIO,
 
         -- * Unsafe operations
-        unsafeInterleaveST,
-        unsafeIOToST
+        -- unsafeInterleaveST,
+        -- unsafeIOToST
     ) where
 
 import Prelude
@@ -113,8 +114,8 @@ fixST m = ST (\ s ->
                    (r,s'))
 #endif
 
-instance MonadFix (ST s) where
-        mfix = fixST
+-- instance MonadFix (ST s) where
+--         mfix = fixST
 
 -- ---------------------------------------------------------------------------
 -- Strict <--> Lazy
@@ -145,8 +146,8 @@ unsafeInterleaveST :: ST s a -> ST s a
 unsafeInterleaveST = strictToLazyST . ST.unsafeInterleaveST . lazyToStrictST
 #endif
 
-unsafeIOToST :: IO a -> ST s a
-unsafeIOToST = strictToLazyST . ST.unsafeIOToST
+-- unsafeIOToST :: IO a -> ST s a
+-- unsafeIOToST = strictToLazyST . ST.unsafeIOToST
 
 -- | A monad transformer embedding lazy state transformers in the 'IO'
 -- monad.  The 'RealWorld' parameter indicates that the internal state

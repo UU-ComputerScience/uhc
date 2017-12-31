@@ -160,6 +160,23 @@ import UHC.BaseFour
 -- missing derivings
 -------------------------
 
+deriving instance Eq a => Eq (Maybe a)
+deriving instance Ord a => Ord (Maybe a)
+
+instance (Eq a, Eq b) => Eq (a,b) where
+    (a,b) == (c,d) = a == c && b == d
+
+instance (Ord a, Ord b) => Ord (a,b) where
+    (a,b) <= (c,d) = a < c || (a == c && b <= d)
+
+instance Functor Maybe where
+    fmap _ Nothing = Nothing
+    fmap f (Just a) = Just $ f a
+
+instance Functor [] where
+    fmap _ [] = []
+    fmap f (x:xs) = f x : fmap f xs
+
 deriving instance Enum Bool
 deriving instance Show Bool
 deriving instance Read Bool
