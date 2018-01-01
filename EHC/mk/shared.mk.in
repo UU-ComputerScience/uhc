@@ -582,7 +582,7 @@ FUN_GEN_CABAL_UHC_LIGHT		= \
 					echo   "Build-Type:			$(12)" ; \
 					echo   "license-file:		$(13)" ; \
 					echo   "Author:				$(UHC_TEAM)" ; \
-					echo   "Maintainer:         uhc-developers@lists.science.uu.nl" ; \
+					echo   "Maintainer:         atzedijkstra@gmail.com" ; \
 					echo   "Homepage:			https://github.com/UU-ComputerScience/uhc" ; \
 					echo   "Bug-Reports:        https://github.com/UU-ComputerScience/uhc/issues" ; \
 					echo   "Category:			Development" ; \
