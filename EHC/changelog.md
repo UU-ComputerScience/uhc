@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.10.0 - 20180101
+
+- [compatibility] generated uhc-light cabal file omits version nr on uhc-light for executables, required by cabal
+
 ## 1.1.9.6 - 20171228
 
 - [compatibility] ghc 8.2, uhc-util 0.1.7 (and removals from lib, factoring out to chr-* pkgs)
