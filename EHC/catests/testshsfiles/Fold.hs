@@ -9,4 +9,4 @@ fo = \f z0 xs0 -> let
     (x:xs) -> let z' = f z x in lgo z' xs
   in lgo z0 xs0
 
-main = print (sum (replicate 100 (t6 1000000)))
+main = print (sum (replicate 100 (t6 10000000)))
