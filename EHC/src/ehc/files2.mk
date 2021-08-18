@@ -71,6 +71,7 @@ ehc-variant-dflt: \
 	mkdir -p $(dir $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)) && \
 	$(GHC) --make \
 	       $(if $(ENABLE_SANDBOX),--package-conf=$(EHC_BLD_LIBEHC_VARIANT_PREFIX)dist/package.conf.inplace,) \
+	       $(if $(ENABLE_V2_COMMANDS),-package-env=$(EHC_BLD_LIBEHC_VARIANT_PREFIX).ghc.environment.$(GHC_CPU)-$(GHC_OS)-$(GHC_VERSION),) \
 	       $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EHC_PKG_NAME) \
 	       -i$(EHC_BLD_VARIANT_ASPECTS_PREFIX) $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_MAIN).hs -o $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_CODEGEN), \

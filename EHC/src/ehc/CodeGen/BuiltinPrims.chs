@@ -28,7 +28,7 @@ Ideally, these tables should be merged.
 data PrimitiveNeedsEval
   = Prim    
       { primArgNeedEval     :: ![Bool]  		-- default: True
-      , primResNeedEval     :: ! Bool   		-- default: False
+      , primResNeedEval     :: !Bool    		-- default: False
       }
 
 lookupPrimNeedsEval :: {- Backend -> -} String -> Maybe PrimitiveNeedsEval

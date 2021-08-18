@@ -350,8 +350,9 @@ EHC_ALL_DPDS_NOPREPROC					:= $(subst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefi
 # cabal library dependencies and extensions
 ###########################################################################################
 
-CABAL_EHCLIB_DEPENDS_ON					:= binary syb bytestring uulib>=0.9.12 old-locale
-CABAL_EHCLIB_EXTENSIONS					:= $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable LiberalTypeSynonyms StandaloneDeriving DeriveGeneric FlexibleContexts FlexibleInstances TypeSynonymInstances ScopedTypeVariables TypeFamilies
+CABAL_EHCLIB_DEPENDS_ON					:= binary syb bytestring uulib>=0.9.12 old-locale base fgl syb uulib network binary hashable uhc-util mtl containers directory array chr-data utf8-string process
+
+CABAL_EHCLIB_EXTENSIONS					:= UndecidableInstances DeriveDataTypeable LiberalTypeSynonyms StandaloneDeriving DeriveGeneric FlexibleContexts FlexibleInstances TypeSynonymInstances ScopedTypeVariables TypeFamilies
 
 ###########################################################################################
 # variant dispatch rules
@@ -396,7 +397,15 @@ $(LIB_EHC_SETUP_HS_DRV): $(EHC_MKF)
 $(LIB_EHC_SETUP2): $(LIB_EHC_SETUP_HS_DRV)
 	$(call GHC_CABAL,$<,$@)
 
-ifeq ($(ENABLE_SANDBOX),yes)
+ifeq ($(ENABLE_V2_COMMANDS),yes)
+# cabal v2 version
+$(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(INSABS_EHC_LIB_ALL_AG) $(EHC_MKF)
+	mkdir -p $(@D)
+	cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) && \
+	$(CABAL) v2-configure $(CABAL_SETUP_OPTS) --write-ghc-environment-files=always && \
+	$(CABAL) v2-build && \
+	echo $@ > $@
+else ifeq ($(ENABLE_SANDBOX),yes)
 # cabal sandbox version
 # Note/TBD: configure should be done before installing dpds, in particular choice of compiler cannot be done correctly now
 $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(INSABS_EHC_LIB_ALL_AG) $(EHC_MKF)
