@@ -127,8 +127,8 @@ mkGenerRepresentableTypeSynTyProj
                                                              fmapTy = appTopApp (fun : firstargs)
                                                      _ -> dflt
                               | otherwise        = dflt
-                              where mbVar    @(~(Just tvar      )) = tyMbVar        t
-                                    funArgs  @(       (fun,args) ) = appUnApp       t
+                              where mbVar@(~(Just tvar      )) = tyMbVar        t
+                                    funArgs@(     (fun,args) ) = appUnApp       t
                                     isRepr = maybe (isJust $ tyMbVar fun) (\con -> isRepresentable con remArity) $ tyMbCon fun
                                     dflt   = ([ mkC ehbnGenerDataRec0, t ], Proj_K1 [t])
         mkAlt tg c (t,p)  = (appTopApp [mkC2 ehbnGenerDataMetaCN 1, appCon c, t], Proj_M1 $ Proj_Con tg p)

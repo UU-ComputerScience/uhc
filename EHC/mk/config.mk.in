@@ -99,6 +99,11 @@ ifeq (@ENABLE_SANDBOX@,yes)
 ENABLE_SANDBOX				:= yes
 endif
 
+# use cabal v2 commands
+ifeq (@ENABLE_V2_COMMANDS@,yes)
+ENABLE_V2_COMMANDS			:= yes
+endif
+
 # include CHR based type system
 ifeq (@ENABLE_CHRTYSYS@,yes)
 ENABLE_CHRTYSYS				:= yes

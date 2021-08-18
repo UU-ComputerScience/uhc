@@ -1374,21 +1374,27 @@ bend = cstk =$: tail
 -- | memoize
 bmemo :: (EHCCompileRunner m, Typeable f, Typeable res) => f res -> EHCompilePhaseT m ()
 bmemo res = do
-	(BFun bfun : _) <- getl $ st ^* bstateCallStack
-	case cast bfun of
-	  Just bfun -> do
-		   cpTr TraceOn_BldFun $ ["memo  " ++ show bfun]
-		   st ^* bstateCache =$: bcacheInsert bfun res
-	  _ -> panic $ "BuildFunction.Run.bcall.bmemo: " ++ show bfun
+  s <- getl $ st ^* bstateCallStack
+  case s of
+    BFun bfun : _ ->
+      case cast bfun of
+        Just bfun -> do
+           cpTr TraceOn_BldFun $ ["memo  " ++ show bfun]
+           st ^* bstateCache =$: bcacheInsert bfun res
+        _ -> panic $ "BuildFunction.Run.bcall.bmemo: " ++ show bfun
+    _ -> panic $ "BuildFunction.Run.bcall.bmemo: empty stack"
 
 bmemo' :: (EHCCompileRunner m, Typeable res) => res -> EHCompilePhaseT m ()
 bmemo' res = do
-	(BFun bfun : _) <- getl $ st ^* bstateCallStack
-	case cast bfun of
-	  Just bfun -> do
-		   cpTr TraceOn_BldFun $ ["memo  " ++ show bfun]
-		   st ^* bstateCache =$: bcacheInsert bfun (Identity res)
-	  _ -> panic $ "BuildFunction.Run.bcall.bmemo': " ++ show bfun ++ ", " ++ show (typeOf bfun) ++ ", " ++ show (typeOf res)
+  s <- getl $ st ^* bstateCallStack
+  case s of
+    (BFun bfun : _) ->
+      case cast bfun of
+        Just bfun -> do
+           cpTr TraceOn_BldFun $ ["memo  " ++ show bfun]
+           st ^* bstateCache =$: bcacheInsert bfun (Identity res)
+        _ -> panic $ "BuildFunction.Run.bcall.bmemo': " ++ show bfun ++ ", " ++ show (typeOf bfun) ++ ", " ++ show (typeOf res)
+    _ -> panic $ "BuildFunction.Run.bcall.bmemo': empty stack, " ++ show (typeOf res)
 
 -- memoize & return
 breturn :: (EHCCompileRunner m, Typeable res) => res -> EHCompilePhaseT m res

@@ -2,7 +2,7 @@
 AC_INIT([UHC],[1.1.7],[uhc-developers@lists.science.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])
 
 ### version of autoconf used (and required)
-#AC_PREREQ(2.64)
+#AC_PREREQ([2.71])
 
 ### revision
 AC_REVISION($Revision: 1.26 $)
@@ -13,6 +13,156 @@ AC_PROG_MAKE_SET
 AC_CANONICAL_HOST
 dnl ** canonicalize platform names
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
+
+# GHC_CONVERT_CPU(cpu, target_var)
+# --------------------------------
+# Converts cpu from gnu to ghc naming, and assigns the result to $target_var.
+# Should you modify this list, you are invited to reflect the changes in
+# `libraries/base/System/Info.hs`'s documentation.
+AC_DEFUN([GHC_CONVERT_CPU],[
+case "$1" in
+  aarch64*|arm64*)
+    $2="aarch64"
+    ;;
+  alpha*)
+    $2="alpha"
+    ;;
+  arm*)
+    $2="arm"
+    ;;
+  hppa1.1*)
+    $2="hppa1_1"
+    ;;
+  hppa*)
+    $2="hppa"
+    ;;
+  i386|i486|i586|i686)
+    $2="i386"
+    ;;
+  ia64)
+    $2="ia64"
+    ;;
+  m68k*)
+    $2="m68k"
+    ;;
+  mipseb*)
+    $2="mipseb"
+    ;;
+  mipsel*)
+    $2="mipsel"
+    ;;
+  mips*)
+    $2="mips"
+    ;;
+  nios2)
+    $2="nios2"
+    ;;
+  powerpc64le*)
+    $2="powerpc64le"
+    ;;
+  powerpc64*)
+    $2="powerpc64"
+    ;;
+  powerpc*)
+    $2="powerpc"
+    ;;
+  riscv64*)
+    $2="riscv64"
+    ;;
+  riscv|riscv32*)
+    $2="riscv32"
+    ;;
+  rs6000)
+    $2="rs6000"
+    ;;
+  s390x*)
+    $2="s390x"
+    ;;
+  s390*)
+    $2="s390"
+    ;;
+  sh4)
+    $2="sh4"
+    ;;
+  sparc64*)
+    $2="sparc64"
+    ;;
+  sparc*)
+    $2="sparc"
+    ;;
+  vax)
+    $2="vax"
+    ;;
+  x86_64|amd64)
+    $2="x86_64"
+    ;;
+  *)
+    echo "Unknown CPU $1"
+    exit 1
+    ;;
+  esac
+])
+
+# GHC_CONVERT_OS(os, converted_cpu, target_var)
+# --------------------------------
+# converts os from gnu to ghc naming, and assigns the result to $target_var
+AC_DEFUN([GHC_CONVERT_OS],[
+    case "$1" in
+      gnu*) # e.g. i686-unknown-gnu0.9
+        $3="gnu"
+        ;;
+      # watchos and tvos are ios variants as of May 2017.
+      ios|watchos|tvos)
+        $3="ios"
+        ;;
+      linux-android*)
+        $3="linux-android"
+        ;;
+      linux-*|linux)
+        $3="linux"
+        ;;
+      netbsd*)
+        $3="netbsd"
+        ;;
+      openbsd*)
+        $3="openbsd"
+        ;;
+      # As far as I'm aware, none of these have relevant variants
+      freebsd|dragonfly|hpux|linuxaout|kfreebsdgnu|freebsd2|mingw32|darwin|nextstep2|nextstep3|sunos4|ultrix|haiku)
+        $3="$1"
+        ;;
+      msys)
+        AC_MSG_ERROR([Building GHC using the msys toolchain is not supported; please use mingw instead. Perhaps you need to set 'MSYSTEM=MINGW64 or MINGW32?'])
+        ;;
+      aix*) # e.g. powerpc-ibm-aix7.1.3.0
+        $3="aix"
+        ;;
+      darwin*) # e.g. aarch64-apple-darwin14
+        $3="darwin"
+        ;;
+      solaris2*)
+        $3="solaris2"
+        ;;
+      freebsd*) # like i686-gentoo-freebsd7
+                #      i686-gentoo-freebsd8
+                #      i686-gentoo-freebsd8.2
+        $3="freebsd"
+        ;;
+      nto-qnx*)
+        $3="nto-qnx"
+        ;;
+      *)
+        echo "Unknown OS $1"
+        exit 1
+        ;;
+      esac
+])
+
+GHC_CONVERT_CPU($host_cpu, ghcCPU)
+GHC_CONVERT_OS($host_os, $ghcCPU, ghcOS)
+
+AC_SUBST(GHC_CPU, $ghcCPU)
+AC_SUBST(GHC_OS, $ghcOS)
 
 ### check whether we are indeed in the toplevel dir, otherwise copy required stuff to the current dir first
 if test "${srcdir}" != "." -a "${srcdir}" != ""
@@ -185,6 +335,10 @@ AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)
 ### enable options: use cabal sandbox for building libs, default is no
 AC_ARG_ENABLE(sandbox, AS_HELP_STRING([--enable-sandbox],[build EHC/UHC libs with cabal sandbox]), [enableSandbox=yes], [enableSandbox=no])
 AC_SUBST(ENABLE_SANDBOX,$enableSandbox)
+
+### enable options: use cabal v2 commands for building libs, default is no
+AC_ARG_ENABLE(v2-commands, AS_HELP_STRING([--enable-v2-commands],[build EHC/UHC libs with cabal v2 commands]), [enableV2Commands=yes], [enableV2Commands=no])
+AC_SUBST(ENABLE_V2_COMMANDS,$enableV2Commands)
 
 ### enable options: turn on CHR based type system impl
 AC_ARG_ENABLE(chrtysys, AS_HELP_STRING([--enable-chrtysys],[build EHC/UHC with CHR based type system]), [enableChrTySys=yes], [enableChrTySys=no])
@@ -476,6 +630,9 @@ AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
 AC_PATH_PROG(hsc2hsCmd,hsc2hs)
 AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
 
+if test x$enableV2Commands = "xno"
+then
+
 ### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibsRequired="fgl vector uulib network binary hashable chr-data uhc-util base mtl transformers directory containers array process filepath utf8-string bytestring"
 #if test x$enableClr = "xyes"
@@ -536,6 +693,7 @@ then
   fi
 fi
 
+
 # GHC version dependencies: packages passed as option, cabal packages
 cabal_base_lib_depends="${ghcLibsRequiredWithVersion} ${ghcLibsRequiredWithoutVersion}"
 if test x$enableClr = "xyes"
@@ -556,6 +714,8 @@ case $ghcVersion in
     optStandardGHCPackages="-package util -package lang -package data"
     ;;
 esac
+
+fi
 
 AC_SUBST(OPT_GHC_STANDARD_PACKAGES,"$optStandardGHCPackages")
 AC_SUBST(CABAL_BASE_LIB_DEPENDS,"$cabal_base_lib_depends")
@@ -819,7 +979,20 @@ AC_CHECK_FUNCS([ftime gmtime_r localtime_r])
 AC_CHECK_FUNCS([lchown])
 
 dnl ** check if it is safe to include both <time.h> and <sys/time.h>
-AC_HEADER_TIME
+m4_warn([obsolete],
+[Update your code to rely only on HAVE_SYS_TIME_H,
+then remove this warning and the obsolete code below it.
+All current systems provide time.h; it need not be checked for.
+Not all systems provide sys/time.h, but those that do, all allow
+you to include it and time.h simultaneously.])dnl
+AC_CHECK_HEADERS_ONCE([sys/time.h])
+# Obsolete code to be removed.
+if test $ac_cv_header_sys_time_h = yes; then
+  AC_DEFINE([TIME_WITH_SYS_TIME],[1],[Define to 1 if you can safely include both <sys/time.h>
+	     and <time.h>.  This macro is obsolete.])
+fi
+# End of obsolete code.
+
 
 dnl ** how do we get a timezone name, and UTC offset ?
 AC_STRUCT_TIMEZONE
